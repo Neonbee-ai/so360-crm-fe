@@ -3,7 +3,7 @@ import { useShellBridge } from '@so360/shell-context';
 import { targetPlanService } from '../../services/targetPlanService';
 import { salesTargetService } from '../../services/salesTargetService';
 import { EmptyState, Panel, PersonPicker } from './targetUi';
-import { DashboardPageTemplate, Button } from '@so360/design-system';
+import { DashboardPageTemplate, Button, DatePicker } from '@so360/design-system';
 
 /**
  * Reusable target templates.
@@ -176,26 +176,18 @@ export default function TargetTemplatesPage() {
               </label>
               <PersonPicker value={ownerId} onChange={setOwnerId} />
             </div>
-            <div>
-              <label className="block text-xs text-fg-subtle mb-1">
-                Start
-              </label>
-              <input
-                type="date"
-                className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-fg-subtle mb-1">End</label>
-              <input
-                type="date"
-                className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-              />
-            </div>
+            <DatePicker
+              name="template_startDate"
+              label="Start"
+              value={startDate}
+              onChange={(iso: string) => setStartDate(iso)}
+            />
+            <DatePicker
+              name="template_endDate"
+              label="End"
+              value={endDate}
+              onChange={(iso: string) => setEndDate(iso)}
+            />
             <Button variant="primary" size="sm"
               onClick={assign}
               disabled={busy || !ownerId || !startDate || !endDate}

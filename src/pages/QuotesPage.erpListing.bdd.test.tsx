@@ -192,12 +192,7 @@ describe('Feature: CRM Quotes Listing ERP UI/UX Improvements (BDD)', () => {
         expect(screen.getByText('QT-2026-00001')).toBeInTheDocument();
       });
 
-      const selects = screen.getAllByRole('combobox');
-      const validitySelect = selects.find(s => (s as HTMLSelectElement).querySelector('option[value="expired"]'));
-      expect(validitySelect).toBeDefined();
-      if (validitySelect) {
-        await user.selectOptions(validitySelect, 'expired');
-      }
+      await user.selectOptions(screen.getByLabelText('Validity'), 'expired');
 
       expect(screen.getByText('QT-2026-00002')).toBeInTheDocument();
       expect(screen.queryByText('QT-2026-00001')).not.toBeInTheDocument();
@@ -252,8 +247,7 @@ describe('Feature: CRM Quotes Listing ERP UI/UX Improvements (BDD)', () => {
         expect(screen.getByText('QT-2026-00001')).toBeInTheDocument();
       });
 
-      const selectAll = screen.getByTitle('Select all on this page');
-      await user.click(selectAll);
+      for (const box of screen.getAllByLabelText('Select row')) await user.click(box);
 
       expect(screen.getByText('4 selected')).toBeInTheDocument();
 
@@ -281,7 +275,7 @@ describe('Feature: CRM Quotes Listing ERP UI/UX Improvements (BDD)', () => {
         expect(screen.getByText('QT-2026-00001')).toBeInTheDocument();
       });
 
-      const moreButtons = screen.getAllByTitle('More actions');
+      const moreButtons = screen.getAllByLabelText('Row actions');
       expect(moreButtons.length).toBeGreaterThan(0);
       fireEvent.click(moreButtons[0]);
 

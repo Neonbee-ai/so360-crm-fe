@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useShellBridge } from '@so360/shell-context';
 import { targetPlanService } from '../../services/targetPlanService';
 import { EmptyState, Panel } from './targetUi';
-import { DashboardPageTemplate, Button } from '@so360/design-system';
+import { DashboardPageTemplate, Button, DataTable, TextField, Select, Checkbox } from '@so360/design-system';
+import type { DataTableColumn } from '@so360/design-system';
 
 /**
  * Channel catalog admin.
@@ -123,6 +124,41 @@ export default function TouchpointChannelsPage() {
     }
   };
 
+  const flagCol = (key: string, header: string, field: string): DataTableColumn<any> => ({
+    key,
+    header,
+    render: (c) => (
+      <Checkbox
+        aria-label={`${header} ${c.label}`}
+        checked={!!c[field]}
+        disabled={busy}
+        onChange={() => toggle(c.id, field, !!c[field])}
+      />
+    ),
+  });
+
+  const columns: DataTableColumn<any>[] = [
+    { key: 'channel', header: 'Channel', sortable: true, sortValue: (c) => c.label || '', render: (c) => (
+      <span className="text-fg">
+        {c.label}
+        {c.linked_source_value && (
+          <span className="ml-nb-2 text-xs text-fg-muted" title="Linked to an existing CRM lead source">
+            ↔ lead source
+          </span>
+        )}
+      </span>
+    ) },
+    { key: 'source', header: 'Source', render: (c) => <span className="text-fg-subtle">{c.actuals_source === 'auto' ? 'Auto' : 'Manual'}</span> },
+    { key: 'bound', header: 'Bound to', render: (c) => (
+      <span className="text-fg-muted text-xs">
+        {c.emitter_binding ? `${c.emitter_binding.module} · ${c.emitter_binding.platform ?? c.emitter_binding.entity}` : '—'}
+      </span>
+    ) },
+    flagCol('counts', 'Counts', 'counts_toward_targets'),
+    flagCol('comp', 'Comp', 'comp_eligible'),
+    flagCol('active', 'Active', 'is_active'),
+  ];
+
   return (
     <DashboardPageTemplate
       title="Touchpoint Channels"
@@ -139,39 +175,30 @@ export default function TouchpointChannelsPage() {
 
       <Panel title="Add a channel">
         <div className="flex flex-wrap items-end gap-3">
-          <div>
-            <label className="block text-xs text-fg-subtle mb-1">
-              Label
-            </label>
-            <input
-              className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg outline-none"
-              value={label}
-              onChange={(e) => setLabel(e.target.value)}
-              placeholder="Site Visit"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-fg-subtle mb-1">Key</label>
-            <input
-              className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg outline-none"
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              placeholder="site_visit"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-fg-subtle mb-1">
-              Actuals
-            </label>
-            <select
-              className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
-              value={actualsSource}
-              onChange={(e) => setActualsSource(e.target.value as any)}
-            >
-              <option value="manual">Manual (rep logs it)</option>
-              <option value="auto">Auto (system emits it)</option>
-            </select>
-          </div>
+          <TextField
+            name="channel_label"
+            label="Label"
+            value={label}
+            onChange={(e: any) => setLabel(e.target.value)}
+            placeholder="Site Visit"
+          />
+          <TextField
+            name="channel_key"
+            label="Key"
+            value={value}
+            onChange={(e: any) => setValue(e.target.value)}
+            placeholder="site_visit"
+          />
+          <Select
+            name="channel_actuals"
+            label="Actuals"
+            value={actualsSource}
+            onChange={(e: any) => setActualsSource(e.target.value as any)}
+            options={[
+              { value: 'manual', label: 'Manual (rep logs it)' },
+              { value: 'auto', label: 'Auto (system emits it)' },
+            ]}
+          />
           <Button variant="primary" size="sm"
             onClick={addChannel}
             disabled={busy || !label.trim() || !value.trim()}
@@ -193,79 +220,11 @@ export default function TouchpointChannelsPage() {
         <EmptyState message="No channels configured. Import from lead sources or add one above." />
       ) : (
         <Panel title="Channels">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs text-fg-subtle border-b border-line">
-                  <th className="py-2 pr-4 font-medium">Channel</th>
-                  <th className="py-2 pr-4 font-medium">Source</th>
-                  <th className="py-2 pr-4 font-medium">Bound to</th>
-                  <th className="py-2 pr-4 font-medium">Counts</th>
-                  <th className="py-2 pr-4 font-medium">Comp</th>
-                  <th className="py-2 font-medium">Active</th>
-                </tr>
-              </thead>
-              <tbody>
-                {channels.map((c) => (
-                  <tr key={c.id} className="border-b border-line">
-                    <td className="py-2 pr-4 text-fg">
-                      {c.label}
-                      {c.linked_source_value && (
-                        <span
-                          className="ml-2 text-xs text-fg-muted"
-                          title="Linked to an existing CRM lead source"
-                        >
-                          ↔ lead source
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-2 pr-4 text-fg-subtle">
-                      {c.actuals_source === 'auto' ? 'Auto' : 'Manual'}
-                    </td>
-                    <td className="py-2 pr-4 text-fg-muted text-xs">
-                      {c.emitter_binding
-                        ? `${c.emitter_binding.module} · ${c.emitter_binding.platform ?? c.emitter_binding.entity}`
-                        : '—'}
-                    </td>
-                    <td className="py-2 pr-4">
-                      <input
-                        type="checkbox"
-                        checked={!!c.counts_toward_targets}
-                        disabled={busy}
-                        onChange={() =>
-                          toggle(
-                            c.id,
-                            'counts_toward_targets',
-                            !!c.counts_toward_targets,
-                          )
-                        }
-                      />
-                    </td>
-                    <td className="py-2 pr-4">
-                      <input
-                        type="checkbox"
-                        checked={!!c.comp_eligible}
-                        disabled={busy}
-                        onChange={() =>
-                          toggle(c.id, 'comp_eligible', !!c.comp_eligible)
-                        }
-                      />
-                    </td>
-                    <td className="py-2">
-                      <input
-                        type="checkbox"
-                        checked={!!c.is_active}
-                        disabled={busy}
-                        onChange={() =>
-                          toggle(c.id, 'is_active', !!c.is_active)
-                        }
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable
+            columns={columns}
+            rows={channels}
+            rowKey={(c: any) => c.id}
+          />
 
           <div className="mt-3 space-y-1 text-xs text-fg-muted">
             <div>

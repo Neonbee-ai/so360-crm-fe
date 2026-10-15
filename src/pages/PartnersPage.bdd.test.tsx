@@ -43,22 +43,26 @@ vi.mock('../utils/phoneValidation', () => ({
 }));
 
 let tableProps: any = {};
-vi.mock('../components/common/Table', () => ({
-    Table: (props: any) => {
-        tableProps = props;
-        if (props.isLoading) return <div data-testid="table">Loading...</div>;
-        if (!props.data.length) return <div data-testid="table">{props.emptyMessage}</div>;
-        return (
-            <div data-testid="table">
-                {props.data.map((p: any) => (
-                    <div key={p.id} data-testid={`partner-row-${p.id}`} onClick={() => props.onRowClick(p)}>
-                        {p.contact_name}
-                    </div>
-                ))}
-            </div>
-        );
-    },
-}));
+vi.mock('@so360/design-system', async (importOriginal) => {
+    const actual: any = await importOriginal();
+    return {
+        ...actual,
+        DataTable: (props: any) => {
+            tableProps = { ...props, data: props.rows, isLoading: props.loading, emptyMessage: props.emptyState, columns: props.columns.map((c: any) => ({ ...c, accessor: c.render, className: c.align === 'right' ? 'text-right' : undefined })) };
+            if (props.loading) return <div data-testid="table">Loading...</div>;
+            if (!props.rows.length) return <div data-testid="table">{props.emptyState}</div>;
+            return (
+                <div data-testid="table">
+                    {props.rows.map((p: any) => (
+                        <div key={p.id} {...props.getRowProps(p)} onClick={() => props.onRowClick(p)}>
+                            {p.contact_name}
+                        </div>
+                    ))}
+                </div>
+            );
+        },
+    };
+});
 
 import PartnersPage from './PartnersPage';
 
@@ -178,7 +182,7 @@ describe('PartnersPage', () => {
             const user = userEvent.setup();
             render(<PartnersPage />);
             await waitFor(() => expect(screen.getByTestId('partner-row-p1')).toBeInTheDocument());
-            const typeSelect = screen.getByDisplayValue('All Types');
+            const typeSelect = screen.getByLabelText('Type');
             await user.selectOptions(typeSelect, 'referral');
             await waitFor(() => {
                 expect(tableProps.data.length).toBe(1);
@@ -190,10 +194,9 @@ describe('PartnersPage', () => {
             const user = userEvent.setup();
             render(<PartnersPage />);
             await waitFor(() => expect(screen.getByTestId('partner-row-p1')).toBeInTheDocument());
-            const typeSelect = screen.getByDisplayValue('All Types');
+            const typeSelect = screen.getByLabelText('Type');
             await user.selectOptions(typeSelect, 'referral');
-            await waitFor(() => expect(screen.getByText('Clear Filters')).toBeInTheDocument());
-            await user.click(screen.getByText('Clear Filters'));
+            await user.click(await screen.findByRole('button', { name: 'Clear all' }));
             await waitFor(() => {
                 expect(tableProps.data.length).toBe(2);
             });
@@ -547,7 +550,7 @@ describe('PartnersPage', () => {
         it('When the Deals column renders / Then its cell is right-aligned', async () => {
             render(<PartnersPage />);
             await waitFor(() => expect(screen.getByTestId('partner-row-p1')).toBeInTheDocument());
-            const { container } = render(<>{tableProps.columns[3].header}</>);
+            const container = { textContent: tableProps.columns[3].header };
             expect(container.textContent).toContain('Deals');
             expect(tableProps.columns[3].className).toBe('text-right');
         });
@@ -555,7 +558,7 @@ describe('PartnersPage', () => {
         it('When the Deal Value column renders / Then its cell is right-aligned', async () => {
             render(<PartnersPage />);
             await waitFor(() => expect(screen.getByTestId('partner-row-p1')).toBeInTheDocument());
-            const { container } = render(<>{tableProps.columns[4].header}</>);
+            const container = { textContent: tableProps.columns[4].header };
             expect(container.textContent).toContain('Deal Value');
             expect(tableProps.columns[4].className).toBe('text-right');
         });

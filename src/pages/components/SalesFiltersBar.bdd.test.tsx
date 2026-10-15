@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import React, { useState } from 'react';
+import { ListFilters } from '@so360/design-system';
 import type { SalesFilters } from '../../services/salesReportService';
 
 /**
- * Feature: shared Sales / Commission report filter row.
+ * Feature: shared Sales / Commission report filter config (ListPageTemplate `filterConfig`).
  * Project options come from inventory categories, agents from CRM users,
  * developers from the host page. Failed option loads leave the list empty.
  */
@@ -12,17 +13,17 @@ import type { SalesFilters } from '../../services/salesReportService';
 const crm = vi.hoisted(() => ({ getProductCategories: vi.fn(), getUsers: vi.fn() }));
 vi.mock('../../services/crmService', () => ({ crmService: crm }));
 
-import SalesFiltersBar, { hasActiveFilters } from './SalesFiltersBar';
+import { useSalesFilterConfig, hasActiveFilters } from './SalesFiltersBar';
 
 const onChangeSpy = vi.fn();
 const Harness: React.FC<{ initial?: SalesFilters; developers?: { id: string; name: string }[] }> = ({ initial = {}, developers = [] }) => {
     const [value, setValue] = useState<SalesFilters>(initial);
+    const { config, rangeError } = useSalesFilterConfig(value, (next) => { onChangeSpy(next); setValue(next); }, developers);
     return (
-        <SalesFiltersBar
-            value={value}
-            developers={developers}
-            onChange={(next) => { onChangeSpy(next); setValue(next); }}
-        />
+        <div>
+            <ListFilters {...config} />
+            {rangeError ? <p role="alert">{rangeError}</p> : null}
+        </div>
     );
 };
 
@@ -35,7 +36,7 @@ beforeEach(() => {
     ]);
 });
 
-describe('Feature: Sales filter row', () => {
+describe('Feature: Sales filter config', () => {
     describe('Given the option lists load', () => {
         it('When rendered / Then projects and agents are offered (email stands in for a missing name)', async () => {
             render(<Harness />);
@@ -52,28 +53,28 @@ describe('Feature: Sales filter row', () => {
             expect(onChangeSpy).toHaveBeenLastCalledWith({ project_id: 'p1', agent_id: 'u1' });
         });
 
-        it('When a choice is reset to "All" / Then the key is dropped (undefined), not sent blank', async () => {
+        it('When a choice is reset to "All" / Then the key is dropped, not sent blank', async () => {
             render(<Harness initial={{ project_id: 'p1' }} />);
             await screen.findByRole('option', { name: 'Marina Heights' });
             fireEvent.change(screen.getByLabelText('Project'), { target: { value: '' } });
-            expect(onChangeSpy).toHaveBeenLastCalledWith({ project_id: undefined });
+            expect(onChangeSpy).toHaveBeenLastCalledWith({});
         });
     });
 
     describe('Given the option lists fail or return nothing', () => {
-        it('When rendered / Then only the "All" options remain and nothing throws', async () => {
+        it('When rendered / Then only the placeholder options remain and nothing throws', async () => {
             crm.getProductCategories.mockRejectedValue(new Error('down'));
             crm.getUsers.mockResolvedValue(null);
             render(<Harness />);
-            await waitFor(() => expect(crm.getUsers).toHaveBeenCalled());
-            expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual(['All projects', 'All agents']);
+            await vi.waitFor(() => expect(crm.getUsers).toHaveBeenCalled());
+            expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual(['Project', 'Agent']);
         });
 
         it('When the users call rejects and categories return null / Then both lists stay empty', async () => {
             crm.getProductCategories.mockResolvedValue(null);
             crm.getUsers.mockRejectedValue(new Error('down'));
             render(<Harness />);
-            await waitFor(() => expect(crm.getProductCategories).toHaveBeenCalled());
+            await vi.waitFor(() => expect(crm.getProductCategories).toHaveBeenCalled());
             expect(screen.getAllByRole('option')).toHaveLength(2);
         });
     });
@@ -93,11 +94,13 @@ describe('Feature: Sales filter row', () => {
         });
     });
 
-    describe('Given a date range', () => {
-        it('When from is after to / Then an inline validation message is shown', async () => {
+    describe('Given a date range (in the Filters drawer)', () => {
+        it('When from is after to / Then a validation message is exposed', async () => {
             render(<Harness />);
-            fireEvent.change(screen.getByLabelText('From'), { target: { value: '2026-05-10' } });
-            fireEvent.change(screen.getByLabelText('To'), { target: { value: '2026-05-01' } });
+            fireEvent.click(screen.getByTestId('filters-button'));
+            fireEvent.change(screen.getByLabelText('Date range start'), { target: { value: '2026-05-10' } });
+            fireEvent.change(screen.getByLabelText('Date range end'), { target: { value: '2026-05-01' } });
+            expect(onChangeSpy).toHaveBeenLastCalledWith({ from: '2026-05-10', to: '2026-05-01' });
             expect(screen.getByRole('alert')).toHaveTextContent('The start date must be on or before the end date.');
             await screen.findByRole('option', { name: 'Marina Heights' });
         });
@@ -110,17 +113,17 @@ describe('Feature: Sales filter row', () => {
     });
 
     describe('Given active filters', () => {
-        it('When none are set / Then "Clear filters" is not offered', async () => {
+        it('When none are set / Then no applied-filter chips are shown', async () => {
             render(<Harness />);
-            expect(screen.queryByRole('button', { name: /Clear filters/ })).not.toBeInTheDocument();
+            expect(screen.queryByTestId('filter-chips')).not.toBeInTheDocument();
             await screen.findByRole('option', { name: 'Marina Heights' });
         });
 
-        it('When "Clear filters" is pressed / Then every filter is reset in one tap', async () => {
+        it('When "Clear all" is pressed / Then every filter is reset in one tap', async () => {
             render(<Harness initial={{ agent_id: 'u1', from: '2026-01-01' }} />);
-            fireEvent.click(screen.getByRole('button', { name: /Clear filters/ }));
+            fireEvent.click(screen.getByRole('button', { name: 'Clear all' }));
             expect(onChangeSpy).toHaveBeenLastCalledWith({});
-            expect(screen.queryByRole('button', { name: /Clear filters/ })).not.toBeInTheDocument();
+            expect(screen.queryByTestId('filter-chips')).not.toBeInTheDocument();
             await screen.findByRole('option', { name: 'Marina Heights' });
         });
 

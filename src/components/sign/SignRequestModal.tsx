@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Loader2, AlertCircle, FileSignature } from 'lucide-react';
-import { Button } from '@so360/design-system';
+import { Button, TextField, Select } from '@so360/design-system';
 import { Modal } from '../common/Modal';
 
 interface Props {
@@ -120,42 +120,50 @@ const SignRequestModal: React.FC<Props> = ({ onClose, prefillName, prefillEmail,
             }
         >
                 <div className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-fg mb-1">Template</label>
-                        <select value={templateId} onChange={e => setTemplateId(e.target.value)}
-                            disabled={busy || templates.length === 0}
-                            className="w-full border border-line-strong rounded-md px-3 py-2 text-sm">
-                            {phase === 'loading' && <option>Loading…</option>}
-                            {phase !== 'loading' && templates.length === 0 && <option>No templates available</option>}
-                            {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                        </select>
-                    </div>
+                    <Select
+                        name="sign-template"
+                        label="Template"
+                        value={templateId}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setTemplateId(e.target.value)}
+                        disabled={busy || templates.length === 0}
+                        placeholder={phase === 'loading' ? 'Loading…' : templates.length === 0 ? 'No templates available' : undefined}
+                        options={templates.map(t => ({ value: t.id, label: t.name }))}
+                    />
 
-                    <div>
-                        <label className="block text-sm font-medium text-fg mb-1">Signer name</label>
-                        <input type="text" value={signerName} onChange={e => setSignerName(e.target.value)}
-                            disabled={busy} placeholder="Full name"
-                            className="w-full border border-line-strong rounded-md px-3 py-2 text-sm" />
-                    </div>
+                    <TextField
+                        name="sign-signer-name"
+                        label="Signer name"
+                        type="text"
+                        value={signerName}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSignerName(e.target.value)}
+                        disabled={busy}
+                        placeholder="Full name"
+                    />
 
-                    <div>
-                        <label className="block text-sm font-medium text-fg mb-1">Signer email</label>
-                        <input type="email" value={signerEmail} onChange={e => setSignerEmail(e.target.value)}
-                            disabled={busy} placeholder="email@example.com"
-                            className="w-full border border-line-strong rounded-md px-3 py-2 text-sm" />
-                    </div>
+                    <TextField
+                        name="sign-signer-email"
+                        label="Signer email"
+                        type="email"
+                        value={signerEmail}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSignerEmail(e.target.value)}
+                        disabled={busy}
+                        placeholder="email@example.com"
+                    />
 
-                    <div>
-                        <label className="block text-sm font-medium text-fg mb-1">Expires in</label>
-                        <select value={expiresInDays} onChange={e => setExpiresInDays(e.target.value)}
-                            disabled={busy} className="w-full border border-line-strong rounded-md px-3 py-2 text-sm">
-                            <option value="3">3 days</option>
-                            <option value="7">7 days</option>
-                            <option value="14">14 days</option>
-                            <option value="30">30 days</option>
-                            <option value="">No expiry</option>
-                        </select>
-                    </div>
+                    <Select
+                        name="sign-expires-in"
+                        label="Expires in"
+                        value={expiresInDays}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setExpiresInDays(e.target.value)}
+                        disabled={busy}
+                        options={[
+                            { value: '3', label: '3 days' },
+                            { value: '7', label: '7 days' },
+                            { value: '14', label: '14 days' },
+                            { value: '30', label: '30 days' },
+                            { value: '', label: 'No expiry' },
+                        ]}
+                    />
 
                     {error && (
                         <div className="flex items-start gap-2 bg-danger-container border border-danger-container rounded-md px-3 py-2 text-xs text-danger-on-container">

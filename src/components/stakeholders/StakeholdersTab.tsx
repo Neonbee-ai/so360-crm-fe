@@ -8,7 +8,7 @@ import StakeholderHierarchyTree from './StakeholderHierarchyTree';
 import StakeholderQuickActions from './StakeholderQuickActions';
 import StakeholderActivitySummary from './StakeholderActivitySummary';
 import StakeholderDealLinker from './StakeholderDealLinker';
-import { useConfirm } from '@so360/design-system';
+import { useConfirm, Button, TextField, Select } from '@so360/design-system';
 
 interface Props {
     leadId: string;
@@ -61,31 +61,35 @@ const StakeholdersTab: React.FC<Props> = ({ leadId, deals, onSwitchToNotes, onSw
         <div className="space-y-4">
             {confirmDialog}
             <div className="flex flex-wrap items-center gap-2">
-                <div className="relative flex-1 min-w-44">
-                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" />
-                    <input
+                <div className="flex-1 min-w-44">
+                    <TextField
+                        name="stakeholder-search"
+                        aria-label="Search stakeholders"
+                        size="sm"
+                        leadingIcon={Search}
                         value={search}
-                        onChange={(e) => setSearch(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
                         placeholder="Search stakeholders…"
-                        className="w-full bg-surface border border-line rounded-nb pl-9 pr-3 py-2 text-xs text-fg placeholder-fg-subtle outline-none"
                     />
                 </div>
-                <select value={strengthFilter} onChange={(e) => setStrengthFilter(e.target.value)} className="bg-surface border border-line rounded-nb px-3 py-2 text-xs text-fg-subtle outline-none">
-                    <option value="">All Relationship Strengths</option>
-                    {['very_strong', 'strong', 'moderate', 'weak', 'no_relationship'].map((s) => (
-                        <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
-                    ))}
-                </select>
+                <Select
+                    name="stakeholder-strength-filter"
+                    aria-label="Relationship strength"
+                    size="sm"
+                    value={strengthFilter}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStrengthFilter(e.target.value)}
+                    options={[
+                        { value: '', label: 'All Relationship Strengths' },
+                        ...['very_strong', 'strong', 'moderate', 'weak', 'no_relationship'].map((s) => ({ value: s, label: s.replace(/_/g, ' ') })),
+                    ]}
+                />
                 <div className="flex items-center gap-1 bg-surface border border-line rounded-nb p-1">
                     <button onClick={() => setView('list')} className={`p-1.5 rounded ${view === 'list' ? 'bg-primary text-primary-fg' : 'text-fg-muted'}`}><List size={14} /></button>
                     <button onClick={() => setView('hierarchy')} className={`p-1.5 rounded ${view === 'hierarchy' ? 'bg-primary text-primary-fg' : 'text-fg-muted'}`}><SlidersHorizontal size={14} /></button>
                 </div>
-                <button
-                    onClick={() => setEditingStakeholder(null)}
-                    className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-fg px-3 py-2 rounded-nb text-xs font-medium"
-                >
+                <Button type="button" size="sm" onClick={() => setEditingStakeholder(null)}>
                     <Plus size={14} /> Add Stakeholder
-                </button>
+                </Button>
             </div>
 
             {loading ? (

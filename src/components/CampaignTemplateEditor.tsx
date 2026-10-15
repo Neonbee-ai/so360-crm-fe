@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
+import { TextField, Textarea, Select, NumberInput, IconButton } from '@so360/design-system';
 
 interface Block {
   id: string;
@@ -70,57 +71,50 @@ const BlockEditor: React.FC<BlockEditorProps> = ({ block, onUpdate }) => {
   const c = block.content;
   const update = (key: string, value: any) => onUpdate(block.id, { ...c, [key]: value });
 
-  const inputClass = 'w-full bg-surface border border-line rounded px-3 py-1.5 text-sm text-fg focus:outline-none focus:ring-1 focus:ring-focus';
+  const alignOptions = [{ value: 'left', label: 'Left' }, { value: 'center', label: 'Center' }, { value: 'right', label: 'Right' }];
+  const tf = (key: string, placeholder: string) => (
+    <TextField name={`block-${block.id}-${key}`} aria-label={placeholder} size="sm" value={c[key]} onChange={(e: React.ChangeEvent<HTMLInputElement>) => update(key, e.target.value)} placeholder={placeholder} />
+  );
+  const alignSelect = (
+    <Select name={`block-${block.id}-align`} aria-label="Alignment" size="sm" className="w-24" value={c.align} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => update('align', e.target.value)} options={alignOptions} />
+  );
+  const ta = (key: string, placeholder: string, rows: number) => (
+    <Textarea name={`block-${block.id}-${key}`} aria-label={placeholder} rows={rows} value={c[key]} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => update(key, e.target.value)} placeholder={placeholder} />
+  );
 
   switch (block.type) {
     case 'header':
       return (
         <div className="space-y-2">
-          <input className={inputClass} value={c.text} onChange={e => update('text', e.target.value)} placeholder="Heading text" />
+          {tf('text', 'Heading text')}
           <div className="flex gap-2">
-            <select className={`${inputClass} w-24`} value={c.level} onChange={e => update('level', e.target.value)}>
-              <option value="h1">H1</option>
-              <option value="h2">H2</option>
-              <option value="h3">H3</option>
-            </select>
-            <select className={`${inputClass} w-24`} value={c.align} onChange={e => update('align', e.target.value)}>
-              <option value="left">Left</option>
-              <option value="center">Center</option>
-              <option value="right">Right</option>
-            </select>
+            <Select name={`block-${block.id}-level`} aria-label="Heading level" size="sm" className="w-24" value={c.level} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => update('level', e.target.value)} options={[{ value: 'h1', label: 'H1' }, { value: 'h2', label: 'H2' }, { value: 'h3', label: 'H3' }]} />
+            {alignSelect}
           </div>
         </div>
       );
     case 'text':
       return (
         <div className="space-y-2">
-          <textarea className={`${inputClass} resize-y`} rows={3} value={c.text} onChange={e => update('text', e.target.value)} placeholder="Text content..." />
-          <select className={`${inputClass} w-24`} value={c.align} onChange={e => update('align', e.target.value)}>
-            <option value="left">Left</option>
-            <option value="center">Center</option>
-            <option value="right">Right</option>
-          </select>
+          {ta('text', 'Text content...', 3)}
+          {alignSelect}
         </div>
       );
     case 'image':
       return (
         <div className="space-y-2">
-          <input className={inputClass} value={c.src} onChange={e => update('src', e.target.value)} placeholder="Image URL" />
-          <input className={inputClass} value={c.alt} onChange={e => update('alt', e.target.value)} placeholder="Alt text" />
+          {tf('src', 'Image URL')}
+          {tf('alt', 'Alt text')}
         </div>
       );
     case 'button':
       return (
         <div className="space-y-2">
-          <input className={inputClass} value={c.text} onChange={e => update('text', e.target.value)} placeholder="Button text" />
-          <input className={inputClass} value={c.url} onChange={e => update('url', e.target.value)} placeholder="Button URL" />
+          {tf('text', 'Button text')}
+          {tf('url', 'Button URL')}
           <div className="flex gap-2 items-center">
             <input type="color" value={c.color || '#2563eb'} onChange={e => update('color', e.target.value)} className="w-8 h-8 rounded cursor-pointer" />
-            <select className={`${inputClass} w-24`} value={c.align} onChange={e => update('align', e.target.value)}>
-              <option value="left">Left</option>
-              <option value="center">Center</option>
-              <option value="right">Right</option>
-            </select>
+            {alignSelect}
           </div>
         </div>
       );
@@ -128,7 +122,7 @@ const BlockEditor: React.FC<BlockEditorProps> = ({ block, onUpdate }) => {
       return (
         <div className="flex gap-2 items-center">
           <input type="color" value={c.color || '#334155'} onChange={e => update('color', e.target.value)} className="w-8 h-8 rounded cursor-pointer" />
-          <input type="number" className={`${inputClass} w-20`} min={1} max={4} value={c.thickness} onChange={e => update('thickness', Number(e.target.value))} />
+          <div className="w-28"><NumberInput name={`block-${block.id}-thickness`} aria-label="Thickness" size="sm" min={1} max={4} value={c.thickness} onChange={(v: number | null) => update('thickness', v ?? 0)} /></div>
           <span className="text-xs text-fg-muted">px</span>
         </div>
       );
@@ -142,8 +136,8 @@ const BlockEditor: React.FC<BlockEditorProps> = ({ block, onUpdate }) => {
     case 'columns':
       return (
         <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-2">
-          <textarea className={`${inputClass} resize-y`} rows={2} value={c.left} onChange={e => update('left', e.target.value)} placeholder="Left column" />
-          <textarea className={`${inputClass} resize-y`} rows={2} value={c.right} onChange={e => update('right', e.target.value)} placeholder="Right column" />
+          {ta('left', 'Left column', 2)}
+          {ta('right', 'Right column', 2)}
         </div>
       );
     default:
@@ -360,26 +354,10 @@ const CampaignTemplateEditor: React.FC<CampaignTemplateEditorProps> = ({ value, 
                   <span className="text-fg-muted cursor-grab active:cursor-grabbing">⠿</span>
                   <span className="text-xs text-fg-muted font-medium ">{block.type}</span>
                   <div className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={e => { e.stopPropagation(); moveBlock(idx, Math.max(0, idx - 1)); }}
-                      className="p-1 text-fg-muted hover:text-fg-subtle text-xs"
-                      title="Move up"
-                    >↑</button>
-                    <button
-                      onClick={e => { e.stopPropagation(); moveBlock(idx, Math.min(blocks.length - 1, idx + 1)); }}
-                      className="p-1 text-fg-muted hover:text-fg-subtle text-xs"
-                      title="Move down"
-                    >↓</button>
-                    <button
-                      onClick={e => { e.stopPropagation(); duplicateBlock(block.id); }}
-                      className="p-1 text-fg-muted hover:text-fg-subtle text-xs"
-                      title="Duplicate"
-                    >⧉</button>
-                    <button
-                      onClick={e => { e.stopPropagation(); removeBlock(block.id); }}
-                      className="p-1 text-danger/70 hover:text-danger text-xs"
-                      title="Delete"
-                    >✕</button>
+                    <IconButton label="Move up" size="sm" icon={<span aria-hidden="true">↑</span>} onClick={e => { e.stopPropagation(); moveBlock(idx, Math.max(0, idx - 1)); }} />
+                    <IconButton label="Move down" size="sm" icon={<span aria-hidden="true">↓</span>} onClick={e => { e.stopPropagation(); moveBlock(idx, Math.min(blocks.length - 1, idx + 1)); }} />
+                    <IconButton label="Duplicate" size="sm" icon={<span aria-hidden="true">⧉</span>} onClick={e => { e.stopPropagation(); duplicateBlock(block.id); }} />
+                    <IconButton label="Delete" size="sm" variant="danger" icon={<span aria-hidden="true">✕</span>} onClick={e => { e.stopPropagation(); removeBlock(block.id); }} />
                   </div>
                 </div>
 

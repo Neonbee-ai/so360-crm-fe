@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Button, Badge, EmptyState } from '@so360/design-system';
+import { Button, Badge, EmptyState, IconButton, TextField, NumberInput, Select } from '@so360/design-system';
 import { Modal } from '../../components/common/Modal';
-import { Package, Plus, Trash2, ChevronDown, Loader2, Search, AlertCircle, Check, Sparkles } from 'lucide-react';
+import { Package, Plus, Trash2, Loader2, Search, AlertCircle, Check, Sparkles } from 'lucide-react';
 import { crmService } from '../../services/crmService';
 import { LeadProduct, ProductInterestStatus, InventoryItem } from '../../types/crm';
 import { useCRMFormatters } from '../../utils/formatters';
@@ -140,13 +140,14 @@ function AddProductModal({ onClose, onAdd, existingItemIds, unitBooking = false 
                 {!selected ? (
                     <>
                         <div className="relative mb-4">
-                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" />
-                            <input
+                            <TextField
+                                name="product-search"
+                                aria-label="Search products"
+                                leadingIcon={Search}
                                 autoFocus
                                 value={query}
                                 onChange={e => setQuery(e.target.value)}
                                 placeholder="Search product name or SKU…"
-                                className="w-full bg-surface-raised border border-line rounded-nb pl-9 pr-4 py-2.5 text-sm text-fg placeholder-fg-subtle focus:outline-none focus:border-primary"
                             />
                         </div>
                         {unitBooking && (
@@ -168,12 +169,9 @@ function AddProductModal({ onClose, onAdd, existingItemIds, unitBooking = false 
                             <div className="flex flex-col items-center gap-3 py-8 text-center">
                                 <AlertCircle size={24} className="text-danger" />
                                 <p className="text-xs text-fg-subtle max-w-xs">{error}</p>
-                                <button
-                                    onClick={() => setReloadToken(t => t + 1)}
-                                    className="px-4 py-2 bg-surface-raised border border-line hover:border-primary/50 rounded-nb text-xs font-medium text-fg-subtle transition-all"
-                                >
+                                <Button variant="secondary" size="sm" type="button" onClick={() => setReloadToken(t => t + 1)}>
                                     Retry
-                                </button>
+                                </Button>
                             </div>
                         )}
                         {/* Empty state is for "nothing matched" only — a failed load
@@ -233,17 +231,10 @@ function AddProductModal({ onClose, onAdd, existingItemIds, unitBooking = false 
                         <div className="p-4 bg-surface-raised border border-line rounded-nb">
                             <p className="text-xs font-medium text-fg">{selected.name}</p>
                             {selected.sku && <p className="text-xs text-fg-muted font-medium mt-0.5">SKU: {selected.sku}</p>}
-                            <button onClick={() => setSelected(null)} className="mt-2 text-xs text-fg-muted hover:text-primary font-medium transition-colors">← Change Product</button>
+                            <Button variant="secondary" size="sm" type="button" onClick={() => setSelected(null)}>← Change Product</Button>
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-fg-muted mb-2">Quantity</label>
-                            <input
-                                type="number"
-                                min={1}
-                                value={qty}
-                                onChange={e => setQty(Math.max(1, parseInt(e.target.value) || 1))}
-                                className="w-full bg-surface-raised border border-line rounded-nb px-4 py-2.5 text-sm text-fg focus:outline-none focus:border-primary"
-                            />
+                            <NumberInput name="product-qty" label="Quantity" min={1} value={qty} onChange={v => setQty(Math.max(1, Math.floor(v || 1)))} />
                         </div>
                     </div>
                 )}
@@ -434,26 +425,27 @@ export default function LeadProductsTab({ leadId, onStatsChange }: Props) {
                                             </p>
                                         )}
                                     </div>
-                                    <button
+                                    <IconButton
+                                        label="Remove product"
+                                        variant="danger"
+                                        className="opacity-0 group-hover:opacity-100"
+                                        icon={<Trash2 size={12} />}
                                         onClick={() => handleRemove(product.id)}
-                                        className="opacity-0 group-hover:opacity-100 p-1.5 text-fg-muted hover:text-danger transition-all"
-                                    >
-                                        <Trash2 size={12} />
-                                    </button>
+                                    />
                                 </div>
 
                                 <div className="flex items-center gap-4 mt-3 flex-wrap">
                                     {/* Quantity */}
                                     <div className="flex items-center gap-2">
                                         <span className="text-xs font-medium text-fg-muted">Qty</span>
-                                        <input
-                                            type="number"
+                                        <NumberInput
+                                            name={`product-qty-${product.id}`}
+                                            aria-label="Quantity"
+                                            size="sm"
                                             min={1}
                                             value={product.quantity}
                                             disabled={updatingId === product.id}
-                                            onChange={e => handleQtyChange(product, parseInt(e.target.value) || 1)}
-                                            onBlur={e => handleQtyChange(product, parseInt(e.target.value) || 1)}
-                                            className="w-16 bg-surface-raised border border-line rounded-nb px-2 py-1 text-xs text-fg text-center focus:outline-none focus:border-primary"
+                                            onChange={v => handleQtyChange(product, Math.floor(v || 1))}
                                         />
                                     </div>
 
@@ -472,18 +464,16 @@ export default function LeadProductsTab({ leadId, onStatsChange }: Props) {
                                     )}
 
                                     {/* Status */}
-                                    <div className="relative ml-auto">
-                                        <select
+                                    <div className="ml-auto">
+                                        <Select
+                                            name={`product-status-${product.id}`}
+                                            aria-label="Status"
+                                            size="sm"
                                             value={product.status}
                                             disabled={updatingId === product.id}
+                                            options={STATUS_OPTIONS.map(o => ({ value: o.value, label: o.label }))}
                                             onChange={e => handleStatusChange(product, e.target.value as ProductInterestStatus)}
-                                            className={`appearance-none text-xs font-medium px-2.5 py-1 rounded-nb border-0 cursor-pointer focus:outline-none pr-6 ${statusStyle(product.status)}`}
-                                        >
-                                            {STATUS_OPTIONS.map(s => (
-                                                <option key={s.value} value={s.value}>{s.label}</option>
-                                            ))}
-                                        </select>
-                                        <ChevronDown size={10} className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-current opacity-60" />
+                                        />
                                     </div>
                                 </div>
                             </div>

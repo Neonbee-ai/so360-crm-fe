@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { Button } from '@so360/design-system';
+import { Button, TextField, Select, Checkbox } from '@so360/design-system';
 import { Modal } from '../common/Modal';
 import { stakeholderApi } from '../../services/crmService';
 import { Stakeholder, StakeholderRole, BuyingCommitteeRole, RelationshipStrength } from '../../types/crm';
 import StakeholderRolesEditor from './StakeholderRolesEditor';
-
-const INPUT = 'w-full bg-surface border border-line rounded-nb px-3 py-2 text-xs text-fg outline-none focus:border-primary';
 
 interface Props {
     leadId: string;
@@ -89,16 +87,16 @@ const StakeholderProfileModal: React.FC<Props> = ({ leadId, stakeholder, onClose
                     {error && <div className="bg-danger/10 border border-danger/20 text-danger text-xs rounded-nb px-3 py-2">{error}</div>}
 
                     <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
-                        <Field label="First Name"><input value={form.first_name} onChange={(e) => set('first_name', e.target.value)} className={INPUT} /></Field>
-                        <Field label="Last Name"><input value={form.last_name} onChange={(e) => set('last_name', e.target.value)} className={INPUT} /></Field>
-                        <Field label="Job Title"><input value={form.job_title} onChange={(e) => set('job_title', e.target.value)} className={INPUT} /></Field>
-                        <Field label="Department"><input value={form.department} onChange={(e) => set('department', e.target.value)} className={INPUT} /></Field>
-                        <Field label="Company"><input value={form.company_name} onChange={(e) => set('company_name', e.target.value)} className={INPUT} /></Field>
-                        <Field label="Time Zone"><input value={form.time_zone} onChange={(e) => set('time_zone', e.target.value)} className={INPUT} /></Field>
-                        <Field label="Email"><input type="email" value={form.email} onChange={(e) => set('email', e.target.value)} className={INPUT} /></Field>
-                        <Field label="Phone"><input value={form.phone} onChange={(e) => set('phone', e.target.value)} className={INPUT} /></Field>
-                        <Field label="Mobile"><input value={form.mobile_phone} onChange={(e) => set('mobile_phone', e.target.value)} className={INPUT} /></Field>
-                        <Field label="LinkedIn URL"><input value={form.linkedin_url} onChange={(e) => set('linkedin_url', e.target.value)} className={INPUT} /></Field>
+                        <TextField name="first_name" label="First Name" value={form.first_name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('first_name', e.target.value)} />
+                        <TextField name="last_name" label="Last Name" value={form.last_name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('last_name', e.target.value)} />
+                        <TextField name="job_title" label="Job Title" value={form.job_title} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('job_title', e.target.value)} />
+                        <TextField name="department" label="Department" value={form.department} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('department', e.target.value)} />
+                        <TextField name="company_name" label="Company" value={form.company_name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('company_name', e.target.value)} />
+                        <TextField name="time_zone" label="Time Zone" value={form.time_zone} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('time_zone', e.target.value)} />
+                        <TextField name="email" label="Email" type="email" value={form.email} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('email', e.target.value)} />
+                        <TextField name="phone" label="Phone" value={form.phone} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('phone', e.target.value)} />
+                        <TextField name="mobile_phone" label="Mobile" value={form.mobile_phone} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('mobile_phone', e.target.value)} />
+                        <TextField name="linkedin_url" label="LinkedIn URL" value={form.linkedin_url} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('linkedin_url', e.target.value)} />
                     </div>
 
                     <Field label="Roles">
@@ -106,31 +104,18 @@ const StakeholderProfileModal: React.FC<Props> = ({ leadId, stakeholder, onClose
                     </Field>
 
                     <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
-                        <Field label="Buying Committee">
-                            <select value={form.buying_committee_role} onChange={(e) => set('buying_committee_role', e.target.value as BuyingCommitteeRole)} className={INPUT}>
-                                {COMMITTEE_OPTIONS.map((o) => <option key={o} value={o}>{o.replace(/_/g, ' ')}</option>)}
-                            </select>
-                        </Field>
-                        <Field label="Relationship Strength">
-                            <select value={form.relationship_strength} onChange={(e) => set('relationship_strength', e.target.value as RelationshipStrength)} className={INPUT}>
-                                {STRENGTH_OPTIONS.map((o) => <option key={o} value={o}>{o.replace(/_/g, ' ')}</option>)}
-                            </select>
-                        </Field>
-                        <Field label="Preferred Contact Method">
-                            <select value={form.preferred_communication_method} onChange={(e) => set('preferred_communication_method', e.target.value)} className={INPUT}>
-                                <option value="">—</option>
-                                {['email', 'phone', 'mobile', 'linkedin', 'sms', 'other'].map((o) => <option key={o} value={o}>{o}</option>)}
-                            </select>
-                        </Field>
-                        <Field label="Preferred Contact Time"><input value={form.preferred_contact_time} onChange={(e) => set('preferred_contact_time', e.target.value)} className={INPUT} /></Field>
-                        <Field label="Preferred Language"><input value={form.preferred_language} onChange={(e) => set('preferred_language', e.target.value)} className={INPUT} /></Field>
+                        <Select name="buying_committee_role" label="Buying Committee" value={form.buying_committee_role} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('buying_committee_role', e.target.value as BuyingCommitteeRole)} options={COMMITTEE_OPTIONS.map((o) => ({ value: o, label: o.replace(/_/g, ' ') }))} />
+                        <Select name="relationship_strength" label="Relationship Strength" value={form.relationship_strength} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('relationship_strength', e.target.value as RelationshipStrength)} options={STRENGTH_OPTIONS.map((o) => ({ value: o, label: o.replace(/_/g, ' ') }))} />
+                        <Select name="preferred_communication_method" label="Preferred Contact Method" value={form.preferred_communication_method} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('preferred_communication_method', e.target.value)} options={[{ value: '', label: '—' }, ...['email', 'phone', 'mobile', 'linkedin', 'sms', 'other'].map((o) => ({ value: o, label: o }))]} />
+                        <TextField name="preferred_contact_time" label="Preferred Contact Time" value={form.preferred_contact_time} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('preferred_contact_time', e.target.value)} />
+                        <TextField name="preferred_language" label="Preferred Language" value={form.preferred_language} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('preferred_language', e.target.value)} />
                     </div>
 
                     <div className="flex flex-wrap items-center gap-4 pt-1">
-                        <Checkbox label="Active" checked={form.is_active} onChange={(v) => set('is_active', v)} />
-                        <Checkbox label="Primary Contact" checked={form.is_primary_contact} onChange={(v) => set('is_primary_contact', v)} />
-                        <Checkbox label="Do Not Contact" checked={form.do_not_contact} onChange={(v) => set('do_not_contact', v)} />
-                        <Checkbox label="Marketing Opt-Out" checked={form.marketing_opt_out} onChange={(v) => set('marketing_opt_out', v)} />
+                        <Checkbox name="is_active" label="Active" checked={form.is_active} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('is_active', e.target.checked)} />
+                        <Checkbox name="is_primary_contact" label="Primary Contact" checked={form.is_primary_contact} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('is_primary_contact', e.target.checked)} />
+                        <Checkbox name="do_not_contact" label="Do Not Contact" checked={form.do_not_contact} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('do_not_contact', e.target.checked)} />
+                        <Checkbox name="marketing_opt_out" label="Marketing Opt-Out" checked={form.marketing_opt_out} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('marketing_opt_out', e.target.checked)} />
                     </div>
                 </div>
 
@@ -142,13 +127,6 @@ const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, 
     <label className="block">
         <span className="block text-xs font-medium text-fg-muted mb-1">{label}</span>
         {children}
-    </label>
-);
-
-const Checkbox: React.FC<{ label: string; checked: boolean; onChange: (v: boolean) => void }> = ({ label, checked, onChange }) => (
-    <label className="flex items-center gap-1.5 text-xs text-fg-subtle cursor-pointer">
-        <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="rounded border-line bg-surface" />
-        {label}
     </label>
 );
 

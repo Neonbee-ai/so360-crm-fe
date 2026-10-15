@@ -101,7 +101,7 @@ describe('Given the merge panel for a kept lead', () => {
             const onClose = vi.fn();
             render(<MergeLeadPanel keepLead={keep} onClose={onClose} onMerged={vi.fn()} />);
             fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-            fireEvent.click(screen.getByRole('button', { name: 'Close merge panel' }));
+            fireEvent.click(screen.getByRole('button', { name: 'Close' }));
             expect(onClose).toHaveBeenCalledTimes(2);
         });
     });

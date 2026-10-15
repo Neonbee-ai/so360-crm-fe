@@ -4,9 +4,18 @@ import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
 import { formatDateTime, formatMoney, mapAbandonedCart } from './marketing/marketingMappers';
 import { useBusinessSettings } from '@so360/shell-context';
-import { Button, Card, KpiCard, ListPageTemplate } from '@so360/design-system';
+import { Badge, DataTable, EmptyState, KpiCard, ListPageTemplate, SearchInput } from '@so360/design-system';
+import type { DataTableColumn, FilterValues } from '@so360/design-system';
 
 const STORE_KEY = 'crm_marketing_store_id';
+
+const STATUS_OPTIONS = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'email_sent', label: 'Email Sent' },
+  { value: 'recovered', label: 'Recovered' },
+  { value: 'expired', label: 'Expired' },
+];
+const STATUS_TONE: Record<string, any> = { recovered: 'success', pending: 'warning', email_sent: 'info' };
 
 const MarketingAbandonedCartsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -17,6 +26,7 @@ const MarketingAbandonedCartsPage: React.FC = () => {
   const [stats, setStats] = useState<any>(null);
   const [rows, setRows] = useState<any[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('');
+  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,29 +67,44 @@ const MarketingAbandonedCartsPage: React.FC = () => {
     ];
   }, [stats, currencyCode, locale]);
 
+  const visibleRows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return q ? rows.filter((r) => (r.customerEmail || '').toLowerCase().includes(q)) : rows;
+  }, [rows, search]);
+
+  const columns: DataTableColumn<any>[] = [
+    { key: 'customerEmail', header: 'Customer Email', sortable: true, sortValue: (r) => r.customerEmail || '', render: (r) => <span className="text-fg font-medium">{r.customerEmail || '-'}</span> },
+    { key: 'itemCount', header: 'Items', align: 'right', sortable: true, sortValue: (r) => Number(r.itemCount || 0), render: (r) => <>{r.itemCount} <span className="text-fg-muted text-xs">items</span></> },
+    { key: 'cartTotal', header: 'Cart Total', align: 'right', sortable: true, sortValue: (r) => Number(r.cartTotal || 0), render: (r) => formatMoney(r.cartTotal, currencyCode, locale) },
+    { key: 'status', header: 'Status', render: (r) => <Badge tone={STATUS_TONE[r.status] || 'neutral'}>{(r.status || '-').replace('_', ' ').toUpperCase()}</Badge> },
+    { key: 'abandonedAt', header: 'Abandoned At', sortable: true, sortValue: (r) => r.abandonedAt || '', render: (r) => <span className="text-fg-subtle text-xs">{formatDateTime(r.abandonedAt)}</span> },
+  ];
+
+  const rowActions = (row: any) => [
+    { label: 'View', onSelect: () => navigate(`/crm/marketing/abandoned-carts/${row.id}`) },
+    ...(row.status !== 'recovered' ? [
+      { label: 'Send Recovery', onSelect: async () => { await crmService.sendAbandonedCartRecovery(storeId, row.id); await load(); } },
+      { label: 'Mark Recovered', onSelect: async () => { await crmService.updateAbandonedCartStatus(storeId, row.id, 'recovered'); await load(); } },
+    ] : []),
+  ];
+
+  const filterValues: FilterValues = { status: statusFilter };
+
   return (
     <ListPageTemplate
       title="Abandoned Carts"
       description="Managed from CRM, sourced from Storefront."
-      filters={
-        <select
-          aria-label="Status filter"
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="h-nb-control-md rounded-nb border border-line bg-surface px-3 text-sm text-fg outline-none focus:border-primary"
-        >
-          <option value="">All Carts</option>
-          <option value="pending">Pending</option>
-          <option value="email_sent">Email Sent</option>
-          <option value="recovered">Recovered</option>
-          <option value="expired">Expired</option>
-        </select>
-      }
+      count={visibleRows.length}
+      search={<SearchInput value={search} onChange={setSearch} placeholder="Search by customer email" />}
+      filterConfig={{
+        fields: [{ key: 'status', label: 'Status', type: 'select', quick: true, options: STATUS_OPTIONS }],
+        values: filterValues,
+        onChange: (v: FilterValues) => setStatusFilter(String(v.status || '')),
+        onClear: () => setStatusFilter(''),
+      }}
       toolbarEnd={<MarketingStorePicker storeId={storeId} onChange={applyStore} />}
     >
-
-      {loading && <p className="text-fg-subtle">Loading...</p>}
-      {error && <p className="text-danger mb-3">{error}</p>}
+      {error && <p className="text-danger mb-nb-3">{error}</p>}
 
       {cards.length > 0 && (
         <div className="grid grid-cols-2 wc-medium:grid-cols-4 gap-nb-3 mb-nb-3">
@@ -89,86 +114,15 @@ const MarketingAbandonedCartsPage: React.FC = () => {
         </div>
       )}
 
-      <Card title="Abandoned Carts" padding="none">
-        <div className="w-full overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-surface-raised text-fg-subtle font-medium">
-              <tr>
-                <th className="px-4 py-3 font-semibold">Customer Email</th>
-                <th className="px-4 py-3 font-semibold">Items</th>
-                <th className="px-4 py-3 font-semibold">Cart Total</th>
-                <th className="px-4 py-3 font-semibold">Status</th>
-                <th className="px-4 py-3 font-semibold">Abandoned At</th>
-                <th className="px-4 py-3 font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line border-t border-line">
-              {rows.map((row) => (
-                <tr key={row.id} className="hover:bg-surface-high transition-colors">
-                  <td className="px-4 py-3 text-fg font-medium">{row.customerEmail || '-'}</td>
-                  <td className="px-4 py-3 text-fg-subtle">
-                    {row.itemCount} <span className="text-fg-muted text-xs ml-1">items</span>
-                  </td>
-                  <td className="px-4 py-3 text-fg">{formatMoney(row.cartTotal, currencyCode, locale)}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`px-2.5 py-1 rounded-full text-xs font-medium ${row.status === 'recovered'
-                        ? 'bg-success/10 text-success'
-                        : row.status === 'pending'
-                          ? 'bg-warning/10 text-warning'
-                          : row.status === 'email_sent'
-                            ? 'bg-primary/10 text-primary'
-                            : 'bg-surface-raised text-fg-subtle'
-                        }`}
-                    >
-                      {(row.status || '-').replace('_', ' ').toUpperCase()}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-fg-subtle text-xs">{formatDateTime(row.abandonedAt)}</td>
-                  <td className="px-4 py-3 flex items-center gap-2">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => navigate(`/crm/marketing/abandoned-carts/${row.id}`)}
-                    >
-                      View
-                    </Button>
-                    {row.status !== 'recovered' && (
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={async () => {
-                          await crmService.sendAbandonedCartRecovery(storeId, row.id);
-                          await load();
-                        }}
-                      >
-                        Send Recovery
-                      </Button>
-                    )}
-                    {row.status !== 'recovered' && (
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={async () => {
-                          await crmService.updateAbandonedCartStatus(storeId, row.id, 'recovered');
-                          await load();
-                        }}
-                      >
-                        Mark Recovered
-                      </Button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {rows.length === 0 && !loading && (
-                <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-fg-muted text-sm">No abandoned carts found matching criteria.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+      <DataTable
+        columns={columns}
+        rows={visibleRows}
+        rowKey={(r: any) => r.id}
+        loading={loading}
+        rowActions={rowActions}
+        getRowProps={(r: any) => ({ 'data-testid': `abandoned-cart-row-${r.id}` })}
+        emptyState={<EmptyState title="No abandoned carts found matching criteria." />}
+      />
     </ListPageTemplate>
   );
 };

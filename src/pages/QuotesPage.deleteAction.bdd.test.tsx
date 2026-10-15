@@ -68,7 +68,7 @@ describe('QuotesPage — delete action (real Table)', () => {
       render(<QuotesPage />);
       await waitFor(() => expect(screen.getByText('QT-2026-00022')).toBeInTheDocument());
 
-      await user.click(screen.getAllByTitle('More actions')[0]);
+      await user.click(screen.getAllByLabelText('Row actions')[0]);
       await user.click(await screen.findByRole('menuitem', { name: /Delete Quote/ }));
 
       expect(mockNavigate).not.toHaveBeenCalled();
@@ -79,7 +79,7 @@ describe('QuotesPage — delete action (real Table)', () => {
       const user = userEvent.setup();
       render(<QuotesPage />);
       await waitFor(() => expect(screen.getByText('QT-2026-00022')).toBeInTheDocument());
-      await user.click(screen.getAllByTitle('More actions')[0]);
+      await user.click(screen.getAllByLabelText('Row actions')[0]);
       await user.click(await screen.findByRole('menuitem', { name: /Delete Quote/ }));
       await waitFor(() => {
         // The number now appears twice — in the table row it was clicked from,
@@ -95,7 +95,7 @@ describe('QuotesPage — delete action (real Table)', () => {
       const user = userEvent.setup();
       render(<QuotesPage />);
       await waitFor(() => expect(screen.getByText('QT-2026-00022')).toBeInTheDocument());
-      await user.click(screen.getAllByTitle('More actions')[0]);
+      await user.click(screen.getAllByLabelText('Row actions')[0]);
       await user.click(await screen.findByRole('menuitem', { name: /Delete Quote/ }));
       await waitFor(() => expect(screen.getByText('Delete Quote?')).toBeInTheDocument());
 
@@ -111,7 +111,7 @@ describe('QuotesPage — delete action (real Table)', () => {
       const user = userEvent.setup();
       render(<QuotesPage />);
       await waitFor(() => expect(screen.getByText('QT-2026-00022')).toBeInTheDocument());
-      await user.click(screen.getAllByTitle('More actions')[0]);
+      await user.click(screen.getAllByLabelText('Row actions')[0]);
       await user.click(await screen.findByRole('menuitem', { name: /Delete Quote/ }));
       await waitFor(() => expect(screen.getByText('Delete Quote?')).toBeInTheDocument());
 
@@ -128,7 +128,7 @@ describe('QuotesPage — delete action (real Table)', () => {
       mockDeleteQuote.mockReturnValueOnce(new Promise((resolve) => { resolveDelete = resolve; }));
       render(<QuotesPage />);
       await waitFor(() => expect(screen.getByText('QT-2026-00022')).toBeInTheDocument());
-      await user.click(screen.getAllByTitle('More actions')[0]);
+      await user.click(screen.getAllByLabelText('Row actions')[0]);
       await user.click(await screen.findByRole('menuitem', { name: /Delete Quote/ }));
       await waitFor(() => expect(screen.getByText('Delete Quote?')).toBeInTheDocument());
 
@@ -145,7 +145,7 @@ describe('QuotesPage — delete action (real Table)', () => {
       const user = userEvent.setup();
       render(<QuotesPage />);
       await waitFor(() => expect(screen.getByText('QT-2026-00022')).toBeInTheDocument());
-      await user.click(screen.getAllByTitle('More actions')[0]);
+      await user.click(screen.getAllByLabelText('Row actions')[0]);
       await user.click(await screen.findByRole('menuitem', { name: /Delete Quote/ }));
       await waitFor(() => expect(screen.getByText('Delete Quote?')).toBeInTheDocument());
 
@@ -163,7 +163,7 @@ describe('QuotesPage — delete action (real Table)', () => {
       // only the draft quote (q1) exposes delete
       // only the draft quote (q1) exposes delete in its kebab menu
       const user = userEvent.setup();
-      await user.click(screen.getAllByTitle('More actions')[1]);
+      await user.click(screen.getAllByLabelText('Row actions')[1]);
       await screen.findByRole('menuitem', { name: /View Quote Details/ });
       expect(screen.queryByRole('menuitem', { name: /Delete Quote/ })).not.toBeInTheDocument();
     });
@@ -174,7 +174,7 @@ describe('QuotesPage — delete action (real Table)', () => {
       const user = userEvent.setup();
       render(<QuotesPage />);
       await waitFor(() => expect(screen.getByText('QT-2026-00022')).toBeInTheDocument());
-      await user.click(screen.getAllByTitle('More actions')[0]);
+      await user.click(screen.getAllByLabelText('Row actions')[0]);
       await user.click(await screen.findByRole('menuitem', { name: /View Quote Details/ }));
       // The list records where the reader came from, so Quote Detail's Back
       // control returns here rather than falling through to the linked deal.

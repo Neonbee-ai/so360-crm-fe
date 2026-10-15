@@ -79,21 +79,6 @@ vi.mock('@so360/design-system', async () => ({
       {children}
     </button>
   ),
-  Menu: ({ trigger, items }: any) => {
-    const [open, setOpen] = React.useState(false);
-    return (
-      <>
-        {React.cloneElement(trigger, { onClick: () => setOpen((v: boolean) => !v) })}
-        {open && (
-          <div role="menu">
-            {items.map((i: any) => (
-              <div key={i.label} role="menuitem" onClick={() => { i.onSelect(); setOpen(false); }}>{i.label}</div>
-            ))}
-          </div>
-        )}
-      </>
-    );
-  },
 }));
 
 vi.mock('@so360/shell-context', () => ({
@@ -264,8 +249,8 @@ describe('MarketingCampaignsPage BDD', () => {
       renderPage();
       await waitFor(() => expect(screen.getByText('Summer Sale')).toBeInTheDocument());
 
-      const viewBtns = screen.getAllByRole('button', { name: /^view$/i });
-      await user.click(viewBtns[0]);
+      await user.click(screen.getByTestId('datatable-actions-camp-1'));
+      await user.click(screen.getByRole('menuitem', { name: /^view$/i }));
       expect(mockNavigate).toHaveBeenCalledWith('/crm/marketing/campaigns/camp-1');
     });
 
@@ -274,8 +259,8 @@ describe('MarketingCampaignsPage BDD', () => {
       renderPage();
       await waitFor(() => expect(screen.getByText('Win-Back Series')).toBeInTheDocument());
 
-      const sendBtns = screen.getAllByRole('button', { name: /^send$/i });
-      await user.click(sendBtns[0]);
+      await user.click(screen.getByTestId('datatable-actions-camp-2'));
+      await user.click(screen.getByRole('menuitem', { name: /^send$/i }));
       await waitFor(() => {
         expect(mockSendCampaignNow).toHaveBeenCalled();
       });
@@ -286,8 +271,8 @@ describe('MarketingCampaignsPage BDD', () => {
       renderPage();
       await waitFor(() => expect(screen.getByText('Flash Campaign')).toBeInTheDocument());
 
-      const pauseBtns = screen.getAllByRole('button', { name: /^pause$/i });
-      await user.click(pauseBtns[0]);
+      await user.click(screen.getByTestId('datatable-actions-camp-3'));
+      await user.click(screen.getByRole('menuitem', { name: /^pause$/i }));
       await waitFor(() => {
         expect(mockPauseCampaign).toHaveBeenCalled();
       });
@@ -298,23 +283,21 @@ describe('MarketingCampaignsPage BDD', () => {
       renderPage();
       await waitFor(() => expect(screen.getByText('Summer Sale')).toBeInTheDocument());
 
-      const kebabs = screen.getAllByText('\u22EE');
-      await user.click(kebabs[0]);
+      await user.click(screen.getByTestId('datatable-actions-camp-1'));
       await user.click(screen.getByRole('menuitem', { name: /^delete$/i }));
       await waitFor(() => {
         expect(mockDeleteCampaign).toHaveBeenCalledWith('store-1', 'camp-1');
       });
     });
 
-    it('When campaign is sent / Then does not show Send button for it', async () => {
+    it('When campaign is sent / Then does not offer Send in its row actions', async () => {
       renderPage();
       await waitFor(() => expect(screen.getByText('Summer Sale')).toBeInTheDocument());
-      // Sent campaign should not have Send button (only draft/scheduled ones do)
-      // The page conditionally shows Send button only when status !== 'sent'
-      // We verify this is working by checking we only have 2 Send buttons (for draft + sending campaigns)
-      const sendBtns = screen.queryAllByRole('button', { name: /^send$/i });
-      // draft (camp-2) has Send; sending (camp-3) has Send; sent (camp-1) does NOT
-      expect(sendBtns.length).toBe(2);
+      const user = userEvent.setup();
+      await user.click(screen.getByTestId('datatable-actions-camp-1'));
+      expect(screen.queryByRole('menuitem', { name: /^send$/i })).not.toBeInTheDocument();
+      await user.click(screen.getByTestId('datatable-actions-camp-2'));
+      expect(screen.getByRole('menuitem', { name: /^send$/i })).toBeInTheDocument();
     });
   });
 

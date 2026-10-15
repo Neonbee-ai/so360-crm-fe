@@ -21,7 +21,7 @@ import {
   ShieldCheck,
   Loader2,
 } from 'lucide-react';
-import { Card, EmptyState, Tabs } from '@so360/design-system';
+import { Card, EmptyState, Tabs, Button, IconButton, Select } from '@so360/design-system';
 import { Lead, Activity as ActivityType, Deal, Task, TASK_PRIORITY_STYLES, User as CrmUser, SourceTypeOption, CustomFieldDefinition } from '../../types/crm';
 import { crmService, settingsApi } from '../../services/crmService';
 import { useEntityTimeline } from '../../pages/components/timeline/useEntityTimeline';
@@ -62,14 +62,6 @@ const TASK_STATUS_OPTIONS: Array<{ value: Task['status']; label: string }> = [
   { value: 'ON_HOLD', label: 'On Hold' },
   { value: 'CANCELLED', label: 'Cancelled' },
 ];
-
-const TASK_STATUS_STYLES: Record<string, string> = {
-  OPEN: 'bg-surface-high text-fg-subtle',
-  IN_PROGRESS: 'bg-info/15 text-primary',
-  DONE: 'bg-success/15 text-success',
-  ON_HOLD: 'bg-warning/15 text-warning',
-  CANCELLED: 'bg-surface-raised text-fg-muted',
-};
 
 /** A task counts as overdue when its due date has passed and it is neither
  *  completed nor cancelled. Compared date-only so a task due today is not
@@ -352,13 +344,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                   </div>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  <button
-                    onClick={onClose}
-                    className="p-2 text-fg-subtle hover:text-fg hover:bg-surface-raised rounded-lg transition-colors"
-                    title="Close"
-                  >
-                    <X size={15} />
-                  </button>
+                  <IconButton label="Close" icon={<X size={15} />} onClick={onClose} />
                 </div>
               </div>
 
@@ -404,13 +390,10 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                   Call
                 </a>
               )}
-              <button
-                onClick={() => onNavigate(lead)}
-                className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-primary bg-primary/10 hover:bg-primary/20 transition-colors"
-              >
+              <Button type="button" variant="secondary" size="sm" className="ml-auto" onClick={() => onNavigate(lead)}>
                 View full profile
                 <ChevronRight size={13} />
-              </button>
+              </Button>
             </div>
 
             {/* Tabs */}
@@ -616,12 +599,9 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                       {/* Quick View shows a page of the newest events; the full
                           history lives on the lead's own page. */}
                       {timeline.hasMore && (
-                        <button
-                          onClick={() => onNavigate(lead)}
-                          className="w-full mt-4 py-2 rounded-lg text-xs font-medium text-primary bg-primary/10 hover:bg-primary/20 transition-colors"
-                        >
+                        <Button type="button" variant="secondary" size="sm" className="w-full mt-4" onClick={() => onNavigate(lead)}>
                           View full history
-                        </button>
+                        </Button>
                       )}
                     </>
                   )}
@@ -747,7 +727,9 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                                   navigation. The click is stopped here so
                                   using the selector doesn't also open the task. */}
                               <div className="mt-2" onClick={(e) => e.stopPropagation()}>
-                                <select
+                                <Select
+                                  name={`lead-task-status-${task.id}`}
+                                  options={TASK_STATUS_OPTIONS.map((s) => ({ value: s.value, label: s.label }))}
                                   value={task.status}
                                   disabled={taskUpdatingId === task.id}
                                   aria-label={`Status for ${task.title}`}
@@ -774,14 +756,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                                       setTaskUpdatingId(null);
                                     }
                                   }}
-                                  className={`appearance-none text-xs font-semibold px-2 py-1 rounded border-0 cursor-pointer focus:outline-none disabled:opacity-50 ${
-                                    TASK_STATUS_STYLES[task.status] ?? 'bg-surface-raised text-fg-subtle'
-                                  }`}
-                                >
-                                  {TASK_STATUS_OPTIONS.map((s) => (
-                                    <option key={s.value} value={s.value}>{s.label}</option>
-                                  ))}
-                                </select>
+                                />
                               </div>
                             </div>
                           </div>
@@ -863,12 +838,9 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
             {/* Footer */}
             {onDelete && (
               <div className="px-5 py-3 border-t border-line">
-                <button
-                  onClick={() => onDelete(lead)}
-                  className="w-full text-center text-xs text-danger hover:text-danger transition-colors py-1"
-                >
+                <Button type="button" variant="danger" size="sm" className="w-full" onClick={() => onDelete(lead)}>
                   Delete this lead
-                </button>
+                </Button>
               </div>
             )}
           </>

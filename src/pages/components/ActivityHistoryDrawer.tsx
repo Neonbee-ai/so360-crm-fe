@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
-import { X, Search, Loader2, ChevronDown } from 'lucide-react';
+import { Search, Loader2, ChevronDown } from 'lucide-react';
 import { useEntityTimeline } from './timeline/useEntityTimeline';
 import TimelineEventCard from './timeline/TimelineEventCard';
 import TimelineSummaryBanner from './timeline/TimelineSummaryBanner';
 import { activitiesApi } from '../../services/crmService';
-import { useConfirm } from '@so360/design-system';
+import { useConfirm, Button, Drawer, TextField } from '@so360/design-system';
 
 interface Props {
     isOpen: boolean;
@@ -51,39 +51,27 @@ const ActivityHistoryDrawer: React.FC<Props> = ({ isOpen, onClose, entityType, e
     return (
         <>
             {confirmDialog}
-            {/* Overlay */}
-            <div
-                className="fixed inset-0 bg-overlay backdrop-blur-sm z-drawer"
-                onClick={onClose}
-            />
-
-            {/* Drawer — starts below the shell's fixed 56px (h-14) glass-nav header so the title/close controls are never clipped */}
-            <div className="fixed right-0 top-14 h-[calc(100vh-3.5rem)] w-full sm:max-w-md lg:max-w-lg bg-bg border-l border-line z-drawer flex flex-col">
-                {/* Header */}
-                <div className="flex items-center justify-between px-5 py-4 border-b border-line shrink-0">
-                    <div>
-                        <p className="text-xs font-medium text-fg">Activity History</p>
-                        <p className="text-xs text-fg-muted mt-0.5">
-                            {timeline.events.length > 0 ? `${timeline.events.length} loaded` : 'Loading…'}
-                        </p>
-                    </div>
-                    <button onClick={onClose} className="p-1.5 text-fg-muted hover:text-fg transition-colors rounded-nb hover:bg-surface-raised">
-                        <X size={16} />
-                    </button>
-                </div>
-
+            <Drawer
+                isOpen={isOpen}
+                onClose={onClose}
+                title="Activity History"
+                subtitle={timeline.events.length > 0 ? `${timeline.events.length} loaded` : 'Loading…'}
+                size="md"
+                data-testid="activity-history-drawer"
+            >
+              <div className="-mx-6 -my-5">
                 {/* Search */}
                 <div className="px-4 py-3 border-b border-line shrink-0">
-                    <div className="relative">
-                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none" />
-                        <input
-                            type="text"
-                            placeholder="Search activities…"
-                            value={timeline.search}
-                            onChange={e => timeline.setSearch(e.target.value)}
-                            className="w-full bg-surface border border-line rounded-nb pl-9 pr-3 py-2 text-xs text-fg placeholder-fg-subtle focus:outline-none focus:border-line transition-colors"
-                        />
-                    </div>
+                    <TextField
+                        name="activity-search"
+                        aria-label="Search activities"
+                        type="text"
+                        size="sm"
+                        leadingIcon={Search}
+                        placeholder="Search activities…"
+                        value={timeline.search}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => timeline.setSearch(e.target.value)}
+                    />
                 </div>
 
                 {/* Filters */}
@@ -151,7 +139,7 @@ const ActivityHistoryDrawer: React.FC<Props> = ({ isOpen, onClose, entityType, e
                 )}
 
                 {/* Timeline */}
-                <div className="flex-1 overflow-y-auto">
+                <div>
                     {timeline.loading ? (
                         <div className="flex items-center justify-center gap-2 py-16 text-fg-muted">
                             <Loader2 size={16} className="animate-spin" />
@@ -196,20 +184,17 @@ const ActivityHistoryDrawer: React.FC<Props> = ({ isOpen, onClose, entityType, e
                             {/* Load More */}
                             {timeline.hasMore && (
                                 <div className="flex justify-center pt-2 pb-4">
-                                    <button
-                                        onClick={timeline.loadMore}
-                                        disabled={timeline.loadingMore}
-                                        className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-fg-subtle hover:text-fg bg-surface-raised hover:bg-line rounded-nb transition-colors disabled:opacity-50"
-                                    >
+                                    <Button type="button" variant="secondary" size="sm" onClick={timeline.loadMore} disabled={timeline.loadingMore}>
                                         {timeline.loadingMore ? <Loader2 size={12} className="animate-spin" /> : <ChevronDown size={12} />}
                                         {timeline.loadingMore ? 'Loading…' : 'Load More'}
-                                    </button>
+                                    </Button>
                                 </div>
                             )}
                         </div>
                     )}
                 </div>
-            </div>
+              </div>
+            </Drawer>
         </>
     );
 };

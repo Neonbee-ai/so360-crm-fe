@@ -20,7 +20,7 @@ import { validatePhone } from '../utils/phoneValidation';
 import { validateFirstNameRequired, validateLastName } from '../utils/leadFieldValidation';
 import { describeApiError } from '../utils/apiErrorMessage';
 import { Lead, Deal, Task, Activity, ActivityType, CustomFieldDefinition, LeadScoringRule, User, Attachment, Note, SourceTypeOption } from '../types/crm';
-import { toast, useConfirm, DetailPageTemplate, Button, Badge, Card, ConfirmDialog, EmptyState } from '@so360/design-system';
+import { toast, useConfirm, DetailPageTemplate, Button, IconButton, TextField, Select, Checkbox, Badge, Card, ConfirmDialog, EmptyState } from '@so360/design-system';
 import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import { Trophy, Zap, Info, TrendingUp, RefreshCw } from 'lucide-react';
 import CreateDealModal from './components/CreateDealModal';
@@ -533,7 +533,8 @@ const LeadDetailPage = () => {
 
     const statusTone = lead.status === 'Converted' ? 'success' : lead.status === 'Lost' ? 'danger' : 'primary';
     const statusNode = isChangingStatus ? (
-                                    <select
+                                    <Select
+                                        name="lead-status"
                                         value={leadStages.find(s => s.name === lead.status)?.id || (lead as any).backend_status || ''}
                                         onChange={async (e) => {
                                             const stageId = e.target.value;
@@ -548,12 +549,8 @@ const LeadDetailPage = () => {
                                         }}
                                         onBlur={() => setIsChangingStatus(false)}
                                         autoFocus
-                                        className="bg-surface border border-line text-xs font-medium text-fg rounded-nb px-2 py-1 outline-none focus-visible:ring-2 focus-visible:ring-focus"
-                                    >
-                                        {leadStages.map(stage => (
-                                            <option key={stage.id} value={stage.id}>{stage.name}</option>
-                                        ))}
-                                    </select>
+                                        options={leadStages.map(stage => ({ value: stage.id, label: stage.name }))}
+                                    />
     ) : (
         <div className="flex items-center gap-2 group cursor-pointer" onClick={() => setIsChangingStatus(true)}>
             <Badge size="sm" tone={statusTone}>{lead.status}</Badge>
@@ -1063,8 +1060,12 @@ const LeadDetailPage = () => {
                                 <Building2 size={14} /> Business Profile
                             </button>
                             <div className="ml-auto flex items-center px-4">
-                                <button
+                                <IconButton
+                                    label={isSavingInfo ? 'Saving…' : isEditingInfo ? "Save Changes" : "Edit Intelligence"}
+                                    variant={isEditingInfo ? 'solid' : 'ghost'}
+                                    icon={isSavingInfo ? <Loader2 size={16} className="animate-spin" /> : isEditingInfo ? <CheckCircle2 size={16} /> : <Edit2 size={16} />}
                                     disabled={isSavingInfo}
+                                    aria-busy={isSavingInfo}
                                     onClick={async () => {
                                         if (isEditingInfo) {
                                             const nextErrors = {
@@ -1119,12 +1120,7 @@ const LeadDetailPage = () => {
                                         }
                                         setIsEditingInfo(!isEditingInfo);
                                     }}
-                                    className={`p-2 rounded-nb transition-all disabled:opacity-60 disabled:cursor-wait ${isEditingInfo ? 'bg-primary text-fg ' : 'text-fg-muted hover:text-fg-subtle hover:bg-surface-raised'}`}
-                                    title={isSavingInfo ? 'Saving…' : isEditingInfo ? "Save Changes" : "Edit Intelligence"}
-                                    aria-busy={isSavingInfo}
-                                >
-                                    {isSavingInfo ? <Loader2 size={16} className="animate-spin" /> : isEditingInfo ? <CheckCircle2 size={16} /> : <Edit2 size={16} />}
-                                </button>
+                                />
                             </div>
                         </div>
 
@@ -1139,15 +1135,14 @@ const LeadDetailPage = () => {
                                             <div className="flex flex-col flex-1">
                                                 <span className="text-xs font-medium text-fg-muted mb-0.5">First Name</span>
                                                 {isEditingInfo ? (
-                                                    <input
-                                                        type="text"
+                                                    <TextField
+                                                        name="lead-first-name"
                                                         value={lead.first_name || ''}
                                                         onChange={(e) => {
                                                             setLead({ ...lead, first_name: e.target.value });
                                                             setEditErrors(prev => ({ ...prev, first_name: validateFirstNameRequired(e.target.value) }));
                                                         }}
                                                         aria-invalid={!!editErrors.first_name}
-                                                        className={`bg-bg border text-sm font-medium text-fg rounded px-2 py-1 outline-none ${editErrors.first_name ? 'border-danger' : 'border-line focus:border-primary'}`}
                                                     />
                                                 ) : (
                                                     <span className="text-sm font-medium">{lead.first_name || '—'}</span>
@@ -1164,15 +1159,14 @@ const LeadDetailPage = () => {
                                             <div className="flex flex-col flex-1">
                                                 <span className="text-xs font-medium text-fg-muted mb-0.5">Last Name</span>
                                                 {isEditingInfo ? (
-                                                    <input
-                                                        type="text"
+                                                    <TextField
+                                                        name="lead-last-name"
                                                         value={lead.last_name || ''}
                                                         onChange={(e) => {
                                                             setLead({ ...lead, last_name: e.target.value });
                                                             setEditErrors(prev => ({ ...prev, last_name: validateLastName(e.target.value) }));
                                                         }}
                                                         aria-invalid={!!editErrors.last_name}
-                                                        className={`bg-bg border text-sm font-medium text-fg rounded px-2 py-1 outline-none ${editErrors.last_name ? 'border-danger' : 'border-line focus:border-primary'}`}
                                                     />
                                                 ) : (
                                                     <span className="text-sm font-medium">{lead.last_name || '—'}</span>
@@ -1189,10 +1183,10 @@ const LeadDetailPage = () => {
                                             <div className="flex flex-col flex-1">
                                                 <span className="text-xs font-medium text-fg-muted mb-0.5">Email</span>
                                                 {isEditingInfo ? (
-                                                    <input
+                                                    <TextField
+                                                        name="lead-contact-email"
                                                         /* `text`, not `email`: the browser's native popup
                                                            pre-empted the inline message here too. */
-                                                        type="text"
                                                         inputMode="email"
                                                         value={lead.contact_email}
                                                         onChange={(e) => {
@@ -1200,7 +1194,6 @@ const LeadDetailPage = () => {
                                                             setEditErrors(prev => ({ ...prev, contact_email: validateEmailRequired(e.target.value, 'Email') }));
                                                         }}
                                                         aria-invalid={!!editErrors.contact_email}
-                                                        className={`bg-bg border text-sm font-medium text-fg rounded px-2 py-1 outline-none ${editErrors.contact_email ? 'border-danger' : 'border-line focus:border-primary'}`}
                                                     />
                                                 ) : (
                                                     <a href={`mailto:${lead.contact_email}`} className="text-sm font-medium hover:text-primary transition-colors">{lead.contact_email}</a>
@@ -1217,8 +1210,8 @@ const LeadDetailPage = () => {
                                             <div className="flex flex-col flex-1">
                                                 <span className="text-xs font-medium text-fg-muted mb-0.5">Phone</span>
                                                 {isEditingInfo ? (
-                                                    <input
-                                                        type="text"
+                                                    <TextField
+                                                        name="lead-phone"
                                                         value={lead.phone || ''}
                                                         onChange={(e) => {
                                                             setLead({ ...lead, phone: e.target.value });
@@ -1226,7 +1219,6 @@ const LeadDetailPage = () => {
                                                         }}
                                                         placeholder="Add phone..."
                                                         aria-invalid={!!editErrors.phone}
-                                                        className={`bg-bg border text-sm font-medium text-fg rounded px-2 py-1 outline-none ${editErrors.phone ? 'border-danger' : 'border-line focus:border-primary'}`}
                                                     />
                                                 ) : (
                                                     <span className="flex items-center gap-2">
@@ -1253,16 +1245,12 @@ const LeadDetailPage = () => {
                                             <div className="flex flex-col flex-1">
                                                 <span className="text-xs font-medium text-fg-muted mb-0.5">Source</span>
                                                 {isEditingInfo ? (
-                                                    <select
+                                                    <Select
+                                                        name="lead-source"
                                                         value={lead.source}
                                                         onChange={(e) => setLead({ ...lead, source: e.target.value })}
-                                                        className="bg-bg border border-line text-sm font-medium text-fg rounded px-2 py-1 outline-none focus:border-primary"
-                                                    >
-                                                        <option value="">— Select source —</option>
-                                                        {sourceTypes.map(opt => (
-                                                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                                        ))}
-                                                    </select>
+                                                        options={[{ value: '', label: '— Select source —' }, ...sourceTypes.map(opt => ({ value: opt.value, label: opt.label }))]}
+                                                    />
                                                 ) : (
                                                     <span className="text-sm font-medium">
                                                         {sourceTypes.find(o => o.value === lead.source)?.label ?? lead.source}
@@ -1300,15 +1288,7 @@ const LeadDetailPage = () => {
                                                 </div>
                                                 <div className="flex flex-col flex-1">
                                                     <span className="text-xs font-medium text-fg-muted mb-0.5">Partner</span>
-                                                    <label className="flex items-center gap-2 cursor-pointer">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={lead.type === 'partner'}
-                                                            onChange={(e) => setLead({ ...lead, type: e.target.checked ? 'partner' : 'lead' })}
-                                                            className="w-4 h-4 rounded accent-primary"
-                                                        />
-                                                        <span className="text-sm font-medium">Mark as Partner</span>
-                                                    </label>
+                                                    <Checkbox name="lead-is-partner" label="Mark as Partner" checked={lead.type === 'partner'} onChange={(e) => setLead({ ...lead, type: e.target.checked ? 'partner' : 'lead' })} />
                                                 </div>
                                             </div>
                                         )}
@@ -1336,7 +1316,8 @@ const LeadDetailPage = () => {
                                             <div className="flex flex-col flex-1">
                                                 <span className="text-xs font-medium text-fg-muted mb-0.5">{field.label}</span>
                                                 {isEditingInfo ? (
-                                                    <input
+                                                    <TextField
+                                                        name={`custom-${field.id}`}
                                                         type={field.type === 'number' ? 'number' : 'text'}
                                                         value={lead.custom_fields?.[field.id] || ''}
                                                         onChange={(e) => setLead({
@@ -1346,7 +1327,6 @@ const LeadDetailPage = () => {
                                                                 [field.id]: e.target.value
                                                             }
                                                         })}
-                                                        className="bg-bg border border-line text-sm font-medium text-fg rounded px-2 py-1 outline-none focus:border-primary"
                                                     />
                                                 ) : (
                                                     <span className="text-sm font-medium">
@@ -1385,12 +1365,13 @@ const LeadDetailPage = () => {
                                         <div className="flex items-center gap-nb-2">
                                             <div className="relative">
                                                 <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-muted" />
-                                                <input
+                                                <TextField
+                                                    name="comm-search"
                                                     value={commSearchQuery}
                                                     onChange={(e) => setCommSearchQuery(e.target.value)}
                                                     placeholder="Search notes, tasks, deals…"
                                                     aria-label="Search notes, tasks, deals"
-                                                    className="h-nb-control-md w-48 rounded-nb border border-line bg-surface pl-8 pr-3 text-sm text-fg placeholder:text-fg-subtle outline-none focus:border-primary wc-medium:w-64"
+                                                    className="pl-8"
                                                 />
                                             </div>
                                             <Button variant="secondary" onClick={() => setShowActivityDrawer(true)}>
@@ -1511,19 +1492,14 @@ const LeadDetailPage = () => {
                                                         ) : (
                                                             <>
                                                                 <div className="absolute right-0 top-nb-3 opacity-0 group-hover/note:opacity-100 transition-opacity flex gap-2">
-                                                                    <button
-                                                                        aria-label="Edit note"
+                                                                    <IconButton label="Edit note" variant="ghost" icon={<Edit2 size={12} />}
                                                                         data-testid={`edit-note-${note.id}`}
                                                                         onClick={() => {
                                                                             setEditingNoteId(note.id);
                                                                             setEditingNoteContent(note.content);
                                                                         }}
-                                                                        className="text-fg-muted hover:text-primary"
-                                                                    >
-                                                                        <Edit2 size={12} />
-                                                                    </button>
-                                                                    <button
-                                                                        aria-label="Delete note"
+/>
+                                                                    <IconButton label="Delete note" variant="danger" icon={<Trash2 size={12} />}
                                                                         data-testid={`delete-note-${note.id}`}
                                                                         onClick={async () => {
                                                                             if (await confirm({ title: 'Delete?', message: 'Delete this note?', intent: 'danger', confirmLabel: 'Delete' })) {
@@ -1534,10 +1510,7 @@ const LeadDetailPage = () => {
                                                                                 });
                                                                             }
                                                                         }}
-                                                                        className="text-fg-muted hover:text-danger"
-                                                                    >
-                                                                        <Trash2 size={12} />
-                                                                    </button>
+/>
                                                                 </div>
                                                                 <div className="mb-2 pr-12">
                                                                     <NoteContent html={note.content} />
@@ -1778,15 +1751,11 @@ const LeadDetailPage = () => {
                                                         </div>
                                                     </div>
                                                     <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                                                        <button
+                                                        <IconButton label="Edit Task" variant="ghost" icon={<Edit2 size={12} />}
                                                             onClick={() => !isTaskLocked(task.status) && setEditingTask(task)}
                                                             disabled={isTaskLocked(task.status)}
                                                             title={isTaskLocked(task.status) ? TASK_LOCKED_HINT : 'Edit task'}
-                                                            aria-label="Edit Task"
-                                                            className="p-1.5 bg-surface-raised rounded hover:text-primary hover:bg-line transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-surface-raised disabled:hover:text-current"
-                                                        >
-                                                            <Edit2 size={12} />
-                                                        </button>
+/>
                                                     </div>
                                                 </div>
                                             );
@@ -1852,13 +1821,10 @@ const LeadDetailPage = () => {
                                                     </div>
                                                     <div className="flex gap-2">
                                                         {doc.dmsDocumentId ? (
-                                                            <button
+                                                            <IconButton label="View" variant="ghost" icon={<Eye size={16} />}
                                                                 onClick={() => { void openLeadDocument(doc); }}
-                                                                className="p-2 text-fg-muted hover:text-primary hover:bg-surface-raised rounded-nb transition-all"
-                                                                title="View"
-                                                            >
-                                                                <Eye size={16} />
-                                                            </button>
+                                                                
+/>
                                                         ) : (
                                                             <a
                                                                 href={doc.url}
@@ -1870,7 +1836,7 @@ const LeadDetailPage = () => {
                                                                 <Eye size={16} />
                                                             </a>
                                                         )}
-                                                        <button
+                                                        <IconButton label="Download" variant="ghost" icon={<Download size={16} />}
                                                             onClick={async () => {
                                                                 try {
                                                                     const fetchUrl = doc.dmsDocumentId
@@ -1892,12 +1858,9 @@ const LeadDetailPage = () => {
                                                                     }
                                                                 }
                                                             }}
-                                                            className="p-2 text-fg-muted hover:text-fg hover:bg-surface-raised rounded-nb transition-all"
-                                                            title="Download"
-                                                        >
-                                                            <Download size={16} />
-                                                        </button>
-                                                        <button
+                                                            
+/>
+                                                        <IconButton label="Delete document" variant="danger" icon={<Trash2 size={16} />}
                                                             onClick={async () => {
                                                                 if (await confirm({ title: 'Delete?', message: 'Delete this document?', intent: 'danger', confirmLabel: 'Delete' })) {
                                                                     await crmService.deleteDocument(lead.id, doc.id);
@@ -1908,12 +1871,7 @@ const LeadDetailPage = () => {
                                                                     publishLeadDocumentsChanged(lead.id);
                                                                 }
                                                             }}
-                                                            className="p-2 text-fg-muted hover:text-danger hover:bg-danger/10 rounded-nb transition-all"
-                                                            title="Delete document"
-                                                            aria-label="Delete document"
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </button>
+/>
                                                     </div>
                                                 </div>
                                             ))}

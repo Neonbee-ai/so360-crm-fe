@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Button, Badge, EmptyState } from '@so360/design-system';
+import { Button, Badge, EmptyState, DataTable, TextField, Select, DatePicker } from '@so360/design-system';
 import { Loader2, Download, Search, Filter, ShieldCheck } from 'lucide-react';
 import { auditTrailApi, AuditTrailEntry, AuditTrailFilters } from '../../services/crmService';
 
@@ -102,41 +102,34 @@ export default function AuditHistoryTab({ entityType, entityId }: Props) {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-                <div className="relative flex-1 min-w-48">
-                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" />
-                    <input
+                <div className="flex-1 min-w-48">
+                    <TextField
+                        name="audit-search"
+                        aria-label="Search audit history"
                         type="text"
+                        leadingIcon={Search}
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder="Search field, value, or description..."
-                        className="w-full bg-surface border border-line rounded-nb pl-9 pr-3 py-2 text-xs text-fg placeholder-fg-subtle outline-none focus:border-primary/50"
                     />
                 </div>
-                <select
+                <Select
+                    name="audit-source"
+                    aria-label="Source"
                     value={sourceFilter}
                     onChange={(e) => setSourceFilter(e.target.value)}
-                    className="bg-surface border border-line rounded-nb px-3 py-2 text-xs text-fg-subtle outline-none"
-                >
-                    <option value="">All Sources</option>
-                    <option value="manual">Manual</option>
-                    <option value="api">API</option>
-                    <option value="workflow">Workflow</option>
-                    <option value="import">Import</option>
-                    <option value="ai">AI</option>
-                    <option value="scheduled_job">Scheduled Job</option>
-                </select>
-                <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="bg-surface border border-line rounded-nb px-3 py-2 text-xs text-fg-subtle outline-none"
+                    options={[
+                        { value: '', label: 'All Sources' },
+                        { value: 'manual', label: 'Manual' },
+                        { value: 'api', label: 'API' },
+                        { value: 'workflow', label: 'Workflow' },
+                        { value: 'import', label: 'Import' },
+                        { value: 'ai', label: 'AI' },
+                        { value: 'scheduled_job', label: 'Scheduled Job' },
+                    ]}
                 />
-                <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="bg-surface border border-line rounded-nb px-3 py-2 text-xs text-fg-subtle outline-none"
-                />
+                <DatePicker name="audit-start-date" aria-label="Start date" value={startDate} onChange={setStartDate} />
+                <DatePicker name="audit-end-date" aria-label="End date" value={endDate} onChange={setEndDate} />
                 <div className="flex items-center gap-1 ml-auto">
                     {(['csv', 'xlsx', 'pdf'] as const).map((format) => (
                         <Button
@@ -165,39 +158,28 @@ export default function AuditHistoryTab({ entityType, entityId }: Props) {
             ) : entries.length === 0 ? (
                 <EmptyState icon={Filter} title="No audit history matches these filters" />
             ) : (
-                <div className="overflow-x-auto">
-                    <table className="w-full text-xs">
-                        <thead className="bg-surface-sunken text-fg-muted text-xs">
-                            <tr>
-                                <th className="text-left px-4 py-3 font-medium">Field or event</th>
-                                <th className="text-left px-4 py-3 font-medium">Previous value</th>
-                                <th className="text-left px-4 py-3 font-medium">New value</th>
-                                <th className="text-left px-4 py-3 font-medium">Modified by</th>
-                                <th className="text-left px-4 py-3 font-medium">Date and time</th>
-                                <th className="text-left px-4 py-3 font-medium">Source</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-line">
-                            {entries.map((entry) => (
-                                <tr key={entry.id} className="hover:bg-surface-sunken">
-                                    <td className="px-4 py-3 text-fg font-semibold">
-                                        {entry.kind === 'field_change' ? fieldLabel(entry.field_name) : (entry.description || 'Event')}
-                                        {entry.change_reason && (
-                                            <div className="text-fg-muted text-xs font-normal mt-0.5">{entry.change_reason}</div>
-                                        )}
-                                    </td>
-                                    <td className="px-4 py-3 text-fg-subtle">{entry.old_value ?? '—'}</td>
-                                    <td className="px-4 py-3 text-fg">{entry.new_value ?? '—'}</td>
-                                    <td className="px-4 py-3 text-fg-subtle">{entry.changed_by_name || 'System'}</td>
-                                    <td className="px-4 py-3 text-fg-subtle">{formatDateTime(entry.created_at)}</td>
-                                    <td className="px-4 py-3">
-                                        <Badge size="sm" tone={SOURCE_TONE[entry.source || 'manual'] ?? 'neutral'}>{entry.source || 'manual'}</Badge>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                <DataTable
+                    name="audit-history"
+                    columns={[
+                        { key: 'field', header: 'Field or event', render: (entry: AuditTrailEntry) => (
+                            <div className="text-fg font-semibold">
+                                {entry.kind === 'field_change' ? fieldLabel(entry.field_name) : (entry.description || 'Event')}
+                                {entry.change_reason && (
+                                    <div className="text-fg-muted text-xs font-normal mt-0.5">{entry.change_reason}</div>
+                                )}
+                            </div>
+                        ) },
+                        { key: 'old_value', header: 'Previous value', render: (entry: AuditTrailEntry) => <span className="text-fg-subtle">{entry.old_value ?? '—'}</span> },
+                        { key: 'new_value', header: 'New value', render: (entry: AuditTrailEntry) => <span className="text-fg">{entry.new_value ?? '—'}</span> },
+                        { key: 'changed_by', header: 'Modified by', render: (entry: AuditTrailEntry) => <span className="text-fg-subtle">{entry.changed_by_name || 'System'}</span> },
+                        { key: 'created_at', header: 'Date and time', render: (entry: AuditTrailEntry) => <span className="text-fg-subtle">{formatDateTime(entry.created_at)}</span> },
+                        { key: 'source', header: 'Source', render: (entry: AuditTrailEntry) => (
+                            <Badge size="sm" tone={SOURCE_TONE[entry.source || 'manual'] ?? 'neutral'}>{entry.source || 'manual'}</Badge>
+                        ) },
+                    ]}
+                    rows={entries}
+                    rowKey={(entry: AuditTrailEntry) => String(entry.id)}
+                />
             )}
 
             {total > PAGE_SIZE && (

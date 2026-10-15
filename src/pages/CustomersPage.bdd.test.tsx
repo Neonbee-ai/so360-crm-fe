@@ -41,22 +41,26 @@ vi.mock('@so360/shell-context', () => ({
   useSandboxLimit: () => ({ isSandboxMode: false, sandboxEntryLimit: 0, isLimited: false }),}));
 
 let tableProps: any = {};
-vi.mock('../components/common/Table', () => ({
-  Table: (props: any) => {
-    tableProps = props;
-    if (props.isLoading) return <div data-testid="table">Loading...</div>;
-    if (props.data.length === 0) return <div data-testid="table">{props.emptyMessage}</div>;
-    return (
-      <div data-testid="table">
-        {props.data.map((c: any) => (
-          <div key={c.id} data-testid={`customer-row-${c.id}`} onClick={() => props.onRowClick(c)}>
-            {c.contact_name} - {c.email}
-          </div>
-        ))}
-      </div>
-    );
-  },
-}));
+vi.mock('@so360/design-system', async (importOriginal) => {
+  const actual: any = await importOriginal();
+  return {
+    ...actual,
+    DataTable: (props: any) => {
+      tableProps = { ...props, data: props.rows, isLoading: props.loading, emptyMessage: props.emptyState, columns: props.columns.map((c: any) => ({ ...c, accessor: c.render })) };
+      if (props.loading) return <div data-testid="table">Loading...</div>;
+      if (props.rows.length === 0) return <div data-testid="table">{props.emptyState}</div>;
+      return (
+        <div data-testid="table">
+          {props.rows.map((c: any) => (
+            <div key={c.id} {...props.getRowProps(c)} onClick={() => props.onRowClick(c)}>
+              {c.contact_name} - {c.email}
+            </div>
+          ))}
+        </div>
+      );
+    },
+  };
+});
 
 import CustomersPage from './CustomersPage';
 
@@ -189,7 +193,7 @@ describe('CustomersPage', () => {
       const user = userEvent.setup();
       render(<CustomersPage />);
       await waitFor(() => expect(screen.getByTestId('customer-row-c1')).toBeInTheDocument());
-      const channelSelect = screen.getByDisplayValue('All Channels');
+      const channelSelect = screen.getByLabelText('Channel');
       await user.selectOptions(channelSelect, 'storefront_web');
       await waitFor(() => {
         expect(tableProps.data.length).toBe(1);
@@ -201,7 +205,7 @@ describe('CustomersPage', () => {
       const user = userEvent.setup();
       render(<CustomersPage />);
       await waitFor(() => expect(screen.getByTestId('customer-row-c1')).toBeInTheDocument());
-      const channelSelect = screen.getByDisplayValue('All Channels');
+      const channelSelect = screen.getByLabelText('Channel');
       await user.selectOptions(channelSelect, 'pos');
       await waitFor(() => {
         expect(tableProps.data.length).toBe(1);
@@ -215,7 +219,7 @@ describe('CustomersPage', () => {
       const user = userEvent.setup();
       render(<CustomersPage />);
       await waitFor(() => expect(screen.getByTestId('customer-row-c1')).toBeInTheDocument());
-      const categorySelect = screen.getByDisplayValue('All Categories');
+      const categorySelect = screen.getByLabelText('Category');
       await user.selectOptions(categorySelect, 'b2b');
       await waitFor(() => {
         expect(tableProps.data.length).toBe(1);
@@ -227,7 +231,7 @@ describe('CustomersPage', () => {
       const user = userEvent.setup();
       render(<CustomersPage />);
       await waitFor(() => expect(screen.getByTestId('customer-row-c1')).toBeInTheDocument());
-      const categorySelect = screen.getByDisplayValue('All Categories');
+      const categorySelect = screen.getByLabelText('Category');
       await user.selectOptions(categorySelect, 'b2c');
       await waitFor(() => {
         expect(tableProps.data.every((c: any) => c.customer_category === 'b2c')).toBe(true);
@@ -240,10 +244,9 @@ describe('CustomersPage', () => {
       const user = userEvent.setup();
       render(<CustomersPage />);
       await waitFor(() => expect(screen.getByTestId('customer-row-c1')).toBeInTheDocument());
-      const channelSelect = screen.getByDisplayValue('All Channels');
+      const channelSelect = screen.getByLabelText('Channel');
       await user.selectOptions(channelSelect, 'pos');
-      await waitFor(() => expect(screen.getByText('Clear filters')).toBeInTheDocument());
-      await user.click(screen.getByText('Clear filters'));
+      await user.click(await screen.findByRole('button', { name: 'Clear all' }));
       expect(mockNavigate).toHaveBeenCalledWith('/crm/customers');
     });
   });

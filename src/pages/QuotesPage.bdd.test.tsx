@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { QuoteStatusCell } from './QuotesPage';
@@ -42,17 +42,21 @@ vi.mock('@so360/formatters', () => ({
   }),
 }));
 
-vi.mock('../components/common/Table', () => ({
-  Table: ({ data, onRowClick }: any) => (
-    <div data-testid="quotes-table">
-      {data.map((q: any) => (
-        <div key={q.id} data-testid={`quote-row-${q.id}`} onClick={() => onRowClick(q)}>
-          {q.quote_number} - {q.title} - {q.status}
-        </div>
-      ))}
-    </div>
-  ),
-}));
+vi.mock('@so360/design-system', async (importOriginal) => {
+  const actual: any = await importOriginal();
+  return {
+    ...actual,
+    DataTable: ({ rows, onRowClick }: any) => (
+      <div data-testid="quotes-table">
+        {rows.map((q: any) => (
+          <div key={q.id} data-testid={`quote-row-${q.id}`} onClick={() => onRowClick(q)}>
+            {q.quote_number} - {q.title} - {q.status}
+          </div>
+        ))}
+      </div>
+    ),
+  };
+});
 
 import QuotesPage from './QuotesPage';
 
@@ -109,15 +113,10 @@ describe('QuotesPage', () => {
       });
     });
 
-    it('When filtering by status via custom dropdown / Then shows only quotes with that status', async () => {
-      const user = userEvent.setup();
+    it('When filtering by status / Then shows only quotes with that status', async () => {
       render(<QuotesPage />);
       await waitFor(() => expect(screen.getByTestId('quote-row-q1')).toBeInTheDocument());
-      // open the custom status filter dropdown
-      await user.click(screen.getByRole('button', { name: /all status/i }));
-      // select "Approved" from the dropdown options (the label pill text)
-      const approvedOption = await screen.findByRole('button', { name: /approved/i });
-      await user.click(approvedOption);
+      fireEvent.change(screen.getByLabelText('Status'), { target: { value: 'approved' } });
       await waitFor(() => {
         expect(screen.queryByTestId('quote-row-q1')).not.toBeInTheDocument();
         expect(screen.getByTestId('quote-row-q2')).toBeInTheDocument();
@@ -346,162 +345,47 @@ describe('QuotesPage', () => {
 
   // ── Fix: custom status filter dropdown (replaces undiscoverable native <select>) ──
 
-  describe('Given the status filter custom dropdown', () => {
-    describe('When the page loads / Then the filter button is visible and labelled "All Status"', () => {
-      it('shows "All Status" label by default', async () => {
-        render(<QuotesPage />);
-        await waitFor(() => expect(screen.getByText('Quotes')).toBeInTheDocument());
-        expect(screen.getByRole('button', { name: /all status/i })).toBeInTheDocument();
+  describe('Given the status quick filter', () => {
+    it('When the page loads / Then the Status select is visible with all statuses', async () => {
+      render(<QuotesPage />);
+      await waitFor(() => expect(screen.getByTestId('quote-row-q1')).toBeInTheDocument());
+      const select = screen.getByLabelText('Status') as HTMLSelectElement;
+      const labels = Array.from(select.options).map((o) => o.textContent);
+      expect(labels).toEqual(expect.arrayContaining(['Draft', 'Pending Approval', 'Approved', 'Rejected', 'Converted']));
+    });
+
+    it('When "Draft" is selected / Then only draft quotes appear', async () => {
+      render(<QuotesPage />);
+      await waitFor(() => expect(screen.getByTestId('quote-row-q1')).toBeInTheDocument());
+      fireEvent.change(screen.getByLabelText('Status'), { target: { value: 'draft' } });
+      await waitFor(() => {
+        expect(screen.getByTestId('quote-row-q1')).toBeInTheDocument();
+        expect(screen.queryByTestId('quote-row-q2')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('quote-row-q3')).not.toBeInTheDocument();
       });
     });
 
-    describe('Given the user clicks the status filter button', () => {
-      it('When clicked / Then opens a dropdown panel', async () => {
-        const user = userEvent.setup();
-        render(<QuotesPage />);
-        await waitFor(() => expect(screen.getByText('Quotes')).toBeInTheDocument());
-        await user.click(screen.getByRole('button', { name: /all status/i }));
-        // dropdown panel should now show individual status options
-        await waitFor(() => {
-          expect(screen.getByRole('button', { name: /draft/i })).toBeInTheDocument();
-          expect(screen.getByRole('button', { name: /pending approval/i })).toBeInTheDocument();
-          expect(screen.getByRole('button', { name: /approved/i })).toBeInTheDocument();
-          expect(screen.getByRole('button', { name: /rejected/i })).toBeInTheDocument();
-          expect(screen.getByRole('button', { name: /converted/i })).toBeInTheDocument();
-        });
-      });
-
-      it('When clicked again while open / Then closes the dropdown (toggle)', async () => {
-        const user = userEvent.setup();
-        render(<QuotesPage />);
-        await waitFor(() => expect(screen.getByText('Quotes')).toBeInTheDocument());
-        const filterBtn = screen.getByRole('button', { name: /all status/i });
-        await user.click(filterBtn);
-        await waitFor(() => expect(screen.getByRole('button', { name: /draft/i })).toBeInTheDocument());
-        await user.click(filterBtn);
-        await waitFor(() => expect(screen.queryByRole('button', { name: /^draft$/i })).not.toBeInTheDocument());
+    it('When "Pending Approval" is selected / Then only pending quotes appear', async () => {
+      render(<QuotesPage />);
+      await waitFor(() => expect(screen.getByTestId('quote-row-q3')).toBeInTheDocument());
+      fireEvent.change(screen.getByLabelText('Status'), { target: { value: 'pending_approval' } });
+      await waitFor(() => {
+        expect(screen.queryByTestId('quote-row-q1')).not.toBeInTheDocument();
+        expect(screen.getByTestId('quote-row-q3')).toBeInTheDocument();
       });
     });
 
-    describe('Given the dropdown is open', () => {
-      it('When "Draft" option is selected / Then only draft quotes appear in the table', async () => {
-        const user = userEvent.setup();
-        render(<QuotesPage />);
-        await waitFor(() => expect(screen.getByTestId('quote-row-q1')).toBeInTheDocument());
-        await user.click(screen.getByRole('button', { name: /all status/i }));
-        await waitFor(() => expect(screen.getAllByRole('button', { name: /draft/i }).length).toBeGreaterThan(0));
-        const draftOptions = screen.getAllByRole('button', { name: /draft/i });
-        // the option button inside the dropdown panel (not the filter trigger itself)
-        await user.click(draftOptions[draftOptions.length - 1]);
-        await waitFor(() => {
-          expect(screen.getByTestId('quote-row-q1')).toBeInTheDocument();
-          expect(screen.queryByTestId('quote-row-q2')).not.toBeInTheDocument();
-          expect(screen.queryByTestId('quote-row-q3')).not.toBeInTheDocument();
-        });
-      });
-
-      it('When "Pending Approval" option is selected / Then only pending quotes appear', async () => {
-        const user = userEvent.setup();
-        render(<QuotesPage />);
-        await waitFor(() => expect(screen.getByTestId('quote-row-q3')).toBeInTheDocument());
-        await user.click(screen.getByRole('button', { name: /all status/i }));
-        await waitFor(() => screen.getByRole('button', { name: /pending approval/i }));
-        await user.click(screen.getByRole('button', { name: /pending approval/i }));
-        await waitFor(() => {
-          expect(screen.queryByTestId('quote-row-q1')).not.toBeInTheDocument();
-          expect(screen.queryByTestId('quote-row-q2')).not.toBeInTheDocument();
-          expect(screen.getByTestId('quote-row-q3')).toBeInTheDocument();
-        });
-      });
-
-      it('When "All Status" option is selected / Then all quotes are shown', async () => {
-        const user = userEvent.setup();
-        render(<QuotesPage />);
-        await waitFor(() => expect(screen.getByTestId('quote-row-q1')).toBeInTheDocument());
-        // set a filter first
-        await user.click(screen.getByRole('button', { name: /all status/i }));
-        await waitFor(() => screen.getByRole('button', { name: /approved/i }));
-        await user.click(screen.getByRole('button', { name: /approved/i }));
-        await waitFor(() => expect(screen.queryByTestId('quote-row-q1')).not.toBeInTheDocument());
-        // now reset via "All Status" option in the dropdown
-        await user.click(screen.getByRole('button', { name: /approved/i })); // filter trigger now shows "Approved"
-        await waitFor(() => screen.getByText('All Status'));
-        const allStatusOption = screen.getByText('All Status');
-        await user.click(allStatusOption.closest('button')!);
-        await waitFor(() => {
-          expect(screen.getByTestId('quote-row-q1')).toBeInTheDocument();
-          expect(screen.getByTestId('quote-row-q2')).toBeInTheDocument();
-          expect(screen.getByTestId('quote-row-q3')).toBeInTheDocument();
-        });
-      });
-
-      it('When a status is active / Then the filter button label changes to that status', async () => {
-        const user = userEvent.setup();
-        render(<QuotesPage />);
-        await waitFor(() => expect(screen.getByText('Quotes')).toBeInTheDocument());
-        await user.click(screen.getByRole('button', { name: /all status/i }));
-        await waitFor(() => screen.getByRole('button', { name: /approved/i }));
-        await user.click(screen.getByRole('button', { name: /approved/i }));
-        await waitFor(() => {
-          expect(screen.getByRole('button', { name: /approved/i })).toBeInTheDocument();
-          expect(screen.queryByRole('button', { name: /all status/i })).not.toBeInTheDocument();
-        });
-      });
-
-      it('When a filter is active / Then a × clear button appears on the filter trigger', async () => {
-        const user = userEvent.setup();
-        render(<QuotesPage />);
-        await waitFor(() => expect(screen.getByText('Quotes')).toBeInTheDocument());
-        await user.click(screen.getByRole('button', { name: /all status/i }));
-        await waitFor(() => screen.getByRole('button', { name: /approved/i }));
-        await user.click(screen.getByRole('button', { name: /approved/i }));
-        await waitFor(() => {
-          const clearBtn = screen.getByRole('button', { name: /clear status filter/i });
-          expect(clearBtn).toBeInTheDocument();
-        });
-      });
-
-      it('When the × clear button is clicked / Then filter resets to "All Status" and all quotes show', async () => {
-        const user = userEvent.setup();
-        render(<QuotesPage />);
-        await waitFor(() => expect(screen.getByTestId('quote-row-q1')).toBeInTheDocument());
-        await user.click(screen.getByRole('button', { name: /all status/i }));
-        await waitFor(() => screen.getByRole('button', { name: /approved/i }));
-        await user.click(screen.getByRole('button', { name: /approved/i }));
-        await waitFor(() => expect(screen.queryByTestId('quote-row-q1')).not.toBeInTheDocument());
-        await user.click(screen.getByRole('button', { name: /clear status filter/i }));
-        await waitFor(() => {
-          expect(screen.getByTestId('quote-row-q1')).toBeInTheDocument();
-          expect(screen.getByTestId('quote-row-q2')).toBeInTheDocument();
-          expect(screen.getByTestId('quote-row-q3')).toBeInTheDocument();
-          expect(screen.getByRole('button', { name: /all status/i })).toBeInTheDocument();
-        });
-      });
-
-      it('When filter is active and no quotes match / Then shows the no-quotes-found empty state', async () => {
-        const user = userEvent.setup();
-        render(<QuotesPage />);
-        await waitFor(() => expect(screen.getByText('Quotes')).toBeInTheDocument());
-        await user.click(screen.getByRole('button', { name: /all status/i }));
-        await waitFor(() => screen.getByRole('button', { name: /rejected/i }));
-        await user.click(screen.getByRole('button', { name: /rejected/i }));
-        await waitFor(() => {
-          expect(screen.getByText('No quotes found')).toBeInTheDocument();
-          expect(screen.getByText(/try adjusting your filters/i)).toBeInTheDocument();
-        });
-      });
-
-      it('When dropdown is open / Then each status option shows the count of matching quotes', async () => {
-
-        const user = userEvent.setup();
-        render(<QuotesPage />);
-        await waitFor(() => expect(screen.getByText('Quotes')).toBeInTheDocument());
-        await user.click(screen.getByRole('button', { name: /all status/i }));
-        await waitFor(() => screen.getByRole('button', { name: /draft/i }));
-        // fixture has 1 draft, 1 approved, 1 pending_approval — counts must appear in the dropdown
-        const dropdownPanel = screen.getByRole('button', { name: /draft/i }).closest('div[class*="absolute"]') ?? document.body;
-        // the draft option button renders a count span — at least "1" must appear
-        expect(dropdownPanel.textContent).toMatch(/1/);
+    it('When a status is active and Clear all is clicked / Then all quotes show again', async () => {
+      const user = userEvent.setup();
+      render(<QuotesPage />);
+      await waitFor(() => expect(screen.getByTestId('quote-row-q1')).toBeInTheDocument());
+      fireEvent.change(screen.getByLabelText('Status'), { target: { value: 'approved' } });
+      await waitFor(() => expect(screen.queryByTestId('quote-row-q1')).not.toBeInTheDocument());
+      await user.click(screen.getByRole('button', { name: 'Clear all' }));
+      await waitFor(() => {
+        expect(screen.getByTestId('quote-row-q1')).toBeInTheDocument();
+        expect(screen.getByTestId('quote-row-q2')).toBeInTheDocument();
+        expect(screen.getByTestId('quote-row-q3')).toBeInTheDocument();
       });
     });
   });

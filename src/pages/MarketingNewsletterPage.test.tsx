@@ -23,8 +23,8 @@ vi.mock('../components/MarketingStorePicker', () => ({
   MarketingStorePicker: ({ storeId, onChange }: any) => <select data-testid="store-picker" value={storeId} onChange={(e: any) => onChange(e.target.value)}><option value="">Select</option></select>,
 }));
 
-vi.mock('@so360/design-system', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@so360/design-system')>();
+vi.mock('@so360/design-system', async () => {
+  const actual = await import('../test/__mocks__/design-system');
   return {
     ...actual,
     toast: { ...actual.toast, error: mockShowError },

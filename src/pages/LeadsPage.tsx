@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
-  Search,
   Filter,
   Plus,
   Tag,
@@ -39,7 +38,8 @@ import { publishLeadsChanged } from '../utils/leadEvents';
 import ExportMenu, { useCanExport } from '../components/ExportMenu';
 import { exportService } from '../services/exportService';
 import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
-import { QuotaGate, toast, ListPageTemplate, Button, Badge, Select, EmptyState, Pagination, ConfirmDialog } from '@so360/design-system';
+import { QuotaGate, toast, ListPageTemplate, Button, Badge, SearchInput, EmptyState, Pagination, ConfirmDialog } from '@so360/design-system';
+import type { FilterValues, ListFilterConfig } from '@so360/design-system';
 
 // ─── Saved views (lightweight local version) ──────────────────────────────────
 
@@ -192,8 +192,7 @@ const LeadsPage = () => {
   const [detailLead, setDetailLead] = useState<Lead | null>(null);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   // Only one filter/views popover may be open at a time.
-  const [openDropdown, setOpenDropdown] = useState<'moreFilters' | 'views' | null>(null);
-  const moreFiltersRef = useRef<HTMLDivElement>(null);
+  const [openDropdown, setOpenDropdown] = useState<'views' | null>(null);
   const viewsDropdownRef = useRef<HTMLDivElement>(null);
   // Advanced (server-side) filter tree. null = feature inactive, the normal
   // fetchInitialData list governs. Non-null triggers a server-side refetch via
@@ -376,7 +375,7 @@ const LeadsPage = () => {
   // Close the More Filters / Views popover on outside click or Escape.
   useEffect(() => {
     if (!openDropdown) return;
-    const activeRef = openDropdown === 'moreFilters' ? moreFiltersRef : viewsDropdownRef;
+    const activeRef = viewsDropdownRef;
     const handleOutsideClick = (e: MouseEvent) => {
       if (activeRef.current && !activeRef.current.contains(e.target as Node)) {
         setOpenDropdown(null);
@@ -712,6 +711,41 @@ const LeadsPage = () => {
   ].filter((a: any) => !a.options || a.options.length > 0),
   [users, leadStages, leadSources, canDeleteLead, handleBulkOwnerChange, handleBulkStatusChange, handleBulkSourceChange, handleBulkExport, handleBulkDelete]);
 
+  const leadFilterConfig: ListFilterConfig = {
+    fields: [
+      { key: 'status', label: 'Status', type: 'select', quick: true, options: leadStages.map((st) => ({ value: st.name, label: st.name })) },
+      { key: 'owner', label: 'Owner', type: 'select', quick: true, options: users.map((u) => ({ value: u.id, label: u.full_name })) },
+      {
+        key: 'dateRange', label: 'Date range', type: 'select', quick: true,
+        options: ['Today', 'Yesterday', 'This Week', 'Last Week', 'This Month', 'Last Month', 'Custom'].map((v) => ({ value: v, label: v === 'Custom' ? 'Custom Range' : v })),
+      },
+      { key: 'customDates', label: 'Custom dates', type: 'daterange' },
+      { key: 'creator', label: 'Created by', type: 'select', options: users.map((u) => ({ value: u.id, label: u.full_name })) },
+    ],
+    values: {
+      ...(filters.status !== 'All' ? { status: filters.status } : {}),
+      ...(filters.owner !== 'All' ? { owner: filters.owner } : {}),
+      ...(filters.dateRange !== 'All' ? { dateRange: filters.dateRange } : {}),
+      ...(filters.customDateStart || filters.customDateEnd ? { customDates: { start: filters.customDateStart, end: filters.customDateEnd } } : {}),
+      ...(filters.creator !== 'All' ? { creator: filters.creator } : {}),
+    } as FilterValues,
+    onChange: (next: FilterValues) => {
+      const cd = next.customDates as { start?: string; end?: string } | null | undefined;
+      setFilters((prev) => ({
+        ...prev,
+        status: (next.status as string) || 'All',
+        owner: (next.owner as string) || 'All',
+        creator: (next.creator as string) || 'All',
+        customDateStart: cd?.start ?? '',
+        customDateEnd: cd?.end ?? '',
+        dateRange: cd && (cd.start || cd.end) ? 'Custom' : ((next.dateRange as string) || 'All'),
+      }));
+      setCurrentPage(1);
+      setActiveViewId(null);
+    },
+    onClear: clearFilters,
+  };
+
   const hasLeads = leads.length > 0;
   const isFilteredEmpty = !isLoading && !error && hasLeads && sandboxLeads.length === 0 && hasActiveFilters;
   const isTrulyEmpty = !isLoading && !error && !hasLeads;
@@ -757,128 +791,20 @@ const LeadsPage = () => {
           />
         }
         search={
-          <div className="relative w-full wc-medium:w-72">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none" size={16} />
-            <input
-              type="text"
-              placeholder="Search leads..."
-              value={filters.search}
-              onChange={(e) => setFilter('search', e.target.value)}
-              className="h-nb-control-md w-full rounded-nb border border-line bg-surface pl-10 pr-8 text-nb-body text-fg placeholder:text-fg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-            />
-            {filters.search && (
-              <button
-                type="button"
-                aria-label="Clear search"
-                onClick={() => setFilter('search', '')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-fg"
-              >
-                <X size={14} />
-              </button>
-            )}
-          </div>
+          <SearchInput
+            placeholder="Search leads..."
+            value={filters.search}
+            onChange={(v: string) => setFilter('search', v)}
+          />
         }
+        filterConfig={leadFilterConfig}
         filters={
-          <>
-            {activeSegmentName && (
-              <Badge tone="primary">
-                <Tag size={12} aria-hidden="true" />
-                Segment: {activeSegmentName}
-              </Badge>
-            )}
-            <Select
-              name="lead-status-filter"
-              size="sm"
-              aria-label="Status"
-              value={filters.status}
-              onChange={(e) => setFilter('status', e.target.value)}
-              options={[{ value: 'All', label: 'All Statuses' }, ...leadStages.map((stage) => ({ value: stage.name, label: stage.name }))]}
-            />
-            <Select
-              name="lead-owner-filter"
-              size="sm"
-              aria-label="Owner"
-              value={filters.owner}
-              onChange={(e) => setFilter('owner', e.target.value)}
-              options={[{ value: 'All', label: 'All Owners' }, ...users.map((user) => ({ value: user.id, label: user.full_name }))]}
-            />
-            <Select
-              name="lead-date-filter"
-              size="sm"
-              aria-label="Date range"
-              value={filters.dateRange}
-              onChange={(e) => setFilter('dateRange', e.target.value)}
-              options={[
-                { value: 'All', label: 'All Time' },
-                { value: 'Today', label: 'Today' },
-                { value: 'Yesterday', label: 'Yesterday' },
-                { value: 'This Week', label: 'This Week' },
-                { value: 'Last Week', label: 'Last Week' },
-                { value: 'This Month', label: 'This Month' },
-                { value: 'Last Month', label: 'Last Month' },
-                { value: 'Custom', label: 'Custom Range' },
-              ]}
-            />
-            {filters.dateRange === 'Custom' && (
-              <div className="flex items-center gap-2 rounded-nb border border-line bg-surface px-2 py-1 shrink-0">
-                <input
-                  type="date"
-                  value={filters.customDateStart}
-                  onChange={(e) => setFilter('customDateStart', e.target.value)}
-                  className="bg-transparent text-fg text-xs focus:outline-none"
-                />
-                <span className="text-fg-muted">–</span>
-                <input
-                  type="date"
-                  value={filters.customDateEnd}
-                  onChange={(e) => setFilter('customDateEnd', e.target.value)}
-                  className="bg-transparent text-fg text-xs focus:outline-none"
-                />
-              </div>
-            )}
-        {/* More filters — Created By */}
-        <div ref={moreFiltersRef} className="relative shrink-0">
-          <button
-            onClick={() => setOpenDropdown((v) => (v === 'moreFilters' ? null : 'moreFilters'))}
-            className={`flex h-nb-control-md items-center gap-1.5 px-3 rounded-nb text-nb-body border transition-colors ${
-              filters.creator !== 'All'
-                ? 'text-primary bg-primary/10 border-primary/40'
-                : 'text-fg-subtle hover:text-fg hover:bg-surface-raised border-line'
-            }`}
-          >
-            <Filter size={13} />
-            More Filters
-            {filters.creator !== 'All' && (
-              <span className="text-xs bg-primary text-primary-fg rounded-full px-1.5">1</span>
-            )}
-            <ChevronDown size={13} />
-          </button>
-
-          {openDropdown === 'moreFilters' && (
-            <div className="absolute right-0 top-full mt-1.5 z-menu bg-surface border border-line rounded-xl shadow-xl min-w-56 p-3">
-              <label className="block text-xs text-fg-muted mb-1.5">Created by</label>
-              <select
-                value={filters.creator}
-                onChange={(e) => setFilter('creator', e.target.value)}
-                className="w-full bg-surface border border-line text-fg-subtle px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-focus"
-              >
-                <option value="All">All</option>
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>{user.full_name}</option>
-                ))}
-              </select>
-            </div>
-          )}
-        </div>
-
-
-            {hasActiveFilters && !isFilteredEmpty && (
-              <Button variant="secondary" size="sm" onClick={clearFilters}>
-                <X size={12} aria-hidden="true" />
-                Clear filters
-              </Button>
-            )}
-          </>
+          activeSegmentName ? (
+            <Badge tone="primary">
+              <Tag size={12} aria-hidden="true" />
+              Segment: {activeSegmentName}
+            </Badge>
+          ) : undefined
         }
         toolbarEnd={
           <>

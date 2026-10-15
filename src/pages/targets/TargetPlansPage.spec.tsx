@@ -33,6 +33,8 @@ const mockCrmService = vi.hoisted(() => ({
   getSalesReps: vi.fn(),
 }));
 
+vi.mock('@so360/design-system', async () => ({ ...(await import('../../test/__mocks__/design-system')) }));
+
 vi.mock('../../services/targetPlanService', () => ({
   targetPlanService: mockTargetPlanService,
 }));

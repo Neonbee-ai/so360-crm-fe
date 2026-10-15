@@ -1,8 +1,8 @@
 import { EmptyState } from '@so360/design-system';
 import React, { useState, useEffect, useCallback } from 'react';
-import { Button } from '@so360/design-system';
+import { Button, IconButton, TextField, NumberInput, Select, Checkbox } from '@so360/design-system';
 import { Modal } from '../../components/common/Modal';
-import { Package, Plus, Trash2, ChevronDown, Loader2, Search, Copy } from 'lucide-react';
+import { Package, Plus, Trash2, Loader2, Search, Copy } from 'lucide-react';
 import { crmService } from '../../services/crmService';
 import { DealProduct, LeadProduct, ProductInterestStatus, InventoryItem } from '../../types/crm';
 import { useCRMFormatters } from '../../utils/formatters';
@@ -143,21 +143,20 @@ function AddProductModal({ dealId, leadId, onClose, onAdd, onImportFromLead, uni
                         ) : (
                             <div className="space-y-2 max-h-64 overflow-y-auto mb-4">
                                 {leadProducts.map(lp => (
-                                    <label key={lp.id} className="flex items-center gap-3 p-3 bg-surface-raised border border-line rounded-nb-lg cursor-pointer hover:border-info/50 transition-all">
-                                        <input
-                                            type="checkbox"
+                                    <div key={lp.id} className="flex items-center gap-3 p-3 bg-surface-raised border border-line rounded-nb-lg hover:border-info/50 transition-all">
+                                        <Checkbox
+                                            name={`lead-product-${lp.id}`}
+                                            label={lp.item_name}
                                             checked={selectedLeadProducts.has(lp.id)}
                                             onChange={() => toggleLeadProduct(lp.id)}
-                                            className="w-4 h-4 rounded accent-primary"
                                         />
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-xs font-bold text-fg truncate">{lp.item_name}</p>
                                             <p className="text-xs text-fg-muted font-bold mt-0.5">
                                                 Qty: {lp.quantity} · {lp.unit_price > 0 ? `₹${lp.unit_price.toLocaleString()}` : 'No price'}
                                             </p>
                                         </div>
                                         <span className={`text-xs font-semibold px-2 py-0.5 rounded-md ${statusStyle(lp.status)}`}>{lp.status}</span>
-                                    </label>
+                                    </div>
                                 ))}
                             </div>
                         )}
@@ -170,13 +169,14 @@ function AddProductModal({ dealId, leadId, onClose, onAdd, onImportFromLead, uni
                         {!selected ? (
                             <>
                                 <div className="relative mb-4">
-                                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" />
-                                    <input
+                                    <TextField
+                                        name="product-search"
+                                        aria-label="Search products"
+                                        leadingIcon={Search}
                                         autoFocus
                                         value={query}
                                         onChange={e => setQuery(e.target.value)}
                                         placeholder="Search product name or SKU…"
-                                        className="w-full bg-surface-raised border border-line rounded-nb-lg pl-9 pr-4 py-2.5 text-sm text-fg placeholder-fg-subtle focus:outline-none focus:border-primary"
                                     />
                                 </div>
                                 {unitBooking && (
@@ -215,12 +215,10 @@ function AddProductModal({ dealId, leadId, onClose, onAdd, onImportFromLead, uni
                                 <div className="p-4 bg-surface-raised border border-line rounded-nb-lg">
                                     <p className="text-xs font-bold text-fg">{selected.name}</p>
                                     {selected.sku && <p className="text-xs text-fg-muted font-bold mt-0.5">SKU: {selected.sku}</p>}
-                                    <button onClick={() => setSelected(null)} className="mt-2 text-xs text-fg-muted hover:text-info font-bold transition-colors">← Change</button>
+                                    <Button variant="secondary" size="sm" type="button" onClick={() => setSelected(null)}>← Change</Button>
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-semibold text-fg-muted mb-2">Quantity</label>
-                                    <input type="number" min={1} value={qty} onChange={e => setQty(Math.max(1, parseInt(e.target.value) || 1))}
-                                        className="w-full bg-surface-raised border border-line rounded-nb-lg px-4 py-2.5 text-sm text-fg focus:outline-none focus:border-primary" />
+                                    <NumberInput name="product-qty" label="Quantity" min={1} value={qty} onChange={v => setQty(Math.max(1, Math.floor(v || 1)))} />
                                 </div>
                             </div>
                         )}
@@ -358,12 +356,9 @@ export default function DealProductsTab({ dealId, leadId }: Props) {
                         </p>
                     )}
                 </div>
-                <button
-                    onClick={() => setShowAddModal(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-nb-lg text-xs font-semibold transition-all"
-                >
+                <Button variant="primary" size="sm" type="button" onClick={() => setShowAddModal(true)}>
                     <Plus size={12} /> Add Product
-                </button>
+                </Button>
             </div>
 
             {addError && (
@@ -397,25 +392,26 @@ export default function DealProductsTab({ dealId, leadId }: Props) {
                                             <p className="text-xs font-semibold text-fg-muted mt-0.5">SKU: {product.item_sku}</p>
                                         )}
                                     </div>
-                                    <button
+                                    <IconButton
+                                        label="Remove product"
+                                        variant="danger"
+                                        className="opacity-0 group-hover:opacity-100"
+                                        icon={<Trash2 size={12} />}
                                         onClick={() => handleRemove(product.id)}
-                                        className="opacity-0 group-hover:opacity-100 p-1.5 text-fg-muted hover:text-danger transition-all"
-                                    >
-                                        <Trash2 size={12} />
-                                    </button>
+                                    />
                                 </div>
 
                                 <div className="flex items-center gap-4 mt-3 flex-wrap">
                                     <div className="flex items-center gap-2">
                                         <span className="text-xs font-semibold text-fg-muted">Qty</span>
-                                        <input
-                                            type="number"
+                                        <NumberInput
+                                            name={`product-qty-${product.id}`}
+                                            aria-label="Quantity"
+                                            size="sm"
                                             min={1}
                                             value={product.quantity}
                                             disabled={updatingId === product.id}
-                                            onChange={e => handleQtyChange(product, parseInt(e.target.value) || 1)}
-                                            onBlur={e => handleQtyChange(product, parseInt(e.target.value) || 1)}
-                                            className="w-16 bg-surface-raised border border-line rounded-lg px-2 py-1 text-xs text-fg text-center focus:outline-none focus:border-primary"
+                                            onChange={v => handleQtyChange(product, Math.floor(v || 1))}
                                         />
                                     </div>
                                     {product.unit_price > 0 && (
@@ -424,18 +420,16 @@ export default function DealProductsTab({ dealId, leadId }: Props) {
                                     {lineTotal > 0 && (
                                         <span className="text-xs font-semibold text-success ml-auto">{formatters.formatCurrency(lineTotal)}</span>
                                     )}
-                                    <div className="relative ml-auto">
-                                        <select
+                                    <div className="ml-auto">
+                                        <Select
+                                            name={`product-status-${product.id}`}
+                                            aria-label="Status"
+                                            size="sm"
                                             value={product.status}
                                             disabled={updatingId === product.id}
+                                            options={STATUS_OPTIONS.map(o => ({ value: o.value, label: o.label }))}
                                             onChange={e => handleStatusChange(product, e.target.value as ProductInterestStatus)}
-                                            className={`appearance-none text-xs font-semibold px-2.5 py-1 rounded-lg border-0 cursor-pointer focus:outline-none pr-6 ${statusStyle(product.status)}`}
-                                        >
-                                            {STATUS_OPTIONS.map(s => (
-                                                <option key={s.value} value={s.value}>{s.label}</option>
-                                            ))}
-                                        </select>
-                                        <ChevronDown size={10} className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-current opacity-60" />
+                                        />
                                     </div>
                                 </div>
                             </div>

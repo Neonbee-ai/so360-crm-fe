@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, ChevronRight, ChevronDown, Package } from 'lucide-react';
+import { Button, TextField } from '@so360/design-system';
 import { Modal } from './common/Modal';
 import { Skeleton } from './common/Skeleton';
-import { EDITABLE_FIELD_CLASS } from './common/fieldStyles';
 import { crmService } from '../services/crmService';
 import { InventoryItem, InventoryVariant, ProductPickerSelection } from '../types/crm';
 
@@ -105,14 +105,15 @@ export const ProductPickerModal = ({ isOpen, onClose, onSelect }: ProductPickerM
             <div className="space-y-4">
                 {/* Search input */}
                 <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-subtle pointer-events-none" />
-                    <input
+                    <TextField
+                        name="product-search"
+                        aria-label="Search products"
                         autoFocus
                         type="text"
                         value={query}
-                        onChange={e => setQuery(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
                         placeholder="Search by product name or SKU..."
-                        className={`${EDITABLE_FIELD_CLASS} pl-9 text-sm`}
+                        leadingIcon={Search}
                     />
                 </div>
 
@@ -130,12 +131,9 @@ export const ProductPickerModal = ({ isOpen, onClose, onSelect }: ProductPickerM
                         <div className="flex flex-col items-center justify-center py-16 text-fg-muted">
                             <Package className="w-10 h-10 mb-3 opacity-40" />
                             <p className="text-sm">Couldn't load products.</p>
-                            <button
-                                onClick={() => search(query)}
-                                className="mt-3 px-3 py-1.5 rounded-lg text-xs font-medium text-info bg-info/10 hover:bg-info/20 transition-colors"
-                            >
+                            <Button type="button" size="sm" variant="secondary" className="mt-3" onClick={() => search(query)}>
                                 Retry
-                            </button>
+                            </Button>
                         </div>
                     )}
 

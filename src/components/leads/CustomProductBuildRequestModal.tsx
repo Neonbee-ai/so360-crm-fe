@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Modal } from '../common/Modal';
-import { RequiredMark } from '../common/RequiredMark';
-import { EDITABLE_FIELD_CLASS } from '../common/fieldStyles';
+import { Button, TextField, Select, NumberInput, Textarea } from '@so360/design-system';
 import { crmService } from '../../services/crmService';
 import { Loader2, AlertCircle, Sparkles } from 'lucide-react';
 import { buildCategoryTree, flattenCategoryTree, indentLabel } from '../../utils/categoryTree';
@@ -150,48 +149,35 @@ export const CustomProductBuildRequestModal: React.FC<CustomProductBuildRequestM
                 )}
 
                 {/* Product Name */}
-                <div>
-                    <label className="block text-xs font-semibold text-fg-subtle mb-1.5">
-                        Product / Build Name <RequiredMark />
-                    </label>
-                    <input
-                        type="text"
-                        required
-                        value={name}
-                        onChange={e => setName(e.target.value)}
-                        placeholder="e.g., Bespoke Teak Boardroom Table"
-                        className={`${EDITABLE_FIELD_CLASS} w-full text-sm`}
-                        disabled={submitting}
-                        autoFocus
-                    />
-                </div>
+                <TextField
+                    name="name"
+                    label="Product / Build Name"
+                    type="text"
+                    required
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    placeholder="e.g., Bespoke Teak Boardroom Table"
+                    disabled={submitting}
+                    autoFocus
+                />
 
                 {/* Product Category (Mandatory) */}
                 <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                        <label className="block text-xs font-semibold text-fg-subtle">
-                            Product Category <RequiredMark />
-                        </label>
-                        {loadingCategories && (
-                            <span className="text-xs text-fg-subtle flex items-center gap-1">
-                                <Loader2 className="w-3 h-3 animate-spin" /> Loading categories...
-                            </span>
-                        )}
-                    </div>
-                    <select
+                    <Select
+                        name="category_id"
+                        label="Product Category"
                         required
                         value={categoryId}
                         onChange={e => setCategoryId(e.target.value)}
-                        className={`${EDITABLE_FIELD_CLASS} w-full text-sm`}
                         disabled={submitting || loadingCategories}
-                    >
-                        <option value="">-- Select Product Category --</option>
-                        {filteredCategories.map(cat => (
-                            <option key={cat.id} value={cat.id}>
-                                {indentLabel(cat.name, cat.depth)}
-                            </option>
-                        ))}
-                    </select>
+                        placeholder="-- Select Product Category --"
+                        options={filteredCategories.map(cat => ({ value: cat.id, label: indentLabel(cat.name, cat.depth) }))}
+                    />
+                    {loadingCategories && (
+                        <span className="text-xs text-fg-subtle flex items-center gap-1 mt-1">
+                            <Loader2 className="w-3 h-3 animate-spin" /> Loading categories...
+                        </span>
+                    )}
                     {categories.length === 0 && !loadingCategories && (
                         <p className="text-xs text-warning/90 mt-1">
                             No categories found in Inventory. Please ensure categories are configured in Inventory Settings.
@@ -200,71 +186,48 @@ export const CustomProductBuildRequestModal: React.FC<CustomProductBuildRequestM
                 </div>
 
                 {/* Quantity & Target Unit Price */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-xs font-semibold text-fg-subtle mb-1.5">
-                            Quantity <RequiredMark />
-                        </label>
-                        <input
-                            type="number"
-                            min={1}
-                            required
-                            value={quantity}
-                            onChange={e => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                            className={`${EDITABLE_FIELD_CLASS} w-full text-sm`}
-                            disabled={submitting}
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-xs font-semibold text-fg-subtle mb-1.5">
-                            Est. Target Unit Price
-                        </label>
-                        <input
-                            type="number"
-                            step="any"
-                            min={0}
-                            value={unitPrice}
-                            onChange={e => setUnitPrice(e.target.value)}
-                            placeholder="0.00"
-                            className={`${EDITABLE_FIELD_CLASS} w-full text-sm`}
-                            disabled={submitting}
-                        />
-                    </div>
-                </div>
-
-                {/* Specifications / Notes */}
-                <div>
-                    <label className="block text-xs font-semibold text-fg-subtle mb-1.5">
-                        Build Specifications & Requirements
-                    </label>
-                    <textarea
-                        rows={3}
-                        value={specifications}
-                        onChange={e => setSpecifications(e.target.value)}
-                        placeholder="Add dimensions, materials, finishes, or custom customer requirements..."
-                        className={`${EDITABLE_FIELD_CLASS} w-full text-sm resize-none`}
+                <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
+                    <NumberInput
+                        name="quantity"
+                        label="Quantity"
+                        min={1}
+                        required
+                        value={quantity}
+                        onChange={v => setQuantity(Math.max(1, Math.trunc(v ?? 0) || 1))}
+                        disabled={submitting}
+                    />
+                    <NumberInput
+                        name="unit_price"
+                        label="Est. Target Unit Price"
+                        min={0}
+                        step={0.01}
+                        value={unitPrice === '' || unitPrice == null ? null : Number(unitPrice)}
+                        onChange={v => setUnitPrice(v === null ? '' : String(v))}
+                        placeholder="0.00"
                         disabled={submitting}
                     />
                 </div>
 
+                {/* Specifications / Notes */}
+                <Textarea
+                    name="specifications"
+                    label="Build Specifications & Requirements"
+                    rows={3}
+                    value={specifications}
+                    onChange={e => setSpecifications(e.target.value)}
+                    placeholder="Add dimensions, materials, finishes, or custom customer requirements..."
+                    disabled={submitting}
+                />
+
                 {/* Actions */}
                 <div className="flex items-center justify-end gap-3 pt-3 border-t border-line">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        disabled={submitting}
-                        className="px-4 py-2 text-xs font-medium text-fg-subtle hover:text-fg transition-colors"
-                    >
+                    <Button type="button" variant="secondary" onClick={onClose} disabled={submitting}>
                         Cancel
-                    </button>
-                    <button
-                        type="submit"
-                        disabled={submitting || !name.trim() || !categoryId}
-                        className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-primary-fg rounded-xl text-xs font-semibold transition-all shadow-lg shadow-primary/20"
-                    >
+                    </Button>
+                    <Button type="submit" variant="primary" disabled={submitting || !name.trim() || !categoryId}>
                         {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                         <span>Submit Build Request</span>
-                    </button>
+                    </Button>
                 </div>
             </form>
         </Modal>

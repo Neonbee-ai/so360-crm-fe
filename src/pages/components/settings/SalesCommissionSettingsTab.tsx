@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Loader2, Plus, Save, Trash2 } from 'lucide-react';
-import { toast, UserSelector, Card, Button } from '@so360/design-system';
+import { toast, UserSelector, Card, Button, IconButton, TextField, NumberInput, Select, Checkbox, DataTable } from '@so360/design-system';
+import type { DataTableColumn } from '@so360/design-system';
 import { useShellBridge } from '@so360/shell-context';
 import {
     salesSettingsService,
@@ -15,7 +16,6 @@ import {
 import { useCrmFeatureFlag, RE_FLAGS } from '../../../hooks/useCrmFeatureFlag';
 import { describeApiError } from '../../../utils/apiErrorMessage';
 
-const FIELD_CLS = 'w-full bg-bg border border-line text-fg rounded-nb px-4 py-2.5 outline-none focus:border-primary transition-all font-bold text-sm disabled:opacity-60';
 const LABEL_CLS = 'block text-xs font-semibold text-fg-muted mb-1.5';
 const CARD_BODY_CLS = 'space-y-5';
 
@@ -27,7 +27,9 @@ const EARN_TRIGGER_VALUES: readonly string[] = EARN_TRIGGERS.map((t) => t.value)
 
 /** Numeric input text → number; empty reads as NaN so validation catches it. */
 const toPercent = (text: string): number => (text.trim() === '' ? Number.NaN : Number(text));
-const showPercent = (n: number): string => (Number.isFinite(n) ? String(n) : '');
+const pctValue = (n: number): number | null => (Number.isFinite(n) ? n : null);
+const fromPct = (v: number | null): number => (v == null ? Number.NaN : v);
+type OverrideRow = SalesShareOverride & { __i: number };
 
 /**
  * Settings → Sales & commission (RE Phase C). One settings row per org:
@@ -74,9 +76,9 @@ const SalesCommissionSettingsTab: React.FC<Props> = ({ canWrite }) => {
         return (
             <div className="space-y-3">
                 <p role="alert" className="text-sm text-danger">{loadError ?? 'Could not load sales settings.'}</p>
-                <button type="button" onClick={() => void load()} className="text-xs font-semibold text-primary hover:text-primary-hover">
+                <Button type="button" variant="secondary" size="sm" onClick={() => void load()}>
                     Retry
-                </button>
+                </Button>
             </div>
         );
     }
@@ -125,6 +127,91 @@ const SalesCommissionSettingsTab: React.FC<Props> = ({ canWrite }) => {
 
     const ro = !canWrite;
 
+    const overrideColumns: DataTableColumn<OverrideRow>[] = [
+        {
+            key: 'scope',
+            header: 'Applies to',
+            render: (o) => (
+                <Select
+                    name={`override-scope-${o.__i}`}
+                    aria-label={`Override ${o.__i + 1} applies to`}
+                    value={o.scope}
+                    disabled={ro}
+                    options={[{ value: 'role', label: 'Role' }, { value: 'user', label: 'Person' }]}
+                    onChange={(e) => changeScope(o.__i, e.target.value === 'user' ? 'user' : 'role')}
+                />
+            ),
+        },
+        {
+            key: 'who',
+            header: 'Who',
+            render: (o) => o.scope === 'role' ? (
+                <TextField
+                    name={`override-role-${o.__i}`}
+                    aria-label={`Override ${o.__i + 1} role`}
+                    placeholder="Role key, e.g. sales_agent"
+                    value={o.role_key ?? ''}
+                    disabled={ro}
+                    onChange={(e) => setOverride(o.__i, { role_key: e.target.value })}
+                />
+            ) : ro ? (
+                <span className="text-fg-subtle">{o.user_id || '—'}</span>
+            ) : (
+                <UserSelector
+                    value={o.user_id || undefined}
+                    onChange={(id: string | string[] | null) =>
+                        setOverride(o.__i, { user_id: Array.isArray(id) ? (id[0] ?? '') : (id ?? '') })}
+                    orgId={orgId}
+                    tenantId={tenantId}
+                    placeholder="Pick a person"
+                />
+            ),
+        },
+        {
+            key: 'agent_share_percent',
+            header: 'Agent %',
+            render: (o) => (
+                <NumberInput
+                    name={`override-agent-${o.__i}`}
+                    aria-label={`Override ${o.__i + 1} agent share`}
+                    min={0}
+                    max={100}
+                    value={pctValue(o.agent_share_percent)}
+                    disabled={ro}
+                    onChange={(v) => setOverride(o.__i, { agent_share_percent: fromPct(v) })}
+                />
+            ),
+        },
+        {
+            key: 'team_leader_override_percent',
+            header: 'Team leader %',
+            render: (o) => (
+                <NumberInput
+                    name={`override-tl-${o.__i}`}
+                    aria-label={`Override ${o.__i + 1} team-leader override`}
+                    min={0}
+                    max={100}
+                    value={pctValue(o.team_leader_override_percent)}
+                    disabled={ro}
+                    onChange={(v) => setOverride(o.__i, { team_leader_override_percent: fromPct(v) })}
+                />
+            ),
+        },
+        {
+            key: 'actions',
+            header: '',
+            align: 'right',
+            render: (o) => canWrite ? (
+                <IconButton
+                    label={`Remove override ${o.__i + 1}`}
+                    variant="danger"
+                    icon={<Trash2 size={14} />}
+                    onClick={() => removeOverride(o.__i)}
+                />
+            ) : null,
+        },
+    ];
+
     return (
         <div className="space-y-6">
             {commissionsOn && (
@@ -132,178 +219,87 @@ const SalesCommissionSettingsTab: React.FC<Props> = ({ canWrite }) => {
                   <div className={CARD_BODY_CLS}>
                     <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
                         <div>
-                            <label htmlFor="sales-earn-trigger" className={LABEL_CLS}>Commission is earned</label>
-                            <select
+                            <Select
                                 id="sales-earn-trigger"
-                                className={FIELD_CLS}
+                                name="sales-earn-trigger"
+                                label="Commission is earned"
                                 value={draft.earn_trigger}
                                 disabled={ro}
+                                options={EARN_TRIGGERS.map((t) => ({ value: t.value, label: t.label }))}
                                 onChange={(e) => {
                                     const v = e.target.value;
                                     if (EARN_TRIGGER_VALUES.includes(v)) set({ earn_trigger: v as EarnTrigger });
                                 }}
-                            >
-                                {EARN_TRIGGERS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-                            </select>
+                            />
                         </div>
                         <div>
-                            <label htmlFor="sales-vat" className={LABEL_CLS}>VAT on commission (%)</label>
-                            <input
+                            <NumberInput
                                 id="sales-vat"
-                                type="number"
+                                name="sales-vat"
+                                label="VAT on commission (%)"
                                 min={0}
                                 max={100}
-                                step="0.01"
-                                className={FIELD_CLS}
-                                value={showPercent(draft.vat_percent)}
+                                step={0.01}
+                                value={pctValue(draft.vat_percent)}
                                 disabled={ro}
-                                onChange={(e) => set({ vat_percent: toPercent(e.target.value) })}
+                                onChange={(v) => set({ vat_percent: fromPct(v) })}
                             />
                         </div>
                         <div>
-                            <label htmlFor="sales-agent-share" className={LABEL_CLS}>Default agent share (%)</label>
-                            <input
+                            <NumberInput
                                 id="sales-agent-share"
-                                type="number"
+                                name="sales-agent-share"
+                                label="Default agent share (%)"
                                 min={0}
                                 max={100}
-                                step="0.01"
-                                className={FIELD_CLS}
-                                value={showPercent(draft.default_agent_share_percent)}
+                                step={0.01}
+                                value={pctValue(draft.default_agent_share_percent)}
                                 disabled={ro}
-                                onChange={(e) => set({ default_agent_share_percent: toPercent(e.target.value) })}
+                                onChange={(v) => set({ default_agent_share_percent: fromPct(v) })}
                             />
                         </div>
                         <div>
-                            <label htmlFor="sales-tl-override" className={LABEL_CLS}>Team-leader override (%)</label>
-                            <input
+                            <NumberInput
                                 id="sales-tl-override"
-                                type="number"
+                                name="sales-tl-override"
+                                label="Team-leader override (%)"
                                 min={0}
                                 max={100}
-                                step="0.01"
-                                className={FIELD_CLS}
-                                value={showPercent(draft.team_leader_override_percent)}
+                                step={0.01}
+                                value={pctValue(draft.team_leader_override_percent)}
                                 disabled={ro}
-                                onChange={(e) => set({ team_leader_override_percent: toPercent(e.target.value) })}
+                                onChange={(v) => set({ team_leader_override_percent: fromPct(v) })}
                             />
                         </div>
                     </div>
-                    <label className="flex items-center gap-3 text-sm text-fg-subtle">
-                        <input
-                            type="checkbox"
-                            checked={draft.approval_required}
-                            disabled={ro}
-                            onChange={(e) => set({ approval_required: e.target.checked })}
-                        />
-                        Commission needs manager approval before it becomes payable
-                    </label>
+                    <Checkbox
+                        name="sales-approval-required"
+                        label="Commission needs manager approval before it becomes payable"
+                        checked={draft.approval_required}
+                        disabled={ro}
+                        onChange={(e) => set({ approval_required: e.target.checked })}
+                    />
                     <p className="text-xs text-fg-muted">The company keeps whatever is left after the agent and team-leader shares.</p>
 
                     <div className="space-y-3">
                         <div className="flex items-center justify-between">
                             <span className={LABEL_CLS}>Overrides by role or person</span>
                             {canWrite && (
-                                <button
-                                    type="button"
-                                    onClick={addOverride}
-                                    className="flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary-hover"
-                                >
+                                <Button type="button" variant="secondary" size="sm" onClick={addOverride}>
                                     <Plus size={14} /> Add override
-                                </button>
+                                </Button>
                             )}
                         </div>
                         {draft.overrides.length === 0 ? (
                             <p className="text-xs text-fg-muted">No overrides — everyone uses the default split.</p>
                         ) : (
-                            <table className="w-full text-sm" aria-label="Share overrides">
-                                <thead>
-                                    <tr className="text-left text-xs font-semibold text-fg-muted">
-                                        <th className="py-2 pr-2">Applies to</th>
-                                        <th className="py-2 pr-2">Who</th>
-                                        <th className="py-2 pr-2">Agent %</th>
-                                        <th className="py-2 pr-2">Team leader %</th>
-                                        <th className="py-2" />
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {draft.overrides.map((o, i) => (
-                                        <tr key={i} className="border-t border-line">
-                                            <td className="py-2 pr-2">
-                                                <select
-                                                    aria-label={`Override ${i + 1} applies to`}
-                                                    className={FIELD_CLS}
-                                                    value={o.scope}
-                                                    disabled={ro}
-                                                    onChange={(e) => changeScope(i, e.target.value === 'user' ? 'user' : 'role')}
-                                                >
-                                                    <option value="role">Role</option>
-                                                    <option value="user">Person</option>
-                                                </select>
-                                            </td>
-                                            <td className="py-2 pr-2">
-                                                {o.scope === 'role' ? (
-                                                    <input
-                                                        aria-label={`Override ${i + 1} role`}
-                                                        className={FIELD_CLS}
-                                                        placeholder="Role key, e.g. sales_agent"
-                                                        value={o.role_key ?? ''}
-                                                        disabled={ro}
-                                                        onChange={(e) => setOverride(i, { role_key: e.target.value })}
-                                                    />
-                                                ) : ro ? (
-                                                    <span className="text-fg-subtle">{o.user_id || '—'}</span>
-                                                ) : (
-                                                    <UserSelector
-                                                        value={o.user_id || undefined}
-                                                        onChange={(id: string | string[] | null) =>
-                                                            setOverride(i, { user_id: Array.isArray(id) ? (id[0] ?? '') : (id ?? '') })}
-                                                        orgId={orgId}
-                                                        tenantId={tenantId}
-                                                        placeholder="Pick a person"
-                                                    />
-                                                )}
-                                            </td>
-                                            <td className="py-2 pr-2">
-                                                <input
-                                                    aria-label={`Override ${i + 1} agent share`}
-                                                    type="number"
-                                                    min={0}
-                                                    max={100}
-                                                    className={FIELD_CLS}
-                                                    value={showPercent(o.agent_share_percent)}
-                                                    disabled={ro}
-                                                    onChange={(e) => setOverride(i, { agent_share_percent: toPercent(e.target.value) })}
-                                                />
-                                            </td>
-                                            <td className="py-2 pr-2">
-                                                <input
-                                                    aria-label={`Override ${i + 1} team-leader override`}
-                                                    type="number"
-                                                    min={0}
-                                                    max={100}
-                                                    className={FIELD_CLS}
-                                                    value={showPercent(o.team_leader_override_percent)}
-                                                    disabled={ro}
-                                                    onChange={(e) => setOverride(i, { team_leader_override_percent: toPercent(e.target.value) })}
-                                                />
-                                            </td>
-                                            <td className="py-2 text-right">
-                                                {canWrite && (
-                                                    <button
-                                                        type="button"
-                                                        aria-label={`Remove override ${i + 1}`}
-                                                        onClick={() => removeOverride(i)}
-                                                        className="p-2 text-fg-muted hover:text-danger"
-                                                    >
-                                                        <Trash2 size={14} />
-                                                    </button>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                            <DataTable<OverrideRow>
+                                name="share-overrides"
+                                data-testid="share-overrides"
+                                rows={draft.overrides.map((o, i) => ({ ...o, __i: i }))}
+                                rowKey={(o) => String(o.__i)}
+                                columns={overrideColumns}
+                            />
                         )}
                     </div>
                   </div>

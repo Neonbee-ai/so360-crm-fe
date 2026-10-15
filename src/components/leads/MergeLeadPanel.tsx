@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { GitMerge, Search, X, Loader2 } from 'lucide-react';
-import { toast } from '@so360/design-system';
+import { Search, Loader2 } from 'lucide-react';
+import { toast, Button, Drawer, TextField } from '@so360/design-system';
 import { crmService } from '../../services/crmService';
 import {
     leadDedupService,
@@ -83,38 +83,38 @@ export const MergeLeadPanel: React.FC<Props> = ({ keepLead, onClose, onMerged })
     };
 
     return (
-        <aside
-            className="fixed inset-y-0 right-0 z-40 w-full max-w-xl bg-surface border-l border-line shadow-2xl flex flex-col"
-            aria-label="Merge leads"
+        <Drawer
+            isOpen
+            onClose={onClose}
+            title="Merge another lead into this one"
+            size="md"
             data-testid="merge-lead-panel"
+            footer={
+                <div className="flex justify-end gap-2">
+                    <Button type="button" variant="secondary" onClick={onClose}>
+                        Cancel
+                    </Button>
+                    <Button type="button" onClick={handleMerge} disabled={!other || merging}>
+                        {merging && <Loader2 size={14} className="animate-spin" />}
+                        Merge
+                    </Button>
+                </div>
+            }
         >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-line">
-                <h2 className="text-sm font-bold text-fg flex items-center gap-2">
-                    <GitMerge size={16} /> Merge another lead into this one
-                </h2>
-                <button type="button" onClick={onClose} aria-label="Close merge panel" className="p-1.5 rounded-lg text-fg-subtle hover:bg-surface-raised">
-                    <X size={16} />
-                </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-5 space-y-4">
+            <div className="space-y-4">
                 {!other ? (
                     <div className="space-y-2">
-                        <label htmlFor="merge-lead-search" className="text-xs font-medium text-fg-subtle">
-                            Find the duplicate lead
-                        </label>
-                        <div className="relative">
-                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" />
-                            <input
-                                id="merge-lead-search"
-                                type="text"
-                                value={query}
-                                onChange={e => setQuery(e.target.value)}
-                                placeholder="Search by name, email or phone"
-                                className="w-full bg-bg border border-line rounded-lg pl-9 pr-3 py-2 text-sm text-fg focus:outline-none focus:border-primary"
-                                autoFocus
-                            />
-                        </div>
+                        <TextField
+                            name="merge-lead-search"
+                            id="merge-lead-search"
+                            label="Find the duplicate lead"
+                            type="text"
+                            value={query}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
+                            placeholder="Search by name, email or phone"
+                            leadingIcon={Search}
+                            autoFocus
+                        />
                         {searching && <p className="text-xs text-fg-muted flex items-center gap-1"><Loader2 size={12} className="animate-spin" /> Searching…</p>}
                         {!searching && query.trim().length >= 2 && results.length === 0 && (
                             <p className="text-xs text-fg-muted">No other leads match.</p>
@@ -183,22 +183,7 @@ export const MergeLeadPanel: React.FC<Props> = ({ keepLead, onClose, onMerged })
                     </div>
                 )}
             </div>
-
-            <div className="px-5 py-4 border-t border-line flex justify-end gap-2">
-                <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-sm text-fg-subtle hover:bg-surface-raised">
-                    Cancel
-                </button>
-                <button
-                    type="button"
-                    onClick={handleMerge}
-                    disabled={!other || merging}
-                    className="px-4 py-2 rounded-lg text-sm font-bold bg-primary text-primary-fg hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
-                >
-                    {merging && <Loader2 size={14} className="animate-spin" />}
-                    Merge
-                </button>
-            </div>
-        </aside>
+        </Drawer>
     );
 };
 

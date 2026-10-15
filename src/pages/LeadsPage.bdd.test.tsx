@@ -264,7 +264,7 @@ describe('LeadsPage', () => {
       const user = userEvent.setup();
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      const statusSelect = screen.getByDisplayValue('All Statuses');
+      const statusSelect = screen.getByLabelText('Status');
       await user.selectOptions(statusSelect, 'Qualified');
       await waitFor(() => {
         expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument();
@@ -277,7 +277,7 @@ describe('LeadsPage', () => {
       const user = userEvent.setup();
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      const ownerSelect = screen.getByDisplayValue('All Owners');
+      const ownerSelect = screen.getByLabelText('Owner');
       await user.selectOptions(ownerSelect, 'u2');
       await waitFor(() => {
         expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument();
@@ -289,8 +289,8 @@ describe('LeadsPage', () => {
       const user = userEvent.setup();
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      await user.click(screen.getByText('More Filters'));
-      const creatorSelect = screen.getByDisplayValue('All');
+      await user.click(screen.getByTestId('filters-button'));
+      const creatorSelect = screen.getByLabelText('Created by');
       await user.selectOptions(creatorSelect, 'u2');
       await waitFor(() => {
         expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument();
@@ -302,10 +302,10 @@ describe('LeadsPage', () => {
       const user = userEvent.setup();
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      const statusSelect = screen.getByDisplayValue('All Statuses');
+      const statusSelect = screen.getByLabelText('Status');
       await user.selectOptions(statusSelect, 'Qualified');
-      await waitFor(() => expect(screen.getByText('Clear filters')).toBeInTheDocument());
-      await user.click(screen.getByText('Clear filters'));
+      await waitFor(() => expect(screen.getByText('Clear all')).toBeInTheDocument());
+      await user.click(screen.getByText('Clear all'));
       await waitFor(() => {
         expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument();
         expect(screen.getByTestId('lead-row-l3')).toBeInTheDocument();
@@ -519,37 +519,15 @@ describe('LeadsPage', () => {
     });
   });
 
-  describe('Given only one filter/views popover may be open at a time', () => {
-    it('When More Filters is open and Views is clicked / Then More Filters closes and only Views stays open', async () => {
-      const user = userEvent.setup();
-      render(<LeadsPage />);
-      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      await user.click(screen.getByText('More Filters'));
-      expect(screen.getByText('Created by')).toBeInTheDocument();
-      await user.click(screen.getByText('Views'));
-      expect(screen.queryByText('Created by')).not.toBeInTheDocument();
-      expect(screen.getByText('Save current view')).toBeInTheDocument();
-    });
-
-    it('When Views is open and More Filters is clicked / Then Views closes and only More Filters stays open', async () => {
+  describe('Given the Views popover', () => {
+    it('When Views is open and an outside click occurs / Then it closes', async () => {
       const user = userEvent.setup();
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
       await user.click(screen.getByText('Views'));
       expect(screen.getByText('Save current view')).toBeInTheDocument();
-      await user.click(screen.getByText('More Filters'));
-      expect(screen.queryByText('Save current view')).not.toBeInTheDocument();
-      expect(screen.getByText('Created by')).toBeInTheDocument();
-    });
-
-    it('When More Filters is open and an outside click occurs / Then it closes', async () => {
-      const user = userEvent.setup();
-      render(<LeadsPage />);
-      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      await user.click(screen.getByText('More Filters'));
-      expect(screen.getByText('Created by')).toBeInTheDocument();
       fireEvent.mouseDown(document.body);
-      await waitFor(() => expect(screen.queryByText('Created by')).not.toBeInTheDocument());
+      await waitFor(() => expect(screen.queryByText('Save current view')).not.toBeInTheDocument());
     });
   });
 });

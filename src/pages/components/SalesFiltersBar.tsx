@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import type { FilterField, FilterValues, ListFilterConfig } from '@so360/design-system';
 import { crmService } from '../../services/crmService';
 import { validateDateRange, type SalesFilters } from '../../services/salesReportService';
 
@@ -8,26 +8,20 @@ export interface FilterOption {
     name: string;
 }
 
-interface Props {
-    value: SalesFilters;
-    onChange: (next: SalesFilters) => void;
-    /** Developers are not served by any list API — the page supplies what it has seen. */
-    developers: FilterOption[];
-}
-
-const FIELD_CLS = 'h-nb-control-md bg-surface border border-line text-fg rounded-nb px-3 text-sm outline-none focus:border-primary';
-const LABEL_CLS = 'flex flex-col gap-1 text-xs text-fg-muted';
-
 export const hasActiveFilters = (f: SalesFilters): boolean =>
     Boolean(f.project_id || f.agent_id || f.developer_id || f.from || f.to);
 
 /**
- * Shared filter row for the Sales register and the Commission report:
- * project (inventory categories), agent (CRM users), developer (from the
- * page), and a from/to date range. Option lists that fail to load simply
- * stay empty — the page still works unfiltered.
+ * Shared filter config for the Sales register and the Commission report:
+ * project (inventory categories), agent (CRM users) and developer (supplied by
+ * the page) as quick filters, plus a from/to date range in the Filters drawer.
+ * Option lists that fail to load simply stay empty; the page still works unfiltered.
  */
-const SalesFiltersBar: React.FC<Props> = ({ value, onChange, developers }) => {
+export function useSalesFilterConfig(
+    value: SalesFilters,
+    onChange: (next: SalesFilters) => void,
+    developers: FilterOption[] = [],
+): { config: ListFilterConfig; rangeError: string | null } {
     const [projects, setProjects] = useState<FilterOption[]>([]);
     const [agents, setAgents] = useState<FilterOption[]>([]);
 
@@ -42,58 +36,37 @@ const SalesFiltersBar: React.FC<Props> = ({ value, onChange, developers }) => {
         return () => { alive = false; };
     }, []);
 
-    const set = (key: keyof SalesFilters, v: string) => onChange({ ...value, [key]: v || undefined });
-    const rangeError = validateDateRange(value);
+    const opts = (list: FilterOption[]) => list.map((o) => ({ value: o.id, label: o.name }));
+    const fields = useMemo<FilterField[]>(() => {
+        const f: FilterField[] = [
+            { key: 'project_id', label: 'Project', type: 'select', quick: true, options: opts(projects) },
+            { key: 'agent_id', label: 'Agent', type: 'select', quick: true, options: opts(agents) },
+        ];
+        if (developers.length > 0) f.push({ key: 'developer_id', label: 'Developer', type: 'select', quick: true, options: opts(developers) });
+        f.push({ key: 'range', label: 'Date range', type: 'daterange' });
+        return f;
+    }, [projects, agents, developers]);
 
-    return (
-        <div className="space-y-nb-2" data-testid="sales-filters">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
-                <label className={LABEL_CLS}>
-                    Project
-                    <select aria-label="Project" className={FIELD_CLS} value={value.project_id ?? ''} onChange={(e) => set('project_id', e.target.value)}>
-                        <option value="">All projects</option>
-                        {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                    </select>
-                </label>
-                <label className={LABEL_CLS}>
-                    Agent
-                    <select aria-label="Agent" className={FIELD_CLS} value={value.agent_id ?? ''} onChange={(e) => set('agent_id', e.target.value)}>
-                        <option value="">All agents</option>
-                        {agents.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                    </select>
-                </label>
-                {developers.length > 0 && (
-                    <label className={LABEL_CLS}>
-                        Developer
-                        <select aria-label="Developer" className={FIELD_CLS} value={value.developer_id ?? ''} onChange={(e) => set('developer_id', e.target.value)}>
-                            <option value="">All developers</option>
-                            {developers.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-                        </select>
-                    </label>
-                )}
-                <label className={LABEL_CLS}>
-                    From
-                    <input type="date" aria-label="From" className={FIELD_CLS} value={value.from ?? ''} onChange={(e) => set('from', e.target.value)} />
-                </label>
-                <label className={LABEL_CLS}>
-                    To
-                    <input type="date" aria-label="To" className={FIELD_CLS} value={value.to ?? ''} onChange={(e) => set('to', e.target.value)} />
-                </label>
-            </div>
-            <div className="flex items-center justify-between gap-3 min-h-[1.5rem]">
-                {rangeError ? <p role="alert" className="text-xs text-danger">{rangeError}</p> : <span />}
-                {hasActiveFilters(value) && (
-                    <button
-                        type="button"
-                        onClick={() => onChange({})}
-                        className="flex items-center gap-1 px-3 py-1 rounded-nb text-xs text-fg-muted hover:text-fg"
-                    >
-                        <X size={12} /> Clear filters
-                    </button>
-                )}
-            </div>
-        </div>
-    );
-};
+    const values: FilterValues = {};
+    if (value.project_id) values.project_id = value.project_id;
+    if (value.agent_id) values.agent_id = value.agent_id;
+    if (value.developer_id) values.developer_id = value.developer_id;
+    if (value.from || value.to) values.range = { start: value.from ?? '', end: value.to ?? '' };
 
-export default SalesFiltersBar;
+    const config: ListFilterConfig = {
+        fields,
+        values,
+        onChange: (next) => {
+            const r = next.range as { start?: string; end?: string } | null | undefined;
+            const out: SalesFilters = {};
+            if (typeof next.project_id === 'string') out.project_id = next.project_id;
+            if (typeof next.agent_id === 'string') out.agent_id = next.agent_id;
+            if (typeof next.developer_id === 'string') out.developer_id = next.developer_id;
+            if (r?.start) out.from = r.start;
+            if (r?.end) out.to = r.end;
+            onChange(out);
+        },
+        onClear: () => onChange({}),
+    };
+    return { config, rangeError: validateDateRange(value) };
+}

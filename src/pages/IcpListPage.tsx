@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MoreVertical, Target } from 'lucide-react';
-import { Badge, Button, DeleteConfirmDialog, EmptyState, ListPageTemplate, Menu, Spinner, toast } from '@so360/design-system';
+import { Target } from 'lucide-react';
+import { Badge, Button, DeleteConfirmDialog, DataTable, EmptyState, ListPageTemplate, Spinner, toast, type DataTableColumn } from '@so360/design-system';
 import { useShellBridge } from '@so360/shell-context';
 import { icpService, type Icp } from '../services/icpService';
 
@@ -78,6 +78,28 @@ const IcpListPage: React.FC = () => {
         ...(canDelete ? [{ label: 'Archive', danger: true, onSelect: () => setArchiveTarget(icp) }] : []),
     ];
 
+    const columns: DataTableColumn<Icp>[] = [
+        {
+            key: 'name',
+            header: 'Name',
+            render: (icp) => (
+                <>
+                    <span className="font-medium">{icp.name}</span>{' '}
+                    {icp.is_default && <Badge tone="primary" size="sm" data-testid="badge">Default</Badge>}
+                </>
+            ),
+        },
+        { key: 'criteria', header: 'Criteria', align: 'right', render: (icp) => <span data-testid={`icp-count-${icp.id}`}>{icp.icp_criteria?.length ?? 0}</span> },
+        {
+            key: 'auto',
+            header: 'Auto-add to list',
+            render: (icp) => {
+                const seg = segmentName(icp.auto_segment_id);
+                return <span className="text-fg-muted">{seg ? `${seg} · score ≥ ${icp.auto_segment_min_score ?? 70}` : '—'}</span>;
+            },
+        },
+    ];
+
     const newBtn = <Button onClick={() => navigate(`${BASE}/new`)}>New ICP</Button>;
 
     const body = loading ? (
@@ -87,46 +109,15 @@ const IcpListPage: React.FC = () => {
     ) : error ? (
         <EmptyState title="Could not load profiles" description={error} action={{ label: 'Retry', onClick: () => void load() }} />
     ) : (
-        <div className="w-full overflow-x-auto" data-testid="icp-table">
-            <table className="w-full text-sm text-fg">
-                <thead>
-                    <tr className="border-b border-line text-left text-fg-muted">
-                        <th className="py-nb-2 pr-nb-3 font-medium">Name</th>
-                        <th className="py-nb-2 pr-nb-3 font-medium">Criteria</th>
-                        <th className="py-nb-2 pr-nb-3 font-medium">Auto-add to list</th>
-                        <th className="py-nb-2 font-medium" aria-label="Actions" />
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-line">
-                    {icps.map((icp) => {
-                        const items = rowItems(icp);
-                        const seg = segmentName(icp.auto_segment_id);
-                        return (
-                            <tr key={icp.id} data-testid={`icp-row-${icp.id}`}>
-                                <td className="py-nb-3 pr-nb-3">
-                                    <span className="font-medium">{icp.name}</span>{' '}
-                                    {icp.is_default && <Badge tone="primary" size="sm" data-testid="badge">Default</Badge>}
-                                </td>
-                                <td className="py-nb-3 pr-nb-3" data-testid={`icp-count-${icp.id}`}>{icp.icp_criteria?.length ?? 0}</td>
-                                <td className="py-nb-3 pr-nb-3 text-fg-muted">
-                                    {seg ? `${seg} · score ≥ ${icp.auto_segment_min_score ?? 70}` : '—'}
-                                </td>
-                                <td className="py-nb-3 text-right">
-                                    {items.length > 0 && (
-                                        <Menu
-                                            name={`icp-row-${icp.id}-menu`}
-                                            trigger={<Button variant="secondary" size="sm" aria-label={`Actions for ${icp.name}`}><MoreVertical className="h-4 w-4" /></Button>}
-                                            items={items}
-                                            placement="bottom-end"
-                                        />
-                                    )}
-                                </td>
-                            </tr>
-                        );
-                    })}
-                </tbody>
-            </table>
-        </div>
+        <DataTable<Icp>
+            name="icps"
+            data-testid="icp-table"
+            rows={icps}
+            rowKey={(icp) => icp.id}
+            columns={columns}
+            getRowProps={(icp) => ({ 'data-testid': `icp-row-${icp.id}` })}
+            rowActions={canUpdate || canDelete ? rowItems : undefined}
+        />
     );
 
     return (

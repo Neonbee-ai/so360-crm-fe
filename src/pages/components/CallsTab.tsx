@@ -4,7 +4,7 @@ import {
     Trash2, FileText, Clock,
 } from 'lucide-react';
 import { crmService } from '../../services/crmService';
-import { useConfirm, Button, Badge, EmptyState } from '@so360/design-system';
+import { useConfirm, Button, Badge, EmptyState, IconButton, Select, DateTimePicker, NumberInput, TextField, Textarea } from '@so360/design-system';
 import { Modal } from '../../components/common/Modal';
 
 interface Props {
@@ -137,9 +137,7 @@ export function UploadCallForm({ onClose, onUpload, asModal = false }: UploadFor
             {!asModal && (
                 <div className="flex items-center justify-between">
                     <h3 className="text-xs font-medium text-fg">Upload Call Recording</h3>
-                    <button onClick={onClose} className="text-fg-muted hover:text-fg-subtle transition-colors">
-                        <X size={14} />
-                    </button>
+                    <IconButton label="Close" icon={<X size={14} />} variant="ghost" size="sm" onClick={onClose} />
                 </div>
             )}
 
@@ -149,78 +147,63 @@ export function UploadCallForm({ onClose, onUpload, asModal = false }: UploadFor
                     type="file"
                     accept="audio/*"
                     onChange={handleFileChange}
-                    className="w-full text-xs text-fg-subtle file:mr-3 file:py-2 file:px-4 file:rounded-nb file:border-0 file:text-xs file:font-medium file: file:st file:bg-surface-raised file:text-fg hover:file:bg-line"
+                    className="w-full text-xs text-fg-subtle file:mr-3 file:py-2 file:px-4 file:rounded-nb file:border-0 file:text-xs file:font-medium file:bg-surface-raised file:text-fg hover:file:bg-line"
                 />
             </div>
 
             <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
-                <div>
-                    <label className="block text-xs font-medium text-fg-muted mb-2">Direction</label>
-                    <select
-                        value={direction}
-                        onChange={e => setDirection(e.target.value as 'inbound' | 'outbound')}
-                        className="w-full bg-surface-raised border border-line rounded-nb px-3 py-2 text-xs text-fg focus:outline-none focus:border-primary"
-                    >
-                        <option value="outbound">Outbound</option>
-                        <option value="inbound">Inbound</option>
-                    </select>
-                </div>
-                <div>
-                    <label className="block text-xs font-medium text-fg-muted mb-2">Occurred At</label>
-                    <input
-                        type="datetime-local"
-                        value={occurredAt}
-                        onChange={e => setOccurredAt(e.target.value)}
-                        className="w-full bg-surface-raised border border-line rounded-nb px-3 py-2 text-xs text-fg focus:outline-none focus:border-primary"
-                    />
-                </div>
-                <div>
-                    <label className="block text-xs font-medium text-fg-muted mb-2">Duration (seconds)</label>
-                    <input
-                        type="number"
-                        min={0}
-                        value={durationSeconds}
-                        onChange={e => setDurationSeconds(e.target.value === '' ? '' : parseInt(e.target.value) || 0)}
-                        className="w-full bg-surface-raised border border-line rounded-nb px-3 py-2 text-xs text-fg focus:outline-none focus:border-primary"
-                    />
-                </div>
-                <div>
-                    <label className="block text-xs font-medium text-fg-muted mb-2">Phone Number</label>
-                    <input
-                        type="text"
-                        value={phoneNumber}
-                        onChange={e => setPhoneNumber(e.target.value)}
-                        placeholder="+1 555 000 0000"
-                        className="w-full bg-surface-raised border border-line rounded-nb px-3 py-2 text-xs text-fg placeholder-fg-subtle focus:outline-none focus:border-primary"
-                    />
-                </div>
-            </div>
-
-            <div>
-                <label className="block text-xs font-medium text-fg-muted mb-2">Transcript (optional)</label>
-                <textarea
-                    value={transcriptText}
-                    onChange={e => setTranscriptText(e.target.value)}
-                    rows={3}
-                    placeholder="Paste or type the call transcript…"
-                    className="w-full bg-surface-raised border border-line rounded-nb px-3 py-2 text-xs text-fg placeholder-fg-subtle focus:outline-none focus:border-primary resize-none"
+                <Select
+                    name="call-direction"
+                    label="Direction"
+                    value={direction}
+                    onChange={e => setDirection(e.target.value as 'inbound' | 'outbound')}
+                    options={[{ value: 'outbound', label: 'Outbound' }, { value: 'inbound', label: 'Inbound' }]}
+                />
+                <DateTimePicker
+                    name="call-occurred-at"
+                    label="Occurred At"
+                    value={occurredAt}
+                    onChange={setOccurredAt}
+                />
+                <NumberInput
+                    name="call-duration"
+                    label="Duration (seconds)"
+                    min={0}
+                    value={durationSeconds === '' ? null : durationSeconds}
+                    onChange={v => setDurationSeconds(v == null ? '' : Math.trunc(v) || 0)}
+                />
+                <TextField
+                    name="call-phone"
+                    label="Phone Number"
+                    type="text"
+                    value={phoneNumber}
+                    onChange={e => setPhoneNumber(e.target.value)}
+                    placeholder="+1 555 000 0000"
                 />
             </div>
 
-            <div>
-                <label className="block text-xs font-medium text-fg-muted mb-2">Sentiment (optional)</label>
-                <select
-                    value={sentiment}
-                    onChange={e => setSentiment(e.target.value as typeof sentiment)}
-                    className="w-full bg-surface-raised border border-line rounded-nb px-3 py-2 text-xs text-fg focus:outline-none focus:border-primary"
-                >
-                    <option value="">Unspecified</option>
-                    <option value="positive">Positive</option>
-                    <option value="neutral">Neutral</option>
-                    <option value="negative">Negative</option>
-                    <option value="mixed">Mixed</option>
-                </select>
-            </div>
+            <Textarea
+                name="call-transcript"
+                label="Transcript (optional)"
+                value={transcriptText}
+                onChange={e => setTranscriptText(e.target.value)}
+                rows={3}
+                placeholder="Paste or type the call transcript…"
+            />
+
+            <Select
+                name="call-sentiment"
+                label="Sentiment (optional)"
+                value={sentiment}
+                onChange={e => setSentiment(e.target.value as typeof sentiment)}
+                options={[
+                    { value: '', label: 'Unspecified' },
+                    { value: 'positive', label: 'Positive' },
+                    { value: 'neutral', label: 'Neutral' },
+                    { value: 'negative', label: 'Negative' },
+                    { value: 'mixed', label: 'Mixed' },
+                ]}
+            />
 
             {!asModal && <div className="flex justify-end gap-nb-2">{actions}</div>}
         </div>
@@ -409,22 +392,24 @@ export default function CallsTab({ leadId, dealId }: Props) {
 
                                 <div className="flex flex-col items-end gap-2 flex-shrink-0">
                                     {call.transcript_text && (
-                                        <button
+                                        <IconButton
+                                            label="View full transcript"
+                                            icon={<FileText size={14} />}
+                                            variant="ghost"
+                                            size="sm"
+                                            className="opacity-0 group-hover:opacity-100 transition-opacity"
                                             onClick={() => setSelected(call)}
-                                            className="opacity-0 group-hover:opacity-100 transition-opacity p-2 text-fg-muted hover:text-primary hover:bg-surface-raised rounded-nb"
-                                            title="View full transcript"
-                                        >
-                                            <FileText size={14} />
-                                        </button>
+                                        />
                                     )}
-                                    <button
+                                    <IconButton
+                                        label="Delete call"
+                                        icon={<Trash2 size={14} />}
+                                        variant="danger"
+                                        size="sm"
+                                        className="opacity-0 group-hover:opacity-100 transition-opacity"
                                         onClick={() => handleDelete(call.id)}
                                         disabled={deletingId === call.id}
-                                        className="opacity-0 group-hover:opacity-100 transition-opacity p-2 text-fg-muted hover:text-danger hover:bg-surface-raised rounded-nb disabled:opacity-50"
-                                        title="Delete call"
-                                    >
-                                        <Trash2 size={14} />
-                                    </button>
+                                    />
                                 </div>
                             </div>
                         );

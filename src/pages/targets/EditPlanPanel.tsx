@@ -1,4 +1,4 @@
-import { Button } from '@so360/design-system';
+import { Button, TextField, Select } from '@so360/design-system';
 import React, { useEffect, useState } from 'react';
 import { targetPlanService } from '../../services/targetPlanService';
 import { Panel } from './targetUi';
@@ -140,52 +140,58 @@ export default function EditPlanPanel({
               <label className="block text-xs text-fg-subtle mb-1">
                 Name
               </label>
-              <input
+              <TextField
+                name="plan-name"
                 aria-label="Plan name"
-                className="w-full rounded bg-surface-raised px-2 py-1.5 text-sm text-fg outline-none"
+                size="sm"
                 value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, name: e.target.value })}
               />
             </div>
             <div>
               <label className="block text-xs text-fg-subtle mb-1">
                 Priority
               </label>
-              <select
+              <Select
+                name="plan-priority"
                 aria-label="Priority"
-                className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
+                size="sm"
                 value={form.priority}
-                onChange={(e) => setForm({ ...form, priority: e.target.value })}
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm({ ...form, priority: e.target.value })}
+                options={[
+                  { value: 'low', label: 'Low' },
+                  { value: 'medium', label: 'Medium' },
+                  { value: 'high', label: 'High' },
+                ]}
+              />
             </div>
             <div>
               <label className="block text-xs text-fg-subtle mb-1">
                 Status
               </label>
-              <select
+              <Select
+                name="plan-status"
                 aria-label="Status"
-                className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
+                size="sm"
                 value={form.status}
-                onChange={(e) => setForm({ ...form, status: e.target.value })}
-              >
-                <option value="draft">Draft</option>
-                <option value="active">Active</option>
-                <option value="closed">Closed</option>
-              </select>
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm({ ...form, status: e.target.value })}
+                options={[
+                  { value: 'draft', label: 'Draft' },
+                  { value: 'active', label: 'Active' },
+                  { value: 'closed', label: 'Closed' },
+                ]}
+              />
             </div>
             <div>
               <label className="block text-xs text-fg-subtle mb-1">
                 Role
               </label>
-              <input
+              <TextField
+                name="plan-role"
                 aria-label="Role"
-                className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg outline-none"
+                size="sm"
                 value={form.role}
-                onChange={(e) => setForm({ ...form, role: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, role: e.target.value })}
               />
             </div>
           </div>
@@ -207,18 +213,21 @@ export default function EditPlanPanel({
                       <span className="text-fg-subtle">{pr.lineLabel}</span>{' '}
                       {pr.period_start} → {pr.period_end}
                     </span>
-                    <input
+                    <div className="w-32">
+                    <TextField
+                      name={`period-target-${pr.id}`}
                       aria-label={`Target for ${pr.period_start}`}
-                      className="w-32 rounded bg-surface-raised px-2 py-1.5 text-sm text-fg outline-none"
+                      size="sm"
                       placeholder={String(pr.target_value ?? '')}
                       value={periodEdits[pr.id] ?? ''}
-                      onChange={(e) =>
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                         setPeriodEdits({
                           ...periodEdits,
                           [pr.id]: e.target.value,
                         })
                       }
                     />
+                    </div>
                     <span className="text-xs text-fg-muted">
                       currently {pr.target_value}
                     </span>
@@ -237,12 +246,13 @@ export default function EditPlanPanel({
               <label className="block text-xs text-fg-subtle mb-1">
                 Reason for the change
               </label>
-              <input
+              <TextField
+                name="plan-change-reason"
                 aria-label="Change reason"
-                className="w-full rounded bg-surface-raised px-2 py-1.5 text-sm text-fg outline-none"
+                size="sm"
                 placeholder="Territory reassigned mid-quarter"
                 value={form.change_reason}
-                onChange={(e) =>
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   setForm({ ...form, change_reason: e.target.value })
                 }
               />

@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
 import { formatDateTime, mapCampaign } from './marketing/marketingMappers';
-import { Button, Card, ListPageTemplate, Menu } from '@so360/design-system';
+import { Badge, Button, Card, DataTable, EmptyState, ListPageTemplate, SearchInput, Select, TextField, Textarea } from '@so360/design-system';
+import type { DataTableColumn, FilterValues, MenuItem } from '@so360/design-system';
 import CampaignTemplateEditor from '../components/CampaignTemplateEditor';
 import { useShellBridge } from '@so360/shell-context';
 
@@ -18,6 +19,15 @@ const initialForm = {
   audienceFilterText: '',
 };
 
+const CAMPAIGN_TYPE_OPTIONS = [
+  { value: 'promotional', label: 'Promotional' },
+  { value: 'abandoned_cart', label: 'Abandoned Cart' },
+  { value: 'win_back', label: 'Win Back' },
+  { value: 'custom', label: 'Custom' },
+];
+const STATUS_OPTIONS = ['draft', 'scheduled', 'sending', 'sent', 'paused'].map((v) => ({ value: v, label: v.charAt(0).toUpperCase() + v.slice(1) }));
+const STATUS_TONE: Record<string, 'success' | 'warning' | 'primary' | 'neutral'> = { sent: 'success', paused: 'warning', sending: 'primary' };
+
 const MarketingCampaignsPage: React.FC = () => {
   const navigate = useNavigate();
   const shell = useShellBridge();
@@ -28,6 +38,9 @@ const MarketingCampaignsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState(initialForm);
+
+  const [search, setSearch] = useState('');
+  const [filters, setFilters] = useState<FilterValues>({});
 
   const applyStore = (value: string) => {
     setStoreId(value);
@@ -71,6 +84,27 @@ const MarketingCampaignsPage: React.FC = () => {
     }
   };
 
+  const visibleRows = rows.filter((r) => {
+    if (filters.status && r.status !== filters.status) return false;
+    if (filters.type && r.campaignType !== filters.type) return false;
+    return !search || String(r.name ?? '').toLowerCase().includes(search.toLowerCase());
+  });
+
+  const columns: DataTableColumn<any>[] = [
+    { key: 'name', header: 'Name', sortable: true, render: (r) => <span className="font-medium text-fg">{r.name}</span> },
+    { key: 'campaignType', header: 'Type', render: (r) => <span className="capitalize text-fg-muted">{String(r.campaignType ?? '').replace('_', ' ')}</span> },
+    { key: 'status', header: 'Status', sortable: true, render: (r) => <Badge tone={STATUS_TONE[r.status] ?? 'neutral'} size="sm">{r.status}</Badge> },
+    { key: 'totalRecipients', header: 'Recipients', align: 'right', sortable: true, sortValue: (r) => r.totalRecipients || 0, render: (r) => r.totalRecipients || 0 },
+    { key: 'sentAt', header: 'Sent At', render: (r) => <span className="text-xs text-fg-muted">{formatDateTime(r.sentAt)}</span> },
+  ];
+
+  const rowActions = (row: any): MenuItem[] => [
+    { label: 'View', onSelect: () => navigate(`/crm/marketing/campaigns/${row.id}`) },
+    ...(row.status !== 'sent' ? [{ label: 'Send', onSelect: async () => { await crmService.sendCampaignNow(storeId, row.id); await load(); } }] : []),
+    ...(row.status === 'sending' || row.status === 'scheduled' ? [{ label: 'Pause', onSelect: async () => { await crmService.pauseCampaign(storeId, row.id); await load(); } }] : []),
+    ...(canCreateMarketing ? [{ label: 'Delete', danger: true, onSelect: async () => { await crmService.deleteCampaign(storeId, row.id); await load(); } }] : []),
+  ];
+
   return (
     <ListPageTemplate
       title="Campaigns"
@@ -80,54 +114,70 @@ const MarketingCampaignsPage: React.FC = () => {
           {showCreate ? 'Close Form' : 'New Campaign'}
         </Button>
       ) : undefined}
+      search={<SearchInput placeholder="Search campaigns" value={search} onChange={setSearch} data-testid="campaigns-search" />}
+      filterConfig={{
+        fields: [
+          { key: 'status', label: 'Status', type: 'select', quick: true, options: STATUS_OPTIONS },
+          { key: 'type', label: 'Type', type: 'select', options: CAMPAIGN_TYPE_OPTIONS },
+        ],
+        values: filters,
+        onChange: setFilters,
+        onClear: () => setFilters({}),
+      }}
       toolbarEnd={<MarketingStorePicker storeId={storeId} onChange={applyStore} />}
     >
 
       {showCreate && (
         <Card title="Create Campaign" className="mb-nb-3">
-          <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-4">
-            <input
-              className="bg-surface border border-line rounded-lg px-4 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus"
+          <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-4">
+            <TextField
+              name="campaign_name"
+              aria-label="Campaign name"
               placeholder="Campaign name"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
             />
-            <select
-              className="bg-surface border border-line rounded-lg px-4 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus appearance-none cursor-pointer"
+            <Select
+              name="campaign_type"
+              aria-label="Campaign type"
+              options={CAMPAIGN_TYPE_OPTIONS}
               value={form.campaignType}
               onChange={(e) => setForm({ ...form, campaignType: e.target.value })}
-            >
-              <option value="promotional">Promotional</option>
-              <option value="abandoned_cart">Abandoned Cart</option>
-              <option value="win_back">Win Back</option>
-              <option value="custom">Custom</option>
-            </select>
+            />
           </div>
-          <input
-            className="mt-4 w-full bg-surface border border-line rounded-lg px-4 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus"
-            placeholder="Description"
-            value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-          />
-          <input
-            className="mt-4 w-full bg-surface border border-line rounded-lg px-4 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus"
-            placeholder="Subject template"
-            value={form.subjectTemplate}
-            onChange={(e) => setForm({ ...form, subjectTemplate: e.target.value })}
-          />
-          <label className="block text-xs font-semibold text-fg-subtle mt-5 mb-2 ">Email Body</label>
+          <div className="mt-nb-4">
+            <TextField
+              name="campaign_description"
+              aria-label="Description"
+              placeholder="Description"
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+            />
+          </div>
+          <div className="mt-nb-4">
+            <TextField
+              name="campaign_subject"
+              aria-label="Subject template"
+              placeholder="Subject template"
+              value={form.subjectTemplate}
+              onChange={(e) => setForm({ ...form, subjectTemplate: e.target.value })}
+            />
+          </div>
+          <label className="block text-xs text-fg-muted mt-nb-5 mb-nb-2">Email Body</label>
           <CampaignTemplateEditor
             value={form.bodyTemplate}
             onChange={(html) => setForm({ ...form, bodyTemplate: html })}
           />
-          <label className="block text-xs font-semibold text-fg-subtle mt-5 mb-2 ">Audience Filter (JSON)</label>
-          <textarea
-            className="w-full bg-surface border border-line rounded-lg px-4 py-3 text-sm text-fg-subtle font-mono focus:outline-none focus:ring-2 focus:ring-focus resize-y"
+          <div className="mt-nb-5">
+          <Textarea
+            name="campaign_audience_filter"
+            label="Audience Filter (JSON)"
             rows={5}
             value={form.audienceFilterText}
             onChange={(e) => setForm({ ...form, audienceFilterText: e.target.value })}
           />
-          <div className="mt-5 flex justify-end">
+          </div>
+          <div className="mt-nb-5 flex justify-end">
             <Button
               variant="primary"
               onClick={createCampaign}
@@ -139,100 +189,18 @@ const MarketingCampaignsPage: React.FC = () => {
         </Card>
       )}
 
-      {loading && <p className="text-fg-subtle">Loading...</p>}
-      {error && <p className="text-danger mb-3">{error}</p>}
+      {error && <p className="text-danger mb-nb-3">{error}</p>}
 
-      <Card title="All Campaigns" padding="none">
-        <div className="w-full overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-surface-raised text-fg-subtle font-medium">
-              <tr>
-                <th className="px-4 py-3 font-semibold">Name</th>
-                <th className="px-4 py-3 font-semibold">Type</th>
-                <th className="px-4 py-3 font-semibold">Status</th>
-                <th className="px-4 py-3 font-semibold">Recipients</th>
-                <th className="px-4 py-3 font-semibold">Sent At</th>
-                <th className="px-4 py-3 font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line border-t border-line">
-              {rows.map((row) => (
-                <tr key={row.id} className="hover:bg-surface-high transition-colors">
-                  <td className="px-4 py-3 text-fg font-medium">{row.name}</td>
-                  <td className="px-4 py-3 text-fg-subtle capitalize">{row.campaignType.replace('_', ' ')}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`px-2.5 py-1 rounded-full text-xs font-medium ${row.status === 'sent'
-                        ? 'bg-success/10 text-success'
-                        : row.status === 'paused'
-                          ? 'bg-warning/10 text-warning'
-                          : row.status === 'sending'
-                            ? 'bg-primary/10 text-primary'
-                            : 'bg-surface-raised text-fg-subtle'
-                        }`}
-                    >
-                      {row.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-fg-subtle font-medium">{row.totalRecipients || 0}</td>
-                  <td className="px-4 py-3 text-fg-subtle text-xs">{formatDateTime(row.sentAt)}</td>
-                  <td className="px-4 py-3 flex items-center gap-2">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => navigate(`/crm/marketing/campaigns/${row.id}`)}
-                    >
-                      View
-                    </Button>
-                    {row.status !== 'sent' && (
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={async () => {
-                          await crmService.sendCampaignNow(storeId, row.id);
-                          await load();
-                        }}
-                      >
-                        Send
-                      </Button>
-                    )}
-                    {(row.status === 'sending' || row.status === 'scheduled') && (
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={async () => {
-                          await crmService.pauseCampaign(storeId, row.id);
-                          await load();
-                        }}
-                      >
-                        Pause
-                      </Button>
-                    )}
-                    {canCreateMarketing && (
-                      <Menu
-                        trigger={<Button variant="secondary" size="sm" aria-label="Row actions">&#8942;</Button>}
-                        items={[{
-                          label: 'Delete',
-                          danger: true,
-                          onSelect: async () => {
-                            await crmService.deleteCampaign(storeId, row.id);
-                            await load();
-                          },
-                        }]}
-                      />
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {rows.length === 0 && !loading && (
-                <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-fg-muted text-sm">No campaigns found.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+      <DataTable
+        columns={columns}
+        rows={visibleRows}
+        rowKey={(r: any) => r.id}
+        loading={loading}
+        onRowClick={(r: any) => navigate(`/crm/marketing/campaigns/${r.id}`)}
+        rowActions={rowActions}
+        getRowProps={(r: any) => ({ 'data-testid': `campaign-row-${r.id}` })}
+        emptyState={<EmptyState title="No campaigns found." />}
+      />
     </ListPageTemplate>
   );
 };

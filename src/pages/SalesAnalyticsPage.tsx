@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
-import { DashboardPageTemplate } from '@so360/design-system';
-import SalesFiltersBar, { type FilterOption } from './components/SalesFiltersBar';
+import { DashboardPageTemplate, ListFilters } from '@so360/design-system';
+import { useSalesFilterConfig, type FilterOption } from './components/SalesFiltersBar';
 import ExportMenu, { useCanExport } from '../components/ExportMenu';
 import { validateDateRange, type SalesFilters } from '../services/salesReportService';
 import {
@@ -121,6 +121,7 @@ const SalesAnalyticsPage: React.FC = () => {
     const [reloadKey, setReloadKey] = useState(0);
     const [developers, setDevelopers] = useState<FilterOption[]>([]);
 
+    const { config: filterConfig, rangeError } = useSalesFilterConfig(filters, setFilters, developers);
     const rangeInvalid = validateDateRange(filters) !== null;
 
     useEffect(() => {
@@ -157,7 +158,7 @@ const SalesAnalyticsPage: React.FC = () => {
 
     let body: React.ReactNode = null;
     if (rangeInvalid) {
-        body = null;
+        body = <div role="alert" className="text-xs text-danger">{rangeError}</div>;
     } else if (loading) {
         body = <div role="status" className="p-8 text-sm text-fg-subtle">Loading sales reports…</div>;
     } else if (forbidden) {
@@ -260,7 +261,7 @@ const SalesAnalyticsPage: React.FC = () => {
                     {REPORT_PERIODS.map((p) => <option key={p} value={p}>{PERIOD_LABELS[p]}</option>)}
                 </select>
             </label>
-                    <SalesFiltersBar value={filters} onChange={setFilters} developers={developers} />
+                    <ListFilters {...filterConfig} />
                 </div>
             )}
         >

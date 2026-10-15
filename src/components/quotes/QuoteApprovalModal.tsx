@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { X, Search, User as UserIcon, Loader2, Send, AlertCircle, Check } from 'lucide-react';
 import { crmService } from '../../services/crmService';
 import { Quote } from '../../types/crm';
-import { Button } from '@so360/design-system';
+import { Button, IconButton, TextField, Textarea } from '@so360/design-system';
 import { Modal } from '../common/Modal';
 
 export interface ApproverCandidate {
@@ -228,15 +228,12 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
                   >
                     <UserIcon className="w-3 h-3" />
                     <span>{approver.full_name}</span>
-                    <button
-                      type="button"
+                    <IconButton
+                      label={`Remove ${approver.full_name}`}
+                      icon={<X className="w-3 h-3" />}
+                      size="sm"
                       onClick={() => handleRemove(approver.user_id)}
-                      aria-label={`Remove ${approver.full_name}`}
-                      className="hover:text-danger hover:bg-warning/30 rounded-full p-0.5 transition-colors"
-                      title={`Remove ${approver.full_name}`}
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
+                    />
                   </span>
                 ))}
               </div>
@@ -244,17 +241,18 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
 
             {/* Search Input */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-subtle" />
-              <input
+              <TextField
+                name="approver-search"
+                aria-label="Search approvers"
                 type="text"
                 value={searchTerm}
-                onChange={(e) => {
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   setSearchTerm(e.target.value);
                   setDropdownOpen(true);
                 }}
                 onFocus={() => setDropdownOpen(true)}
                 placeholder="Search by name, email, department or role..."
-                className="w-full pl-9 pr-4 py-2 bg-bg border border-line rounded-lg text-sm text-fg placeholder-fg-subtle focus:outline-none focus:border-warning focus:ring-1 focus:ring-warning transition-colors"
+                leadingIcon={Search}
               />
             </div>
 
@@ -314,18 +312,14 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
           </div>
 
           {/* Submission Note */}
-          <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-fg-subtle">
-              Optional Note for Approvers
-            </label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add context or justification for this approval (e.g. Special commercial discount approved by VP Sales)..."
-              rows={3}
-              className="w-full px-3 py-2 bg-bg border border-line rounded-lg text-sm text-fg placeholder-fg-subtle focus:outline-none focus:border-warning focus:ring-1 focus:ring-warning transition-colors"
-            />
-          </div>
+          <Textarea
+            name="approval-notes"
+            label="Optional Note for Approvers"
+            value={notes}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNotes(e.target.value)}
+            placeholder="Add context or justification for this approval (e.g. Special commercial discount approved by VP Sales)..."
+            rows={3}
+          />
         </div>
     </Modal>
   );

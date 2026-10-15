@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ChevronDown, ChevronUp, History, Loader2, Pencil, RefreshCw, Save, X } from 'lucide-react';
-import { toast } from '@so360/design-system';
+import { toast, Button, TextField, NumberInput } from '@so360/design-system';
 import {
     commissionsService,
     legalTransitions,
@@ -17,9 +17,6 @@ import { salesSettingsService } from '../../services/salesSettingsService';
 import { useCRMFormatters } from '../../utils/formatters';
 import { describeApiError } from '../../utils/apiErrorMessage';
 
-const FIELD_CLS = 'w-full bg-bg border border-line text-fg rounded-nb-lg px-3 py-2 outline-none focus:border-primary transition-all font-bold text-xs';
-const BTN_PRIMARY = 'flex items-center gap-2 px-4 py-2 rounded-nb-lg bg-primary hover:bg-primary/90 text-primary-fg text-xs font-semibold disabled:opacity-60';
-const BTN_GHOST = 'flex items-center gap-1 px-3 py-2 rounded-nb-lg text-xs font-semibold text-fg-subtle hover:text-fg disabled:opacity-60';
 
 const STATUS_CHIP: Record<CommissionStatus, string> = {
     pending: 'bg-warning/10 text-warning border-warning/30',
@@ -99,7 +96,7 @@ const DealCommissionPanel: React.FC<Props> = ({ dealId }) => {
         return (
             <div className="p-8 space-y-3">
                 <p role="alert" className="text-sm text-danger">{loadError}</p>
-                <button type="button" className={BTN_GHOST} onClick={() => void load()}>Retry</button>
+                <Button variant="secondary" size="sm" type="button" onClick={() => void load()}>Retry</Button>
             </div>
         );
     }
@@ -148,10 +145,10 @@ const DealCommissionPanel: React.FC<Props> = ({ dealId }) => {
                         {approvalRequired ? 'Lines need approval before they become payable.' : 'Lines become payable without approval.'}
                     </p>
                 </div>
-                <button type="button" className={BTN_PRIMARY} disabled={busy} onClick={() => void generate()}>
+                <Button variant="primary" size="sm" type="button" disabled={busy} onClick={() => void generate()}>
                     {busy ? <Loader2 className="animate-spin" size={14} /> : <RefreshCw size={14} />}
                     {lines.length ? 'Regenerate' : 'Generate'}
-                </button>
+                </Button>
             </div>
 
             {lines.length === 0 ? (
@@ -185,22 +182,22 @@ const DealCommissionPanel: React.FC<Props> = ({ dealId }) => {
 
                                 {act?.kind === 'override' && (
                                     <div className="grid grid-cols-1 wc-medium:grid-cols-[1fr_2fr_auto] gap-2 items-center">
-                                        <input aria-label={`New amount for ${l.name}`} type="number" min={0} className={FIELD_CLS} value={act.amount} onChange={(e) => patchAction({ amount: e.target.value })} />
-                                        <input aria-label={`Reason for ${l.name}`} placeholder="Reason (required)" className={FIELD_CLS} value={act.reason} onChange={(e) => patchAction({ reason: e.target.value })} />
+                                        <NumberInput name="override-amount" aria-label={`New amount for ${l.name}`} min={0} value={act.amount === '' ? null : Number(act.amount)} onChange={(v) => patchAction({ amount: v == null ? '' : String(v) })} />
+                                        <TextField name="override-reason" aria-label={`Reason for ${l.name}`} placeholder="Reason (required)" value={act.reason} onChange={(e) => patchAction({ reason: e.target.value })} />
                                         <div className="flex gap-1">
-                                            <button type="button" className={BTN_PRIMARY} disabled={busy} onClick={() => saveOverride(l, act)}><Save size={12} /> Save</button>
-                                            <button type="button" className={BTN_GHOST} onClick={() => { setError(null); setAction(null); }}><X size={12} /> Cancel</button>
+                                            <Button variant="primary" size="sm" type="button" disabled={busy} onClick={() => saveOverride(l, act)}><Save size={12} /> Save</Button>
+                                            <Button variant="secondary" size="sm" type="button" onClick={() => { setError(null); setAction(null); }}><X size={12} /> Cancel</Button>
                                         </div>
                                     </div>
                                 )}
                                 {act?.kind === 'transition' && (
                                     <div className="grid grid-cols-1 wc-medium:grid-cols-[2fr_auto] gap-2 items-center">
-                                        <input aria-label={`Note for ${l.name}`} placeholder="Note (optional)" className={FIELD_CLS} value={act.note} onChange={(e) => patchAction({ note: e.target.value })} />
+                                        <TextField name="transition-note" aria-label={`Note for ${l.name}`} placeholder="Note (optional)" value={act.note} onChange={(e) => patchAction({ note: e.target.value })} />
                                         <div className="flex gap-1">
-                                            <button type="button" className={BTN_PRIMARY} disabled={busy} onClick={() => void confirmTransition(l, act)}>
+                                            <Button variant="primary" size="sm" type="button" disabled={busy} onClick={() => void confirmTransition(l, act)}>
                                                 Confirm: {TRANSITION_LABELS[act.to]}
-                                            </button>
-                                            <button type="button" className={BTN_GHOST} onClick={() => { setError(null); setAction(null); }}><X size={12} /> Cancel</button>
+                                            </Button>
+                                            <Button variant="secondary" size="sm" type="button" onClick={() => { setError(null); setAction(null); }}><X size={12} /> Cancel</Button>
                                         </div>
                                     </div>
                                 )}
@@ -208,36 +205,33 @@ const DealCommissionPanel: React.FC<Props> = ({ dealId }) => {
                                 {!act && (
                                     <div className="flex flex-wrap items-center gap-1">
                                         {canOverride(l) && (
-                                            <button
+                                            <Button variant="secondary" size="sm"
                                                 type="button"
-                                                className={BTN_GHOST}
                                                 aria-label={`Override amount for ${l.name}`}
                                                 onClick={() => { setError(null); setAction({ kind: 'override', id: l.id, amount: String(l.amount), reason: '' }); }}
                                             >
                                                 <Pencil size={12} /> Override
-                                            </button>
+                                            </Button>
                                         )}
                                         {moves.map((to) => (
-                                            <button
+                                            <Button variant="secondary" size="sm"
                                                 key={to}
                                                 type="button"
-                                                className={BTN_GHOST}
                                                 aria-label={`${TRANSITION_LABELS[to]} ${l.name}`}
                                                 onClick={() => { setError(null); setAction({ kind: 'transition', id: l.id, to, note: '' }); }}
                                             >
                                                 {TRANSITION_LABELS[to]}
-                                            </button>
+                                            </Button>
                                         ))}
                                         {l.audit.length > 0 && (
-                                            <button
+                                            <Button variant="secondary" size="sm"
                                                 type="button"
-                                                className={BTN_GHOST}
                                                 aria-expanded={auditOpen}
                                                 aria-label={`History for ${l.name}`}
                                                 onClick={() => setOpenAudit(auditOpen ? null : l.id)}
                                             >
                                                 <History size={12} /> History ({l.audit.length}) {auditOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                                            </button>
+                                            </Button>
                                         )}
                                     </div>
                                 )}

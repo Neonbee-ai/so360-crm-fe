@@ -8,6 +8,7 @@ import { crmService } from '../services/crmService';
 import { useCRMFormatters } from '../utils/formatters';
 import { parseUtcDate } from '../utils/datetime';
 import { useBusinessSettings } from '@so360/shell-context';
+import { Button, TextField, Select, Textarea, Checkbox } from '@so360/design-system';
 
 interface Partner {
     id: string;
@@ -106,7 +107,6 @@ const formatAddress = (a?: AddressShape | null): string => {
 
 // ─── Shared input class ──────────────────────────────────────────────────────
 
-const FIELD_CLS = 'w-full bg-bg border border-line text-fg px-3 py-2 rounded-nb text-sm focus:outline-none focus:ring-2 focus:ring-primary/50';
 
 // ─── Props ───────────────────────────────────────────────────────────────────
 
@@ -343,22 +343,19 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
             <>
                 <div>
                     <label className="text-xs text-fg-muted mb-1 block">GST Treatment</label>
-                    <select value={draft.gst_treatment || ''} onChange={e => setDraftField({ gst_treatment: e.target.value })} className={FIELD_CLS}>
-                        <option value="">Select…</option>
-                        {GST_TREATMENT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </select>
+                    <Select name="gst-treatment" value={draft.gst_treatment || ''} onChange={e => setDraftField({ gst_treatment: e.target.value })} options={[{ value: '', label: 'Select…' }, ...GST_TREATMENT_OPTIONS]} />
                 </div>
                 <div>
                     <label className="text-xs text-fg-muted mb-1 block">GST Number</label>
-                    <input value={draft.gst_number || ''} onChange={e => setDraftField({ gst_number: e.target.value.toUpperCase() })} placeholder="29ABCDE1234F1Z5" className={`${FIELD_CLS} font-mono`} />
+                    <TextField name="gst-number" value={draft.gst_number || ''} onChange={e => setDraftField({ gst_number: e.target.value.toUpperCase() })} placeholder="29ABCDE1234F1Z5" className="font-mono" />
                 </div>
                 <div>
                     <label className="text-xs text-fg-muted mb-1 block">Place of Supply</label>
-                    <input value={draft.place_of_supply || ''} onChange={e => setDraftField({ place_of_supply: e.target.value })} className={FIELD_CLS} />
+                    <TextField name="place-of-supply" value={draft.place_of_supply || ''} onChange={e => setDraftField({ place_of_supply: e.target.value })} />
                 </div>
                 <div>
                     <label className="text-xs text-fg-muted mb-1 block">PAN Number</label>
-                    <input value={draft.pan_number || ''} onChange={e => setDraftField({ pan_number: e.target.value.toUpperCase() })} placeholder="ABCDE1234F" className={`${FIELD_CLS} font-mono`} />
+                    <TextField name="pan-number" value={draft.pan_number || ''} onChange={e => setDraftField({ pan_number: e.target.value.toUpperCase() })} placeholder="ABCDE1234F" className="font-mono" />
                 </div>
             </>
         );
@@ -366,21 +363,18 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
             <>
                 <div>
                     <label className="text-xs text-fg-muted mb-1 block">VAT Treatment</label>
-                    <select value={draft.vat_treatment || ''} onChange={e => setDraftField({ vat_treatment: e.target.value })} className={FIELD_CLS}>
-                        <option value="">Select…</option>
-                        {VAT_TREATMENT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </select>
+                    <Select name="vat-treatment" value={draft.vat_treatment || ''} onChange={e => setDraftField({ vat_treatment: e.target.value })} options={[{ value: '', label: 'Select…' }, ...VAT_TREATMENT_OPTIONS]} />
                 </div>
                 <div>
                     <label className="text-xs text-fg-muted mb-1 block">VAT Number</label>
-                    <input value={draft.vat_number || ''} onChange={e => setDraftField({ vat_number: e.target.value.toUpperCase() })} placeholder="e.g. GB123456789" className={`${FIELD_CLS} font-mono`} />
+                    <TextField name="vat-number" value={draft.vat_number || ''} onChange={e => setDraftField({ vat_number: e.target.value.toUpperCase() })} placeholder="e.g. GB123456789" className="font-mono" />
                 </div>
             </>
         );
         if (taxRegime === 'us') return (
             <div className="col-span-2">
                 <label className="text-xs text-fg-muted mb-1 block">Tax Exempt ID / EIN</label>
-                <input value={draft.tax_exempt_id || ''} onChange={e => setDraftField({ tax_exempt_id: e.target.value })} placeholder="e.g. 12-3456789" className={FIELD_CLS} />
+                <TextField name="tax-exempt-id" value={draft.tax_exempt_id || ''} onChange={e => setDraftField({ tax_exempt_id: e.target.value })} placeholder="e.g. 12-3456789" />
             </div>
         );
         return null;
@@ -449,25 +443,18 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                         </label>
                         <div className="flex items-center gap-2">
                             <div className="relative flex-1">
-                                <input
-                                    type="text"
+                                <TextField
+                                    name="tax-id"
                                     value={taxIdInput}
                                     onChange={(e) => { setTaxIdInput(e.target.value.toUpperCase()); setTaxError(null); }}
                                     placeholder="e.g. 29ABCDE1234F1Z5"
-                                    className="w-full bg-bg border border-line text-fg px-3 py-2 rounded-nb text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 font-mono"
+                                    className="font-mono"
                                 />
                                 {lead.tax_id_verified && (
                                     <CheckCircle2 size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-success" />
                                 )}
                             </div>
-                            <button
-                                onClick={handleValidateTaxId}
-                                disabled={isValidatingTax || !taxIdInput.trim()}
-                                className="px-4 py-2 bg-success hover:bg-success/90 disabled:bg-line disabled:text-fg-muted text-fg text-sm font-medium rounded-nb transition-colors flex items-center gap-1.5"
-                            >
-                                {isValidatingTax ? <Loader2 size={14} className="animate-spin" /> : <Shield size={14} />}
-                                Validate
-                            </button>
+                            <Button size="sm" variant="secondary" onClick={handleValidateTaxId} disabled={isValidatingTax || !taxIdInput.trim()}>{isValidatingTax ? <Loader2 size={14} className="animate-spin" /> : <Shield size={14} />} Validate</Button>
                         </div>
                         {taxError && (
                             <div className="mt-2 flex items-center gap-1.5 text-xs text-danger">
@@ -487,22 +474,15 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                             <CreditCard size={12} /> Credit Limit
                         </label>
                         <div className="flex items-center gap-2">
-                            <input
+                            <TextField
+                                name="credit-limit"
                                 type="number"
                                 value={creditLimitInput}
                                 onChange={(e) => setCreditLimitInput(e.target.value)}
                                 min="0"
                                 step="1000"
-                                className="flex-1 bg-bg border border-line text-fg px-3 py-2 rounded-nb text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                             />
-                            <button
-                                onClick={handleSaveCreditLimit}
-                                disabled={isSavingCredit}
-                                className="px-4 py-2 bg-primary hover:bg-primary/90 disabled:bg-line disabled:text-fg-muted text-fg text-sm font-medium rounded-nb transition-colors flex items-center gap-1.5"
-                            >
-                                {isSavingCredit ? <Loader2 size={14} className="animate-spin" /> : <CreditCard size={14} />}
-                                Save
-                            </button>
+                            <Button size="sm" variant="primary" onClick={handleSaveCreditLimit} disabled={isSavingCredit}>{isSavingCredit ? <Loader2 size={14} className="animate-spin" /> : <CreditCard size={14} />} Save</Button>
                         </div>
                         {parseFloat(lead.credit_balance) > 0 && (
                             <div className="mt-2 text-xs text-fg-subtle">
@@ -520,29 +500,11 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                         <Building2 size={12} className="text-success" /> Business Information
                     </span>
                     {!isEditingProfile ? (
-                        <button
-                            onClick={beginEditProfile}
-                            disabled={isLoadingProfile}
-                            className="px-2.5 py-1 bg-surface-raised hover:bg-line disabled:opacity-50 text-fg-subtle text-xs font-medium rounded-nb transition-colors flex items-center gap-1.5"
-                        >
-                            <Pencil size={12} /> Edit
-                        </button>
+                        <Button size="sm" variant="secondary" onClick={beginEditProfile} disabled={isLoadingProfile}><Pencil size={12} /> Edit</Button>
                     ) : (
                         <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => setIsEditingProfile(false)}
-                                disabled={isSavingProfile}
-                                className="px-2.5 py-1 bg-surface-raised hover:bg-line disabled:opacity-50 text-fg-subtle text-xs font-medium rounded-nb transition-colors flex items-center gap-1.5"
-                            >
-                                <X size={12} /> Cancel
-                            </button>
-                            <button
-                                onClick={handleSaveProfile}
-                                disabled={isSavingProfile}
-                                className="px-2.5 py-1 bg-success hover:bg-success/90 disabled:bg-line text-fg text-xs font-medium rounded-nb transition-colors flex items-center gap-1.5"
-                            >
-                                {isSavingProfile ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Save
-                            </button>
+                            <Button size="sm" variant="secondary" onClick={() => setIsEditingProfile(false)} disabled={isSavingProfile}><X size={12} /> Cancel</Button>
+                            <Button size="sm" variant="primary" onClick={handleSaveProfile} disabled={isSavingProfile}>{isSavingProfile ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Save</Button>
                         </div>
                     )}
                 </div>
@@ -582,16 +544,16 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                         <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
                             <div className="col-span-2">
                                 <label className="text-xs text-fg-muted mb-1 block">Business Name</label>
-                                <input value={draft.business_name || ''} onChange={e => setDraftField({ business_name: e.target.value })} className={FIELD_CLS} />
+                                <TextField name="business-name" value={draft.business_name || ''} onChange={e => setDraftField({ business_name: e.target.value })} />
                             </div>
                             <div className="col-span-2">
                                 <label className="text-xs text-fg-muted mb-1 block">Legal Entity Name</label>
-                                <input value={draft.legal_entity_name || ''} onChange={e => setDraftField({ legal_entity_name: e.target.value })} placeholder="Registered legal name (if different)" className={FIELD_CLS} />
+                                <TextField name="legal-entity-name" value={draft.legal_entity_name || ''} onChange={e => setDraftField({ legal_entity_name: e.target.value })} placeholder="Registered legal name (if different)" />
                             </div>
                             {renderTaxEdit()}
                             <div className="col-span-2">
                                 <label className="text-xs text-fg-muted mb-1 block">Business Type</label>
-                                <input value={draft.business_type || ''} onChange={e => setDraftField({ business_type: e.target.value })} placeholder="e.g. Private Limited" className={FIELD_CLS} />
+                                <TextField name="business-type" value={draft.business_type || ''} onChange={e => setDraftField({ business_type: e.target.value })} placeholder="e.g. Private Limited" />
                             </div>
                         </div>
 
@@ -599,30 +561,27 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                         <div>
                             <div className="text-xs font-semibold text-fg-subtle mb-1.5 flex items-center gap-1"><MapPin size={11} /> Billing Address</div>
                             <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
-                                <input value={draft.billing_address?.street || ''} onChange={e => setDraftBilling({ street: e.target.value })} placeholder="Address Line 1" className={`col-span-2 ${FIELD_CLS}`} />
-                                <input value={draft.billing_address?.street2 || ''} onChange={e => setDraftBilling({ street2: e.target.value })} placeholder="Address Line 2" className={`col-span-2 ${FIELD_CLS}`} />
-                                <input value={draft.billing_address?.city || ''} onChange={e => setDraftBilling({ city: e.target.value })} placeholder="City" className={FIELD_CLS} />
-                                <input value={draft.billing_address?.state || ''} onChange={e => setDraftBilling({ state: e.target.value })} placeholder="State / Province" className={FIELD_CLS} />
-                                <input value={draft.billing_address?.postal_code || ''} onChange={e => setDraftBilling({ postal_code: e.target.value })} placeholder="Postal Code" className={FIELD_CLS} />
-                                <input value={draft.billing_address?.country || ''} onChange={e => setDraftBilling({ country: e.target.value })} placeholder="Country" className={FIELD_CLS} />
+                                <TextField name="billing-address-street" value={draft.billing_address?.street || ''} onChange={e => setDraftBilling({ street: e.target.value })} placeholder="Address Line 1" className="col-span-2" />
+                                <TextField name="billing-address-street2" value={draft.billing_address?.street2 || ''} onChange={e => setDraftBilling({ street2: e.target.value })} placeholder="Address Line 2" className="col-span-2" />
+                                <TextField name="billing-address-city" value={draft.billing_address?.city || ''} onChange={e => setDraftBilling({ city: e.target.value })} placeholder="City" />
+                                <TextField name="billing-address-state" value={draft.billing_address?.state || ''} onChange={e => setDraftBilling({ state: e.target.value })} placeholder="State / Province" />
+                                <TextField name="billing-address-postal-code" value={draft.billing_address?.postal_code || ''} onChange={e => setDraftBilling({ postal_code: e.target.value })} placeholder="Postal Code" />
+                                <TextField name="billing-address-country" value={draft.billing_address?.country || ''} onChange={e => setDraftBilling({ country: e.target.value })} placeholder="Country" />
                             </div>
                         </div>
 
-                        <label className="flex items-center gap-2 text-xs text-fg-subtle">
-                            <input type="checkbox" checked={shippingSame} onChange={e => setShippingSame(e.target.checked)} className="rounded border-line bg-bg" />
-                            Shipping same as Billing
-                        </label>
+                        <Checkbox name="shipping-same" label="Shipping same as Billing" checked={shippingSame} onChange={e => setShippingSame(e.target.checked)} />
 
                         {!shippingSame && (
                             <div>
                                 <div className="text-xs font-semibold text-fg-subtle mb-1.5 flex items-center gap-1"><MapPin size={11} /> Shipping Address</div>
                                 <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
-                                    <input value={draft.shipping_address?.street || ''} onChange={e => setDraftShipping({ street: e.target.value })} placeholder="Address Line 1" className={`col-span-2 ${FIELD_CLS}`} />
-                                    <input value={draft.shipping_address?.street2 || ''} onChange={e => setDraftShipping({ street2: e.target.value })} placeholder="Address Line 2" className={`col-span-2 ${FIELD_CLS}`} />
-                                    <input value={draft.shipping_address?.city || ''} onChange={e => setDraftShipping({ city: e.target.value })} placeholder="City" className={FIELD_CLS} />
-                                    <input value={draft.shipping_address?.state || ''} onChange={e => setDraftShipping({ state: e.target.value })} placeholder="State / Province" className={FIELD_CLS} />
-                                    <input value={draft.shipping_address?.postal_code || ''} onChange={e => setDraftShipping({ postal_code: e.target.value })} placeholder="Postal Code" className={FIELD_CLS} />
-                                    <input value={draft.shipping_address?.country || ''} onChange={e => setDraftShipping({ country: e.target.value })} placeholder="Country" className={FIELD_CLS} />
+                                    <TextField name="shipping-address-street" value={draft.shipping_address?.street || ''} onChange={e => setDraftShipping({ street: e.target.value })} placeholder="Address Line 1" className="col-span-2" />
+                                    <TextField name="shipping-address-street2" value={draft.shipping_address?.street2 || ''} onChange={e => setDraftShipping({ street2: e.target.value })} placeholder="Address Line 2" className="col-span-2" />
+                                    <TextField name="shipping-address-city" value={draft.shipping_address?.city || ''} onChange={e => setDraftShipping({ city: e.target.value })} placeholder="City" />
+                                    <TextField name="shipping-address-state" value={draft.shipping_address?.state || ''} onChange={e => setDraftShipping({ state: e.target.value })} placeholder="State / Province" />
+                                    <TextField name="shipping-address-postal-code" value={draft.shipping_address?.postal_code || ''} onChange={e => setDraftShipping({ postal_code: e.target.value })} placeholder="Postal Code" />
+                                    <TextField name="shipping-address-country" value={draft.shipping_address?.country || ''} onChange={e => setDraftShipping({ country: e.target.value })} placeholder="Country" />
                                 </div>
                             </div>
                         )}
@@ -635,18 +594,15 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                             <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
                                 <div>
                                     <label className="text-xs text-fg-muted mb-1 block">Payment Terms</label>
-                                    <select value={draft.payment_terms || ''} onChange={e => setDraftField({ payment_terms: e.target.value })} className={FIELD_CLS}>
-                                        <option value="">Select…</option>
-                                        {PAYMENT_TERMS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                                    </select>
+                                    <Select name="payment-terms" value={draft.payment_terms || ''} onChange={e => setDraftField({ payment_terms: e.target.value })} options={[{ value: '', label: 'Select…' }, ...PAYMENT_TERMS_OPTIONS]} />
                                 </div>
                                 <div>
                                     <label className="text-xs text-fg-muted mb-1 block">Customer Currency</label>
-                                    <input value={draft.customer_currency || ''} onChange={e => setDraftField({ customer_currency: e.target.value.toUpperCase() })} placeholder={bizSettings?.base_currency || 'e.g. USD'} className={`${FIELD_CLS} font-mono`} maxLength={3} />
+                                    <TextField name="customer-currency" value={draft.customer_currency || ''} onChange={e => setDraftField({ customer_currency: e.target.value.toUpperCase() })} placeholder={bizSettings?.base_currency || 'e.g. USD'} maxLength={3} className="font-mono" />
                                 </div>
                                 <div className="col-span-2">
                                     <label className="text-xs text-fg-muted mb-1 block">Preferred Tax Group</label>
-                                    <input value={draft.preferred_tax_group || ''} onChange={e => setDraftField({ preferred_tax_group: e.target.value })} placeholder="e.g. Standard GST 18%" className={FIELD_CLS} />
+                                    <TextField name="preferred-tax-group" value={draft.preferred_tax_group || ''} onChange={e => setDraftField({ preferred_tax_group: e.target.value })} placeholder="e.g. Standard GST 18%" />
                                 </div>
                             </div>
                         </div>
@@ -656,12 +612,12 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                             <div className="text-xs font-semibold text-fg-subtle mb-2 flex items-center gap-1">
                                 <FileText size={11} /> Internal Notes
                             </div>
-                            <textarea
+                            <Textarea
+                                name="internal-notes"
                                 value={draft.internal_notes || ''}
                                 onChange={e => setDraftField({ internal_notes: e.target.value })}
                                 placeholder="Notes visible only to staff (sales, accounts, support)…"
                                 rows={3}
-                                className={`${FIELD_CLS} resize-none`}
                             />
                         </div>
                     </div>

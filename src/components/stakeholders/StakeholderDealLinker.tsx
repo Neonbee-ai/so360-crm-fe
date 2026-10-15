@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Button, Select } from '@so360/design-system';
 import { stakeholderApi } from '../../services/crmService';
 import { Deal } from '../../types/crm';
 
@@ -36,20 +37,26 @@ const StakeholderDealLinker: React.FC<Props> = ({ stakeholderId, availableDeals,
 
     return (
         <div className="flex items-center gap-2">
-            <select value={dealId} onChange={(e) => setDealId(e.target.value)} className="flex-1 bg-surface border border-line rounded-nb px-2 py-1.5 text-xs text-fg-subtle outline-none">
-                <option value="">Select a deal…</option>
-                {unlinked.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-            </select>
-            <select value={role} onChange={(e) => setRole(e.target.value)} className="bg-surface border border-line rounded-nb px-2 py-1.5 text-xs text-fg-subtle outline-none">
-                {INVOLVEMENT_ROLES.map((r) => <option key={r} value={r}>{r.replace(/_/g, ' ')}</option>)}
-            </select>
-            <button
-                onClick={handleLink}
-                disabled={!dealId || saving}
-                className="bg-primary hover:bg-primary/90 text-primary-fg text-xs font-medium px-3 py-1.5 rounded-nb disabled:opacity-50"
-            >
+            <Select
+                name="stakeholder-deal"
+                aria-label="Deal"
+                size="sm"
+                className="flex-1"
+                value={dealId}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setDealId(e.target.value)}
+                options={[{ value: '', label: 'Select a deal…' }, ...unlinked.map((d) => ({ value: d.id, label: d.name }))]}
+            />
+            <Select
+                name="stakeholder-involvement"
+                aria-label="Involvement role"
+                size="sm"
+                value={role}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setRole(e.target.value)}
+                options={INVOLVEMENT_ROLES.map((r) => ({ value: r, label: r.replace(/_/g, ' ') }))}
+            />
+            <Button type="button" size="sm" onClick={handleLink} disabled={!dealId || saving}>
                 Link
-            </button>
+            </Button>
         </div>
     );
 };

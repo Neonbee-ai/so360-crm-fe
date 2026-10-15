@@ -2,18 +2,16 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-    Plus, FileText, Search, Filter, CheckCircle, XCircle, Clock, Send, Trash2,
-    ChevronDown, ChevronUp, ChevronsUpDown, Eye, User, Inbox, Check, X,
-    MoreVertical, Download, Printer, Copy, RotateCcw, AlertCircle, RefreshCw,
+    Plus, FileText, Search, CheckCircle, XCircle, Clock, Send, ChevronDown, Eye, User, Inbox, Check, X,
+    Download, Copy, RotateCcw, AlertCircle, RefreshCw,
     Building2, CheckSquare, Square
 } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
 import { Quote, QuoteStatus, Deal } from '../types/crm';
-import { Table } from '../components/common/Table';
 import { useBusinessSettings, useActivity, useShellBridge, useQuota, useSandboxLimit } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
-import { QuotaGate, CrossLinkChip, toast, ListPageTemplate, Button, Pagination, Menu } from '@so360/design-system';
+import { QuotaGate, CrossLinkChip, toast, ListPageTemplate, Button, Pagination, DataTable, SearchInput, type DataTableColumn, type FilterValues, type ListFilterConfig } from '@so360/design-system';
 import { quotesToCsv, downloadCsv } from '../components/quotes/quotesCsv';
 import { quoteToDocumentData } from '../utils/quoteToDocumentData';
 import ExportMenu from '../components/ExportMenu';
@@ -168,8 +166,6 @@ const QuotesPage = () => {
     const [dealDropdownOpen, setDealDropdownOpen] = useState(false);
     const [dealSearchTerm, setDealSearchTerm] = useState('');
     const dealDropdownRef = useRef<HTMLDivElement>(null);
-    const statusDropdownRef = useRef<HTMLDivElement>(null);
-    const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
 
     // Row action popup menu state
 
@@ -238,16 +234,6 @@ const QuotesPage = () => {
         return () => document.removeEventListener('mousedown', handler);
     }, [dealDropdownOpen]);
 
-    useEffect(() => {
-        if (!statusDropdownOpen) return;
-        const handler = (e: MouseEvent) => {
-            if (statusDropdownRef.current && !statusDropdownRef.current.contains(e.target as Node)) {
-                setStatusDropdownOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handler);
-        return () => document.removeEventListener('mousedown', handler);
-    }, [statusDropdownOpen]);
 
     // Reset pagination when filter changes
     useEffect(() => {
@@ -376,56 +362,6 @@ const QuotesPage = () => {
         return effectiveQuotes.slice(start, start + pageSize);
     }, [effectiveQuotes, currentPage, pageSize]);
 
-    // Selection management
-    const allOnPageSelected = useMemo(() => {
-        if (paginatedQuotes.length === 0) return false;
-        return paginatedQuotes.every((q: Quote) => selectedQuoteIds.includes(q.id));
-    }, [paginatedQuotes, selectedQuoteIds]);
-
-    const toggleSelectAll = () => {
-        if (allOnPageSelected) {
-            const pageIds = new Set(paginatedQuotes.map((q: Quote) => q.id));
-            setSelectedQuoteIds(prev => prev.filter(id => !pageIds.has(id)));
-        } else {
-            const newIds = new Set([...selectedQuoteIds, ...paginatedQuotes.map((q: Quote) => q.id)]);
-            setSelectedQuoteIds(Array.from(newIds));
-        }
-    };
-
-    const toggleSelectQuote = (id: string) => {
-        setSelectedQuoteIds(prev =>
-            prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
-        );
-    };
-
-    const handleSort = (field: SortField) => {
-        if (sortField === field) {
-            setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
-        } else {
-            setSortField(field);
-            setSortDirection('asc');
-        }
-    };
-
-    const SortableHeader = ({ label, field, align = 'left' }: { label: string; field: SortField; align?: 'left' | 'right' }) => (
-        <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); handleSort(field); }}
-            className={`inline-flex items-center gap-1 text-xs font-semibold  text-fg-subtle hover:text-fg transition-colors ${align === 'right' ? 'justify-end w-full' : ''}`}
-        >
-            <span>{label}</span>
-            {sortField === field ? (
-                sortDirection === 'asc' ? (
-                    <ChevronUp className="w-3.5 h-3.5 text-primary" />
-                ) : (
-                    <ChevronDown className="w-3.5 h-3.5 text-primary" />
-                )
-            ) : (
-                <ChevronsUpDown className="w-3.5 h-3.5 text-fg-muted opacity-60" />
-            )}
-        </button>
-    );
-
     const handleCreateQuote = async () => {
         if (!selectedDealId) return;
         const quoteNumber = manualQuoteNumber.trim();
@@ -542,36 +478,12 @@ const QuotesPage = () => {
     const formatCurrency = (value: number) => formatters.formatCurrency(value);
     const formatDate = (dateString: string) => formatters.formatDate(dateString, { year: 'numeric', month: 'short', day: 'numeric' });
 
-    const columns = [
-        {
-            key: 'select',
-            header: (
-                <div onClick={(e) => e.stopPropagation()} className="flex items-center">
-                    <input
-                        type="checkbox"
-                        checked={allOnPageSelected}
-                        onChange={toggleSelectAll}
-                        className="w-4 h-4 rounded border-line bg-surface text-primary focus:ring-focus focus:ring-offset-surface cursor-pointer"
-                        title="Select all on this page"
-                    />
-                </div>
-            ),
-            accessor: (quote: Quote) => (
-                <div onClick={(e) => e.stopPropagation()} className="flex items-center">
-                    <input
-                        type="checkbox"
-                        checked={selectedQuoteIds.includes(quote.id)}
-                        onChange={() => toggleSelectQuote(quote.id)}
-                        className="w-4 h-4 rounded border-line bg-surface text-primary focus:ring-focus focus:ring-offset-surface cursor-pointer"
-                    />
-                </div>
-            ),
-            className: 'w-10 px-3',
-        },
+    const columns: DataTableColumn<Quote>[] = [
         {
             key: 'quote_number',
-            header: <SortableHeader label="Quote #" field="quote_number" />,
-            accessor: (quote: Quote) => (
+            header: 'Quote #',
+            sortable: true,
+            render: (quote: Quote) => (
                 <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); openQuote(quote.id); }}
@@ -580,12 +492,12 @@ const QuotesPage = () => {
                     {quote.quote_number || `Q-${quote.id.slice(0, 8)}`}
                 </button>
             ),
-            className: 'whitespace-nowrap',
         },
         {
             key: 'title',
-            header: <SortableHeader label="Title" field="title" />,
-            accessor: (quote: Quote) => (
+            header: 'Title',
+            sortable: true,
+            render: (quote: Quote) => (
                 <div className="flex flex-col min-w-0 max-w-xs">
                     <span
                         className="text-fg font-medium truncate block"
@@ -603,8 +515,9 @@ const QuotesPage = () => {
         },
         {
             key: 'customer',
-            header: <SortableHeader label="Customer" field="customer" />,
-            accessor: (quote: Quote) => {
+            header: 'Customer',
+            sortable: true,
+            render: (quote: Quote) => {
                 const customer = resolveCustomer(quote);
                 if (!customer) return <span className="text-fg-muted text-xs">—</span>;
                 return (
@@ -623,8 +536,9 @@ const QuotesPage = () => {
         },
         {
             key: 'deal',
-            header: <SortableHeader label="Deal" field="deal" />,
-            accessor: (quote: Quote) => {
+            header: 'Deal',
+            sortable: true,
+            render: (quote: Quote) => {
                 const deal = resolveDeal(quote);
                 if (!deal || !deal.id) return <span className="text-fg-muted text-xs">—</span>;
                 return (
@@ -636,20 +550,22 @@ const QuotesPage = () => {
         },
         {
             key: 'total',
-            header: <SortableHeader label="Total" field="total" align="right" />,
-            accessor: (quote: Quote) => (
+            header: 'Total',
+            sortable: true,
+            align: 'right',
+            render: (quote: Quote) => (
                 <div className="text-right">
                     <span className="text-fg font-medium font-mono">
                         {formatCurrency(quote.total_amount ?? quote.grand_total ?? 0)}
                     </span>
                 </div>
             ),
-            className: 'text-right',
         },
         {
             key: 'status',
-            header: <SortableHeader label="Status" field="status" />,
-            accessor: (quote: Quote) => (
+            header: 'Status',
+            sortable: true,
+            render: (quote: Quote) => (
                 <QuoteStatusCell
                     quote={quote}
                     isActionLoading={!!actionLoading}
@@ -659,8 +575,9 @@ const QuotesPage = () => {
         },
         {
             key: 'valid_until',
-            header: <SortableHeader label="Valid Until" field="valid_until" />,
-            accessor: (quote: Quote) => {
+            header: 'Valid Until',
+            sortable: true,
+            render: (quote: Quote) => {
                 if (!quote.valid_until) return <span className="text-fg-muted text-xs">-</span>;
                 const date = new Date(quote.valid_until);
                 const now = new Date();
@@ -690,53 +607,30 @@ const QuotesPage = () => {
                 }
                 return <span className="text-fg-subtle text-xs whitespace-nowrap">{formatDate(quote.valid_until)}</span>;
             },
-            className: 'whitespace-nowrap',
         },
         {
             key: 'created_at',
-            header: <SortableHeader label="Created" field="created_at" />,
-            accessor: (quote: Quote) => (
+            header: 'Created',
+            sortable: true,
+            render: (quote: Quote) => (
                 <span className="text-fg-subtle text-xs whitespace-nowrap">{formatDate(quote.created_at)}</span>
             ),
-            className: 'whitespace-nowrap',
         },
-        {
-            key: 'actions',
-            header: <span className="sr-only">Actions</span>,
-            accessor: (quote: Quote) => (
-                <div className="flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
-                    <Menu
-                        name={`quote-actions-${quote.id}`}
-                        trigger={
-                            <button
-                                type="button"
-                                onClick={(e) => e.stopPropagation()}
-                                className="p-1.5 text-fg-subtle hover:text-fg hover:bg-surface-raised rounded-nb transition-colors"
-                                title="More actions"
-                                aria-label="More actions"
-                            >
-                                <MoreVertical className="w-4 h-4" />
-                            </button>
-                        }
-                        items={[
-                            { label: 'View Quote Details', icon: <Eye className="w-3.5 h-3.5" />, onSelect: () => openQuote(quote.id) },
+    ];
+
+    const quoteRowActions = (quote: Quote) => [
+                            { label: 'View Quote Details', onSelect: () => openQuote(quote.id) },
                             ...(quote.status === 'draft' ? [
-                                { label: 'Edit Quote', icon: <FileText className="w-3.5 h-3.5" />, onSelect: () => navigate(`/crm/quotes/${quote.id}?edit=true`) },
-                                { label: 'Submit for Approval', icon: <Send className="w-3.5 h-3.5" />, onSelect: () => handleStatusAction(quote, 'submit') },
+                                { label: 'Edit Quote', onSelect: () => navigate(`/crm/quotes/${quote.id}?edit=true`) },
+                                { label: 'Submit for Approval', onSelect: () => handleStatusAction(quote, 'submit') },
                             ] : []),
                             ...(quote.status === 'approved' ? [
-                                { label: 'Convert to Order', icon: <Check className="w-3.5 h-3.5" />, onSelect: () => handleStatusAction(quote, 'convert') },
+                                { label: 'Convert to Order', onSelect: () => handleStatusAction(quote, 'convert') },
                             ] : []),
-                            { label: 'Print Quote', icon: <Printer className="w-3.5 h-3.5" />, onSelect: () => handlePrintQuote(quote) },
+                            { label: 'Print Quote', onSelect: () => handlePrintQuote(quote) },
                             ...(canCreateQuote && quote.status === 'draft' ? [
-                                { label: 'Delete Quote', icon: <Trash2 className="w-3.5 h-3.5" />, danger: true, onSelect: () => setShowDeleteConfirm(quote.id) },
+                                { label: 'Delete Quote', danger: true, onSelect: () => setShowDeleteConfirm(quote.id) },
                             ] : []),
-                        ]}
-                    />
-                </div>
-            ),
-            className: 'w-24 text-right pr-4',
-        },
     ];
 
     const handleQuickApprove = async (quoteId: string) => {
@@ -922,121 +816,24 @@ const QuotesPage = () => {
 
     // Find quote for the active 3-dots action menu
 
-    const searchNode = (
-                            <div className="relative w-full wc-medium:w-72">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-subtle" />
-                                <input
-                                    type="text"
-                                    placeholder="Search quotes..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="h-nb-control-md w-full pl-9 pr-4 bg-surface border border-line rounded-nb text-nb-body text-fg placeholder:text-fg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-                                />
-                                {searchTerm && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setSearchTerm('')}
-                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-fg-subtle hover:text-fg text-xs"
-                                    >
-                                        ×
-                                    </button>
-                                )}
-                            </div>
-    );
-    const filtersNode = (
-        <>
-                            {/* Status Filter Dropdown */}
-                            <div ref={statusDropdownRef} className="relative">
-                                <button
-                                    type="button"
-                                    onClick={() => setStatusDropdownOpen(o => !o)}
-                                    className={`flex h-nb-control-md items-center gap-2 px-3 bg-surface border rounded-nb text-nb-body transition-colors ${statusFilter !== 'All' ? 'border-primary/60 text-primary bg-primary/5' : 'border-line text-fg-subtle'}`}
-                                >
-                                    <Filter className={`w-3.5 h-3.5 flex-shrink-0 ${statusFilter !== 'All' ? 'text-primary' : 'text-fg-subtle'}`} />
-                                    <span>
-                                        {statusFilter === 'All' ? 'All Status' : (statusColors[statusFilter as QuoteStatus]?.label ?? statusFilter)}
-                                    </span>
-                                    {statusFilter !== 'All' && (
-                                        <span
-                                            role="button"
-                                            aria-label="Clear status filter"
-                                            onClick={(e) => { e.stopPropagation(); setStatusFilter('All'); setStatusDropdownOpen(false); }}
-                                            className="ml-0.5 text-primary hover:text-fg leading-none cursor-pointer"
-                                        >×</span>
-                                    )}
-                                    <ChevronDown className={`w-3.5 h-3.5 text-fg-subtle transition-transform ${statusDropdownOpen ? 'rotate-180' : ''}`} />
-                                </button>
-                                {statusDropdownOpen && (
-                                    <div className="absolute left-0 top-full mt-1 z-menu w-52 bg-surface border border-line rounded-lg shadow-xl overflow-hidden">
-                                        <div className="py-1">
-                                            <button
-                                                type="button"
-                                                onClick={() => { setStatusFilter('All'); setStatusDropdownOpen(false); }}
-                                                className={`w-full flex items-center justify-between px-3 py-2 text-xs text-left hover:bg-surface-raised transition-colors ${statusFilter === 'All' ? 'text-primary bg-primary/10' : 'text-fg-subtle'}`}
-                                            >
-                                                <span className="flex items-center gap-2">
-                                                    <span className="w-2 h-2 rounded-full bg-fg-subtle flex-shrink-0" />
-                                                    All Status
-                                                </span>
-                                                <span className="text-fg-muted font-mono">{quotes.length}</span>
-                                            </button>
-                                            {(Object.entries(statusColors) as [QuoteStatus, typeof statusColors[QuoteStatus]][]).map(([value, cfg]) => (
-                                                <button
-                                                    key={value}
-                                                    type="button"
-                                                    onClick={() => { setStatusFilter(value); setStatusDropdownOpen(false); }}
-                                                    className={`w-full flex items-center justify-between px-3 py-2 text-xs text-left hover:bg-surface-raised transition-colors ${statusFilter === value ? 'bg-primary/10' : ''}`}
-                                                >
-                                                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${cfg.bg} ${cfg.text} ${cfg.border}`}>
-                                                        {cfg.label}
-                                                    </span>
-                                                    <span className="text-xs text-fg-muted font-mono">
-                                                        {quotes.filter(q => q.status === value).length}
-                                                    </span>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Deal Filter Dropdown */}
-                            {deals.length > 0 && (
-                                <select
-                                    value={dealFilter}
-                                    onChange={(e) => setDealFilter(e.target.value)}
-                                    className={`h-nb-control-md bg-surface border px-3 rounded-nb text-nb-body focus:outline-none focus-visible:ring-2 focus-visible:ring-focus ${dealFilter !== 'All' ? 'border-primary/60 text-primary' : 'border-line text-fg-subtle'}`}
-                                >
-                                    <option value="All">All Deals</option>
-                                    {deals.map(d => (
-                                        <option key={d.id} value={d.id}>Deal: {d.name}</option>
-                                    ))}
-                                </select>
-                            )}
-
-                            {/* Validity Filter */}
-                            <select
-                                value={validityFilter}
-                                onChange={(e) => setValidityFilter(e.target.value)}
-                                className={`h-nb-control-md bg-surface border px-3 rounded-nb text-nb-body focus:outline-none focus-visible:ring-2 focus-visible:ring-focus ${validityFilter !== 'All' ? 'border-primary/60 text-primary' : 'border-line text-fg-subtle'}`}
-                            >
-                                <option value="All">All Dates</option>
-                                <option value="valid">Valid Proposals</option>
-                                <option value="expired">Expired Proposals</option>
-                            </select>
-
-                            {/* Clear Filters Button */}
-                            {hasActiveFilters && (
-                                <button
-                                    type="button"
-                                    onClick={resetFilters}
-                                    className="text-xs text-fg-muted hover:text-fg underline px-1"
-                                >
-                                    Clear filters
-                                </button>
-                            )}
-        </>
-    );
+    const filterConfig: ListFilterConfig = {
+        fields: [
+            { key: 'status', label: 'Status', type: 'select', quick: true, options: (Object.entries(statusColors) as [QuoteStatus, typeof statusColors[QuoteStatus]][]).map(([value, cfg]) => ({ value, label: cfg.label })) },
+            ...(deals.length > 0 ? [{ key: 'deal', label: 'Deal', type: 'select' as const, options: deals.map(d => ({ value: d.id, label: d.name })) }] : []),
+            { key: 'validity', label: 'Validity', type: 'select', quick: true, options: [{ value: 'valid', label: 'Valid Proposals' }, { value: 'expired', label: 'Expired Proposals' }] },
+        ],
+        values: {
+            ...(statusFilter !== 'All' ? { status: statusFilter } : {}),
+            ...(dealFilter !== 'All' ? { deal: dealFilter } : {}),
+            ...(validityFilter !== 'All' ? { validity: validityFilter } : {}),
+        } as FilterValues,
+        onChange: (next: FilterValues) => {
+            setStatusFilter((next.status as string) || 'All');
+            setDealFilter((next.deal as string) || 'All');
+            setValidityFilter((next.validity as string) || 'All');
+        },
+        onClear: resetFilters,
+    };
     const bulkNode = selectedQuoteIds.length > 0 ? (
                             <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 border border-primary/30 rounded-lg text-xs animate-in fade-in">
                                 <span className="font-semibold text-primary">
@@ -1191,7 +988,11 @@ const QuotesPage = () => {
             </div>
             </>
             }
-            filters={<>{viewTabsNode}{activeTab === 'all' ? <>{searchNode}{filtersNode}</> : null}</>}
+            filters={viewTabsNode}
+            search={activeTab === 'all' ? (
+                <SearchInput placeholder="Search quotes..." value={searchTerm} onChange={setSearchTerm} />
+            ) : undefined}
+            filterConfig={activeTab === 'all' ? filterConfig : undefined}
             toolbarEnd={activeTab === 'all' ? bulkNode : undefined}
             pagination={activeTab === 'all' && paginatedQuotes.length > 0 && effectiveQuotes.length > 0 ? (
                 <Pagination
@@ -1247,11 +1048,20 @@ const QuotesPage = () => {
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            <Table
-                                data={paginatedQuotes}
+                            <DataTable
+                                name="quotes"
+                                data-testid="quotes-table"
+                                rows={paginatedQuotes}
+                                rowKey={(q: Quote) => q.id}
                                 columns={columns}
-                                isLoading={isLoading}
-                                onRowClick={(quote) => openQuote(quote.id)}
+                                loading={isLoading}
+                                onRowClick={(quote: Quote) => openQuote(quote.id)}
+                                selectedKeys={new Set(selectedQuoteIds)}
+                                onSelectionChange={(keys: Set<string>) => setSelectedQuoteIds(Array.from(keys))}
+                                sortKey={sortField}
+                                sortDir={sortDirection}
+                                onSortChange={(key: string, dir: SortDirection) => { setSortField(key as SortField); setSortDirection(dir); }}
+                                rowActions={quoteRowActions}
                             />
 
                         </div>

@@ -551,16 +551,13 @@ describe('DealDetailPage', () => {
       });
     });
 
-    it('When delete confirmation modal opens / Then container has max-h-[90vh]', async () => {
+    it('When delete confirmation modal opens / Then it is shown as a dialog', async () => {
       const user = userEvent.setup();
       render(<DealDetailPage />);
       await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
       await user.click(screen.getByText('Delete'));
       await waitFor(() => {
-        const panels = Array.from(document.querySelectorAll('div')).filter(
-          el => el.className.includes('max-h-[90vh]'),
-        );
-        expect(panels.length).toBeGreaterThan(0);
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
       });
     });
   });
@@ -786,16 +783,13 @@ describe('DealDetailPage', () => {
       expect(screen.getByTestId('project-select')).toBeInTheDocument();
     });
 
-    it('When project modal opens / Then container has max-h-[90vh]', async () => {
+    it('When project modal opens / Then it is shown as a dialog', async () => {
       const user = userEvent.setup();
       render(<DealDetailPage />);
       await waitFor(() => expect(screen.getByText('Create Project')).toBeInTheDocument());
       await user.click(screen.getByText('Create Project'));
       await waitFor(() => {
-        const panels = Array.from(document.querySelectorAll('div')).filter(
-          el => el.className.includes('max-h-[90vh]'),
-        );
-        expect(panels.length).toBeGreaterThan(0);
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
       });
     });
 

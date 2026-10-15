@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useShellBridge } from '@so360/shell-context';
 import { targetPlanService } from '../../services/targetPlanService';
 import { EmptyState, Panel, formatPct, formatValue } from './targetUi';
-import { DashboardPageTemplate } from '@so360/design-system';
+import { DashboardPageTemplate, DataTable } from '@so360/design-system';
+import type { DataTableColumn } from '@so360/design-system';
 
 /**
  * Past-period performance.
@@ -69,63 +70,38 @@ export default function PerformanceHistoryPage() {
     ),
   );
 
+  const columns: DataTableColumn<any>[] = [
+    { key: 'period', header: 'Period', sortable: true, sortValue: (p) => p.period_start, render: (p) => <span className="text-fg">{p.period_start}</span> },
+    ...metricNames.map((n): DataTableColumn<any> => ({
+      key: `m-${n}`,
+      header: n,
+      align: 'right',
+      render: (p) => {
+        const m = p.metrics.find((x: any) => x.metric_name === n);
+        return (
+          <span
+            className="text-fg-subtle"
+            title={m ? `${formatValue(m.actual, m.unit, currency)} of ${formatValue(m.target, m.unit, currency)}` : undefined}
+          >
+            {m ? formatPct(m.attainment) : '—'}
+          </span>
+        );
+      },
+    })),
+    { key: 'overall', header: 'Overall', align: 'right', sortable: true, sortValue: (p) => p.overall_attainment ?? 0, render: (p) => <span className="text-fg">{formatPct(p.overall_attainment)}</span> },
+    { key: 'changed', header: '', render: (p) => <span className="text-xs text-fg-muted">{p.plan_changed ? 'target changed' : ''}</span> },
+  ];
+
   return (
     <DashboardPageTemplate title="Performance History">
     <div className="space-y-5">
 
       <Panel title="By period">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-xs text-fg-subtle border-b border-line">
-                <th className="py-2 pr-4 font-medium">Period</th>
-                {metricNames.map((n) => (
-                  <th key={n} className="py-2 pr-4 font-medium text-right">
-                    {n}
-                  </th>
-                ))}
-                <th className="py-2 pr-4 font-medium text-right">Overall</th>
-                <th className="py-2 font-medium" />
-              </tr>
-            </thead>
-            <tbody>
-              {data.periods.map((p: any) => (
-                <tr
-                  key={p.period_start}
-                  className="border-b border-line"
-                >
-                  <td className="py-2 pr-4 text-fg">
-                    {p.period_start}
-                  </td>
-                  {metricNames.map((n) => {
-                    const m = p.metrics.find(
-                      (x: any) => x.metric_name === n,
-                    );
-                    return (
-                      <td
-                        key={n}
-                        className="py-2 pr-4 text-right text-fg-subtle"
-                        title={
-                          m
-                            ? `${formatValue(m.actual, m.unit, currency)} of ${formatValue(m.target, m.unit, currency)}`
-                            : undefined
-                        }
-                      >
-                        {m ? formatPct(m.attainment) : '—'}
-                      </td>
-                    );
-                  })}
-                  <td className="py-2 pr-4 text-right text-fg">
-                    {formatPct(p.overall_attainment)}
-                  </td>
-                  <td className="py-2 text-xs text-fg-muted">
-                    {p.plan_changed ? 'target changed' : ''}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          columns={columns}
+          rows={data.periods}
+          rowKey={(p: any) => p.period_start}
+        />
 
         <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-fg-subtle">
           <span>Average {formatPct(data.average)}</span>

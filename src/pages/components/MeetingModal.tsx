@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { meetingsApi } from '../../services/crmService';
+import { Button, TextField, Textarea, NumberInput, DateTimePicker } from '@so360/design-system';
 import { Modal } from '../../components/common/Modal';
 import { Meeting } from '../../types/crm';
 
@@ -57,39 +58,20 @@ const MeetingModal: React.FC<Props> = ({ leadId, dealId, stakeholderId, meeting,
         <Modal isOpen onClose={onClose} title={isEditing ? 'Edit Meeting' : 'Schedule Meeting'} size="md">
             <div className="space-y-3">
                 {error && <div className="bg-danger/10 border border-danger/20 text-danger text-xs rounded-lg px-3 py-2">{error}</div>}
-                <label className="block">
-                    <span className="block text-xs font-semibold text-fg-muted mb-1">Title</span>
-                    <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-xs text-fg outline-none" />
-                </label>
+                <TextField name="meeting-title" label="Title" value={title} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTitle(e.target.value)} />
                 <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
-                    <label className="block">
-                        <span className="block text-xs font-semibold text-fg-muted mb-1">Date &amp; Time</span>
-                        <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-xs text-fg outline-none" />
-                    </label>
-                    <label className="block">
-                        <span className="block text-xs font-semibold text-fg-muted mb-1">Duration (min)</span>
-                        <input type="number" min={5} value={durationMinutes} onChange={(e) => setDurationMinutes(Number(e.target.value))} className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-xs text-fg outline-none" />
-                    </label>
+                    <DateTimePicker name="meeting-scheduled-at" label="Date & Time" value={scheduledAt} onChange={(v: string) => setScheduledAt(v)} />
+                    <NumberInput name="meeting-duration" label="Duration (min)" min={5} value={durationMinutes} onChange={(v: number | null) => setDurationMinutes(v ?? 0)} />
                 </div>
-                <label className="block">
-                    <span className="block text-xs font-semibold text-fg-muted mb-1">Location / Link</span>
-                    <input value={location} onChange={(e) => setLocation(e.target.value)} className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-xs text-fg outline-none" />
-                </label>
-                <label className="block">
-                    <span className="block text-xs font-semibold text-fg-muted mb-1">Agenda</span>
-                    <textarea value={agenda} onChange={(e) => setAgenda(e.target.value)} rows={3} className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-xs text-fg outline-none" />
-                </label>
+                <TextField name="meeting-location" label="Location / Link" value={location} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocation(e.target.value)} />
+                <Textarea name="meeting-agenda" label="Agenda" value={agenda} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setAgenda(e.target.value)} rows={3} />
             </div>
             <div className="flex items-center justify-end gap-2 pt-4 mt-4 border-t border-line">
-                <button onClick={onClose} className="px-4 py-2 text-xs font-semibold text-fg-subtle hover:text-fg">Cancel</button>
-                <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-fg px-4 py-2 rounded-lg text-xs font-semibold disabled:opacity-50"
-                >
+                <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
+                <Button type="button" onClick={handleSave} disabled={saving}>
                     {saving && <Loader2 size={12} className="animate-spin" />}
                     {isEditing ? 'Save Changes' : 'Schedule'}
-                </button>
+                </Button>
             </div>
         </Modal>
     );

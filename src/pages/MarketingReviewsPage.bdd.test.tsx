@@ -21,8 +21,8 @@ vi.mock('../components/MarketingStorePicker', () => ({
   ),
 }));
 
-vi.mock('@so360/design-system', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@so360/design-system')>();
+vi.mock('@so360/design-system', async () => {
+  const actual = await import('../test/__mocks__/design-system');
   return {
     ...actual,
     toast: { ...actual.toast, error: mockShowError },
@@ -154,7 +154,7 @@ describe('MarketingReviewsPage', () => {
       render(<MarketingReviewsPage />);
       fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
       await waitFor(() => expect(screen.getByText('Great Product')).toBeInTheDocument());
-      fireEvent.click(screen.getByRole('button', { name: 'pending' }));
+      fireEvent.change(screen.getByTestId('filter-status'), { target: { value: 'pending' } });
       expect(screen.getByText('Untitled Review')).toBeInTheDocument();
       expect(screen.queryByText('Great Product')).not.toBeInTheDocument();
     });
@@ -163,7 +163,7 @@ describe('MarketingReviewsPage', () => {
       render(<MarketingReviewsPage />);
       fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
       await waitFor(() => expect(screen.getByText('Great Product')).toBeInTheDocument());
-      fireEvent.click(screen.getByRole('button', { name: 'approved' }));
+      fireEvent.change(screen.getByTestId('filter-status'), { target: { value: 'approved' } });
       expect(screen.getByText('Great Product')).toBeInTheDocument();
       expect(screen.queryByText('Untitled Review')).not.toBeInTheDocument();
     });
@@ -172,8 +172,8 @@ describe('MarketingReviewsPage', () => {
       render(<MarketingReviewsPage />);
       fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
       await waitFor(() => expect(screen.getByText('Great Product')).toBeInTheDocument());
-      fireEvent.click(screen.getByRole('button', { name: 'pending' }));
-      fireEvent.click(screen.getByRole('button', { name: 'all' }));
+      fireEvent.change(screen.getByTestId('filter-status'), { target: { value: 'pending' } });
+      fireEvent.change(screen.getByTestId('filter-status'), { target: { value: '' } });
       expect(screen.getByText('Great Product')).toBeInTheDocument();
       expect(screen.getByText('Untitled Review')).toBeInTheDocument();
     });
@@ -215,7 +215,7 @@ describe('MarketingReviewsPage', () => {
       mockGetReviews.mockReturnValue(new Promise(() => {}));
       render(<MarketingReviewsPage />);
       fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
-      await waitFor(() => expect(screen.getByText(/Loading reviews/)).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByTestId('datatable-loading')).toBeInTheDocument());
     });
   });
 });

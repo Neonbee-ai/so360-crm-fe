@@ -181,9 +181,10 @@ describe('Feature: Commission report', () => {
             report.commissionReport.mockResolvedValue(fullReport());
             render(<CommissionReportPage />);
             await screen.findByTestId('cr-total-gross');
-            fireEvent.change(screen.getByLabelText('To'), { target: { value: '2026-06-01' } });
+            fireEvent.click(screen.getByTestId('filters-button'));
+            fireEvent.change(screen.getByLabelText('Date range end'), { target: { value: '2026-06-01' } });
             await waitFor(() => expect(report.commissionReport).toHaveBeenCalledTimes(2));
-            fireEvent.change(screen.getByLabelText('From'), { target: { value: '2026-06-10' } });
+            fireEvent.change(screen.getByLabelText('Date range start'), { target: { value: '2026-06-10' } });
             expect(screen.getByRole('alert')).toHaveTextContent('The start date must be on or before the end date.');
             expect(screen.queryByTestId('cr-total-gross')).not.toBeInTheDocument();
             expect(screen.queryByRole('status')).not.toBeInTheDocument();

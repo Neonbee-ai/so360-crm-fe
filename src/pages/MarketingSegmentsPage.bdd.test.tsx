@@ -47,7 +47,6 @@ vi.mock('@so360/shell-context', () => ({
 
 vi.mock('@so360/design-system', async () => ({
   ...(await import('../test/__mocks__/design-system')),
-  Button: ({ children, onClick, disabled, ...props }: any) => <button onClick={onClick} disabled={disabled} {...props}>{children}</button>,
 }));
 
 vi.mock('../components/MarketingStorePicker', () => ({
@@ -143,21 +142,20 @@ describe('MarketingSegmentsPage', () => {
     it('When the page loads / Then shows action buttons for each segment', async () => {
       render(<MarketingSegmentsPage />);
       await waitFor(() => {
-        const manageButtons = screen.getAllByText('Manage Members');
-        expect(manageButtons.length).toBe(2);
-        const leadsButtons = screen.getAllByText('Leads');
-        expect(leadsButtons.length).toBeGreaterThanOrEqual(2);
-        const customersButtons = screen.getAllByText('Customers');
-        expect(customersButtons.length).toBeGreaterThanOrEqual(2);
+        expect(screen.getAllByRole('button', { name: 'Row actions' }).length).toBe(2);
       });
+      await userEvent.setup().click(screen.getAllByRole('button', { name: 'Row actions' })[0]);
+      expect(screen.getByRole('menuitem', { name: 'Manage Members' })).toBeInTheDocument();
+      expect(screen.getByRole('menuitem', { name: 'Leads' })).toBeInTheDocument();
+      expect(screen.getByRole('menuitem', { name: 'Customers' })).toBeInTheDocument();
     });
 
     it('When Leads button is clicked / Then navigates to leads page with segment', async () => {
       const user = userEvent.setup();
       render(<MarketingSegmentsPage />);
       await waitFor(() => expect(screen.getByText('VIP Customers')).toBeInTheDocument());
-      const leadsButtons = screen.getAllByText('Leads');
-      await user.click(leadsButtons[0]);
+      await user.click(screen.getAllByRole('button', { name: 'Row actions' })[0]);
+      await user.click(screen.getByRole('menuitem', { name: 'Leads' }));
       expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('/crm/leads'));
     });
 
@@ -165,8 +163,8 @@ describe('MarketingSegmentsPage', () => {
       const user = userEvent.setup();
       render(<MarketingSegmentsPage />);
       await waitFor(() => expect(screen.getByText('VIP Customers')).toBeInTheDocument());
-      const customersButtons = screen.getAllByText('Customers');
-      await user.click(customersButtons[0]);
+      await user.click(screen.getAllByRole('button', { name: 'Row actions' })[0]);
+      await user.click(screen.getByRole('menuitem', { name: 'Customers' }));
       expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('/crm/customers'));
     });
 
@@ -175,7 +173,7 @@ describe('MarketingSegmentsPage', () => {
       render(<MarketingSegmentsPage />);
       await waitFor(() => expect(screen.getByText('VIP Customers')).toBeInTheDocument());
       await user.click(screen.getAllByRole('button', { name: 'Row actions' })[0]);
-      await user.click(await screen.findByText('Delete'));
+      await user.click(await screen.findByRole('menuitem', { name: 'Delete' }));
       await waitFor(() => expect(mockDeleteCustomerSegment).toHaveBeenCalledWith('seg1'));
     });
   });
@@ -237,8 +235,8 @@ describe('MarketingSegmentsPage', () => {
       const user = userEvent.setup();
       render(<MarketingSegmentsPage />);
       await waitFor(() => expect(screen.getByText('VIP Customers')).toBeInTheDocument());
-      const manageButtons = screen.getAllByText('Manage Members');
-      await user.click(manageButtons[0]);
+      await user.click(screen.getAllByRole('button', { name: 'Row actions' })[0]);
+      await user.click(screen.getByRole('menuitem', { name: 'Manage Members' }));
       await waitFor(() => {
         expect(screen.getByText(/Manage Members:/)).toBeInTheDocument();
       });
@@ -248,7 +246,8 @@ describe('MarketingSegmentsPage', () => {
       const user = userEvent.setup();
       render(<MarketingSegmentsPage />);
       await waitFor(() => expect(screen.getByText('VIP Customers')).toBeInTheDocument());
-      await user.click(screen.getAllByText('Manage Members')[0]);
+      await user.click(screen.getAllByRole('button', { name: 'Row actions' })[0]);
+      await user.click(screen.getByRole('menuitem', { name: 'Manage Members' }));
       await waitFor(() => {
         expect(screen.getByText('Close Panel')).toBeInTheDocument();
       });
@@ -258,7 +257,8 @@ describe('MarketingSegmentsPage', () => {
       const user = userEvent.setup();
       render(<MarketingSegmentsPage />);
       await waitFor(() => expect(screen.getByText('VIP Customers')).toBeInTheDocument());
-      await user.click(screen.getAllByText('Manage Members')[0]);
+      await user.click(screen.getAllByRole('button', { name: 'Row actions' })[0]);
+      await user.click(screen.getByRole('menuitem', { name: 'Manage Members' }));
       await waitFor(() => expect(screen.getByText('Close Panel')).toBeInTheDocument());
       await user.click(screen.getByText('Close Panel'));
       await waitFor(() => expect(screen.queryByText('Close Panel')).not.toBeInTheDocument());
@@ -269,7 +269,8 @@ describe('MarketingSegmentsPage', () => {
       const user = userEvent.setup();
       render(<MarketingSegmentsPage />);
       await waitFor(() => expect(screen.getByText('VIP Customers')).toBeInTheDocument());
-      await user.click(screen.getAllByText('Manage Members')[0]);
+      await user.click(screen.getAllByRole('button', { name: 'Row actions' })[0]);
+      await user.click(screen.getByRole('menuitem', { name: 'Manage Members' }));
       await waitFor(() => expect(screen.getByText('No current members found.')).toBeInTheDocument());
     });
 
@@ -277,7 +278,8 @@ describe('MarketingSegmentsPage', () => {
       const user = userEvent.setup();
       render(<MarketingSegmentsPage />);
       await waitFor(() => expect(screen.getByText('VIP Customers')).toBeInTheDocument());
-      await user.click(screen.getAllByText('Manage Members')[0]);
+      await user.click(screen.getAllByRole('button', { name: 'Row actions' })[0]);
+      await user.click(screen.getByRole('menuitem', { name: 'Manage Members' }));
       await waitFor(() => {
         expect(screen.getByText('Candidate1')).toBeInTheDocument();
         expect(screen.getByText('Add')).toBeInTheDocument();
@@ -288,7 +290,8 @@ describe('MarketingSegmentsPage', () => {
       const user = userEvent.setup();
       render(<MarketingSegmentsPage />);
       await waitFor(() => expect(screen.getByText('VIP Customers')).toBeInTheDocument());
-      await user.click(screen.getAllByText('Manage Members')[0]);
+      await user.click(screen.getAllByRole('button', { name: 'Row actions' })[0]);
+      await user.click(screen.getByRole('menuitem', { name: 'Manage Members' }));
       await waitFor(() => expect(screen.getByText('Add')).toBeInTheDocument(), { timeout: 10000 });
       await user.click(screen.getByText('Add'));
       await waitFor(() => expect(mockAddCustomerSegmentMembers).toHaveBeenCalled());
@@ -298,7 +301,8 @@ describe('MarketingSegmentsPage', () => {
       const user = userEvent.setup();
       render(<MarketingSegmentsPage />);
       await waitFor(() => expect(screen.getByText('VIP Customers')).toBeInTheDocument());
-      await user.click(screen.getAllByText('Manage Members')[0]);
+      await user.click(screen.getAllByRole('button', { name: 'Row actions' })[0]);
+      await user.click(screen.getByRole('menuitem', { name: 'Manage Members' }));
       await waitFor(() => expect(screen.getByPlaceholderText(/Search customers/)).toBeInTheDocument());
       await user.type(screen.getByPlaceholderText(/Search customers/), 'test');
       await waitFor(() => expect(mockGetCustomers).toHaveBeenCalled());
@@ -308,7 +312,8 @@ describe('MarketingSegmentsPage', () => {
       const user = userEvent.setup();
       render(<MarketingSegmentsPage />);
       await waitFor(() => expect(screen.getByText('VIP Customers')).toBeInTheDocument());
-      await user.click(screen.getAllByText('Manage Members')[0]);
+      await user.click(screen.getAllByRole('button', { name: 'Row actions' })[0]);
+      await user.click(screen.getByRole('menuitem', { name: 'Manage Members' }));
       await waitFor(() => expect(screen.getByText('Close Panel')).toBeInTheDocument());
       const allBtns = screen.getAllByRole('button');
       const leadsToggle = allBtns.find(b => b.textContent === 'Leads' && b.className.includes('rounded-lg'));
@@ -325,7 +330,8 @@ describe('MarketingSegmentsPage', () => {
       const user = userEvent.setup();
       render(<MarketingSegmentsPage />);
       await waitFor(() => expect(screen.getByText('VIP Customers')).toBeInTheDocument());
-      await user.click(screen.getAllByText('Manage Members')[0]);
+      await user.click(screen.getAllByRole('button', { name: 'Row actions' })[0]);
+      await user.click(screen.getByRole('menuitem', { name: 'Manage Members' }));
       await waitFor(() => {
         expect(screen.getByText('Existing Member')).toBeInTheDocument();
         expect(screen.getByText('Remove')).toBeInTheDocument();
@@ -339,7 +345,8 @@ describe('MarketingSegmentsPage', () => {
       const user = userEvent.setup();
       render(<MarketingSegmentsPage />);
       await waitFor(() => expect(screen.getByText('VIP Customers')).toBeInTheDocument());
-      await user.click(screen.getAllByText('Manage Members')[0]);
+      await user.click(screen.getAllByRole('button', { name: 'Row actions' })[0]);
+      await user.click(screen.getByRole('menuitem', { name: 'Manage Members' }));
       await waitFor(() => expect(screen.getByText('Remove')).toBeInTheDocument());
       await user.click(screen.getByText('Remove'));
       await waitFor(() => expect(mockRemoveCustomerSegmentMembers).toHaveBeenCalledWith('seg1', [{ id: 'c1', type: 'customer' }]));

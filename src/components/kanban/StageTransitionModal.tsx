@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Modal } from '../common/Modal';
 import { Deal } from '../../types/crm';
-import { AlertCircle } from 'lucide-react';
+import { Button, Textarea } from '@so360/design-system';
 import { useActivity } from '@so360/shell-context';
 
 interface StageTransitionModalProps {
@@ -41,19 +41,15 @@ export const StageTransitionModal = ({ isOpen, onClose, onConfirm, deal, newStag
                 </div>
 
                 {isSpecialStage && (
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-fg-subtle flex items-center gap-2">
-                            Reason for {newStage} *
-                            <AlertCircle size={14} className="text-fg-muted" />
-                        </label>
-                        <textarea
-                            required
-                            value={reason}
-                            onChange={(e) => setReason(e.target.value)}
-                            placeholder={`Please provide a brief reason for marking this deal as ${newStage}...`}
-                            className="w-full bg-bg border border-line rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none h-24"
-                        />
-                    </div>
+                    <Textarea
+                        name="stage-transition-reason"
+                        label={`Reason for ${newStage}`}
+                        required
+                        value={reason}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setReason(e.target.value)}
+                        placeholder={`Please provide a brief reason for marking this deal as ${newStage}...`}
+                        rows={4}
+                    />
                 )}
 
                 {!isSpecialStage && (
@@ -63,22 +59,12 @@ export const StageTransitionModal = ({ isOpen, onClose, onConfirm, deal, newStag
                 )}
 
                 <div className="pt-4 flex gap-3">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="flex-1 px-4 py-2 rounded-lg border border-line text-fg-subtle hover:bg-surface-raised transition-colors font-medium text-sm"
-                    >
+                    <Button type="button" variant="secondary" className="flex-1" onClick={onClose}>
                         Cancel
-                    </button>
-                    <button
-                        type="submit"
-                        className={`flex-1 px-4 py-2 rounded-lg font-bold transition-all shadow-lg active:scale-95 text-sm ${newStage === 'Won' ? 'bg-success hover:bg-success/90 text-primary-fg' :
-                                newStage === 'Lost' ? 'bg-danger hover:bg-danger/90 text-primary-fg' :
-                                    'bg-primary hover:bg-primary/90 text-primary-fg'
-                            }`}
-                    >
+                    </Button>
+                    <Button type="submit" variant={newStage === 'Lost' ? 'danger' : 'primary'} className="flex-1">
                         Confirm Transition
-                    </button>
+                    </Button>
                 </div>
             </form>
         </Modal>

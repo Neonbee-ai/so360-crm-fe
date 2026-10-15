@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Clock } from 'lucide-react';
+import { Button, DatePicker, TimePicker } from '@so360/design-system';
 import { Modal } from '../../components/common/Modal';
 import { splitStoredDueDate, composeDueDate } from '../../utils/datetime';
 
@@ -33,60 +33,35 @@ export const RescheduleModal: React.FC<RescheduleModalProps> = ({
     return (
         <Modal isOpen onClose={onClose} title="Reschedule Task" size="md">
             <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                    <label htmlFor="reschedule-date" className="text-xs font-bold text-fg-subtle">New Due Date</label>
-                    <div className="relative">
-                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" size={16} />
-                        <input
-                            id="reschedule-date"
-                            type="date"
-                            value={newDate}
-                            onChange={(e) => setNewDate(e.target.value)}
-                            className="w-full bg-bg border border-line text-fg rounded-nb-lg pl-10 pr-4 py-3 outline-none focus:border-primary"
-                            required
+                <DatePicker
+                    name="reschedule-date"
+                    label="New Due Date"
+                    value={newDate}
+                    onChange={(v: string) => setNewDate(v)}
+                    required
+                />
+                <div className="flex items-end gap-2">
+                    <div className="flex-1 min-w-0">
+                        <TimePicker
+                            name="reschedule-time"
+                            label="New Due Time (optional)"
+                            value={newTime}
+                            onChange={(v: string) => setNewTime(v)}
                         />
                     </div>
-                </div>
-                <div className="space-y-2">
-                    <label htmlFor="reschedule-time" className="text-xs font-bold text-fg-subtle">
-                        New Due Time <span className=" text-fg-muted">(optional)</span>
-                    </label>
-                    <div className="flex gap-2">
-                        <div className="relative flex-1">
-                            <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" size={16} />
-                            <input
-                                id="reschedule-time"
-                                type="time"
-                                value={newTime}
-                                onChange={(e) => setNewTime(e.target.value)}
-                                className="w-full bg-bg border border-line text-fg rounded-nb-lg pl-10 pr-4 py-3 outline-none focus:border-primary"
-                            />
-                        </div>
-                        {newTime && (
-                            <button
-                                type="button"
-                                onClick={() => setNewTime('')}
-                                className="px-3 py-3 rounded-nb-lg border border-line text-xs font-bold text-fg-subtle hover:text-fg"
-                            >
-                                Clear
-                            </button>
-                        )}
-                    </div>
+                    {newTime && (
+                        <Button type="button" variant="secondary" onClick={() => setNewTime('')}>
+                            Clear
+                        </Button>
+                    )}
                 </div>
                 <div className="flex justify-end gap-3 pt-4">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="px-4 py-2 text-fg-subtle hover:text-fg"
-                    >
+                    <Button type="button" variant="secondary" onClick={onClose}>
                         Cancel
-                    </button>
-                    <button
-                        type="submit"
-                        className="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-fg rounded-nb-lg font-bold"
-                    >
+                    </Button>
+                    <Button type="submit">
                         Reschedule
-                    </button>
+                    </Button>
                 </div>
             </form>
         </Modal>

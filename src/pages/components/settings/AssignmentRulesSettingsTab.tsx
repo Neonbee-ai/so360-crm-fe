@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ChevronUp, ChevronDown, Edit2, Trash2, Plus, Loader2, ToggleLeft, ToggleRight, X } from 'lucide-react';
-import { toast, DepartmentSelector, UserSelector, useConfirm, Card, Button } from '@so360/design-system';
+import { toast, DepartmentSelector, UserSelector, useConfirm, Card, Button, IconButton, TextField, NumberInput, Select, Checkbox } from '@so360/design-system';
 import { useShellBridge } from '@so360/shell-context';
 import {
     assignmentRulesService,
@@ -12,14 +12,12 @@ import {
     CONDITION_OPS,
     MAX_REASSIGN_AFTER_MINUTES,
     emptyRule,
-    parseReassignMinutes,
     toRuleBody,
     validateRule,
 } from '../../../services/assignmentRulesService';
 import { crmService } from '../../../services/crmService';
 import { describeApiError } from '../../../utils/apiErrorMessage';
 
-const FIELD_CLS = 'w-full bg-bg border border-line text-fg rounded-nb px-4 py-2.5 outline-none focus:border-primary transition-all font-bold text-sm';
 const LABEL_CLS = 'block text-xs font-semibold text-fg-muted mb-1.5';
 
 interface Props {
@@ -218,16 +216,14 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                 <h4 className="font-semibold text-fg text-xs">
                     {editingId === 'new' ? 'New rule' : 'Edit rule'}
                 </h4>
-                <button type="button" onClick={closeEditor} aria-label="Close rule editor" className="text-fg-muted hover:text-fg-subtle">
-                    <X size={16} />
-                </button>
+                <IconButton label="Close rule editor" icon={<X size={16} />} onClick={closeEditor} />
             </div>
 
             <div>
-                <label htmlFor="assignment-rule-name" className={LABEL_CLS}>Rule name</label>
-                <input
+                <TextField
                     id="assignment-rule-name"
-                    className={FIELD_CLS}
+                    name="assignment-rule-name"
+                    label="Rule name"
                     value={draft.name}
                     maxLength={120}
                     placeholder="e.g. Marina Heights — Facebook leads"
@@ -243,48 +239,46 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                 <div className="space-y-2">
                     {draft.conditions.map((c, i) => (
                         <div key={i} className="grid grid-cols-[1fr_1fr_2fr_auto] gap-2 items-center" data-testid="assignment-condition-row">
-                            <select
+                            <Select
+                                name={`assignment-condition-${i}-field`}
                                 aria-label={`Condition ${i + 1} field`}
-                                className={FIELD_CLS}
                                 value={c.field}
+                                options={CONDITION_FIELDS.map((f) => ({ value: f.value, label: f.label }))}
                                 onChange={(e) => setCondition(i, { field: e.target.value })}
-                            >
-                                {CONDITION_FIELDS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
-                            </select>
-                            <select
+                            />
+                            <Select
+                                name={`assignment-condition-${i}-op`}
                                 aria-label={`Condition ${i + 1} operator`}
-                                className={FIELD_CLS}
                                 value={c.op}
+                                options={CONDITION_OPS.map((o) => ({ value: o.value, label: o.label }))}
                                 onChange={(e) => setCondition(i, { op: e.target.value as any })}
-                            >
-                                {CONDITION_OPS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                            </select>
-                            <input
+                            />
+                            <TextField
+                                name={`assignment-condition-${i}-value`}
                                 aria-label={`Condition ${i + 1} value`}
-                                className={FIELD_CLS}
                                 value={Array.isArray(c.value) ? c.value.join(', ') : c.value}
                                 placeholder={c.op === 'in' ? 'facebook, google' : 'facebook'}
                                 onChange={(e) => setCondition(i, { value: e.target.value })}
                             />
-                            <button
-                                type="button"
-                                aria-label={`Remove condition ${i + 1}`}
-                                className="p-2 text-fg-muted hover:text-danger"
+                            <IconButton
+                                label={`Remove condition ${i + 1}`}
+                                variant="danger"
+                                icon={<Trash2 size={14} />}
                                 onClick={() => setDraft((d) => ({ ...d, conditions: d.conditions.filter((_, idx) => idx !== i) }))}
-                            >
-                                <Trash2 size={14} />
-                            </button>
+                            />
                         </div>
                     ))}
                 </div>
                 {draft.conditions.length < 20 && (
-                    <button
+                    <Button
                         type="button"
-                        className="mt-2 text-xs font-semibold text-primary hover:text-primary-hover"
+                        variant="secondary"
+                        size="sm"
+                        className="mt-2"
                         onClick={() => setDraft((d) => ({ ...d, conditions: [...d.conditions, { field: 'source', op: 'eq', value: '' }] }))}
                     >
                         + Add condition
-                    </button>
+                    </Button>
                 )}
             </div>
 
@@ -347,50 +341,43 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
 
             <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3 items-end">
                 <div>
-                    <label htmlFor="assignment-rule-method" className={LABEL_CLS}>Method</label>
-                    <select
+                    <Select
                         id="assignment-rule-method"
-                        className={FIELD_CLS}
+                        name="assignment-rule-method"
+                        label="Method"
                         value={draft.method}
+                        options={ASSIGNMENT_METHODS.map((m) => ({ value: m.value, label: m.label }))}
                         onChange={(e) => setDraft((d) => ({ ...d, method: e.target.value as any }))}
-                    >
-                        {ASSIGNMENT_METHODS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
-                    </select>
-                </div>
-                <label className="flex items-center gap-2 text-sm font-bold text-fg-subtle pb-2.5">
-                    <input
-                        type="checkbox"
-                        checked={draft.skip_inactive}
-                        onChange={(e) => setDraft((d) => ({ ...d, skip_inactive: e.target.checked }))}
                     />
-                    Skip people who are inactive
-                </label>
+                </div>
+                <Checkbox
+                    name="assignment-skip-inactive"
+                    label="Skip people who are inactive"
+                    checked={draft.skip_inactive}
+                    onChange={(e) => setDraft((d) => ({ ...d, skip_inactive: e.target.checked }))}
+                />
             </div>
 
             <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3 items-end">
                 <div>
-                    <label htmlFor="assignment-rule-reassign" className={LABEL_CLS}>Reassign if not contacted within (minutes)</label>
-                    <input
+                    <NumberInput
                         id="assignment-rule-reassign"
-                        type="number"
-                        inputMode="numeric"
+                        name="assignment-rule-reassign"
+                        label="Reassign if not contacted within (minutes)"
                         min={1}
                         max={MAX_REASSIGN_AFTER_MINUTES}
                         step={1}
-                        className={FIELD_CLS}
                         placeholder="Never"
-                        value={draft.reassign_after_minutes ?? ''}
-                        onChange={(e) => setDraft((d) => ({ ...d, reassign_after_minutes: parseReassignMinutes(e.target.value) }))}
+                        value={draft.reassign_after_minutes ?? null}
+                        onChange={(v) => setDraft((d) => ({ ...d, reassign_after_minutes: v }))}
                     />
                 </div>
-                <label className="flex items-center gap-2 text-sm font-bold text-fg-subtle pb-2.5">
-                    <input
-                        type="checkbox"
-                        checked={draft.skip_on_leave !== false}
-                        onChange={(e) => setDraft((d) => ({ ...d, skip_on_leave: e.target.checked }))}
-                    />
-                    Skip people on leave today
-                </label>
+                <Checkbox
+                    name="assignment-skip-on-leave"
+                    label="Skip people on leave today"
+                    checked={draft.skip_on_leave !== false}
+                    onChange={(e) => setDraft((d) => ({ ...d, skip_on_leave: e.target.checked }))}
+                />
             </div>
 
             {draftError && <p role="alert" className="text-xs font-bold text-danger">{draftError}</p>}
@@ -440,27 +427,16 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                                 </div>
                                 {canWrite && (
                                     <div className="flex items-center gap-1">
-                                        <button type="button" aria-label={`Move ${rule.name} up`} disabled={busy || i === 0} onClick={() => move(i, -1)} className="p-1.5 text-fg-muted hover:text-fg disabled:opacity-30">
-                                            <ChevronUp size={16} />
-                                        </button>
-                                        <button type="button" aria-label={`Move ${rule.name} down`} disabled={busy || i === rules.length - 1} onClick={() => move(i, 1)} className="p-1.5 text-fg-muted hover:text-fg disabled:opacity-30">
-                                            <ChevronDown size={16} />
-                                        </button>
-                                        <button
-                                            type="button"
-                                            aria-label={rule.is_active ? `Turn off ${rule.name}` : `Turn on ${rule.name}`}
+                                        <IconButton label={`Move ${rule.name} up`} icon={<ChevronUp size={16} />} disabled={busy || i === 0} onClick={() => move(i, -1)} />
+                                        <IconButton label={`Move ${rule.name} down`} icon={<ChevronDown size={16} />} disabled={busy || i === rules.length - 1} onClick={() => move(i, 1)} />
+                                        <IconButton
+                                            label={rule.is_active ? `Turn off ${rule.name}` : `Turn on ${rule.name}`}
                                             disabled={busy}
                                             onClick={() => toggleActive(rule)}
-                                            className="p-1.5 text-fg-muted hover:text-fg"
-                                        >
-                                            {rule.is_active ? <ToggleRight size={18} className="text-success" /> : <ToggleLeft size={18} />}
-                                        </button>
-                                        <button type="button" aria-label={`Edit ${rule.name}`} disabled={busy} onClick={() => openEditor(rule)} className="p-1.5 text-fg-muted hover:text-fg">
-                                            <Edit2 size={14} />
-                                        </button>
-                                        <button type="button" aria-label={`Delete ${rule.name}`} disabled={busy} onClick={() => removeRule(rule)} className="p-1.5 text-fg-muted hover:text-danger">
-                                            <Trash2 size={14} />
-                                        </button>
+                                            icon={rule.is_active ? <ToggleRight size={18} className="text-success" /> : <ToggleLeft size={18} />}
+                                        />
+                                        <IconButton label={`Edit ${rule.name}`} icon={<Edit2 size={14} />} disabled={busy} onClick={() => openEditor(rule)} />
+                                        <IconButton label={`Delete ${rule.name}`} variant="danger" icon={<Trash2 size={14} />} disabled={busy} onClick={() => removeRule(rule)} />
                                     </div>
                                 )}
                             </li>
@@ -476,9 +452,9 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                     {CONDITION_FIELDS.map((f) => (
                         <div key={f.value}>
                             <label htmlFor={`assignment-test-${f.value}`} className={LABEL_CLS}>{f.label}</label>
-                            <input
+                            <TextField
                                 id={`assignment-test-${f.value}`}
-                                className={FIELD_CLS}
+                                name={`assignment-test-${f.value}`}
                                 value={sample[f.value] ?? ''}
                                 onChange={(e) => setSample((s) => ({ ...s, [f.value]: e.target.value }))}
                             />

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Star, Mail, Phone, Link2, XCircle, MailX, Edit2, Trash2 } from 'lucide-react';
+import { IconButton } from '@so360/design-system';
 import { Stakeholder } from '../../types/crm';
 import { ROLE_LABELS } from './StakeholderRolesEditor';
 
@@ -46,8 +47,8 @@ const StakeholderCard: React.FC<Props> = ({ stakeholder, onEdit, onDelete, onOpe
                     </div>
                 </button>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100">
-                    <button onClick={() => onEdit(stakeholder)} className="p-1 text-fg-muted hover:text-primary transition-colors"><Edit2 size={12} /></button>
-                    <button onClick={() => onDelete(stakeholder)} className="p-1 text-fg-muted hover:text-danger transition-colors"><Trash2 size={12} /></button>
+                    <IconButton label="Edit stakeholder" size="sm" icon={<Edit2 size={12} />} onClick={() => onEdit(stakeholder)} />
+                    <IconButton label="Delete stakeholder" size="sm" variant="danger" icon={<Trash2 size={12} />} onClick={() => onDelete(stakeholder)} />
                 </div>
             </div>
 

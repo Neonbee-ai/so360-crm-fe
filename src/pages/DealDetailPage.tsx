@@ -16,7 +16,7 @@ import CallsTab from './components/CallsTab';
 import DealPaymentPlanPanel from './components/DealPaymentPlanPanel';
 import DealCommissionPanel from './components/DealCommissionPanel';
 import { useCrmFeatureFlag, RE_FLAGS } from '../hooks/useCrmFeatureFlag';
-import { CrossLinkChip, toast, useConfirm, DetailPageTemplate, Button, Card, EmptyState, Badge } from '@so360/design-system';
+import { CrossLinkChip, toast, useConfirm, DetailPageTemplate, Button, IconButton, Card, EmptyState, Badge, Select, DatePicker, NumberInput, Textarea } from '@so360/design-system';
 import { crmService, dealsApi, tasksApi, activitiesApi, TimelineEvent } from '../services/crmService';
 import { useCRMFormatters } from '../utils/formatters';
 import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType } from '../types/crm';
@@ -575,7 +575,7 @@ const DealDetailPage = () => {
         return (
             <div className="py-12 text-center text-fg-muted">
                 <p>Deal not found.</p>
-                <button onClick={() => navigate('/crm/pipeline')} className="text-primary hover:underline mt-4 inline-block">Back to Pipeline</button>
+                <Button variant="secondary" onClick={() => navigate('/crm/pipeline')}>Back to Pipeline</Button>
             </div>
         );
     }
@@ -696,15 +696,13 @@ const DealDetailPage = () => {
 <div className="space-y-1">
                                     <span className="text-xs text-fg-muted">Deal Owner</span>
                                     {isEditingSummary ? (
-                                        <select
+                                        <Select
+                                            name="deal-owner"
+                                            aria-label="Owner"
                                             value={editedOwnerId ?? deal.owner.id}
                                             onChange={(e) => setEditedOwnerId(e.target.value)}
-                                            className="bg-bg border border-line text-fg font-bold rounded px-2 py-1 w-full outline-none focus:border-primary"
-                                        >
-                                            {allUsers.map(u => (
-                                                <option key={u.id} value={u.id}>{u.full_name}</option>
-                                            ))}
-                                        </select>
+                                            options={allUsers.map(u => ({ value: u.id, label: u.full_name }))}
+                                        />
                                     ) : (
                                         <div className="flex items-center gap-2">
                                             <div className="w-6 h-6 rounded-full bg-surface-raised flex items-center justify-center text-xs font-medium overflow-hidden border border-line">
@@ -752,11 +750,10 @@ const DealDetailPage = () => {
 <div className="space-y-1">
                                     <span className="text-xs text-fg-muted">Expected Close</span>
                                     {isEditingSummary ? (
-                                        <input
-                                            type="date"
+                                        <DatePicker
+                                            name="deal-close-date"
                                             value={editedCloseDate ?? deal.expected_close_date ?? ''}
-                                            onChange={(e) => setEditedCloseDate(e.target.value)}
-                                            className="bg-bg border border-line text-fg font-bold rounded px-2 py-1 w-full outline-none focus:border-primary"
+                                            onChange={(v) => setEditedCloseDate(v as string)}
                                         />
                                     ) : (
                                         <p className="text-sm font-bold text-fg flex items-center gap-1.5">
@@ -782,11 +779,10 @@ const DealDetailPage = () => {
 <div className="space-y-1">
                                     <span className="text-xs text-fg-muted">Financial Value</span>
                                     {isEditingSummary ? (
-                                        <input
-                                            type="number"
+                                        <NumberInput
+                                            name="deal-value"
                                             value={editedValue ?? deal.value}
-                                            onChange={(e) => setEditedValue(parseFloat(e.target.value) || 0)}
-                                            className="bg-bg border border-line text-success font-semibold rounded px-2 py-1 w-full outline-none focus:border-success"
+                                            onChange={(v) => setEditedValue(v ?? 0)}
                                         />
                                     ) : (
                                         <p className="text-xl font-semibold text-success flex items-center gap-1.5">
@@ -1024,31 +1020,19 @@ const DealDetailPage = () => {
                                                         <div className="flex items-center gap-2">
                                                             {ev.type === 'Activity' && (
                                                                 <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                                                                    <button
-                                                                        onClick={async () => {
+                                                                    <IconButton label="Edit activity" variant="ghost" icon={<Edit2 size={12} />} onClick={async () => {
                                                                             const newNotes = prompt('Edit activity notes:', ev.description);
                                                                             if (newNotes !== null) {
                                                                                 await activitiesApi.update(ev.id, { notes: newNotes });
                                                                                 fetchData();
                                                                             }
-                                                                        }}
-                                                                        className="p-1 text-fg-muted hover:text-info transition-colors"
-                                                                        title="Edit activity"
-                                                                    >
-                                                                        <Edit2 size={12} />
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={async () => {
+                                                                        }} />
+                                                                    <IconButton label="Delete activity" variant="danger" icon={<Trash2 size={12} />} onClick={async () => {
                                                                             if (await confirm({ title: 'Delete?', message: 'Delete this activity?', intent: 'danger', confirmLabel: 'Delete' })) {
                                                                                 await activitiesApi.delete(ev.id);
                                                                                 fetchData();
                                                                             }
-                                                                        }}
-                                                                        className="p-1 text-fg-muted hover:text-danger transition-colors"
-                                                                        title="Delete activity"
-                                                                    >
-                                                                        <Trash2 size={12} />
-                                                                    </button>
+                                                                        }} />
                                                                 </div>
                                                             )}
                                                             <span className="text-xs bg-surface-raised text-fg-muted px-2 py-0.5 rounded font-semibold">
@@ -1079,25 +1063,19 @@ const DealDetailPage = () => {
                                         {deal.notes.map(note => (
                                             <div key={note.id} className="text-sm border-l-2 border-warning/30 pl-4 py-1 group relative">
                                                 <div className="absolute right-0 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                                                    <button
-                                                        onClick={async () => {
+                                                    <IconButton label="Edit note" variant="ghost" icon={<Edit2 size={12} />} onClick={async () => {
                                                             const content = prompt('Edit note:', note.content);
                                                             if (content) {
                                                                 await crmService.updateNote(note.id, content);
                                                                 fetchData();
                                                             }
-                                                        }}
-                                                        className="text-fg-muted hover:text-info"
-                                                    ><Edit2 size={12} /></button>
-                                                    <button
-                                                        onClick={async () => {
+                                                        }} />
+                                                    <IconButton label="Delete note" variant="danger" icon={<Trash2 size={12} />} onClick={async () => {
                                                             if (await confirm({ title: 'Delete?', message: 'Delete note?', intent: 'danger', confirmLabel: 'Delete' })) {
                                                                 await crmService.deleteNote(note.id);
                                                                 fetchData();
                                                             }
-                                                        }}
-                                                        className="text-fg-muted hover:text-danger"
-                                                    ><Trash2 size={12} /></button>
+                                                        }} />
                                                 </div>
                                                 <p className="text-fg-subtle leading-relaxed mb-2 pr-12">{note.content}</p>
                                                 <div className="flex items-center justify-between">
@@ -1108,21 +1086,18 @@ const DealDetailPage = () => {
                                         ))}
                                     </div>
                                     <div className="bg-bg border border-line rounded-nb-lg p-4">
-                                        <textarea
+                                        <Textarea
+                                            name="deal-new-note"
                                             placeholder="Capture commercial context..."
                                             value={newNoteContent}
                                             onChange={(e) => setNewNoteContent(e.target.value)}
-                                            className="w-full bg-transparent border-none p-0 text-sm font-medium text-fg focus:ring-0 resize-none h-24 mb-3"
                                         />
                                         <div className="flex justify-end">
-                                            <button
-                                                onClick={async () => {
+                                            <Button size="sm" onClick={async () => {
                                                     await crmService.createNote({ deal_id: id, content: newNoteContent });
                                                     setNewNoteContent('');
                                                     fetchData();
-                                                }}
-                                                className="bg-warning hover:bg-warning/90 text-white px-4 py-2 rounded-lg text-xs font-semibold"
-                                            >Save Note</button>
+                                                }}>Save Note</Button>
                                         </div>
                                     </div>
                                 </div>
@@ -1133,9 +1108,9 @@ const DealDetailPage = () => {
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-center mb-6">
                                         <h4 className="text-xs font-semibold text-fg-muted">Planned actions</h4>
-                                        <button onClick={() => setIsCreatingTask(true)} className="text-xs font-semibold text-info hover:text-info transition-colors flex items-center gap-1.5">
+                                        <Button variant="secondary" size="sm" onClick={() => setIsCreatingTask(true)}>
                                             <Plus size={12} /> Add Task
-                                        </button>
+                                        </Button>
                                     </div>
                                     <div className="grid gap-3">
                                         {tasks.length === 0 ? (
@@ -1162,16 +1137,13 @@ const DealDetailPage = () => {
                                                         </div>
                                                     </div>
                                                     <div className="absolute right-3 top-3 opacity-0 group-hover:opacity-100 transition-all flex gap-1">
-                                                        <button onClick={() => setEditingTask(task)} className="p-1 hover:text-info"><Edit2 size={14} /></button>
-                                                        <button
-                                                            onClick={async () => {
+                                                        <IconButton label="Edit task" variant="ghost" icon={<Edit2 size={14} />} onClick={() => setEditingTask(task)} />
+                                                        <IconButton label="Delete task" variant="danger" icon={<Trash2 size={14} />} onClick={async () => {
                                                                 if (await confirm({ title: 'Delete?', message: 'Delete task?', intent: 'danger', confirmLabel: 'Delete' })) {
                                                                     await tasksApi.delete(task.id);
                                                                     fetchData();
                                                                 }
-                                                            }}
-                                                            className="p-1 hover:text-danger"
-                                                        ><Trash2 size={14} /></button>
+                                                            }} />
                                                     </div>
                                                 </div>
                                             ))
@@ -1213,24 +1185,17 @@ const DealDetailPage = () => {
                                                 </div>
                                                 <div className="flex gap-2">
                                                     {doc.dmsDocumentId ? (
-                                                        <button
-                                                            onClick={() => { void openDealDocument(doc); }}
-                                                            className="p-2 text-fg-muted hover:text-fg transition-colors"
-                                                            title="Download"
-                                                        ><Download size={16} /></button>
+                                                        <IconButton label="Download" variant="ghost" icon={<Download size={16} />} onClick={() => { void openDealDocument(doc); }} />
                                                     ) : (
                                                         <a href={doc.url} download title="Download" className="p-2 text-fg-muted hover:text-fg transition-colors"><Download size={16} /></a>
                                                     )}
-                                                    <button
-                                                        onClick={async () => {
+                                                    <IconButton label="Delete file" variant="danger" icon={<Trash2 size={16} />} onClick={async () => {
                                                             if (await confirm({ title: 'Delete?', message: 'Delete file?', intent: 'danger', confirmLabel: 'Delete' })) {
                                                                 await crmService.deleteDocument(id, doc.id);
                                                                 publishDealDocumentsChanged(id);
                                                                 fetchData();
                                                             }
-                                                        }}
-                                                        className="p-2 text-fg-muted hover:text-danger transition-colors"
-                                                    ><Trash2 size={16} /></button>
+                                                        }} />
                                                 </div>
                                             </div>
                                         ))}

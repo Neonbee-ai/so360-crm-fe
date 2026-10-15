@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Edit2, Loader2, Plus, Receipt, Save, Trash2, X } from 'lucide-react';
-import { toast } from '@so360/design-system';
+import { toast, Button, IconButton, TextField, NumberInput, DatePicker, Select, DataTable } from '@so360/design-system';
+import type { DataTableColumn } from '@so360/design-system';
 import {
     paymentScheduleService,
     resolveDealTemplates,
@@ -23,9 +24,6 @@ import {
 import { useCRMFormatters } from '../../utils/formatters';
 import { describeApiError } from '../../utils/apiErrorMessage';
 
-const FIELD_CLS = 'w-full bg-bg border border-line text-fg rounded-nb-lg px-3 py-2 outline-none focus:border-primary transition-all font-bold text-xs';
-const BTN_PRIMARY = 'flex items-center gap-2 px-4 py-2 rounded-nb-lg bg-primary hover:bg-primary/90 text-primary-fg text-xs font-semibold disabled:opacity-60';
-const BTN_GHOST = 'flex items-center gap-1 px-3 py-2 rounded-nb-lg text-xs font-semibold text-fg-subtle hover:text-fg';
 
 export const BILLING_MODE_LABELS: Record<BillingMode, string> = {
     full_invoice: 'One invoice for the full price',
@@ -155,7 +153,7 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
         return (
             <div className="p-8 space-y-3">
                 <p role="alert" className="text-sm text-danger">{loadError ?? 'Could not load the payment plan.'}</p>
-                <button type="button" className={BTN_GHOST} onClick={() => void load()}>Retry</button>
+                <Button variant="secondary" size="sm" type="button" onClick={() => void load()}>Retry</Button>
             </div>
         );
     }
@@ -230,60 +228,53 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
                             <>
                                 <div className="min-w-[16rem]">
                                     <label htmlFor="pp-template" className="block text-xs font-semibold text-fg-muted mb-1.5">Project plan</label>
-                                    <select id="pp-template" className={FIELD_CLS} value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
-                                        {templates.map((t) => (
-                                            <option key={t.id} value={t.id}>{t.name}{t.is_default ? ' (default)' : ''}</option>
-                                        ))}
-                                    </select>
+                                    <Select id="pp-template" name="pp-template" value={templateId} options={templates.map((t) => ({ value: t.id, label: `${t.name}${t.is_default ? ' (default)' : ''}` }))} onChange={(e) => setTemplateId(e.target.value)} />
                                 </div>
-                                <button type="button" className={BTN_PRIMARY} disabled={busy || !templateId} onClick={() => void createFromTemplate()}>
+                                <Button variant="primary" size="sm" type="button" disabled={busy || !templateId} onClick={() => void createFromTemplate()}>
                                     {busy ? <Loader2 className="animate-spin" size={14} /> : <Plus size={14} />} Create from template
-                                </button>
+                                </Button>
                             </>
                         ) : (
                             <p className="text-xs text-fg-muted">This deal's project has no payment plans set up.</p>
                         )}
-                        <button type="button" className={BTN_GHOST} onClick={() => { setError(null); setManual([blankRow()]); }}>
+                        <Button variant="secondary" size="sm" type="button" onClick={() => { setError(null); setManual([blankRow()]); }}>
                             <Edit2 size={14} /> Enter instalments manually
-                        </button>
+                        </Button>
                     </div>
                 )}
                 {manual !== null && (
                     <div className="space-y-3" aria-label="Manual instalments">
                         {manual.map((r, i) => (
                             <div key={i} className="grid grid-cols-1 wc-medium:grid-cols-[2fr_1fr_1fr_1fr_auto] gap-2 items-center">
-                                <input aria-label={`Instalment ${i + 1} label`} placeholder="Label, e.g. Booking" className={FIELD_CLS} value={r.label} onChange={(e) => setRow(i, { label: e.target.value })} />
-                                <input aria-label={`Instalment ${i + 1} amount`} type="number" min={0} placeholder="Amount" className={FIELD_CLS} value={r.amount} onChange={(e) => setRow(i, { amount: e.target.value })} />
-                                <input aria-label={`Instalment ${i + 1} due date`} type="date" className={FIELD_CLS} value={r.due_date} onChange={(e) => setRow(i, { due_date: e.target.value })} />
-                                <select
+                                <TextField name={`pp-label-${i}`} aria-label={`Instalment ${i + 1} label`} placeholder="Label, e.g. Booking" value={r.label} onChange={(e) => setRow(i, { label: e.target.value })} />
+                                <NumberInput name={`pp-amount-${i}`} aria-label={`Instalment ${i + 1} amount`} min={0} placeholder="Amount" value={r.amount === '' ? null : Number(r.amount)} onChange={(v) => setRow(i, { amount: v == null ? '' : String(v) })} />
+                                <DatePicker name={`pp-due-${i}`} aria-label={`Instalment ${i + 1} due date`} value={r.due_date} onChange={(v) => setRow(i, { due_date: v })} />
+                                <Select
+                                    name={`pp-mode-${i}`}
                                     aria-label={`Instalment ${i + 1} payment mode`}
-                                    className={FIELD_CLS}
                                     value={r.payment_mode}
+                                    placeholder="Mode…"
+                                    options={PAYMENT_MODES.map((m) => ({ value: m.value, label: m.label }))}
                                     onChange={(e) => setRow(i, { payment_mode: MODE_VALUES.includes(e.target.value) ? e.target.value as PaymentMode : '' })}
-                                >
-                                    <option value="">Mode…</option>
-                                    {PAYMENT_MODES.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
-                                </select>
-                                <button
-                                    type="button"
-                                    aria-label={`Remove instalment ${i + 1}`}
-                                    className="p-2 text-fg-muted hover:text-danger"
+                                />
+                                <IconButton
+                                    label={`Remove instalment ${i + 1}`}
+                                    variant="danger"
+                                    icon={<Trash2 size={14} />}
                                     onClick={() => setManual((rows) => (rows ?? []).filter((_, j) => j !== i))}
-                                >
-                                    <Trash2 size={14} />
-                                </button>
+                                />
                             </div>
                         ))}
                         <div className="flex flex-wrap gap-2">
-                            <button type="button" className={BTN_GHOST} onClick={() => setManual((rows) => [...(rows ?? []), blankRow()])}>
+                            <Button variant="secondary" size="sm" type="button" onClick={() => setManual((rows) => [...(rows ?? []), blankRow()])}>
                                 <Plus size={14} /> Add instalment
-                            </button>
-                            <button type="button" className={BTN_PRIMARY} disabled={busy} onClick={createManual}>
+                            </Button>
+                            <Button variant="primary" size="sm" type="button" disabled={busy} onClick={createManual}>
                                 {busy ? <Loader2 className="animate-spin" size={14} /> : <Save size={14} />} Create plan
-                            </button>
-                            <button type="button" className={BTN_GHOST} onClick={() => { setError(null); setManual(null); }}>
+                            </Button>
+                            <Button variant="secondary" size="sm" type="button" onClick={() => { setError(null); setManual(null); }}>
                                 <X size={14} /> Cancel
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 )}
@@ -299,6 +290,136 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
         setError(null);
         setEditing((e) => (e ? { ...e, draft: { ...e.draft, ...patch } } : e));
     };
+
+    const ppColumns: DataTableColumn<PaymentScheduleLine>[] = [
+        { key: 'seq', header: '#', render: (l) => <span className="text-fg-muted">{l.seq}</span> },
+        {
+            key: 'label',
+            header: 'Instalment',
+            render: (l) => (
+                <div>
+                    <p className="font-bold text-fg">{l.label}</p>
+                    {l.trigger && <p className="text-xs text-fg-muted">{TRIGGER_LABELS[l.trigger]}</p>}
+                </div>
+            ),
+        },
+        {
+            key: 'amount',
+            header: 'Amount',
+            render: (l) => {
+                const d = editing && editing.id === l.id ? editing.draft : null;
+                return d ? (
+                    <NumberInput name={`pp-line-amount-${l.id}`} aria-label={`${l.label} amount`} min={0} value={d.amount === '' ? null : Number(d.amount)} onChange={(v) => setDraft({ amount: v == null ? '' : String(v) })} />
+                ) : <span className="font-bold text-fg">{fmt.formatCurrency(l.amount)}</span>;
+            },
+        },
+        {
+            key: 'due_date',
+            header: 'Due',
+            render: (l) => {
+                const d = editing && editing.id === l.id ? editing.draft : null;
+                return d ? (
+                    <DatePicker name={`pp-line-due-${l.id}`} aria-label={`${l.label} due date`} value={d.due_date} onChange={(v) => setDraft({ due_date: v })} />
+                ) : <span className="text-fg-subtle">{l.due_date ? fmt.formatDate(l.due_date) : '—'}</span>;
+            },
+        },
+        {
+            key: 'payment_mode',
+            header: 'Mode',
+            render: (l) => {
+                const d = editing && editing.id === l.id ? editing.draft : null;
+                return d ? (
+                    <div className="space-y-2">
+                        <Select
+                            name={`pp-line-mode-${l.id}`}
+                            aria-label={`${l.label} payment mode`}
+                            value={d.payment_mode}
+                            placeholder="—"
+                            options={PAYMENT_MODES.map((m) => ({ value: m.value, label: m.label }))}
+                            onChange={(e) => setDraft({ payment_mode: MODE_VALUES.includes(e.target.value) ? e.target.value as PaymentMode : '' })}
+                        />
+                        {isChequeMode(d.payment_mode || null) && (
+                            <>
+                                <TextField name={`pp-line-chq-no-${l.id}`} aria-label={`${l.label} cheque number`} placeholder="Cheque no." value={d.cheque_number} onChange={(e) => setDraft({ cheque_number: e.target.value })} />
+                                <DatePicker name={`pp-line-chq-date-${l.id}`} aria-label={`${l.label} cheque date`} value={d.cheque_date} onChange={(v) => setDraft({ cheque_date: v })} />
+                                <TextField name={`pp-line-chq-bank-${l.id}`} aria-label={`${l.label} cheque bank`} placeholder="Bank" value={d.cheque_bank} onChange={(e) => setDraft({ cheque_bank: e.target.value })} />
+                            </>
+                        )}
+                    </div>
+                ) : (
+                    <div className="space-y-2">
+                        <span className="text-fg-subtle">{modeLabel(l.payment_mode)}</span>
+                        {isChequeMode(l.payment_mode) && (l.cheque_number || l.cheque_bank) && (
+                            <p className="text-xs text-fg-muted">
+                                {[l.cheque_number && `#${l.cheque_number}`, l.cheque_bank, l.cheque_date && fmt.formatDate(l.cheque_date)].filter(Boolean).join(' · ')}
+                            </p>
+                        )}
+                    </div>
+                );
+            },
+        },
+        {
+            key: 'status',
+            header: 'Status',
+            render: (l) => {
+                const d = editing && editing.id === l.id ? editing.draft : null;
+                return (
+                    <>
+                        {d ? (
+                            <Select
+                                name={`pp-line-status-${l.id}`}
+                                aria-label={`${l.label} status`}
+                                value={d.status}
+                                options={LINE_STATUSES
+                                    .filter((s) => s.value !== 'invoiced' || l.status === 'invoiced')
+                                    .map((s) => ({ value: s.value, label: s.label }))}
+                                onChange={(e) => {
+                                    const v = e.target.value;
+                                    if (STATUS_VALUES.includes(v)) setDraft({ status: v as ScheduleLineStatus });
+                                }}
+                            />
+                        ) : (
+                            <span className={`inline-block px-2 py-0.5 rounded-full border text-xs font-semibold ${STATUS_CHIP[l.status]}`}>
+                                {statusLabel(l.status)}
+                            </span>
+                        )}
+                        {l.invoice_id && !d && <p className="text-xs text-fg-muted mt-1">Invoice raised</p>}
+                    </>
+                );
+            },
+        },
+        {
+            key: 'actions',
+            header: '',
+            align: 'right',
+            render: (l) => {
+                const d = editing && editing.id === l.id ? editing.draft : null;
+                return d ? (
+                    <div className="flex justify-end gap-1">
+                        <Button variant="primary" size="sm" type="button" disabled={busy} onClick={() => saveLine(l, d)}>
+                            <Save size={12} /> Save
+                        </Button>
+                        <Button variant="secondary" size="sm" type="button" onClick={() => { setError(null); setEditing(null); }}>
+                            Cancel
+                        </Button>
+                    </div>
+                ) : (
+                    <div className="flex justify-end gap-1">
+                        {canRaiseInvoice(schedule.billing_mode, l) && (
+                            <Button variant="secondary" size="sm" type="button" disabled={busy} onClick={() => void raiseInvoice(l)} aria-label={`Raise invoice for ${l.label}`}>
+                                <Receipt size={12} /> Raise invoice
+                            </Button>
+                        )}
+                        <IconButton
+                            label={`Edit ${l.label}`}
+                            icon={<Edit2 size={12} />}
+                            onClick={() => { setError(null); setEditing({ id: l.id, draft: toDraft(l) }); }}
+                        />
+                    </div>
+                );
+            },
+        },
+    ];
 
     return (
         <div className="p-8 space-y-6">
@@ -318,126 +439,14 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
                 ))}
             </div>
 
-            <div className="overflow-x-auto">
-                <table className="w-full text-xs" aria-label="Instalments">
-                    <thead>
-                        <tr className="text-left text-xs font-semibold text-fg-muted">
-                            <th className="py-2 pr-3">#</th>
-                            <th className="py-2 pr-3">Instalment</th>
-                            <th className="py-2 pr-3">Amount</th>
-                            <th className="py-2 pr-3">Due</th>
-                            <th className="py-2 pr-3">Mode</th>
-                            <th className="py-2 pr-3">Status</th>
-                            <th className="py-2" />
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {lines.map((l) => {
-                            const d: LineDraft | null = editing && editing.id === l.id ? editing.draft : null;
-                            return (
-                                <tr key={l.id} className="border-t border-line align-top" data-testid={`pp-line-${l.id}`}>
-                                    <td className="py-3 pr-3 text-fg-muted">{l.seq}</td>
-                                    <td className="py-3 pr-3">
-                                        <p className="font-bold text-fg">{l.label}</p>
-                                        {l.trigger && <p className="text-xs text-fg-muted">{TRIGGER_LABELS[l.trigger]}</p>}
-                                    </td>
-                                    <td className="py-3 pr-3">
-                                        {d ? (
-                                            <input aria-label={`${l.label} amount`} type="number" min={0} className={FIELD_CLS} value={d.amount} onChange={(e) => setDraft({ amount: e.target.value })} />
-                                        ) : <span className="font-bold text-fg">{fmt.formatCurrency(l.amount)}</span>}
-                                    </td>
-                                    <td className="py-3 pr-3">
-                                        {d ? (
-                                            <input aria-label={`${l.label} due date`} type="date" className={FIELD_CLS} value={d.due_date} onChange={(e) => setDraft({ due_date: e.target.value })} />
-                                        ) : <span className="text-fg-subtle">{l.due_date ? fmt.formatDate(l.due_date) : '—'}</span>}
-                                    </td>
-                                    <td className="py-3 pr-3 space-y-2">
-                                        {d ? (
-                                            <>
-                                                <select
-                                                    aria-label={`${l.label} payment mode`}
-                                                    className={FIELD_CLS}
-                                                    value={d.payment_mode}
-                                                    onChange={(e) => setDraft({ payment_mode: MODE_VALUES.includes(e.target.value) ? e.target.value as PaymentMode : '' })}
-                                                >
-                                                    <option value="">—</option>
-                                                    {PAYMENT_MODES.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
-                                                </select>
-                                                {isChequeMode(d.payment_mode || null) && (
-                                                    <>
-                                                        <input aria-label={`${l.label} cheque number`} placeholder="Cheque no." className={FIELD_CLS} value={d.cheque_number} onChange={(e) => setDraft({ cheque_number: e.target.value })} />
-                                                        <input aria-label={`${l.label} cheque date`} type="date" className={FIELD_CLS} value={d.cheque_date} onChange={(e) => setDraft({ cheque_date: e.target.value })} />
-                                                        <input aria-label={`${l.label} cheque bank`} placeholder="Bank" className={FIELD_CLS} value={d.cheque_bank} onChange={(e) => setDraft({ cheque_bank: e.target.value })} />
-                                                    </>
-                                                )}
-                                            </>
-                                        ) : (
-                                            <>
-                                                <span className="text-fg-subtle">{modeLabel(l.payment_mode)}</span>
-                                                {isChequeMode(l.payment_mode) && (l.cheque_number || l.cheque_bank) && (
-                                                    <p className="text-xs text-fg-muted">
-                                                        {[l.cheque_number && `#${l.cheque_number}`, l.cheque_bank, l.cheque_date && fmt.formatDate(l.cheque_date)].filter(Boolean).join(' · ')}
-                                                    </p>
-                                                )}
-                                            </>
-                                        )}
-                                    </td>
-                                    <td className="py-3 pr-3">
-                                        {d ? (
-                                            <select
-                                                aria-label={`${l.label} status`}
-                                                className={FIELD_CLS}
-                                                value={d.status}
-                                                onChange={(e) => {
-                                                    const v = e.target.value;
-                                                    if (STATUS_VALUES.includes(v)) setDraft({ status: v as ScheduleLineStatus });
-                                                }}
-                                            >
-                                                {LINE_STATUSES
-                                                    .filter((s) => s.value !== 'invoiced' || l.status === 'invoiced')
-                                                    .map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-                                            </select>
-                                        ) : (
-                                            <span className={`inline-block px-2 py-0.5 rounded-full border text-xs font-semibold ${STATUS_CHIP[l.status]}`}>
-                                                {statusLabel(l.status)}
-                                            </span>
-                                        )}
-                                        {l.invoice_id && !d && <p className="text-xs text-fg-muted mt-1">Invoice raised</p>}
-                                    </td>
-                                    <td className="py-3 text-right whitespace-nowrap">
-                                        {d ? (
-                                            <div className="flex justify-end gap-1">
-                                                <button type="button" className={BTN_PRIMARY} disabled={busy} onClick={() => saveLine(l, d)}>
-                                                    <Save size={12} /> Save
-                                                </button>
-                                                <button type="button" className={BTN_GHOST} onClick={() => { setError(null); setEditing(null); }}>
-                                                    Cancel
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <div className="flex justify-end gap-1">
-                                                {canRaiseInvoice(schedule.billing_mode, l) && (
-                                                    <button type="button" className={BTN_GHOST} disabled={busy} onClick={() => void raiseInvoice(l)} aria-label={`Raise invoice for ${l.label}`}>
-                                                        <Receipt size={12} /> Raise invoice
-                                                    </button>
-                                                )}
-                                                <button
-                                                    type="button"
-                                                    className={BTN_GHOST}
-                                                    aria-label={`Edit ${l.label}`}
-                                                    onClick={() => { setError(null); setEditing({ id: l.id, draft: toDraft(l) }); }}
-                                                >
-                                                    <Edit2 size={12} />
-                                                </button>
-                                            </div>
-                                        )}
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
-            </div>
+            <DataTable<PaymentScheduleLine>
+                name="pp-instalments"
+                data-testid="pp-instalments"
+                rows={lines}
+                rowKey={(l) => l.id}
+                getRowProps={(l) => ({ 'data-testid': `pp-line-${l.id}` })}
+                columns={ppColumns}
+            />
             {errorLine}
         </div>
     );

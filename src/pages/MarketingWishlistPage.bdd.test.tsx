@@ -21,8 +21,8 @@ vi.mock('../components/MarketingStorePicker', () => ({
   ),
 }));
 
-vi.mock('@so360/design-system', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@so360/design-system')>();
+vi.mock('@so360/design-system', async () => {
+  const actual = await import('../test/__mocks__/design-system');
   return {
     ...actual,
     toast: { ...actual.toast, error: mockShowError },
@@ -136,7 +136,7 @@ describe('MarketingWishlistPage', () => {
     it('When wishlist count renders / Then shows correct total', async () => {
       render(<MarketingWishlistPage />);
       fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
-      await waitFor(() => expect(screen.getByText(/Wishlist Activity Feed \(3\)/)).toBeInTheDocument());
+      await waitFor(() => expect(screen.getAllByTestId(/^wishlist-row-/).length).toBe(3));
     });
   });
 
@@ -154,7 +154,7 @@ describe('MarketingWishlistPage', () => {
       mockGetWishlist.mockReturnValue(new Promise(() => {}));
       render(<MarketingWishlistPage />);
       fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
-      await waitFor(() => expect(screen.getByText(/Tracking intent/)).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByTestId('datatable-loading')).toBeInTheDocument());
     });
   });
 });

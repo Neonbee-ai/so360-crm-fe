@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
-import { DashboardPageTemplate, Card } from '@so360/design-system';
-import SalesFiltersBar from './components/SalesFiltersBar';
+import { DashboardPageTemplate, Card, ListFilters } from '@so360/design-system';
+import { useSalesFilterConfig } from './components/SalesFiltersBar';
 import {
     salesReportService,
     validateDateRange,
@@ -80,6 +80,7 @@ const CommissionReportPage: React.FC = () => {
     const [forbidden, setForbidden] = useState(false);
     const [reloadKey, setReloadKey] = useState(0);
 
+    const { config: filterConfig, rangeError } = useSalesFilterConfig(filters, setFilters, []);
     const rangeInvalid = validateDateRange(filters) !== null;
 
     useEffect(() => {
@@ -106,7 +107,7 @@ const CommissionReportPage: React.FC = () => {
 
     let body: React.ReactNode = null;
     if (rangeInvalid) {
-        body = null;
+        body = <div role="alert" className="text-xs text-danger">{rangeError}</div>;
     } else if (loading) {
         body = <div role="status" className="p-8 text-sm text-fg-subtle">Loading commission report…</div>;
     } else if (forbidden) {
@@ -153,7 +154,7 @@ const CommissionReportPage: React.FC = () => {
             title="Commission report"
             description="Commission earned across projects, agents and months."
             /* The report carries no developer list, so the developer filter is not offered here. */
-            filters={<SalesFiltersBar value={filters} onChange={setFilters} developers={[]} />}
+            filters={<ListFilters {...filterConfig} />}
             secondaryActions={canExport && !forbidden ? (
                 <ExportMenu label="Export commission report" onExport={(format) => exportService.commission(filters, format)} />
             ) : undefined}

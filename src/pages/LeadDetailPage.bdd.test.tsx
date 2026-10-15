@@ -1411,15 +1411,15 @@ describe('LeadDetailPage', () => {
       await waitFor(() => expect(screen.getByText('Acme Corp')).toBeInTheDocument());
 
       fireEvent.click(screen.getByRole('button', { name: /Schedule Meeting/i }));
-      expect(await screen.findByRole('dialog', { name: /schedule meeting/i })).toBeInTheDocument();
+      expect(within(await screen.findByRole('dialog')).getByRole('heading', { name: /schedule meeting/i })).toBeInTheDocument();
 
       // Close, then ask again. The old flag-based wiring was already `true`,
       // so the second click silently did nothing at all.
       fireEvent.click(screen.getByRole('button', { name: /Cancel/i }));
-      await waitFor(() => expect(screen.queryByRole('dialog', { name: /schedule meeting/i })).toBeNull());
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
 
       fireEvent.click(screen.getByRole('button', { name: /Schedule Meeting/i }));
-      expect(await screen.findByRole('dialog', { name: /schedule meeting/i })).toBeInTheDocument();
+      expect(within(await screen.findByRole('dialog')).getByRole('heading', { name: /schedule meeting/i })).toBeInTheDocument();
     });
   });
 });

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { DetailPageTemplate, Button, Card, EmptyState, StatusBadge } from '@so360/design-system';
+import { DetailPageTemplate, Button, Card, DataTable, EmptyState, StatusBadge } from '@so360/design-system';
 import { crmService } from '../services/crmService';
 import { formatDateTime, formatMoney } from './marketing/marketingMappers';
 import { useBusinessSettings } from '@so360/shell-context';
@@ -97,26 +97,16 @@ const MarketingAbandonedCartDetailPage: React.FC = () => {
           {items.length === 0 ? (
             <EmptyState title="No item data found." />
           ) : (
-            <div className="w-full overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="text-left text-xs text-fg-muted">
-                  <tr>
-                    <th className="px-nb-3 py-nb-2 font-medium">Item</th>
-                    <th className="px-nb-3 py-nb-2 font-medium">Qty</th>
-                    <th className="px-nb-3 py-nb-2 font-medium">Price</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-line">
-                  {items.map((item: any, idx: number) => (
-                    <tr key={`${item.item_id || idx}`}>
-                      <td className="px-nb-3 py-nb-2 text-fg">{item.name || item.item_name || '-'}</td>
-                      <td className="px-nb-3 py-nb-2 text-fg-subtle">{item.qty || item.quantity || 0}</td>
-                      <td className="px-nb-3 py-nb-2 text-fg-subtle">{formatMoney(item.price || item.unit_price || 0, currencyCode, locale)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <DataTable
+              name="abandoned-cart-items"
+              columns={[
+                { key: 'item', header: 'Item', render: (item: any) => <span className="text-fg">{item.name || item.item_name || '-'}</span> },
+                { key: 'qty', header: 'Qty', render: (item: any) => <span className="text-fg-subtle">{item.qty || item.quantity || 0}</span> },
+                { key: 'price', header: 'Price', render: (item: any) => <span className="text-fg-subtle">{formatMoney(item.price || item.unit_price || 0, currencyCode, locale)}</span> },
+              ]}
+              rows={items.map((item: any, idx: number) => ({ ...item, __idx: idx }))}
+              rowKey={(item: any) => `${item.item_id || item.__idx}`}
+            />
           )}
         </Card>
       )}

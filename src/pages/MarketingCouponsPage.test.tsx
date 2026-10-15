@@ -27,23 +27,9 @@ vi.mock('../components/MarketingStorePicker', () => ({
   ),
 }));
 
-vi.mock('@so360/design-system', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@so360/design-system')>();
-  return {
-    ...actual,
-    toast: { ...actual.toast, success: mockShowSuccess, error: mockShowError },
-  };
-});
-
-vi.mock('@so360/shell-context', () => ({
-  useBusinessSettings: () => ({ settings: { base_currency: 'USD' } }),
-  useActivity: () => ({ recordActivity: async () => {} }),
-  useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
-
-  useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
-
-vi.mock('./marketing/marketingMappers', () => ({
-  formatMoney: (v: any) => `$${v || 0}`,
+vi.mock('@so360/design-system', async () => ({
+  ...(await import('../test/__mocks__/design-system')),
+  toast: { success: mockShowSuccess, error: mockShowError, info: vi.fn(), warning: vi.fn() },
 }));
 
 import MarketingCouponsPage from './MarketingCouponsPage';

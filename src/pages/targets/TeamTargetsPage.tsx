@@ -12,7 +12,8 @@ import {
   PeriodPicker,
   AsOfBanner,
 } from './targetUi';
-import { DashboardPageTemplate, Button } from '@so360/design-system';
+import { DashboardPageTemplate, Button, DataTable } from '@so360/design-system';
+import type { DataTableColumn } from '@so360/design-system';
 
 /**
  * Manager roll-up.
@@ -106,6 +107,23 @@ export default function TeamTargetsPage() {
     </div>
   );
 
+  const columns: DataTableColumn<any>[] = [
+    { key: 'person', header: 'Person', render: (r) => <PersonName id={r.person_id} /> },
+    { key: 'metric', header: 'Metric', render: (r) => <span className="text-fg-subtle">{r.metric_name ?? '—'}</span> },
+    { key: 'target', header: 'Target', align: 'right', sortable: true, sortValue: (r) => r.target ?? 0, render: (r) => <span className="text-fg-subtle">{formatValue(r.target, 'currency', currency)}</span> },
+    { key: 'actual', header: 'Actual', align: 'right', sortable: true, sortValue: (r) => r.actual ?? 0, render: (r) => <span className="text-fg-subtle">{formatValue(r.actual, 'currency', currency)}</span> },
+    { key: 'achievement', header: 'Achievement', sortable: true, sortValue: (r) => r.attainment ?? 0, render: (r) => (
+      <div className="flex items-center gap-nb-2">
+        <div className="w-24">
+          <ProgressBar actual={r.actual} target={r.target} status={r.status ?? 'on_track'} compact />
+        </div>
+        <span className="text-xs text-fg-subtle">{formatPct(r.attainment)}</span>
+      </div>
+    ) },
+    { key: 'projected', header: 'Projected', render: (r) => <span className="text-xs text-fg-subtle">{r.projection?.projectable ? formatPct(r.projection.projectedAttainment) : '—'}</span> },
+    { key: 'status', header: 'Status', render: (r) => r.status ? <StatusChip status={r.status} label={r.status_label} /> : <span className="text-xs text-fg-muted">—</span> },
+  ];
+
   if (loading) {
     return (
       <DashboardPageTemplate title="Team Targets" filters={header}>
@@ -162,70 +180,13 @@ export default function TeamTargetsPage() {
       </div>
 
       <Panel title="Attainment by person">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-xs text-fg-subtle border-b border-line">
-                <th className="py-2 pr-4 font-medium">Person</th>
-                <th className="py-2 pr-4 font-medium">Metric</th>
-                <th className="py-2 pr-4 font-medium text-right">Target</th>
-                <th className="py-2 pr-4 font-medium text-right">Actual</th>
-                <th className="py-2 pr-4 font-medium">Achievement</th>
-                <th className="py-2 pr-4 font-medium">Projected</th>
-                <th className="py-2 font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr
-                  key={r.person_id}
-                  className="border-b border-line hover:bg-surface-high cursor-pointer"
-                  onClick={() => openDetail(r.person_id)}
-                >
-                  <td className="py-2 pr-4 text-fg">
-                    <PersonName id={r.person_id} />
-                  </td>
-                  <td className="py-2 pr-4 text-fg-subtle">
-                    {r.metric_name ?? '—'}
-                  </td>
-                  <td className="py-2 pr-4 text-right text-fg-subtle">
-                    {formatValue(r.target, 'currency', currency)}
-                  </td>
-                  <td className="py-2 pr-4 text-right text-fg-subtle">
-                    {formatValue(r.actual, 'currency', currency)}
-                  </td>
-                  <td className="py-2 pr-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-24">
-                        <ProgressBar
-                          actual={r.actual}
-                          target={r.target}
-                          status={r.status ?? 'on_track'}
-                          compact
-                        />
-                      </div>
-                      <span className="text-xs text-fg-subtle">
-                        {formatPct(r.attainment)}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="py-2 pr-4 text-xs text-fg-subtle">
-                    {r.projection?.projectable
-                      ? formatPct(r.projection.projectedAttainment)
-                      : '—'}
-                  </td>
-                  <td className="py-2">
-                    {r.status ? (
-                      <StatusChip status={r.status} label={r.status_label} />
-                    ) : (
-                      <span className="text-xs text-fg-muted">—</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          columns={columns}
+          rows={rows}
+          rowKey={(r: any) => r.person_id}
+          onRowClick={(r: any) => openDetail(r.person_id)}
+          getRowProps={(r: any) => ({ 'data-testid': `team-row-${r.person_id}` })}
+        />
       </Panel>
 
       {selected && (

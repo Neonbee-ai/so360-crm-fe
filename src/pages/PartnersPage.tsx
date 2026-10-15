@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { partnersApi, settingsApi, crmService } from '../services/crmService';
-import { ListPageTemplate, Pagination, Button } from '@so360/design-system';
-import { Table } from '../components/common/Table';
+import { ListPageTemplate, Pagination, Button, DataTable, SearchInput, type DataTableColumn, type FilterValues, type ListFilterConfig } from '@so360/design-system';
 import { PartnerStatusOverview } from '../components/partners/PartnerStatusOverview';
 import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
 import { validatePhone } from '../utils/phoneValidation';
@@ -483,34 +482,6 @@ const PartnersPage = () => {
 
     useEffect(() => { fetchData(); }, []);
 
-    const toggleSort = (field: SortField) => {
-        if (sortField === field) {
-            if (sortDirection === 'asc') setSortDirection('desc');
-            else if (sortDirection === 'desc') { setSortField(null); setSortDirection(null); }
-            else setSortDirection('asc');
-        } else {
-            setSortField(field);
-            setSortDirection('asc');
-        }
-    };
-
-    const SortIcon = ({ field }: { field: SortField }) => {
-        if (sortField !== field) return <ChevronsUpDown size={14} className="text-fg-muted" />;
-        if (sortDirection === 'asc') return <ChevronUp size={14} className="text-primary" />;
-        if (sortDirection === 'desc') return <ChevronDown size={14} className="text-primary" />;
-        return <ChevronsUpDown size={14} className="text-fg-muted" />;
-    };
-
-    const SortableHeader = ({ label, field, align }: { label: string; field: SortField; align?: 'left' | 'right' }) => (
-        <button
-            onClick={() => toggleSort(field)}
-            className={`flex items-center gap-1 hover:text-fg transition-colors cursor-pointer ${align === 'right' ? 'ml-auto' : ''}`}
-        >
-            {label}
-            <SortIcon field={field} />
-        </button>
-    );
-
     const filteredPartners = useMemo(() => {
         let result = partners.filter(p => {
             const matchesSearch = !searchTerm ||
@@ -560,10 +531,10 @@ const PartnersPage = () => {
         return found?.label || value || '-';
     };
 
-    const columns = [
+    const columns: DataTableColumn<any>[] = [
         {
-            header: <SortableHeader label="Name" field="contact_name" />,
-            accessor: (p: any) => (
+            key: 'contact_name', header: 'Name', sortable: true,
+            render: (p: any) => (
                 <div className="flex flex-col gap-0.5">
                     <span className="font-semibold text-fg">{p.contact_name}</span>
                     {p.email && <span className="text-xs text-fg-muted">{p.email}</span>}
@@ -571,50 +542,55 @@ const PartnersPage = () => {
             ),
         },
         {
-            header: <SortableHeader label="Type" field="partner_type" />,
-            accessor: (p: any) => (
+            key: 'partner_type', header: 'Type', sortable: true,
+            render: (p: any) => (
                 <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border bg-info/10 text-info border-info/20">
                     {getPartnerTypeLabel(p.partner_type)}
                 </span>
             ),
         },
         {
-            header: <SortableHeader label="Grading" field="grading" />,
-            accessor: (p: any) => <GradingBadge grading={p.grading} />,
+            key: 'grading', header: 'Grading', sortable: true,
+            render: (p: any) => <GradingBadge grading={p.grading} />,
         },
         {
-            header: <SortableHeader label="Deals" field="total_deals" align="right" />,
-            accessor: (p: any) => (
+            key: 'total_deals', header: 'Deals', sortable: true, align: 'right',
+            render: (p: any) => (
                 <span className="text-fg-subtle text-sm font-medium">{p.total_deals || 0}</span>
             ),
-            className: 'text-right',
         },
         {
-            header: <SortableHeader label="Deal Value" field="total_deal_value" align="right" />,
-            accessor: (p: any) => (
+            key: 'total_deal_value', header: 'Deal Value', sortable: true, align: 'right',
+            render: (p: any) => (
                 <span className="text-fg-subtle text-sm font-mono">
                     {formatters.formatCurrency(p.total_deal_value || 0)}
                 </span>
             ),
-            className: 'text-right',
         },
         {
-            header: 'Royalty Pending',
-            accessor: (p: any) => (
+            key: 'pending_commission', header: 'Royalty Pending', align: 'right',
+            render: (p: any) => (
                 <span className={`text-sm font-medium font-mono ${(p.pending_commission || 0) > 0 ? 'text-warning' : 'text-fg-muted'}`}>
                     {formatters.formatCurrency(p.pending_commission || 0)}
                 </span>
             ),
-            className: 'text-right',
         },
         {
-            header: 'Royalty Rate',
-            accessor: (p: any) => (
+            key: 'commission_rate', header: 'Royalty Rate', align: 'right',
+            render: (p: any) => (
                 <span className="text-fg-subtle text-sm font-mono">{p.commission_rate ? `${p.commission_rate}%` : '-'}</span>
             ),
-            className: 'text-right',
         },
     ];
+
+    const filterConfig: ListFilterConfig = {
+        fields: [
+            { key: 'type', label: 'Type', type: 'select', quick: true, options: partnerTypes.map((pt: any) => ({ value: pt.value, label: pt.label })) },
+        ],
+        values: (typeFilter !== 'All' ? { type: typeFilter } : {}) as FilterValues,
+        onChange: (next: FilterValues) => setTypeFilter((next.type as string) || 'All'),
+        onClear: () => { setSearchTerm(''); setTypeFilter('All'); },
+    };
 
     return (
         <ListPageTemplate
@@ -628,36 +604,13 @@ const PartnersPage = () => {
             }
             kpis={<PartnerStatusOverview partners={partners} partnerTypes={partnerTypes} />}
             search={
-                <div className="relative w-full wc-medium:w-72">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none" size={16} />
-                    <input
-                        type="text"
-                        placeholder="Search partners by name, email..."
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                        className="h-nb-control-md w-full rounded-nb border border-line bg-surface pl-10 pr-4 text-nb-body text-fg placeholder:text-fg-muted focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    />
-                </div>
+                <SearchInput
+                    placeholder="Search partners by name, email..."
+                    value={searchTerm}
+                    onChange={setSearchTerm}
+                />
             }
-            filters={
-                <>
-                <select
-                    value={typeFilter}
-                    onChange={e => setTypeFilter(e.target.value)}
-                    className="h-nb-control-md bg-surface border border-line text-fg px-3 rounded-nb text-sm focus:outline-none focus:border-primary"
-                >
-                    <option value="All">All Types</option>
-                    {partnerTypes.map(pt => (
-                        <option key={pt.value} value={pt.value}>{pt.label}</option>
-                    ))}
-                </select>
-                {(searchTerm || typeFilter !== 'All') && (
-                    <button onClick={() => { setSearchTerm(''); setTypeFilter('All'); }} className="h-nb-control-md px-3 rounded-nb text-xs text-fg-muted hover:text-fg hover:bg-surface-raised">
-                        Clear Filters
-                    </button>
-                )}
-                </>
-            }
+            filterConfig={filterConfig}
             pagination={filteredPartners.length > 0 ? (
                 <Pagination
                     currentPage={currentPage}
@@ -670,12 +623,19 @@ const PartnersPage = () => {
             ) : undefined}
         >
             <div ref={listAnchorRef}>
-            <Table
-                data={paginatedPartners}
+            <DataTable
+                name="partners"
+                data-testid="partners-table"
+                rows={paginatedPartners}
+                rowKey={(p: any) => p.id}
                 columns={columns}
-                isLoading={isLoading}
-                onRowClick={p => navigate(`../partners/${p.id}`)}
-                emptyMessage={error || 'No partners found. Add a partner to get started.'}
+                loading={isLoading}
+                onRowClick={(p: any) => navigate(`../partners/${p.id}`)}
+                getRowProps={(p: any) => ({ 'data-testid': `partner-row-${p.id}` })}
+                sortKey={sortField ?? undefined}
+                sortDir={sortDirection ?? undefined}
+                onSortChange={(key: string, dir: 'asc' | 'desc') => { setSortField(key as SortField); setSortDirection(dir); }}
+                emptyState={error || 'No partners found. Add a partner to get started.'}
             />
 
             </div>

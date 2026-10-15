@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Loader2, Calendar, Clock, CheckCircle2, User as UserIcon, UserPlus, ChevronDown, Link2 } from 'lucide-react';
+import { Loader2, CheckCircle2, UserPlus, Link2 } from 'lucide-react';
 import { crmService } from '../../services/crmService';
 import { ProjectSelect } from '../../components/common/ProjectSelect';
 import { composeDueDate, dueDateCalendarDay, inputValueToApiValue, splitStoredDueDate } from '../../utils/datetime';
 import { Task, TaskType, TaskPriority, TASK_PRIORITY_OPTIONS, User, Lead, Deal } from '../../types/crm';
-import { toast, Button } from '@so360/design-system';
+import { toast, Button, TextField, Textarea, Select, DatePicker, TimePicker } from '@so360/design-system';
 import { Modal } from '../../components/common/Modal';
 import { useShell, useActivity } from '@so360/shell-context';
 
@@ -252,182 +252,134 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                 <form id="task-modal-form" onSubmit={handleSubmit} className="flex flex-col">
                 <div className="space-y-6">
                     <div className="space-y-4">
-                        <div className="space-y-2">
-                            <label className="text-xs font-semibold text-fg-muted">Task Title</label>
-                            <input
-                                type="text"
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
-                                className="w-full bg-bg border border-line text-fg rounded-nb-lg px-4 py-3 outline-none focus:border-primary transition-all font-bold"
-                                required
-                                placeholder="e.g. Follow up email..."
-                            />
-                        </div>
+                        <TextField
+                            name="task-title"
+                            label="Task Title"
+                            type="text"
+                            value={title}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTitle(e.target.value)}
+                            required
+                            placeholder="e.g. Follow up email..."
+                        />
 
-                        <div className="space-y-2">
-                            <label className="text-xs font-semibold text-fg-muted">Description</label>
-                            <textarea
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                                className="w-full bg-bg border border-line text-fg rounded-nb-lg px-4 py-3 outline-none focus:border-primary transition-all font-bold resize-none h-20"
-                                placeholder="Add details..."
-                            />
-                        </div>
+                        <Textarea
+                            name="task-description"
+                            label="Description"
+                            value={description}
+                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
+                            placeholder="Add details..."
+                            rows={3}
+                        />
 
-                        <div className="space-y-2">
-                            <label className="text-xs font-semibold text-fg-muted">Priority</label>
-                            <div className="relative">
-                                <select
-                                    value={priority}
-                                    onChange={(e) => setPriority(e.target.value as TaskPriority)}
-                                    className="w-full bg-bg border border-line text-fg rounded-nb-lg px-4 py-3 pr-9 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
-                                >
-                                    {TASK_PRIORITY_OPTIONS.map(o => (
-                                        <option key={o.value} value={o.value}>{o.label}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
+                        <Select
+                            name="task-priority"
+                            label="Priority"
+                            value={priority}
+                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setPriority(e.target.value as TaskPriority)}
+                            options={TASK_PRIORITY_OPTIONS.map(o => ({ value: o.value, label: o.label }))}
+                        />
 
-                        <div className="space-y-2">
-                            <label className="text-xs font-semibold text-fg-muted">Type</label>
-                            <div className="relative">
-                                <select
-                                    value={type}
-                                    onChange={(e) => {
-                                        const nextType = e.target.value as TaskType;
-                                        setType(nextType);
-                                        // A reminder must ring at a moment; offer a
-                                        // sensible one rather than an empty field.
-                                        if (nextType === 'REMINDER' && !dueTime) setDueTime('09:00');
-                                    }}
-                                    className="w-full bg-bg border border-line text-fg rounded-nb-lg px-4 py-3 pr-9 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
-                                >
-                                    <option value="TODO">To Do</option>
-                                    <option value="CALL">Call</option>
-                                    <option value="EMAIL">Email</option>
-                                    <option value="MEETING">Meeting</option>
-                                    <option value="REMINDER">Reminder</option>
-                                </select>
-                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-subtle pointer-events-none" size={16} />
-                            </div>
-                        </div>
+                        <Select
+                            name="task-type"
+                            label="Type"
+                            value={type}
+                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                                const nextType = e.target.value as TaskType;
+                                setType(nextType);
+                                // A reminder must ring at a moment; offer a
+                                // sensible one rather than an empty field.
+                                if (nextType === 'REMINDER' && !dueTime) setDueTime('09:00');
+                            }}
+                            options={[
+                                { value: 'TODO', label: 'To Do' },
+                                { value: 'CALL', label: 'Call' },
+                                { value: 'EMAIL', label: 'Email' },
+                                { value: 'MEETING', label: 'Meeting' },
+                                { value: 'REMINDER', label: 'Reminder' },
+                            ]}
+                        />
                         <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
-                            <div className="space-y-2">
-                                <label className="text-xs font-semibold text-fg-muted">Start Date</label>
-                                <div className="relative">
-                                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none" size={16} />
-                                    <input
-                                        type="date"
-                                        value={startDate}
-                                        onChange={(e) => setStartDate(e.target.value)}
-                                        className="w-full bg-bg border border-line text-fg rounded-nb-lg pl-9 pr-4 py-3 outline-none focus:border-primary transition-all font-bold"
-                                    />
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <label htmlFor="task-due-date" className="text-xs font-semibold text-fg-muted">
-                                    Due Date
-                                </label>
-                                <div className="relative">
-                                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none" size={16} />
-                                    <input
-                                        id="task-due-date"
-                                        type="date"
-                                        value={dueDate}
-                                        onChange={(e) => setDueDate(e.target.value)}
-                                        min={todayDate}
-                                        className="w-full bg-bg border border-line text-fg rounded-nb-lg pl-9 pr-4 py-3 outline-none focus:border-primary transition-all font-bold"
-                                        required
-                                    />
-                                </div>
-                            </div>
+                            <DatePicker
+                                name="task-start-date"
+                                label="Start Date"
+                                value={startDate}
+                                onChange={(v: string) => setStartDate(v)}
+                            />
+                            <DatePicker
+                                name="task-due-date"
+                                label="Due Date"
+                                value={dueDate}
+                                onChange={(v: string) => setDueDate(v)}
+                                min={todayDate}
+                                required
+                            />
                         </div>
 
                         {/* Due time is optional for every kind except Reminder, which
                             is an alarm. Left blank the task stays a plain calendar
                             date — no invented 9am, no invented midnight. */}
-                        <div className="space-y-2">
-                            <label htmlFor="task-due-time" className="text-xs font-semibold text-fg-muted">
-                                Due Time {type === 'REMINDER' ? <span className="text-danger">*</span> : <span className="text-fg-muted font-bold">(optional)</span>}
-                            </label>
-                            <div className="flex gap-2">
-                                <div className="relative flex-1">
-                                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none" size={16} />
-                                    <input
-                                        id="task-due-time"
-                                        type="time"
-                                        value={dueTime}
-                                        onChange={(e) => setDueTime(e.target.value)}
-                                        className="w-full bg-bg border border-line text-fg rounded-nb-lg pl-9 pr-4 py-3 outline-none focus:border-primary transition-all font-bold"
-                                        required={type === 'REMINDER'}
-                                    />
-                                </div>
-                                {dueTime && type !== 'REMINDER' && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setDueTime('')}
-                                        className="px-3 py-3 rounded-nb-lg border border-line text-xs font-semibold text-fg-subtle hover:text-fg transition-colors"
-                                    >
-                                        Clear
-                                    </button>
-                                )}
+                        <div className="flex items-end gap-2">
+                            <div className="flex-1 min-w-0">
+                                <TimePicker
+                                    name="task-due-time"
+                                    label={`Due Time ${type === 'REMINDER' ? '*' : '(optional)'}`}
+                                    value={dueTime}
+                                    onChange={(v: string) => setDueTime(v)}
+                                    required={type === 'REMINDER'}
+                                />
                             </div>
+                            {dueTime && type !== 'REMINDER' && (
+                                <Button type="button" variant="secondary" onClick={() => setDueTime('')}>
+                                    Clear
+                                </Button>
+                            )}
                         </div>
 
                         {type === 'REMINDER' && (
-                            <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                                <label className="text-xs font-semibold text-fg-muted">Remind me before</label>
-                                <select
-                                    value={reminderMinutes}
-                                    onChange={(e) => setReminderMinutes(e.target.value)}
-                                    className="w-full bg-bg border border-line text-fg rounded-nb-lg px-4 py-3 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
-                                >
-                                    <option value="">No reminder notification</option>
-                                    <option value="15">15 minutes before</option>
-                                    <option value="30">30 minutes before</option>
-                                    <option value="60">1 hour before</option>
-                                    <option value="1440">1 day before</option>
-                                </select>
-                            </div>
+                            <Select
+                                name="task-reminder-minutes"
+                                label="Remind me before"
+                                value={reminderMinutes}
+                                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setReminderMinutes(e.target.value)}
+                                options={[
+                                    { value: '', label: 'No reminder notification' },
+                                    { value: '15', label: '15 minutes before' },
+                                    { value: '30', label: '30 minutes before' },
+                                    { value: '60', label: '1 hour before' },
+                                    { value: '1440', label: '1 day before' },
+                                ]}
+                            />
                         )}
 
-                        <div className="space-y-2">
-                            <label className="text-xs font-semibold text-fg-muted">Assigned To</label>
-                            <div className="flex gap-2">
-                                <div className="relative flex-1">
-                                    <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" size={16} />
-                                    <select
-                                        value={assignedToId}
-                                        onChange={(e) => setAssignedToId(e.target.value)}
-                                        className="w-full bg-bg border border-line text-fg rounded-nb-lg pl-9 pr-4 py-3 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
-                                    >
-                                        <option value="">{isEditing ? 'Unassigned' : 'Select assignee…'}</option>
-                                        {users.map(u => (
-                                            <option key={u.id} value={u.id}>
-                                                {u.full_name}
-                                                {u.id === currentUserId ? ' (You)' : ''}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={handleAssignToMe}
-                                    disabled={!currentUserId || assignedToId === currentUserId}
-                                    className="flex items-center gap-1.5 px-3 py-3 text-sm bg-info/10 border border-info/20 rounded-nb-lg text-info hover:bg-info/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-                                    title={
-                                        !currentUserId
-                                            ? "User session not available"
-                                            : assignedToId === currentUserId
-                                            ? "Already assigned to you"
-                                            : "Assign this task to yourself"
-                                    }
-                                >
-                                    <UserPlus className="w-4 h-4" />
-                                    <span className="text-xs font-semibold">Me</span>
-                                </button>
+                        <div className="flex items-end gap-2">
+                            <div className="flex-1 min-w-0">
+                                <Select
+                                    name="task-assigned-to"
+                                    label="Assigned To"
+                                    value={assignedToId}
+                                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setAssignedToId(e.target.value)}
+                                    options={[
+                                        { value: '', label: isEditing ? 'Unassigned' : 'Select assignee…' },
+                                        ...users.map(u => ({ value: u.id, label: `${u.full_name}${u.id === currentUserId ? ' (You)' : ''}` })),
+                                    ]}
+                                />
                             </div>
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                onClick={handleAssignToMe}
+                                disabled={!currentUserId || assignedToId === currentUserId}
+                                title={
+                                    !currentUserId
+                                        ? "User session not available"
+                                        : assignedToId === currentUserId
+                                        ? "Already assigned to you"
+                                        : "Assign this task to yourself"
+                                }
+                            >
+                                <UserPlus className="w-4 h-4" />
+                                <span className="text-xs font-semibold">Me</span>
+                            </Button>
                         </div>
 
                         <div className="space-y-2">
@@ -450,61 +402,49 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                     Associate With
                                 </label>
                                 <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
-                                    <div className="relative">
-                                        <select
-                                            value={associateType}
-                                            onChange={(e) => { setAssociateType(e.target.value as any); setAssociateId(''); }}
-                                            className="w-full bg-bg border border-line text-fg rounded-nb-lg px-4 py-3 pr-9 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
-                                        >
-                                            <option value="none">None</option>
-                                            <option value="lead">Lead</option>
-                                            <option value="deal">Deal</option>
-                                        </select>
-                                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-subtle pointer-events-none" size={16} />
-                                    </div>
+                                    <Select
+                                        name="task-associate-type"
+                                        aria-label="Associate type"
+                                        value={associateType}
+                                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { setAssociateType(e.target.value as any); setAssociateId(''); }}
+                                        options={[
+                                            { value: 'none', label: 'None' },
+                                            { value: 'lead', label: 'Lead' },
+                                            { value: 'deal', label: 'Deal' },
+                                        ]}
+                                    />
                                     {associateType !== 'none' && (
-                                        <div className="relative">
-                                            <select
-                                                value={associateId}
-                                                onChange={(e) => setAssociateId(e.target.value)}
-                                                className="w-full bg-bg border border-line text-fg rounded-nb-lg px-4 py-3 pr-9 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
-                                            >
-                                                <option value="">Select {associateType === 'lead' ? 'Lead' : 'Deal'}…</option>
-                                                {associateType === 'lead'
-                                                    ? leads.map(l => (
-                                                        <option key={l.id} value={l.id}>
-                                                            {l.company_name || l.contact_name}
-                                                        </option>
-                                                    ))
-                                                    : deals.map(d => (
-                                                        <option key={d.id} value={d.id}>
-                                                            {d.name || d.company_name}
-                                                        </option>
-                                                    ))
-                                                }
-                                            </select>
-                                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-subtle pointer-events-none" size={16} />
-                                        </div>
+                                        <Select
+                                            name="task-associate-id"
+                                            aria-label="Associate record"
+                                            value={associateId}
+                                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setAssociateId(e.target.value)}
+                                            options={[
+                                                { value: '', label: `Select ${associateType === 'lead' ? 'Lead' : 'Deal'}…` },
+                                                ...(associateType === 'lead'
+                                                    ? leads.map(l => ({ value: l.id, label: l.company_name || l.contact_name || '' }))
+                                                    : deals.map(d => ({ value: d.id, label: d.name || d.company_name || '' }))),
+                                            ]}
+                                        />
                                     )}
                                 </div>
                             </div>
                         )}
 
                         {isEditing && (
-                            <div className="space-y-2">
-                                <label className="text-xs font-semibold text-fg-muted">Status</label>
-                                <select
-                                    value={status}
-                                    onChange={(e) => setStatus(e.target.value as Task['status'])}
-                                    className="w-full bg-bg border border-line rounded-nb-lg px-4 py-3 text-sm font-bold text-fg focus:outline-none focus:ring-2 focus:ring-info/50 focus:border-primary transition-all appearance-none cursor-pointer"
-                                >
-                                    <option value="OPEN">Open</option>
-                                    <option value="IN_PROGRESS">In Progress</option>
-                                    <option value="DONE">Done</option>
-                                    <option value="ON_HOLD">On Hold</option>
-                                    <option value="CANCELLED">Cancelled</option>
-                                </select>
-                            </div>
+                            <Select
+                                name="task-status"
+                                label="Status"
+                                value={status}
+                                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStatus(e.target.value as Task['status'])}
+                                options={[
+                                    { value: 'OPEN', label: 'Open' },
+                                    { value: 'IN_PROGRESS', label: 'In Progress' },
+                                    { value: 'DONE', label: 'Done' },
+                                    { value: 'ON_HOLD', label: 'On Hold' },
+                                    { value: 'CANCELLED', label: 'Cancelled' },
+                                ]}
+                            />
                         )}
                     </div>
 

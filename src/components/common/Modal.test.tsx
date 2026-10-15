@@ -2,6 +2,13 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { Modal } from './Modal';
 
+// Real DS Modal so the wrapper is verified against the actual dialog (focus, portal, ARIA).
+vi.mock('@so360/design-system', async () => {
+  const stub = await import('../../test/__mocks__/design-system');
+  const real = await import('@ds-real/components/Modal');
+  return { ...stub, Modal: real.Modal };
+});
+
 // Mock lucide-react
 describe('Given Modal', () => {
   const defaultProps = {
@@ -52,7 +59,7 @@ describe('Given Modal', () => {
     render(<Modal {...defaultProps} onClose={onClose} />);
 
     // Modal renders via portal into document.body — query there
-    const backdrop = document.body.querySelector('.bg-overlay');
+    const backdrop = document.body.querySelector('[data-testid="modal-overlay"]');
     expect(backdrop).toBeTruthy();
     fireEvent.click(backdrop!);
     expect(onClose).toHaveBeenCalledTimes(1);
@@ -66,8 +73,8 @@ describe('Given Modal', () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  it('When action / Then renders the X icon in close button', () => {
+  it('When action / Then the close button is labelled Close', () => {
     render(<Modal {...defaultProps} />);
-    expect(screen.getByTestId('icon-X')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Close' })).toBeInTheDocument();
   });
 });

@@ -1,4 +1,4 @@
-import { Button } from '@so360/design-system';
+import { Button, TextField, Select } from '@so360/design-system';
 import React, { useEffect, useState } from 'react';
 import { targetPlanService } from '../../services/targetPlanService';
 import { Panel, PersonPicker, formatValue } from './targetUi';
@@ -113,18 +113,14 @@ export default function AllocateTeamPlanPanel({
               <label className="block text-xs text-fg-subtle mb-1">
                 Metric
               </label>
-              <select
+              <Select
+                name="allocate-metric"
                 aria-label="Metric to allocate"
-                className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
+                size="sm"
                 value={taskTypeId}
-                onChange={(e) => setTaskTypeId(e.target.value)}
-              >
-                {lines.map((l) => (
-                  <option key={l.task_type_id} value={l.task_type_id}>
-                    {lineLabel(l)}
-                  </option>
-                ))}
-              </select>
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setTaskTypeId(e.target.value)}
+                options={lines.map((l) => ({ value: l.task_type_id, label: lineLabel(l) }))}
+              />
             </div>
             <div className="text-xs text-fg-subtle">
               Team target{' '}
@@ -162,12 +158,14 @@ export default function AllocateTeamPlanPanel({
                     }
                   />
                 </div>
-                <input
+                <div className="w-32">
+                <TextField
+                  name={`allocate-target-${r.key}`}
                   aria-label={`Target for row ${i + 1}`}
-                  className="w-32 rounded bg-surface-raised px-2 py-1.5 text-sm text-fg outline-none"
+                  size="sm"
                   placeholder="target"
                   value={r.value}
-                  onChange={(e) =>
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     setRows((cur) =>
                       cur.map((x) =>
                         x.key === r.key ? { ...x, value: e.target.value } : x,
@@ -175,16 +173,19 @@ export default function AllocateTeamPlanPanel({
                     )
                   }
                 />
+                </div>
                 {rows.length > 1 && (
-                  <button
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
                     aria-label={`Remove row ${i + 1}`}
-                    className="text-xs text-fg-muted hover:text-fg-subtle"
                     onClick={() =>
                       setRows((cur) => cur.filter((x) => x.key !== r.key))
                     }
                   >
                     remove
-                  </button>
+                  </Button>
                 )}
               </div>
             ))}

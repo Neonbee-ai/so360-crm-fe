@@ -43,25 +43,39 @@ vi.mock('@so360/formatters', () => ({
   }),
 }));
 
-vi.mock('../components/common/Table', () => ({
-  Table: ({ data, isLoading, emptyMessage, columns }: any) => {
-    if (isLoading) return <div>Loading...</div>;
-    if (data.length === 0) return <div>{emptyMessage}</div>;
+vi.mock('@so360/design-system', async (importOriginal) => {
+  const actual: any = await importOriginal();
+  const RowMenu = ({ items }: any) => {
+    const [open, setOpen] = React.useState(false);
     return (
-      <div data-testid="table">
-        {data.map((row: any, i: number) => (
-          <div key={i} data-testid="table-row">
-            {columns.map((col: any) => (
-              <span key={col.key} data-testid={`col-${col.key}`}>
-                {col.accessor ? col.accessor(row) : row[col.key]}
-              </span>
-            ))}
-          </div>
-        ))}
-      </div>
+      <span>
+        <button title="More actions" aria-label="More actions" onClick={() => setOpen(true)} />
+        {open && items.map((it: any) => <button key={it.label} role="menuitem" onClick={() => it.onSelect()}>{it.label}</button>)}
+      </span>
     );
-  },
-}));
+  };
+  return {
+    ...actual,
+    DataTable: ({ rows, loading, emptyState, columns, rowActions }: any) => {
+      if (loading) return <div>Loading...</div>;
+      if (rows.length === 0) return <div>{emptyState}</div>;
+      return (
+        <div data-testid="table">
+          {rows.map((row: any, i: number) => (
+            <div key={i} data-testid="table-row">
+              {columns.map((col: any) => (
+                <span key={col.key} data-testid={`col-${col.key}`}>
+                  {col.render ? col.render(row) : row[col.key]}
+                </span>
+              ))}
+              {rowActions && <RowMenu items={rowActions(row)} />}
+            </div>
+          ))}
+        </div>
+      );
+    },
+  };
+});
 
 import QuotesPage from './QuotesPage';
 
@@ -200,23 +214,57 @@ describe('Given QuotesPage — search filter', () => {
 });
 
 describe('Given QuotesPage — status filter', () => {
-  it('When action / Then renders status filter button with "All Status" label', async () => {
+  it('When action / Then renders the Status quick filter', async () => {
     render(<QuotesPage />);
     await waitFor(() => screen.getByText('Quotes'));
-    // custom dropdown trigger button (replaces native <select>)
-    expect(screen.getByRole('button', { name: /all status/i })).toBeInTheDocument();
+    expect(screen.getByLabelText('Status')).toBeInTheDocument();
   });
 
   it('When action / Then filtering by draft status shows only draft quotes', async () => {
     render(<QuotesPage />);
     await waitFor(() => screen.getAllByTestId('table-row'));
-    // open custom dropdown and pick the Draft filter option.
-    // The filter option's accessible name is "Draft 1" (label + count); the
-    // QuoteStatusCell badge inside the table also says "Draft" but its click
-    // opens the transition menu, not the filter.
-    fireEvent.click(screen.getByRole('button', { name: /all status/i }));
-    await waitFor(() => screen.getByRole('button', { name: /draft 1/i }));
-    fireEvent.click(screen.getByRole('button', { name: /draft 1/i }));
+    fireEvent.change(screen.getByLabelText('Status'), { target: { value: 'draft' } });
+    await waitFor(() => {
+      expect(screen.getAllByTestId('table-row').length).toBe(1);
+    });
+  });
+
+  it('When action / Then filtering by customer name works', async () => {
+    render(<QuotesPage />);
+    await waitFor(() => screen.getAllByTestId('table-row'));
+    const searchInput = screen.getByPlaceholderText(/search/i);
+    fireEvent.change(searchInput, { target: { value: 'Beta' } });
+    await waitFor(() => {
+      expect(screen.getAllByTestId('table-row').length).toBe(1);
+    });
+  });
+
+  it('When action / Then empty search shows all rows', async () => {
+    render(<QuotesPage />);
+    await waitFor(() => screen.getAllByTestId('table-row'));
+    const searchInput = screen.getByPlaceholderText(/search/i);
+    fireEvent.change(searchInput, { target: { value: 'xyz-no-match' } });
+    await waitFor(() => {
+      expect(screen.queryByTestId('table-row')).not.toBeInTheDocument();
+    });
+    fireEvent.change(searchInput, { target: { value: '' } });
+    await waitFor(() => {
+      expect(screen.getAllByTestId('table-row').length).toBe(3);
+    });
+  });
+});
+
+describe('Given QuotesPage — status filter', () => {
+  it('When action / Then renders the Status quick filter', async () => {
+    render(<QuotesPage />);
+    await waitFor(() => screen.getByText('Quotes'));
+    expect(screen.getByLabelText('Status')).toBeInTheDocument();
+  });
+
+  it('When action / Then filtering by draft status shows only draft quotes', async () => {
+    render(<QuotesPage />);
+    await waitFor(() => screen.getAllByTestId('table-row'));
+    fireEvent.change(screen.getByLabelText('Status'), { target: { value: 'draft' } });
     await waitFor(() => {
       expect(screen.getAllByTestId('table-row').length).toBe(1);
     });

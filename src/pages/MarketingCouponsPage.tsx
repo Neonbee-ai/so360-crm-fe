@@ -1,14 +1,24 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Trash2, Pencil, MoreVertical, Search, Tag, X, Loader2, Calendar, DollarSign, Percent, Clock } from 'lucide-react';
+import { Plus, Trash2, Pencil, Tag, X, Loader2, Calendar, Clock } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
-import { toast, useConfirm, ListPageTemplate, Button, Card, EmptyState, Menu } from '@so360/design-system';
+import { toast, useConfirm, ListPageTemplate, Button, Card, EmptyState, DataTable, DatePicker, IconButton, NumberInput, SearchInput, Select, TextField, Textarea } from '@so360/design-system';
+import type { DataTableColumn, FilterValues, MenuItem } from '@so360/design-system';
 import { useBusinessSettings, useActivity, useShellBridge } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import { formatMoney } from './marketing/marketingMappers';
 import { validateCouponForm, CouponFormErrors } from '../utils/couponValidation';
 
 const STORE_KEY = 'crm_marketing_store_id';
+
+const DISCOUNT_TYPE_OPTIONS = [
+  { value: 'percentage', label: 'Percentage (%)' },
+  { value: 'fixed', label: 'Fixed Amount' },
+];
+const STATUS_OPTIONS = [
+  { value: 'active', label: 'Active' },
+  { value: 'inactive', label: 'Inactive' },
+];
 
 const MarketingCouponsPage: React.FC = () => {
   const [confirm, confirmDialog] = useConfirm();
@@ -24,6 +34,7 @@ const MarketingCouponsPage: React.FC = () => {
   const [coupons, setCoupons] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
+  const [filters, setFilters] = useState<FilterValues>({});
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -139,31 +150,110 @@ const MarketingCouponsPage: React.FC = () => {
     }
   };
 
-  const filtered = search
-    ? coupons.filter(c => c.code.toLowerCase().includes(search.toLowerCase()))
-    : coupons;
+  const filtered = coupons.filter((c) => {
+    if (filters.status && (c.is_active === false ? 'inactive' : 'active') !== filters.status) return false;
+    if (filters.discount_type && c.discount_type !== filters.discount_type) return false;
+    return !search || String(c.code ?? '').toLowerCase().includes(search.toLowerCase());
+  });
+
+  const columns: DataTableColumn<any>[] = [
+    {
+      key: 'code',
+      header: 'Code & Info',
+      sortable: true,
+      render: (coupon) => (
+        <div className="flex items-center gap-nb-3">
+          <div className={`flex h-nb-control-md w-nb-control-md items-center justify-center rounded-nb border ${coupon.is_active ? 'border-primary bg-surface-raised text-primary' : 'border-line bg-surface-raised text-fg-muted'}`}>
+            <Tag size={18} />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-fg">{coupon.code}</p>
+            <p className="max-w-xs truncate text-xs text-fg-muted">{coupon.description || 'No description'}</p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'discount_value',
+      header: 'Discount',
+      align: 'right',
+      sortable: true,
+      sortValue: (c) => c.discount_value ?? 0,
+      render: (coupon) => (
+        <div>
+          <span className="text-sm font-medium text-success">
+            {coupon.discount_type === 'percentage' ? `${coupon.discount_value}%` : formatMoney(coupon.discount_value, currencyCode, locale)}
+          </span>
+          {coupon.min_order_amount > 0 && (
+            <p className="mt-nb-1 text-xs text-fg-muted">Min: {formatMoney(coupon.min_order_amount, currencyCode, locale)}</p>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'usage_count',
+      header: 'Usage',
+      align: 'right',
+      sortable: true,
+      sortValue: (c) => c.usage_count ?? 0,
+      render: (coupon) => (
+        <div className="flex flex-col items-end gap-nb-1">
+          <span className="text-xs text-fg-muted">{coupon.usage_count || 0} / {coupon.usage_limit || '∞'}</span>
+          <div className="h-1 w-16 overflow-hidden rounded-nb bg-surface-raised">
+            <div
+              className="h-full bg-primary"
+              style={{ width: coupon.usage_limit ? `${(coupon.usage_count / coupon.usage_limit) * 100}%` : '0%' }}
+            />
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'valid_until',
+      header: 'Validity',
+      render: (coupon) => (
+        <div className="flex flex-col gap-nb-1 text-xs">
+          <div className="flex items-center gap-nb-1 text-fg-muted">
+            <Calendar size={10} />
+            {coupon.valid_from ? formatters.formatDate(coupon.valid_from) : 'Start'}
+          </div>
+          <div className="flex items-center gap-nb-1 text-fg-muted">
+            <Clock size={10} />
+            {coupon.valid_until ? formatters.formatDate(coupon.valid_until) : 'Never Expires'}
+          </div>
+        </div>
+      ),
+    },
+  ];
+
+  const rowActions = (coupon: any): MenuItem[] =>
+    canCreateMarketing
+      ? [
+          { label: 'Edit', icon: <Pencil size={14} />, onSelect: () => handleEdit(coupon) },
+          { label: 'Delete', icon: <Trash2 size={14} />, danger: true, onSelect: () => handleDelete(coupon) },
+        ]
+      : [];
 
   return (
     <ListPageTemplate
       title="Discount Coupons"
       description="Manage promotional codes and offers"
+      count={filtered.length}
       primaryAction={canCreateMarketing ? (
         <Button variant="primary" onClick={() => { resetForm(); setShowForm(true); }}><Plus size={16} />
           Create Coupon
         </Button>
       ) : undefined}
-      filters={
-        <div className="relative w-full wc-medium:w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none" size={16} />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="h-nb-control-md w-full rounded-nb border border-line bg-surface pl-9 pr-3 text-sm text-fg outline-none focus:border-primary"
-            placeholder="Search by coupon code..."
-          />
-        </div>
-      }
+      search={<SearchInput placeholder="Search by coupon code..." value={search} onChange={setSearch} data-testid="coupons-search" />}
+      filterConfig={{
+        fields: [
+          { key: 'status', label: 'Status', type: 'select', quick: true, options: STATUS_OPTIONS },
+          { key: 'discount_type', label: 'Discount type', type: 'select', options: DISCOUNT_TYPE_OPTIONS },
+        ],
+        values: filters,
+        onChange: setFilters,
+        onClear: () => setFilters({}),
+      }}
       toolbarEnd={<MarketingStorePicker storeId={storeId} onChange={applyStore} />}
     >
       {confirmDialog}
@@ -173,222 +263,93 @@ const MarketingCouponsPage: React.FC = () => {
           <Card
             title={editingId ? 'Edit Coupon' : 'New Discount Code'}
             actions={
-              <button onClick={() => setShowForm(false)} aria-label="Close form" className="text-fg-muted hover:text-fg transition-colors">
-                <X size={20} />
-              </button>
+              <IconButton label="Close form" icon={<X size={20} />} variant="ghost" onClick={() => setShowForm(false)} />
             }
           >
-            <div>
-              <div className="grid grid-cols-1 wc-medium:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 wc-medium:grid-cols-2 lg:grid-cols-4 gap-nb-6">
                 <div className="lg:col-span-2">
-                  <label className="block text-xs font-semibold text-fg-muted mb-2 ml-1">Coupon Code *</label>
-                  <input 
-                    type="text" 
-                    value={form.code} 
-                    onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })} 
-                    className="w-full bg-bg border border-line rounded-xl py-3 px-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold" 
+                  <TextField
+                    name="coupon_code"
+                    label="Coupon Code *"
+                    value={form.code}
+                    onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
                     placeholder="WELCOME20"
-                  />
-                  {fieldErrors.code && (
-                    <p className="text-xs font-bold text-danger mt-1 ml-1">{fieldErrors.code}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-fg-muted mb-2 ml-1">Type</label>
-                  <select 
-                    value={form.discount_type} 
-                    onChange={(e) => setForm({ ...form, discount_type: e.target.value as 'percentage' | 'fixed' })} 
-                    className="w-full bg-bg border border-line rounded-xl py-3 px-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold appearance-none"
-                  >
-                    <option value="percentage">Percentage (%)</option>
-                    <option value="fixed">Fixed Amount</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-fg-muted mb-2 ml-1">Value</label>
-                  <div className="relative">
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted">
-                      {form.discount_type === 'percentage' ? <Percent size={14} /> : <DollarSign size={14} />}
-                    </div>
-                    <input
-                      type="number"
-                      data-testid="coupon-discount-value"
-                      value={form.discount_value}
-                      onChange={(e) => setForm({ ...form, discount_value: parseFloat(e.target.value) || 0 })}
-                      className="w-full bg-bg border border-line rounded-xl py-3 pl-8 pr-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold"
-                    />
-                  </div>
-                  {fieldErrors.discount_value && (
-                    <p className="text-xs font-bold text-danger mt-1 ml-1">{fieldErrors.discount_value}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-fg-muted mb-2 ml-1">Min Order</label>
-                  <input
-                    type="number"
-                    value={form.min_order_amount}
-                    onChange={(e) => setForm({ ...form, min_order_amount: parseFloat(e.target.value) || 0 })}
-                    className="w-full bg-bg border border-line rounded-xl py-3 px-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold"
-                  />
-                  {fieldErrors.min_order_amount && (
-                    <p className="text-xs font-bold text-danger mt-1 ml-1">{fieldErrors.min_order_amount}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-fg-muted mb-2 ml-1">Usage Limit</label>
-                  <input
-                    type="number"
-                    value={form.usage_limit}
-                    onChange={(e) => setForm({ ...form, usage_limit: parseInt(e.target.value) || 0 })}
-                    className="w-full bg-bg border border-line rounded-xl py-3 px-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold"
-                    placeholder="0 = Unlimited"
-                  />
-                  {fieldErrors.usage_limit && (
-                    <p className="text-xs font-bold text-danger mt-1 ml-1">{fieldErrors.usage_limit}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-fg-muted mb-2 ml-1">Valid From</label>
-                  <input
-                    type="date"
-                    value={form.valid_from}
-                    onChange={(e) => setForm({ ...form, valid_from: e.target.value })}
-                    className="w-full bg-bg border border-line rounded-xl py-3 px-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold"
+                    error={fieldErrors.code}
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-fg-muted mb-2 ml-1">Valid Until</label>
-                  <input
-                    type="date"
-                    value={form.valid_until}
-                    onChange={(e) => setForm({ ...form, valid_until: e.target.value })}
-                    className="w-full bg-bg border border-line rounded-xl py-3 px-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold"
-                  />
-                  {fieldErrors.valid_until && (
-                    <p className="text-xs font-bold text-danger mt-1 ml-1">{fieldErrors.valid_until}</p>
-                  )}
-                </div>
+                <Select
+                  name="coupon_type"
+                  label="Type"
+                  options={DISCOUNT_TYPE_OPTIONS}
+                  value={form.discount_type}
+                  onChange={(e) => setForm({ ...form, discount_type: e.target.value as 'percentage' | 'fixed' })}
+                />
+                <NumberInput
+                  name="coupon_discount_value"
+                  label="Value"
+                  data-testid="coupon-discount-value"
+                  value={form.discount_value}
+                  onChange={(v) => setForm({ ...form, discount_value: v ?? 0 })}
+                  error={fieldErrors.discount_value}
+                />
+                <NumberInput
+                  name="coupon_min_order"
+                  label="Min Order"
+                  value={form.min_order_amount}
+                  onChange={(v) => setForm({ ...form, min_order_amount: v ?? 0 })}
+                  error={fieldErrors.min_order_amount}
+                />
+                <NumberInput
+                  name="coupon_usage_limit"
+                  label="Usage Limit"
+                  value={form.usage_limit}
+                  onChange={(v) => setForm({ ...form, usage_limit: Math.trunc(v ?? 0) })}
+                  placeholder="0 = Unlimited"
+                  error={fieldErrors.usage_limit}
+                />
+                <DatePicker
+                  name="coupon_valid_from"
+                  label="Valid From"
+                  value={form.valid_from}
+                  onChange={(iso: string) => setForm({ ...form, valid_from: iso })}
+                />
+                <DatePicker
+                  name="coupon_valid_until"
+                  label="Valid Until"
+                  value={form.valid_until}
+                  onChange={(iso: string) => setForm({ ...form, valid_until: iso })}
+                  error={fieldErrors.valid_until}
+                />
                 <div className="lg:col-span-4">
-                  <label className="block text-xs font-semibold text-fg-muted mb-2 ml-1">Description</label>
-                  <textarea 
-                    value={form.description} 
-                    onChange={(e) => setForm({ ...form, description: e.target.value })} 
-                    className="w-full bg-bg border border-line rounded-xl py-3 px-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold h-20 resize-none" 
+                  <Textarea
+                    name="coupon_description"
+                    label="Description"
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
                     placeholder="Describe the offer..."
+                    rows={3}
                   />
                 </div>
               </div>
-              <div className="flex justify-end gap-nb-2 mt-6 pt-4 border-t border-line">
+              <div className="flex justify-end gap-nb-2 mt-nb-6 pt-nb-4 border-t border-line">
                 <Button variant="secondary" onClick={() => setShowForm(false)}>Cancel</Button>
                 <Button variant="primary" onClick={handleSave} disabled={saving}>
                   {saving && <Loader2 className="w-4 h-4 animate-spin" />}
                   {editingId ? 'Update Coupon' : 'Create Coupon'}
                 </Button>
               </div>
-            </div>
           </Card>
         )}
 
-        <Card title={`Active & Scheduled Coupons (${filtered.length})`} padding="none">
-          <div className="w-full overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="text-left border-b border-line">
-                  <th className="px-6 py-4 text-xs font-semibold text-fg-muted">Code & Info</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-fg-muted text-center">Discount</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-fg-muted text-center">Usage</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-fg-muted text-center">Validity</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-fg-muted text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line">
-                {loading ? (
-                  <tr>
-                    <td colSpan={5} className="py-20 text-center">
-                      <div className="flex flex-col items-center gap-3 text-fg-muted">
-                        <Loader2 className="w-8 h-8 animate-spin" />
-                        <span className="text-xs font-semibold">Loading coupons...</span>
-                      </div>
-                    </td>
-                  </tr>
-                ) : filtered.length === 0 ? (
-                  <tr>
-                    <td colSpan={5}>
-                      <EmptyState icon={Tag} title="No coupons found" />
-                    </td>
-                  </tr>
-                ) : (
-                  filtered.map((coupon) => (
-                    <tr key={coupon.id} className="group hover:bg-surface-high transition-all">
-                      <td className="px-6 py-5">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${coupon.is_active ? 'bg-primary/10 border-primary/20 text-primary' : 'bg-surface-raised border-line text-fg-muted'}`}>
-                            <Tag size={18} />
-                          </div>
-                          <div>
-                            <p className="text-sm font-semibold text-fg ">{coupon.code}</p>
-                            <p className="text-xs text-fg-muted font-bold truncate max-w-xs">{coupon.description || 'No description'}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-5 text-center">
-                        <span className="text-sm font-semibold text-success">
-                          {coupon.discount_type === 'percentage' ? `${coupon.discount_value}%` : formatMoney(coupon.discount_value, currencyCode, locale)}
-                        </span>
-                        {coupon.min_order_amount > 0 && (
-                          <p className="text-xs text-fg-muted font-semibold mt-1">Min: {formatMoney(coupon.min_order_amount, currencyCode, locale)}</p>
-                        )}
-                      </td>
-                      <td className="px-6 py-5 text-center">
-                        <div className="flex flex-col items-center gap-1">
-                          <span className="text-xs font-bold text-fg-subtle">{coupon.usage_count || 0} / {coupon.usage_limit || '∞'}</span>
-                          <div className="w-16 h-1 bg-surface-raised rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-primary" 
-                              style={{ width: coupon.usage_limit ? `${(coupon.usage_count / coupon.usage_limit) * 100}%` : '0%' }}
-                            />
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-5 text-center">
-                        <div className="flex flex-col items-center gap-1 text-xs font-bold">
-                          <div className="flex items-center gap-1 text-fg-subtle">
-                            <Calendar size={10} />
-                            {coupon.valid_from ? formatters.formatDate(coupon.valid_from) : 'Start'}
-                          </div>
-                          <div className="flex items-center gap-1 text-fg-muted">
-                            <Clock size={10} />
-                            {coupon.valid_until ? formatters.formatDate(coupon.valid_until) : 'Never Expires'}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-5 text-right">
-                        {canCreateMarketing && (
-                          <Menu
-                            name={`coupon-${coupon.id}`}
-                            trigger={
-                              <button
-                                type="button"
-                                aria-label={`Actions for ${coupon.code}`}
-                                className="p-2 text-fg-muted hover:text-fg hover:bg-surface-raised rounded-nb transition-colors"
-                              >
-                                <MoreVertical size={16} />
-                              </button>
-                            }
-                            items={[
-                              { label: 'Edit', icon: <Pencil size={14} />, onSelect: () => handleEdit(coupon) },
-                              { label: 'Delete', icon: <Trash2 size={14} />, danger: true, onSelect: () => handleDelete(coupon) },
-                            ]}
-                          />
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </Card>
+        <DataTable
+          columns={columns}
+          rows={filtered}
+          rowKey={(c: any) => c.id}
+          loading={loading}
+          rowActions={canCreateMarketing ? rowActions : undefined}
+          getRowProps={(c: any) => ({ 'data-testid': `coupon-row-${c.id}` })}
+          emptyState={<EmptyState icon={Tag} title="No coupons found" />}
+        />
       </div>
     </ListPageTemplate>
   );

@@ -207,7 +207,7 @@ describe('Given QuoteDetailPage — convert modal', () => {
     fireEvent.click(screen.getByText(/convert to order/i));
     await waitFor(() => screen.getByText(/convert to sales order/i));
     // Find the confirm button inside modal
-    const confirmBtn = within(document.getElementById('crm-portal-root') as HTMLElement).getByText(/convert to order/i);
+    const confirmBtn = within(screen.getByRole('dialog')).getByText(/convert to order/i);
     fireEvent.click(confirmBtn);
     await waitFor(() => {
       expect(mockConvertQuoteToOrder).toHaveBeenCalledWith('q-1');

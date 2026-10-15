@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
-import { Search, Globe, Smartphone, ShoppingCart, UserPlus, ChevronUp, ChevronDown, ChevronsUpDown, Mail, Phone, Calendar, Store, Building2, CreditCard, Shield, CheckCircle2, Tag, GitMerge } from 'lucide-react';
+import { Globe, Smartphone, ShoppingCart, UserPlus, Mail, Phone, Calendar, Store, Building2, CreditCard, Shield, CheckCircle2, Tag, GitMerge } from 'lucide-react';
 import { useShellBridge, useSandboxLimit } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import { crmService } from '../services/crmService';
-import { ListPageTemplate, Pagination } from '@so360/design-system';
-import { Table } from '../components/common/Table';
+import { ListPageTemplate, Pagination, DataTable, SearchInput, type DataTableColumn, type FilterValues, type ListFilterConfig } from '@so360/design-system';
 import { SummaryMetricChips } from '../components/common/SummaryMetricChips';
 
 type SortField = 'contact_name' | 'email' | 'channel' | 'created_at';
@@ -129,34 +128,6 @@ const CustomersPage = () => {
         return () => { cancelled = true; };
     }, []);
 
-    const toggleSort = (field: SortField) => {
-        if (sortField === field) {
-            if (sortDirection === 'asc') setSortDirection('desc');
-            else if (sortDirection === 'desc') { setSortField(null); setSortDirection(null); }
-            else setSortDirection('asc');
-        } else {
-            setSortField(field);
-            setSortDirection('asc');
-        }
-    };
-
-    const SortIcon = ({ field }: { field: SortField }) => {
-        if (sortField !== field) return <ChevronsUpDown size={14} className="text-fg-muted" />;
-        if (sortDirection === 'asc') return <ChevronUp size={14} className="text-primary" />;
-        if (sortDirection === 'desc') return <ChevronDown size={14} className="text-primary" />;
-        return <ChevronsUpDown size={14} className="text-fg-muted" />;
-    };
-
-    const SortableHeader = ({ label, field }: { label: string; field: SortField }) => (
-        <button
-            onClick={() => toggleSort(field)}
-            className="flex items-center gap-1 hover:text-fg transition-colors cursor-pointer"
-        >
-            {label}
-            <SortIcon field={field} />
-        </button>
-    );
-
     const filteredCustomers = useMemo(() => {
         let result = customers.filter((c) => {
             const matchesSearch =
@@ -240,10 +211,10 @@ const CustomersPage = () => {
         );
     };
 
-    const columns = [
+    const columns: DataTableColumn<any>[] = [
         {
-            header: <SortableHeader label="Name" field="contact_name" />,
-            accessor: (c: any) => (
+            key: 'contact_name', header: 'Name', sortable: true,
+            render: (c: any) => (
                 <div className="flex items-center gap-2">
                     <div className="flex flex-col gap-0.5">
                         <div className="flex items-center gap-2">
@@ -258,8 +229,8 @@ const CustomersPage = () => {
             ),
         },
         {
-            header: <SortableHeader label="Email" field="email" />,
-            accessor: (c: any) => (
+            key: 'email', header: 'Email', sortable: true,
+            render: (c: any) => (
                 <div className="flex flex-col gap-1 text-fg-subtle">
                     <span className="flex items-center gap-1.5"><Mail size={14} /> {c.email}</span>
                     {c.phone && <span className="flex items-center gap-1.5"><Phone size={14} /> {c.phone}</span>}
@@ -268,8 +239,8 @@ const CustomersPage = () => {
         },
         ...(categoryFilter !== 'b2c' ? [
             {
-                header: 'Tax ID',
-                accessor: (c: any) =>
+                key: 'tax_id', header: 'Tax ID',
+                render: (c: any) =>
                     c.customer_category === 'b2c' ? null :
                     c.tax_id ? (
                         <div className="flex items-center gap-1.5 text-sm">
@@ -281,8 +252,8 @@ const CustomersPage = () => {
                     ),
             },
             {
-                header: 'Credit Limit',
-                accessor: (c: any) => {
+                key: 'credit_limit', header: 'Credit Limit', align: 'right',
+                render: (c: any) => {
                     if (c.customer_category === 'b2c') return null;
                     const limit = parseFloat(c.credit_limit);
                     return limit > 0 ? (
@@ -297,16 +268,16 @@ const CustomersPage = () => {
             },
         ] : []),
         {
-            header: <SortableHeader label="Channel" field="channel" />,
-            accessor: (c: any) => <ChannelBadge channel={c.channel} />,
+            key: 'channel', header: 'Channel', sortable: true,
+            render: (c: any) => <ChannelBadge channel={c.channel} />,
         },
         {
-            header: 'Source',
-            accessor: (c: any) => <AcquisitionBadge source={c.acquisition_source} />,
+            key: 'acquisition_source', header: 'Source',
+            render: (c: any) => <AcquisitionBadge source={c.acquisition_source} />,
         },
         {
-            header: 'Referred By',
-            accessor: (c: any) => {
+            key: 'referred_by', header: 'Referred By',
+            render: (c: any) => {
                 if (!c.referred_by) return <span className="text-fg-muted text-sm">—</span>;
                 const partner = partners.find((p: any) => p.id === c.referred_by);
                 return (
@@ -318,8 +289,8 @@ const CustomersPage = () => {
             },
         },
         {
-            header: <SortableHeader label="Joined" field="created_at" />,
-            accessor: (c: any) => (
+            key: 'created_at', header: 'Joined', sortable: true,
+            render: (c: any) => (
                 <span className="text-fg-subtle text-sm flex items-center gap-1.5">
                     <Calendar size={14} />
                     {formatters.formatDate(c.created_at)}
@@ -327,6 +298,35 @@ const CustomersPage = () => {
             ),
         },
     ];
+
+    const filterConfig: ListFilterConfig = {
+        fields: [
+            { key: 'channel', label: 'Channel', type: 'select', quick: true, options: [
+                { value: 'storefront_web', label: 'Web' },
+                { value: 'storefront_mobile', label: 'Mobile' },
+                { value: 'pos', label: 'POS' },
+                { value: 'manual', label: 'Manual' },
+            ] },
+            { key: 'category', label: 'Category', type: 'select', quick: true, options: [
+                { value: 'b2b', label: 'B2B' },
+                { value: 'b2c', label: 'B2C' },
+            ] },
+        ],
+        values: {
+            ...(channelFilter !== 'All' ? { channel: channelFilter } : {}),
+            ...(categoryFilter !== 'All' ? { category: categoryFilter } : {}),
+        } as FilterValues,
+        onChange: (next: FilterValues) => {
+            setChannelFilter((next.channel as string) || 'All');
+            setCategoryFilter((next.category as string) || 'All');
+        },
+        onClear: () => {
+            setSearchTerm('');
+            setChannelFilter('All');
+            setCategoryFilter('All');
+            navigate('/crm/customers');
+        },
+    };
 
     return (
         <ListPageTemplate
@@ -354,60 +354,19 @@ const CustomersPage = () => {
             />
             }
             search={
-                <div className="relative w-full wc-medium:w-72">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none" size={16} />
-                    <input
-                        type="text"
-                        placeholder="Search customers by name, email, phone..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="h-nb-control-md w-full rounded-nb border border-line bg-surface pl-10 pr-4 text-nb-body text-fg placeholder:text-fg-muted focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    />
-                </div>
+                <SearchInput
+                    placeholder="Search customers by name, email, phone..."
+                    value={searchTerm}
+                    onChange={setSearchTerm}
+                />
             }
-            filters={
-                <>
-                {activeSegmentName && (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border bg-info/10 text-info border-info/20">
-                        <Tag size={12} />
-                        Segment: {activeSegmentName}
-                    </span>
-                )}
-                <select
-                    value={channelFilter}
-                    onChange={(e) => setChannelFilter(e.target.value)}
-                    className="h-nb-control-md bg-surface border border-line text-fg px-3 rounded-nb text-nb-body focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-                >
-                    <option value="All">All Channels</option>
-                    <option value="storefront_web">Web</option>
-                    <option value="storefront_mobile">Mobile</option>
-                    <option value="pos">POS</option>
-                    <option value="manual">Manual</option>
-                </select>
-                <select
-                    value={categoryFilter}
-                    onChange={(e) => setCategoryFilter(e.target.value)}
-                    className="h-nb-control-md bg-surface border border-line text-fg px-3 rounded-nb text-nb-body focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-                >
-                    <option value="All">All Categories</option>
-                    <option value="b2b">B2B</option>
-                    <option value="b2c">B2C</option>
-                </select>
-                {(activeSegmentName || searchTerm || channelFilter !== 'All' || categoryFilter !== 'All') && (
-                    <button
-                        onClick={() => {
-                            setSearchTerm('');
-                            setChannelFilter('All');
-                            setCategoryFilter('All');
-                            navigate('/crm/customers');
-                        }}
-                        className="text-xs text-fg-muted hover:text-fg underline"
-                    >
-                        Clear filters
-                    </button>
-                )}
-                </>
-            }
+            filterConfig={filterConfig}
+            filters={activeSegmentName ? (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border bg-info/10 text-info border-info/20">
+                    <Tag size={12} />
+                    Segment: {activeSegmentName}
+                </span>
+            ) : undefined}
             pagination={sandboxLimitedCustomers.length > 0 ? (
                 <Pagination
                     className="w-full"
@@ -431,12 +390,19 @@ const CustomersPage = () => {
             )}
 
             {/* Table */}
-            <Table
-                data={paginatedCustomers}
+            <DataTable
+                name="customers"
+                data-testid="customers-table"
+                rows={paginatedCustomers}
+                rowKey={(c: any) => c.id}
                 columns={columns}
-                isLoading={isLoading}
-                onRowClick={(customer) => navigate(`../customers/${customer.id}`)}
-                emptyMessage={error || 'No customers found. Customers appear here when they register via Storefront, POS, guest checkout, or are promoted from Leads.'}
+                loading={isLoading}
+                onRowClick={(customer: any) => navigate(`../customers/${customer.id}`)}
+                getRowProps={(c: any) => ({ 'data-testid': `customer-row-${c.id}` })}
+                sortKey={sortField ?? undefined}
+                sortDir={sortDirection ?? undefined}
+                onSortChange={(key: string, dir: 'asc' | 'desc') => { setSortField(key as SortField); setSortDirection(dir); }}
+                emptyState={error || 'No customers found. Customers appear here when they register via Storefront, POS, guest checkout, or are promoted from Leads.'}
             />
 
             </div>

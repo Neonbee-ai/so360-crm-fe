@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { DetailPageTemplate, Card, Badge, Button, KpiCard, EmptyState } from '@so360/design-system';
+import { DetailPageTemplate, Card, Badge, Button, KpiCard, EmptyState, DataTable, TextField, DateTimePicker } from '@so360/design-system';
 import { crmService } from '../services/crmService';
 import { useCRMFormatters } from '../utils/formatters';
 import { formatDateTime } from './marketing/marketingMappers';
@@ -102,12 +102,15 @@ const MarketingCampaignDetailPage: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-nb-3">
             <div className="lg:col-span-6"><Card title="Test Send">
               <div className="flex gap-nb-2">
-                <input
-                  value={testEmail}
-                  onChange={(e) => setTestEmail(e.target.value)}
-                  placeholder="test@example.com"
-                  className="h-nb-control-md flex-1 rounded-nb border border-line bg-bg px-nb-3 text-sm text-fg"
-                />
+                <div className="flex-1">
+                  <TextField
+                    name="test-email"
+                    aria-label="Test email"
+                    value={testEmail}
+                    onChange={(e) => setTestEmail(e.target.value)}
+                    placeholder="test@example.com"
+                  />
+                </div>
                 <Button
                   variant="secondary"
                   onClick={async () => {
@@ -121,12 +124,14 @@ const MarketingCampaignDetailPage: React.FC = () => {
 
             <div className="lg:col-span-6"><Card title="Schedule">
               <div className="flex gap-nb-2">
-                <input
-                  type="datetime-local"
-                  value={scheduleAt}
-                  onChange={(e) => setScheduleAt(e.target.value)}
-                  className="h-nb-control-md flex-1 rounded-nb border border-line bg-bg px-nb-3 text-sm text-fg"
-                />
+                <div className="flex-1">
+                  <DateTimePicker
+                    name="schedule-at"
+                    label="Schedule at"
+                    value={scheduleAt}
+                    onChange={setScheduleAt}
+                  />
+                </div>
                 <Button
                   variant="primary"
                   onClick={async () => {
@@ -146,26 +151,16 @@ const MarketingCampaignDetailPage: React.FC = () => {
             {recipients.length === 0 ? (
               <EmptyState title="No recipients yet." />
             ) : (
-              <div className="w-full overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="text-left text-xs text-fg-muted">
-                    <tr>
-                      <th className="px-nb-3 py-nb-2 font-medium">Email</th>
-                      <th className="px-nb-3 py-nb-2 font-medium">Status</th>
-                      <th className="px-nb-3 py-nb-2 font-medium">Sent At</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-line">
-                    {recipients.map((row) => (
-                      <tr key={row.id}>
-                        <td className="px-nb-3 py-nb-2 text-fg">{row.email}</td>
-                        <td className="px-nb-3 py-nb-2 text-fg-subtle">{row.status}</td>
-                        <td className="px-nb-3 py-nb-2 text-fg-muted">{formatDateTime(row.sent_at)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <DataTable
+                name="campaign-recipients"
+                columns={[
+                  { key: 'email', header: 'Email', render: (row: any) => <span className="text-fg">{row.email}</span> },
+                  { key: 'status', header: 'Status', render: (row: any) => <span className="text-fg-subtle">{row.status}</span> },
+                  { key: 'sent_at', header: 'Sent At', render: (row: any) => <span className="text-fg-muted">{formatDateTime(row.sent_at)}</span> },
+                ]}
+                rows={recipients}
+                rowKey={(row: any) => String(row.id)}
+              />
             )}
           </Card>
         </div>

@@ -47,9 +47,7 @@ vi.mock('@so360/shell-context', () => ({
 
 vi.mock('@so360/design-system', async () => ({
   ...(await import('../test/__mocks__/design-system')),
-  Card: ({ title, children }: any) => (<section>{title && <h3>{title}</h3>}{children}</section>),
   KpiCard: ({ label, value }: any) => (<div><p>{label}</p><p>{value}</p></div>),
-  Button: ({ children, onClick, ...props }: any) => <button onClick={onClick} {...props}>{children}</button>,
 }));
 
 vi.mock('react-router-dom', () => ({
@@ -81,6 +79,8 @@ beforeEach(() => {
   mockSendRecovery.mockResolvedValue({});
   mockUpdateStatus.mockResolvedValue({});
 });
+
+const openActions = (i = 0) => fireEvent.click(screen.getAllByRole('button', { name: 'Row actions' })[i]);
 
 describe('MarketingAbandonedCartsPage', () => {
   describe('Given no store selected', () => {
@@ -116,26 +116,24 @@ describe('MarketingAbandonedCartsPage', () => {
       render(<MarketingAbandonedCartsPage />);
       fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
       await waitFor(() => expect(screen.getByText('alice@test.com')).toBeInTheDocument());
-      const recoveryBtns = screen.getAllByText('Send Recovery');
-      expect(recoveryBtns.length).toBeGreaterThan(0);
-      const markBtns = screen.getAllByText('Mark Recovered');
-      expect(markBtns.length).toBeGreaterThan(0);
+      openActions(0);
+      expect(screen.getByRole('menuitem', { name: 'Send Recovery' })).toBeInTheDocument();
+      expect(screen.getByRole('menuitem', { name: 'Mark Recovered' })).toBeInTheDocument();
     });
 
     it('When cart is recovered / Then hides recovery action buttons', async () => {
       render(<MarketingAbandonedCartsPage />);
       fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
       await waitFor(() => expect(screen.getByText('bob@test.com')).toBeInTheDocument());
-      const viewBtns = screen.getAllByText('View');
-      expect(viewBtns.length).toBe(3);
+      expect(screen.getAllByRole('button', { name: 'Row actions' }).length).toBe(3);
     });
 
     it('When View button is clicked / Then navigates to cart detail', async () => {
       render(<MarketingAbandonedCartsPage />);
       fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
       await waitFor(() => expect(screen.getByText('alice@test.com')).toBeInTheDocument());
-      const viewBtns = screen.getAllByText('View');
-      fireEvent.click(viewBtns[0]);
+      openActions(0);
+      fireEvent.click(screen.getByRole('menuitem', { name: 'View' }));
       expect(mockNavigate).toHaveBeenCalledWith('/crm/marketing/abandoned-carts/c1');
     });
 
@@ -143,8 +141,8 @@ describe('MarketingAbandonedCartsPage', () => {
       render(<MarketingAbandonedCartsPage />);
       fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
       await waitFor(() => expect(screen.getByText('alice@test.com')).toBeInTheDocument());
-      const recoveryBtns = screen.getAllByText('Send Recovery');
-      fireEvent.click(recoveryBtns[0]);
+      openActions(0);
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Send Recovery' }));
       await waitFor(() => expect(mockSendRecovery).toHaveBeenCalledWith('store-1', 'c1'));
     });
 
@@ -152,8 +150,8 @@ describe('MarketingAbandonedCartsPage', () => {
       render(<MarketingAbandonedCartsPage />);
       fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
       await waitFor(() => expect(screen.getByText('alice@test.com')).toBeInTheDocument());
-      const markBtns = screen.getAllByText('Mark Recovered');
-      fireEvent.click(markBtns[0]);
+      openActions(0);
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Mark Recovered' }));
       await waitFor(() => expect(mockUpdateStatus).toHaveBeenCalledWith('store-1', 'c1', 'recovered'));
     });
   });
@@ -163,7 +161,7 @@ describe('MarketingAbandonedCartsPage', () => {
       render(<MarketingAbandonedCartsPage />);
       fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
       await waitFor(() => expect(mockGetCarts).toHaveBeenCalled());
-      const select = screen.getByDisplayValue('All Carts');
+      const select = screen.getByTestId('filter-status');
       fireEvent.change(select, { target: { value: 'pending' } });
       await waitFor(() => expect(mockGetCarts).toHaveBeenCalledWith('store-1', expect.objectContaining({ recovery_status: 'pending' })));
     });
@@ -185,7 +183,7 @@ describe('MarketingAbandonedCartsPage', () => {
       mockGetCarts.mockReturnValue(new Promise(() => {}));
       render(<MarketingAbandonedCartsPage />);
       fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
-      await waitFor(() => expect(screen.getByText('Loading...')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByTestId('datatable-loading')).toBeInTheDocument());
     });
   });
 });

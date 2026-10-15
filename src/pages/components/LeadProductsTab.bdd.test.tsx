@@ -2,11 +2,11 @@
  * BDD Spec — LeadProductsTab / AddProductModal
  *
  * Covers: products load on mount, empty state rendered, Add Product button opens modal,
- * modal container has max-h-[90vh] overflow-y-auto, modal closes on Cancel.
+ * modal is a labelled dialog with a Close control, modal closes on Cancel.
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 const mockGetLeadProducts = vi.fn();
@@ -61,16 +61,16 @@ describe('Given LeadProductsTab', () => {
             render(<LeadProductsTab leadId="lead-1" />);
             await waitFor(() => screen.getByRole('button', { name: /Add Product/i }));
             fireEvent.click(screen.getByRole('button', { name: /Add Product/i }));
-            expect(screen.getByText(/Add Product/i, { selector: 'h3' })).toBeInTheDocument();
+            expect(within(screen.getByRole('dialog')).getByText(/Add Product/i)).toBeInTheDocument();
         });
 
-        it('When modal opens / Then container has max-h-[90vh] and overflow-y-auto', async () => {
+        it('When modal opens / Then it is a dialog with a Close control', async () => {
             render(<LeadProductsTab leadId="lead-1" />);
             await waitFor(() => screen.getByRole('button', { name: /Add Product/i }));
             fireEvent.click(screen.getByRole('button', { name: /Add Product/i }));
             const dialog = screen.getByRole('dialog');
-            expect(dialog.className).toContain('max-h-[90vh]');
-            expect(dialog.querySelector('.overflow-y-auto')).not.toBeNull();
+            expect(dialog).toBeInTheDocument();
+            expect(within(dialog).getByRole('button', { name: 'Close' })).toBeInTheDocument();
         });
 
         it('When the close button is clicked inside modal / Then modal closes', async () => {

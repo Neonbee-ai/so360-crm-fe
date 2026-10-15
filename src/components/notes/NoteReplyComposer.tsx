@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Send, Loader2 } from 'lucide-react';
+import { Textarea, IconButton } from '@so360/design-system';
 import { User } from '../../types/crm';
 import NoteMentionPicker from './NoteMentionPicker';
 
@@ -58,11 +59,14 @@ const NoteReplyComposer: React.FC<Props> = ({ people, onSubmit, placeholder }) =
                 <NoteMentionPicker query={mentionQuery} people={people} onPick={handlePickMention} onClose={() => setMentionQuery(null)} />
             )}
             <div className="flex items-center gap-2">
-                <textarea
+                <div className="flex-1 min-w-0">
+                <Textarea
+                    name="note-reply"
+                    aria-label="Reply"
                     ref={textareaRef}
                     value={text}
-                    onChange={(e) => handleChange(e.target.value)}
-                    onKeyDown={(e) => {
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleChange(e.target.value)}
+                    onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
                         if (e.key === 'Enter' && !e.shiftKey && mentionQuery === null) {
                             e.preventDefault();
                             handleSubmit();
@@ -70,15 +74,15 @@ const NoteReplyComposer: React.FC<Props> = ({ people, onSubmit, placeholder }) =
                     }}
                     placeholder={placeholder || 'Reply… use @ to mention someone'}
                     rows={1}
-                    className="flex-1 bg-surface border border-line rounded-nb px-3 py-2 text-xs text-fg placeholder-fg-subtle outline-none resize-none"
                 />
-                <button
+                </div>
+                <IconButton
+                    label="Send reply"
+                    variant="solid"
+                    icon={submitting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
                     onClick={handleSubmit}
                     disabled={!text.trim() || submitting}
-                    className="p-2 bg-primary hover:bg-primary/90 text-primary-fg rounded-nb disabled:opacity-50"
-                >
-                    {submitting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-                </button>
+                />
             </div>
         </div>
     );

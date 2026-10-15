@@ -1,11 +1,11 @@
 import React, { Suspense, lazy, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useShellBridge } from '@so360/shell-context';
-import { FeatureRoute } from '@so360/design-system';
+import { FeatureRoute, PortalProvider } from '@so360/design-system';
 import { CrossLinkProvider } from '@so360/cross-link';
 import { crmService } from './services/crmService';
 import { salesTargetService } from './services/salesTargetService';
-import { CrmScope } from './utils/crmScope';
+import { CrmScope, crmPortalRoot } from './utils/crmScope';
 
 // Synchronizes Shell Context with CRM Service
 const CrmShellInitializer = ({ children }: { children: React.ReactNode }) => {
@@ -208,13 +208,16 @@ const SalesAnalyticsPage = lazy(() => import('./pages/SalesAnalyticsPage'));
 const Layout = ({ children }: { children: React.ReactNode }) => {
     return (
         <CrmScope>
-            <div className="min-h-full bg-bg text-fg">
-                <main className="w-full">
-                    <Suspense fallback={<div className="p-8 text-fg-subtle">Loading module...</div>}>
-                        {children}
-                    </Suspense>
-                </main>
-            </div>
+            {/* DS overlays (Modal/Drawer/Toast/dialogs) portal into the scoped root so they get CRM's utilities */}
+            <PortalProvider container={crmPortalRoot()}>
+                <div className="min-h-full bg-bg text-fg">
+                    <main className="w-full">
+                        <Suspense fallback={<div className="p-8 text-fg-subtle">Loading module...</div>}>
+                            {children}
+                        </Suspense>
+                    </main>
+                </div>
+            </PortalProvider>
         </CrmScope>
     );
 };

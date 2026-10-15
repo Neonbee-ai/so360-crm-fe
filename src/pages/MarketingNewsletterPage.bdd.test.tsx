@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 
@@ -28,8 +28,8 @@ vi.mock('../components/MarketingStorePicker', () => ({
   ),
 }));
 
-vi.mock('@so360/design-system', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@so360/design-system')>();
+vi.mock('@so360/design-system', async () => {
+  const actual = await import('../test/__mocks__/design-system');
   return {
     ...actual,
     toast: { ...actual.toast, success: mockShowSuccess, error: mockShowError },
@@ -89,14 +89,14 @@ describe('MarketingNewsletterPage', () => {
       render(<MarketingNewsletterPage />);
       fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
       await waitFor(() => expect(screen.getByText('alice@example.com')).toBeInTheDocument());
-      expect(screen.getByText('Active')).toBeInTheDocument();
+      expect(within(screen.getByTestId('subscriber-row-s1')).getByText('Active')).toBeInTheDocument();
     });
 
     it('When subscribers load / Then unsubscribed subscriber shows Unsubscribed badge', async () => {
       render(<MarketingNewsletterPage />);
       fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
       await waitFor(() => expect(screen.getByText('bob@example.com')).toBeInTheDocument());
-      expect(screen.getByText('Unsubscribed')).toBeInTheDocument();
+      expect(within(screen.getByTestId('subscriber-row-s2')).getByText('Unsubscribed')).toBeInTheDocument();
     });
 
     it('When search is typed / Then filters subscribers by email', async () => {
@@ -113,7 +113,7 @@ describe('MarketingNewsletterPage', () => {
       render(<MarketingNewsletterPage />);
       fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
       await waitFor(() => expect(screen.getByText('alice@example.com')).toBeInTheDocument());
-      expect(screen.getByText(/Subscriber List \(2\)/)).toBeInTheDocument();
+      expect(screen.getAllByTestId(/^subscriber-row-/).length).toBe(2);
     });
   });
 
@@ -159,7 +159,7 @@ describe('MarketingNewsletterPage', () => {
       mockGetSubscribers.mockReturnValue(new Promise(() => {}));
       render(<MarketingNewsletterPage />);
       fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
-      await waitFor(() => expect(screen.getByText(/Fetching audience/)).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByTestId('datatable-loading')).toBeInTheDocument());
     });
   });
 

@@ -153,42 +153,16 @@ describe('ActivityHistoryDrawer', () => {
             renderDrawer({ onClose });
             await waitFor(() => screen.getByText('Activity History'));
 
-            const panel = document.querySelector('.fixed.right-0') as HTMLElement;
-            const closeBtn = panel.querySelector('button');
-            fireEvent.click(closeBtn!);
-            expect(onClose).toHaveBeenCalled();
-        });
-
-        it('When overlay is clicked / Then calls onClose', async () => {
-            const onClose = vi.fn();
-            renderDrawer({ onClose });
-            await waitFor(() => screen.getByText('Activity History'));
-
-            const overlay = document.querySelector('.fixed.inset-0');
-            if (overlay) fireEvent.click(overlay);
+            fireEvent.click(screen.getByRole('button', { name: 'Close' }));
             expect(onClose).toHaveBeenCalled();
         });
     });
 
-    describe('Given the drawer positioning relative to the fixed shell header', () => {
-        it('When open / Then the panel starts below the 56px glass-nav header (top-14, not top-0)', async () => {
+    describe('Given the DS Drawer shell', () => {
+        it('When open / Then it renders as the activity-history drawer dialog', async () => {
             renderDrawer();
             await waitFor(() => screen.getByText('Activity History'));
-
-            const panel = document.querySelector('.fixed.right-0');
-            expect(panel).not.toBeNull();
-            expect(panel).toHaveClass('top-14');
-            expect(panel).not.toHaveClass('top-0');
-        });
-
-        it('When open / Then the panel height is the remaining viewport below the header, not full height', async () => {
-            renderDrawer();
-            await waitFor(() => screen.getByText('Activity History'));
-
-            const panel = document.querySelector('.fixed.right-0');
-            expect(panel).not.toBeNull();
-            expect(panel).toHaveClass('h-[calc(100vh-3.5rem)]');
-            expect(panel).not.toHaveClass('h-full');
+            expect(screen.getByTestId('activity-history-drawer')).toHaveAttribute('role', 'dialog');
         });
     });
 

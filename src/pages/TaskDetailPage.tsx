@@ -11,7 +11,7 @@ import { Loader2 } from 'lucide-react';
 import TaskModal from './components/TaskModal';
 import { RescheduleModal } from './components/RescheduleModal';
 import { ShellContext, useActivity, useShellBridge } from '@so360/shell-context';
-import { toast, getErrorMessage, CrossLinkChip, DetailPageTemplate, Button, Card, Badge, StatusBadge, EmptyState, Alert } from '@so360/design-system';
+import { toast, getErrorMessage, CrossLinkChip, DetailPageTemplate, Button, Card, Badge, StatusBadge, EmptyState, Alert, IconButton, Textarea } from '@so360/design-system';
 import { goBackFrom } from '../components/common/DetailBackLink';
 import { useCRMFormatters } from '../utils/formatters';
 import { isTaskLocked, canRescheduleTask, canEditTask, isTaskOverdue, TASK_LOCKED_HINT } from '../utils/taskUtils';
@@ -192,7 +192,7 @@ const TaskDetailPage = () => {
         return (
             <div className="py-12 text-center text-fg-muted">
                 <p>Task not found.</p>
-                <button onClick={() => navigate('/crm/tasks')} className="text-primary hover:underline mt-4 inline-block">Back to Tasks</button>
+                <Button variant="secondary" className="mt-4" onClick={() => navigate('/crm/tasks')}>Back to Tasks</Button>
             </div>
         );
     }
@@ -323,14 +323,12 @@ const TaskDetailPage = () => {
                                             )}
                                         </div>
                                     </div>
-                                    <button
+                                    <IconButton
+                                        label="Disconnect from Project"
+                                        variant="danger"
+                                        icon={<Unlink size={16} />}
                                         onClick={() => { setDisconnectMode('keep_but_disconnect'); setShowDisconnectConfirm(true); }}
-                                        className="p-1.5 text-fg-muted hover:text-danger hover:bg-surface-raised rounded-lg transition-all shrink-0"
-                                        aria-label="Disconnect from Project"
-                                        title="Disconnect from Project"
-                                    >
-                                        <Unlink size={16} />
-                                    </button>
+                                    />
                                 </div>
                             )}
 
@@ -343,14 +341,10 @@ const TaskDetailPage = () => {
                                         <span className="text-xs text-danger block mb-1">Sync Failed</span>
                                         <span className="text-sm text-fg-subtle">This task couldn't be synchronized with its Project.</span>
                                     </div>
-                                    <button
-                                        onClick={handleRetrySync}
-                                        disabled={isRetryingSync}
-                                        className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium bg-surface-raised border border-line rounded-nb text-primary hover:bg-surface-sunken transition-colors disabled:opacity-50 shrink-0"
-                                    >
+                                    <Button variant="secondary" size="sm" onClick={handleRetrySync} disabled={isRetryingSync}>
                                         {isRetryingSync ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
                                         Retry Sync
-                                    </button>
+                                    </Button>
                                 </div>
                             )}
 
@@ -403,21 +397,20 @@ const TaskDetailPage = () => {
 
                         {isAddingNote && (
                             <div className="mb-nb-3 border-b border-line pb-nb-3">
-                                <textarea
+                                <Textarea
+                                    name="task-new-note"
                                     autoFocus
                                     value={newNote}
                                     onChange={(e) => setNewNote(e.target.value)}
                                     placeholder="Add a note or comment..."
-                                    className="w-full bg-bg border border-line text-fg rounded-lg px-4 py-3 outline-none focus:border-primary resize-none h-24"
+                                    rows={4}
                                 />
                                 <div className="flex justify-end gap-2 mt-2">
-                                    <button
-                                        onClick={() => { setNewNote(''); setIsAddingNote(false); }}
-                                        className="px-4 py-2 text-fg-subtle hover:text-fg text-sm"
-                                    >
+                                    <Button variant="secondary" onClick={() => { setNewNote(''); setIsAddingNote(false); }}>
                                         Cancel
-                                    </button>
-                                    <button
+                                    </Button>
+                                    <Button
+                                        variant="primary"
                                         onClick={async () => {
                                             if (!task || !newNote.trim()) return;
                                             try {
@@ -431,10 +424,9 @@ const TaskDetailPage = () => {
                                                 toast.error(getErrorMessage(error, 'Failed to add note. Please try again.'));
                                             }
                                         }}
-                                        className="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-fg rounded-lg font-bold text-sm"
                                     >
                                         Add Note
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
                         )}
@@ -473,20 +465,8 @@ const TaskDetailPage = () => {
                                                     </span>
                                                     {isAuthor && (
                                                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            <button
-                                                                onClick={() => setEditingNote({ id: note.id, content: note.content })}
-                                                                className="text-fg-muted hover:text-primary p-1 transition-colors"
-                                                                title="Edit note"
-                                                            >
-                                                                <Edit2 size={14} />
-                                                            </button>
-                                                            <button
-                                                                onClick={() => setDeleteNoteId(note.id)}
-                                                                className="text-fg-muted hover:text-danger p-1 transition-colors"
-                                                                title="Delete note"
-                                                            >
-                                                                <Trash2 size={14} />
-                                                            </button>
+                                                            <IconButton label="Edit note" icon={<Edit2 size={14} />} onClick={() => setEditingNote({ id: note.id, content: note.content })} />
+                                                            <IconButton label="Delete note" variant="danger" icon={<Trash2 size={14} />} onClick={() => setDeleteNoteId(note.id)} />
                                                         </div>
                                                     )}
                                                 </div>
@@ -531,11 +511,12 @@ const TaskDetailPage = () => {
                 {editingNote && (
                     <div className="flex flex-col gap-nb-3">
                         <p className="text-sm text-fg-subtle">Update your note content below.</p>
-                        <textarea
+                        <Textarea
+                            name="task-edit-note"
                             value={editingNote.content}
                             onChange={(e) => setEditingNote({ ...editingNote, content: e.target.value })}
-                            className="w-full bg-bg border border-line text-fg rounded-nb px-nb-3 py-nb-2 outline-none focus:border-primary resize-none h-32"
                             placeholder="Note content..."
+                            rows={6}
                         />
                         <div className="flex gap-nb-2 justify-end">
                             <Button variant="secondary" onClick={() => setEditingNote(null)}>Cancel</Button>

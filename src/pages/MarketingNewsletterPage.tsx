@@ -1,12 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import { Plus, Trash2, MailX, Search, Mail, Loader2, MoreVertical } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Plus, Trash2, MailX, Mail } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
-import { toast, useConfirm, ListPageTemplate, Card, Button, Badge, EmptyState, Menu } from '@so360/design-system';
+import { toast, useConfirm, ListPageTemplate, Card, Button, Badge, DataTable, EmptyState, SearchInput, TextField } from '@so360/design-system';
+import type { DataTableColumn, FilterValues } from '@so360/design-system';
 import { useShellBridge } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 
 const STORE_KEY = 'crm_marketing_store_id';
+
+const STATUS_OPTIONS = [
+  { value: 'active', label: 'Active' },
+  { value: 'unsubscribed', label: 'Unsubscribed' },
+];
 
 const MarketingNewsletterPage: React.FC = () => {
   const [confirm, confirmDialog] = useConfirm();
@@ -18,6 +24,7 @@ const MarketingNewsletterPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [search, setSearch] = useState('');
+  const [filters, setFilters] = useState<FilterValues>({ status: '', source: '' });
 
   const applyStore = (value: string) => {
     setStoreId(value);
@@ -74,14 +81,62 @@ const MarketingNewsletterPage: React.FC = () => {
     }
   };
 
-  const filtered = search
-    ? subscribers.filter(s => s.email.toLowerCase().includes(search.toLowerCase()))
-    : subscribers;
+  const sourceOptions = useMemo(
+    () => Array.from(new Set(subscribers.map((s) => s.source || 'Manual'))).map((v) => ({ value: v, label: v })),
+    [subscribers],
+  );
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return subscribers.filter((s) => {
+      if (q && !(s.email || '').toLowerCase().includes(q)) return false;
+      if (filters.status === 'active' && s.unsubscribed_at) return false;
+      if (filters.status === 'unsubscribed' && !s.unsubscribed_at) return false;
+      if (filters.source && (s.source || 'Manual') !== filters.source) return false;
+      return true;
+    });
+  }, [subscribers, search, filters]);
+
+  const columns: DataTableColumn<any>[] = [
+    {
+      key: 'email', header: 'Email', sortable: true, sortValue: (s) => s.email || '',
+      render: (s) => <span className={`text-sm font-medium ${s.unsubscribed_at ? 'text-fg-muted line-through' : 'text-fg'}`}>{s.email}</span>,
+    },
+    {
+      key: 'status', header: 'Status',
+      render: (s) => (
+        <Badge tone={s.unsubscribed_at ? 'danger' : 'success'} size="sm">
+          {s.unsubscribed_at ? 'Unsubscribed' : 'Active'}
+        </Badge>
+      ),
+    },
+    { key: 'source', header: 'Source', render: (s) => <span className="text-fg-muted">{s.source || 'Manual'}</span> },
+    {
+      key: 'subscribed_at', header: 'Subscribed', sortable: true, sortValue: (s) => s.subscribed_at || '',
+      render: (s) => <span className="text-fg-muted text-xs">{formatters.formatDate(s.subscribed_at)}</span>,
+    },
+  ];
+
+  const rowActions = (s: any) => [
+    ...(!s.unsubscribed_at ? [{ label: 'Unsubscribe', icon: <MailX size={14} />, onSelect: () => handleUnsubscribe(s.id) }] : []),
+    ...(canCreateMarketing ? [{ label: 'Delete', icon: <Trash2 size={14} />, danger: true, onSelect: () => handleDelete(s.id) }] : []),
+  ];
 
   return (
     <ListPageTemplate
       title="Newsletter Subscribers"
       description="Manage storefront newsletter audience"
+      count={filtered.length}
+      search={<SearchInput value={search} onChange={setSearch} placeholder="Search email..." />}
+      filterConfig={{
+        fields: [
+          { key: 'status', label: 'Status', type: 'select', quick: true, options: STATUS_OPTIONS },
+          { key: 'source', label: 'Source', type: 'select', options: sourceOptions },
+        ],
+        values: filters,
+        onChange: setFilters,
+        onClear: () => setFilters({ status: '', source: '' }),
+      }}
       toolbarEnd={<MarketingStorePicker storeId={storeId} onChange={applyStore} />}
     >
       {confirmDialog}
@@ -90,19 +145,13 @@ const MarketingNewsletterPage: React.FC = () => {
         <div className="lg:col-span-4">
           <Card title="Add Subscriber">
             <div className="space-y-nb-3">
-              <div>
-                <label className="block text-xs font-semibold text-fg-muted mb-1.5">Email Address</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-muted" />
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-bg border border-line rounded-nb py-2 pl-10 pr-4 text-sm text-fg focus:border-primary outline-none transition-all"
-                    placeholder="customer@example.com"
-                  />
-                </div>
-              </div>
+              <TextField
+                type="email"
+                label="Email Address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="customer@example.com"
+              />
               {canCreateMarketing && (
                 <Button variant="primary" onClick={handleAdd} disabled={!email || !storeId} className="w-full">
                   <Plus size={14} /> Add Subscriber
@@ -113,74 +162,21 @@ const MarketingNewsletterPage: React.FC = () => {
         </div>
 
         <div className="lg:col-span-8">
-          <Card
-            title={`Subscriber List (${filtered.length})`}
-            padding="none"
-            actions={
-              <div className="relative w-full sm:w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-muted" />
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full bg-bg border border-line rounded-nb py-2 pl-10 pr-4 text-xs text-fg focus:border-primary outline-none transition-all"
-                  placeholder="Search email..."
-                />
-              </div>
-            }
-          >
-            {loading ? (
-              <div className="flex flex-col items-center justify-center py-nb-6 text-fg-muted gap-3">
-                <Loader2 className="animate-spin" />
-                <span className="text-xs font-semibold">Fetching audience...</span>
-              </div>
-            ) : filtered.length === 0 ? (
+          <DataTable
+            columns={columns}
+            rows={filtered}
+            rowKey={(s: any) => s.id}
+            loading={loading}
+            rowActions={rowActions}
+            getRowProps={(s: any) => ({ 'data-testid': `subscriber-row-${s.id}` })}
+            emptyState={
               <EmptyState
                 icon={Mail}
                 title="No subscribers found"
                 description="Try selecting a different store or adjust search"
               />
-            ) : (
-              <ul className="divide-y divide-line">
-                {filtered.map((s) => (
-                  <li key={s.id} className="flex items-center justify-between gap-nb-3 px-nb-4 py-nb-3">
-                    <div className="min-w-0">
-                      <p className={`text-sm font-bold truncate ${s.unsubscribed_at ? 'text-fg-muted line-through' : 'text-fg'}`}>{s.email}</p>
-                      <div className="flex flex-wrap items-center gap-2 mt-0.5">
-                        <Badge tone={s.unsubscribed_at ? 'danger' : 'success'} size="sm">
-                          {s.unsubscribed_at ? 'Unsubscribed' : 'Active'}
-                        </Badge>
-                        <span className="text-xs text-fg-muted">• {s.source || 'Manual'}</span>
-                        <span className="text-xs text-fg-muted">• Subscribed {formatters.formatDate(s.subscribed_at)}</span>
-                      </div>
-                    </div>
-                    {(!s.unsubscribed_at || canCreateMarketing) && (
-                      <Menu
-                        name={`subscriber-${s.id}`}
-                        trigger={
-                          <button
-                            type="button"
-                            aria-label={`Actions for ${s.email}`}
-                            className="p-2 text-fg-muted hover:text-fg hover:bg-surface-raised rounded-nb transition-colors"
-                          >
-                            <MoreVertical size={16} />
-                          </button>
-                        }
-                        items={[
-                          ...(!s.unsubscribed_at
-                            ? [{ label: 'Unsubscribe', icon: <MailX size={14} />, onSelect: () => handleUnsubscribe(s.id) }]
-                            : []),
-                          ...(canCreateMarketing
-                            ? [{ label: 'Delete', icon: <Trash2 size={14} />, danger: true, onSelect: () => handleDelete(s.id) }]
-                            : []),
-                        ]}
-                      />
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
+            }
+          />
         </div>
       </div>
     </ListPageTemplate>

@@ -5,6 +5,7 @@ import {
     AlertCircle, ArrowLeft, Briefcase, Building2, CheckCircle2, ChevronRight, Download,
     ExternalLink, Loader2, Package, UploadCloud, UserCheck, Users,
 } from 'lucide-react';
+import { Button, Select } from '@so360/design-system';
 import { Modal } from '../common/Modal';
 import { ImportLeadsWizard } from '../leads/ImportLeadsWizard';
 import { describeImportError } from '../../services/leadImportService';
@@ -27,9 +28,6 @@ const STEPS: Array<{ key: Step; label: string }> = [
     { key: 'done', label: 'Import' },
 ];
 
-const SELECT_CLS = 'w-full bg-bg border border-line text-fg rounded-lg px-3 py-2 text-sm outline-none focus:border-primary';
-const PRIMARY_BTN = 'flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-fg px-4 py-2 rounded-lg font-semibold text-sm disabled:opacity-50';
-const SECONDARY_BTN = 'flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-fg-subtle hover:text-fg disabled:opacity-50';
 const OPTION_BTN = 'w-full flex items-center gap-3 text-left bg-bg border border-line hover:border-primary rounded-xl px-4 py-3';
 
 /** What the Review step shows, and how to send it. */
@@ -223,9 +221,9 @@ const RecordImportFlow: React.FC<FlowProps> = ({ kind, onBack, onClose, onImport
                         onChange={(e) => readFile(e.target.files?.[0] ?? null)}
                     />
                     <div className="flex justify-between">
-                        <button type="button" className={SECONDARY_BTN} onClick={onBack} disabled={busy}>
+                        <Button type="button" variant="secondary" onClick={onBack} disabled={busy}>
                             <ArrowLeft size={14} /> All import types
-                        </button>
+                        </Button>
                         <a
                             href={templateHref(config.fields)}
                             download={`${kind}-import-template.csv`}
@@ -249,26 +247,22 @@ const RecordImportFlow: React.FC<FlowProps> = ({ kind, onBack, onClose, onImport
                                     <p className="text-sm font-semibold text-fg truncate">{header}</p>
                                     <p className="text-xs text-fg-muted truncate">{parsed.rows[0][header]}</p>
                                 </div>
-                                <select
+                                <Select
+                                    name={`import-field-${header}`}
                                     aria-label={`Field for ${header}`}
-                                    className={SELECT_CLS}
                                     value={mapping[header] ?? ''}
-                                    onChange={(e) => setMapping((m) => ({ ...m, [header]: e.target.value || null }))}
-                                >
-                                    <option value="">Don't import</option>
-                                    {config.fields.map((f) => (
-                                        <option key={f.key} value={f.key}>{f.required ? `${f.label} *` : f.label}</option>
-                                    ))}
-                                </select>
+                                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setMapping((m) => ({ ...m, [header]: e.target.value || null }))}
+                                    options={[{ value: '', label: "Don't import" }, ...config.fields.map((f) => ({ value: f.key, label: f.required ? `${f.label} *` : f.label }))]}
+                                />
                             </div>
                         ))}
                     </div>
                     <div className="flex justify-between">
-                        <button type="button" className={SECONDARY_BTN} onClick={restart} disabled={busy}>Choose another file</button>
-                        <button type="button" className={PRIMARY_BTN} onClick={toReview} disabled={busy}>
+                        <Button type="button" variant="secondary" onClick={restart} disabled={busy}>Choose another file</Button>
+                        <Button type="button" onClick={toReview} disabled={busy}>
                             {busy && <Loader2 size={14} className="animate-spin" />}
                             Next
-                        </button>
+                        </Button>
                     </div>
                 </div>
             )}
@@ -280,11 +274,11 @@ const RecordImportFlow: React.FC<FlowProps> = ({ kind, onBack, onClose, onImport
                     </p>
                     {plan.problems.length > 0 && <ProblemList problems={plan.problems} label="Rows with problems" />}
                     <div className="flex justify-between">
-                        <button type="button" className={SECONDARY_BTN} onClick={() => setStep('map')} disabled={busy}>Back</button>
-                        <button type="button" className={PRIMARY_BTN} onClick={runImport} disabled={busy || plan.ready === 0}>
+                        <Button type="button" variant="secondary" onClick={() => setStep('map')} disabled={busy}>Back</Button>
+                        <Button type="button" onClick={runImport} disabled={busy || plan.ready === 0}>
                             {busy && <Loader2 size={14} className="animate-spin" />}
                             Import {plural(plan.ready, config.noun)}
-                        </button>
+                        </Button>
                     </div>
                 </div>
             )}
@@ -304,8 +298,8 @@ const RecordImportFlow: React.FC<FlowProps> = ({ kind, onBack, onClose, onImport
                     </dl>
                     {result.problems.length > 0 && <ProblemList problems={result.problems} label="Import errors" />}
                     <div className="flex justify-between">
-                        <button type="button" className={SECONDARY_BTN} onClick={restart}>Import another file</button>
-                        <button type="button" className={PRIMARY_BTN} onClick={onClose}>Done</button>
+                        <Button type="button" variant="secondary" onClick={restart}>Import another file</Button>
+                        <Button type="button" onClick={onClose}>Done</Button>
                     </div>
                 </div>
             )}

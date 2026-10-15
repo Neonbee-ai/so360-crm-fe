@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Loader2, UploadCloud, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Button, Select, RadioGroup } from '@so360/design-system';
 import { Modal } from '../common/Modal';
 import {
     leadImportService,
@@ -22,9 +23,6 @@ const STEPS: Array<{ key: Step; label: string }> = [
     { key: 'done', label: 'Import' },
 ];
 
-const SELECT_CLS = 'w-full bg-bg border border-line text-fg rounded-lg px-3 py-2 text-sm outline-none focus:border-primary';
-const PRIMARY_BTN = 'flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-fg px-4 py-2 rounded-lg font-semibold text-sm disabled:opacity-50';
-const SECONDARY_BTN = 'px-4 py-2 rounded-lg text-sm font-semibold text-fg-subtle hover:text-fg';
 
 interface Props {
     isOpen: boolean;
@@ -166,23 +164,19 @@ export const ImportLeadsWizard: React.FC<Props> = ({ isOpen, onClose, onImported
                                         <p className="text-sm font-semibold text-fg truncate">{header}</p>
                                         <p className="text-xs text-fg-muted truncate">{preview.sample_rows[0]?.[header] ?? ''}</p>
                                     </div>
-                                    <select
+                                    <Select
                                         aria-label={`Field for ${header}`}
-                                        className={SELECT_CLS}
+                                        name={`import-field-${header}`}
                                         value={mapping[header] ?? ''}
-                                        onChange={(e) => setMapping((m) => ({ ...m, [header]: e.target.value || null }))}
-                                    >
-                                        <option value="">Don't import</option>
-                                        {preview.available_fields.map((f) => (
-                                            <option key={f.key} value={f.key}>{f.custom ? `${f.label} (custom)` : f.label}</option>
-                                        ))}
-                                    </select>
+                                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setMapping((m) => ({ ...m, [header]: e.target.value || null }))}
+                                        options={[{ value: '', label: "Don't import" }, ...preview.available_fields.map((f) => ({ value: f.key, label: f.custom ? `${f.label} (custom)` : f.label }))]}
+                                    />
                                 </div>
                             ))}
                         </div>
                         <div className="flex justify-between">
-                            <button type="button" className={SECONDARY_BTN} onClick={reset}>Choose another file</button>
-                            <button type="button" className={PRIMARY_BTN} onClick={toReview}>Next</button>
+                            <Button type="button" variant="secondary" onClick={reset}>Choose another file</Button>
+                            <Button type="button" onClick={toReview}>Next</Button>
                         </div>
                     </div>
                 )}
@@ -208,30 +202,21 @@ export const ImportLeadsWizard: React.FC<Props> = ({ isOpen, onClose, onImported
                         <p className="text-xs text-fg-muted">
                             Showing {preview.sample_rows.length} of {preview.total_rows} rows. Leads with no owner column go through your assignment rules.
                         </p>
-                        <fieldset>
-                            <legend className="text-sm font-semibold text-fg mb-2">When a lead with the same email or phone exists</legend>
-                            <div className="space-y-1.5">
-                                {DUPLICATE_POLICIES.map((p) => (
-                                    <label key={p.value} className="flex items-start gap-2 text-sm text-fg-subtle">
-                                        <input
-                                            type="radio"
-                                            name="import-duplicate-policy"
-                                            value={p.value}
-                                            checked={policy === p.value}
-                                            onChange={() => setPolicy(p.value)}
-                                            className="mt-1"
-                                        />
-                                        <span><span className="font-semibold">{p.label}</span> <span className="text-fg-muted">— {p.hint}</span></span>
-                                    </label>
-                                ))}
-                            </div>
-                        </fieldset>
+                        <div>
+                            <RadioGroup
+                                name="import-duplicate-policy"
+                                label="When a lead with the same email or phone exists"
+                                value={policy}
+                                onChange={(v: string) => setPolicy(v as ImportDuplicatePolicy)}
+                                options={DUPLICATE_POLICIES.map((p) => ({ value: p.value, label: p.label, description: p.hint }))}
+                            />
+                        </div>
                         <div className="flex justify-between">
-                            <button type="button" className={SECONDARY_BTN} onClick={() => setStep('map')} disabled={busy}>Back</button>
-                            <button type="button" className={PRIMARY_BTN} onClick={runImport} disabled={busy}>
+                            <Button type="button" variant="secondary" onClick={() => setStep('map')} disabled={busy}>Back</Button>
+                            <Button type="button" onClick={runImport} disabled={busy}>
                                 {busy && <Loader2 size={14} className="animate-spin" />}
                                 Import {preview.total_rows} lead{preview.total_rows === 1 ? '' : 's'}
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 )}
@@ -258,7 +243,7 @@ export const ImportLeadsWizard: React.FC<Props> = ({ isOpen, onClose, onImported
                             </div>
                         )}
                         <div className="flex justify-end">
-                            <button type="button" className={PRIMARY_BTN} onClick={close}>Done</button>
+                            <Button type="button" onClick={close}>Done</Button>
                         </div>
                     </div>
                 )}

@@ -90,11 +90,11 @@ describe('CreateLeadModal', () => {
       expect(screen.getByPlaceholderText('e.g. Doe')).toBeInTheDocument();
       // Required-ness is the app's to enforce, not the browser's: native
       // `required`/`minLength` popups pre-empted the inline messages, so the
-      // contract is now aria-required plus a disabled Create Lead button.
+      // contract is now the DS `required` prop plus a disabled Create Lead button.
       const firstNameInput = screen.getByPlaceholderText('e.g. John');
-      expect(firstNameInput).toHaveAttribute('aria-required', 'true');
+      expect(firstNameInput).toBeRequired();
       const lastNameInput = screen.getByPlaceholderText('e.g. Doe');
-      expect(lastNameInput).not.toHaveAttribute('aria-required');
+      expect(lastNameInput).not.toBeRequired();
     });
 
     it('When rendered / Then always shows Referred By field regardless of source', async () => {
@@ -223,7 +223,7 @@ describe('CreateLeadModal', () => {
     it('When phone label is rendered / Then shows required asterisk (*)', async () => {
       render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
       await waitFor(() => screen.getByTestId('create-lead-form-page'));
-      expect(screen.getAllByText('*').length).toBeGreaterThan(0);
+      expect(document.querySelectorAll('input[required]').length).toBeGreaterThan(0);
     });
 
     it('When form is submitted with empty phone / Then shows required error and does not call createLead', async () => {
@@ -427,7 +427,7 @@ describe('CreateLeadModal', () => {
   // The first cut hard-coded India's 6-digit PIN, which would have rejected
   // every US, UK or Gulf lead. The rule now follows the record's own country.
   describe('Given the Country selector', () => {
-    const countrySelect = () => document.getElementById('lead-country') as HTMLSelectElement;
+    const countrySelect = () => screen.getByLabelText('Country') as HTMLSelectElement;
 
     it('When the form opens / Then it defaults to India, as the forms always assumed', async () => {
       render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);

@@ -12,7 +12,7 @@ import { useBusinessSettings, useShell } from '@so360/shell-context';
 import NeuraAiSummaryCard from './components/NeuraAiSummaryCard';
 import { useFormatters } from '@so360/formatters';
 import { goBackFrom } from '../components/common/DetailBackLink';
-import { DetailPageTemplate, Card, Badge, Button, KpiCard, EmptyState } from '@so360/design-system';
+import { DetailPageTemplate, Card, Badge, Button, KpiCard, EmptyState, DataTable, TextField, NumberInput, Select } from '@so360/design-system';
 import { Modal } from '../components/common/Modal';
 
 type TabType = 'overview' | 'deals' | 'commissions' | 'activity';
@@ -74,16 +74,14 @@ const MarkPaidModal = ({ commissionId, onClose, onPaid }: MarkPaidModalProps) =>
         >
             {error && <p className="text-danger text-sm mb-3">{error}</p>}
             <form id="mark-paid-form" onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                    <label className="text-xs text-fg-muted mb-1 block">Payment Reference</label>
-                    <input
-                        type="text"
-                        value={paymentRef}
-                        onChange={e => setPaymentRef(e.target.value)}
-                        placeholder="e.g. NEFT-2026-001"
-                        className="w-full bg-bg border border-line rounded-nb px-3 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    />
-                </div>
+                <TextField
+                    name="payment-reference"
+                    label="Payment Reference"
+                    type="text"
+                    value={paymentRef}
+                    onChange={e => setPaymentRef(e.target.value)}
+                    placeholder="e.g. NEFT-2026-001"
+                />
             </form>
         </Modal>
     );
@@ -255,7 +253,7 @@ const PartnerDetailPage = () => {
         return (
             <div className="py-12 text-center text-fg-muted">
                 <p>Partner not found.</p>
-                <button onClick={() => navigate('/crm/partners')} className="text-primary hover:underline mt-4 inline-block">Back to Partners</button>
+                <div className="mt-4"><Button variant="secondary" onClick={() => navigate('/crm/partners')}>Back to Partners</Button></div>
             </div>
         );
     }
@@ -263,8 +261,6 @@ const PartnerDetailPage = () => {
     const gradingCfg = GRADING_CONFIG[partner.grading] || null;
 
     const fieldLabelCls = 'text-xs text-fg-muted mb-1';
-    const editLabelCls = 'text-xs text-fg-subtle mb-1 block';
-    const editInputCls = 'w-full bg-bg border border-line rounded-lg px-3 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-primary/50';
 
     const overviewActions = isEditing ? (
         <div className="flex gap-2">
@@ -423,109 +419,42 @@ const PartnerDetailPage = () => {
                         <Card title="Partner information" actions={overviewActions}>
                         <div className="space-y-6">
                             <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
-                                <div>
-                                    <label className={editLabelCls}>First Name</label>
-                                    <input value={editForm.first_name}
-                                        onChange={e => setEditForm((f: any) => ({ ...f, first_name: e.target.value }))}
-                                        className={editInputCls} placeholder="Dhanooj" />
-                                </div>
-                                <div>
-                                    <label className={editLabelCls}>Last Name</label>
-                                    <input value={editForm.last_name}
-                                        onChange={e => setEditForm((f: any) => ({ ...f, last_name: e.target.value }))}
-                                        className={editInputCls} placeholder="B S" />
-                                </div>
+                                <TextField name="first-name" label="First Name" placeholder="Dhanooj" value={editForm.first_name}
+                                    onChange={e => setEditForm((f: any) => ({ ...f, first_name: e.target.value }))} />
+                                <TextField name="last-name" label="Last Name" placeholder="B S" value={editForm.last_name}
+                                    onChange={e => setEditForm((f: any) => ({ ...f, last_name: e.target.value }))} />
                                 <div className="sm:col-span-2">
-                                    <label className={editLabelCls}>Company Name</label>
-                                    <input value={editForm.company_name}
-                                        onChange={e => setEditForm((f: any) => ({ ...f, company_name: e.target.value }))}
-                                        className={editInputCls} placeholder="Moonhive Pvt Ltd" />
+                                    <TextField name="company-name" label="Company Name" placeholder="Moonhive Pvt Ltd" value={editForm.company_name}
+                                    onChange={e => setEditForm((f: any) => ({ ...f, company_name: e.target.value }))} />
                                 </div>
-                                <div>
-                                    <label className={editLabelCls}>Partner Type</label>
-                                    <select value={editForm.partner_type}
-                                        onChange={e => setEditForm((f: any) => ({ ...f, partner_type: e.target.value }))}
-                                        className={editInputCls}>
-                                        <option value="">Select...</option>
-                                        {partnerTypes.map(pt => (
-                                            <option key={pt.value} value={pt.value}>{pt.label}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className={editLabelCls}>Email</label>
-                                    <input type="email" value={editForm.email}
-                                        onChange={e => setEditForm((f: any) => ({ ...f, email: e.target.value }))}
-                                        className={editInputCls} />
-                                </div>
-                                <div>
-                                    <label className={editLabelCls}>Phone</label>
-                                    <input type="tel" maxLength={20} value={editForm.phone}
-                                        onChange={e => { setEditForm((f: any) => ({ ...f, phone: e.target.value })); setPhoneError(validatePhone(e.target.value)); }}
-                                        className={`w-full bg-bg border rounded-lg px-3 py-2 text-sm text-fg focus:outline-none focus:ring-2 ${phoneError ? 'border-danger/60 focus:ring-danger/50' : 'border-line focus:ring-primary/50'}`} />
-                                    {phoneError && <p className="text-danger text-xs mt-1">{phoneError}</p>}
-                                </div>
-                                <div>
-                                    <label className={editLabelCls}>Architect Grading</label>
-                                    <select value={editForm.grading}
-                                        onChange={e => setEditForm((f: any) => ({ ...f, grading: e.target.value }))}
-                                        className={editInputCls}>
-                                        <option value="">Select...</option>
-                                        <option value="low">Low</option>
-                                        <option value="mid">Mid</option>
-                                        <option value="high">High</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className={editLabelCls}>Royalty Rate (%)</label>
-                                    <input type="number" min="0" max="100" step="0.5" value={editForm.commission_rate}
-                                        onChange={e => setEditForm((f: any) => ({ ...f, commission_rate: e.target.value }))}
-                                        className={editInputCls} />
-                                </div>
-                                <div>
-                                    <label className={editLabelCls}>Relationship Manager</label>
-                                    <select value={editForm.owner_person_id}
-                                        onChange={e => setEditForm((f: any) => ({ ...f, owner_person_id: e.target.value }))}
-                                        className={editInputCls}>
-                                        <option value="">— Assign RM —</option>
-                                        {users.map(u => (
-                                            <option key={u.id} value={u.id}>{u.full_name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className={editLabelCls}>Customers Connected</label>
-                                    <input type="number" min="0" step="1" value={editForm.customers_connected}
-                                        onChange={e => setEditForm((f: any) => ({ ...f, customers_connected: e.target.value }))}
-                                        className={editInputCls} />
-                                </div>
-                                <div>
-                                    <label className={editLabelCls}>Value of Purchase</label>
-                                    <input type="number" min="0" step="0.01" value={editForm.value_of_purchase}
-                                        onChange={e => setEditForm((f: any) => ({ ...f, value_of_purchase: e.target.value }))}
-                                        className={editInputCls} />
-                                </div>
-                                <div>
-                                    <label className={editLabelCls}>Total Purchase Till Date</label>
-                                    <input type="number" min="0" step="0.01" value={editForm.total_purchase_till_date}
-                                        onChange={e => setEditForm((f: any) => ({ ...f, total_purchase_till_date: e.target.value }))}
-                                        className={editInputCls} />
-                                </div>
-                                <div>
-                                    <label className={editLabelCls}>1st POC</label>
-                                    <input type="text" value={editForm.poc_primary}
-                                        onChange={e => setEditForm((f: any) => ({ ...f, poc_primary: e.target.value }))}
-                                        className={editInputCls} placeholder="Primary contact" />
-                                </div>
-                                <div>
-                                    <label className={editLabelCls}>2nd POC</label>
-                                    <input type="text" value={editForm.poc_secondary}
-                                        onChange={e => setEditForm((f: any) => ({ ...f, poc_secondary: e.target.value }))}
-                                        className={editInputCls} placeholder="Secondary contact" />
-                                </div>
+                                <Select name="partner-type" label="Partner Type" placeholder="Select..." value={editForm.partner_type}
+                                    onChange={e => setEditForm((f: any) => ({ ...f, partner_type: e.target.value }))}
+                                    options={partnerTypes.map(pt => ({ value: pt.value, label: pt.label }))} />
+                                <TextField name="email" label="Email" type="email" value={editForm.email}
+                                    onChange={e => setEditForm((f: any) => ({ ...f, email: e.target.value }))} />
+                                <TextField name="phone" label="Phone" type="tel" maxLength={20} value={editForm.phone} error={phoneError || undefined}
+                                    onChange={e => { setEditForm((f: any) => ({ ...f, phone: e.target.value })); setPhoneError(validatePhone(e.target.value)); }} />
+                                <Select name="grading" label="Architect Grading" placeholder="Select..." value={editForm.grading}
+                                    onChange={e => setEditForm((f: any) => ({ ...f, grading: e.target.value }))}
+                                    options={[{ value: 'low', label: 'Low' }, { value: 'mid', label: 'Mid' }, { value: 'high', label: 'High' }]} />
+                                <NumberInput name="commission-rate" label="Royalty Rate (%)" min={0} max={100} step={0.5} value={editForm.commission_rate === '' || editForm.commission_rate == null ? null : Number(editForm.commission_rate)}
+                                    onChange={v => setEditForm((f: any) => ({ ...f, commission_rate: v == null ? '' : String(v) }))} />
+                                <Select name="owner-person" label="Relationship Manager" placeholder="— Assign RM —" value={editForm.owner_person_id}
+                                    onChange={e => setEditForm((f: any) => ({ ...f, owner_person_id: e.target.value }))}
+                                    options={users.map(u => ({ value: u.id, label: u.full_name }))} />
+                                <NumberInput name="customers-connected" label="Customers Connected" min={0} step={1} value={editForm.customers_connected === '' || editForm.customers_connected == null ? null : Number(editForm.customers_connected)}
+                                    onChange={v => setEditForm((f: any) => ({ ...f, customers_connected: v == null ? '' : String(v) }))} />
+                                <NumberInput name="value-of-purchase" label="Value of Purchase" min={0} step={0.01} value={editForm.value_of_purchase === '' || editForm.value_of_purchase == null ? null : Number(editForm.value_of_purchase)}
+                                    onChange={v => setEditForm((f: any) => ({ ...f, value_of_purchase: v == null ? '' : String(v) }))} />
+                                <NumberInput name="total-purchase" label="Total Purchase Till Date" min={0} step={0.01} value={editForm.total_purchase_till_date === '' || editForm.total_purchase_till_date == null ? null : Number(editForm.total_purchase_till_date)}
+                                    onChange={v => setEditForm((f: any) => ({ ...f, total_purchase_till_date: v == null ? '' : String(v) }))} />
+                                <TextField name="poc-primary" label="1st POC" placeholder="Primary contact" value={editForm.poc_primary}
+                                    onChange={e => setEditForm((f: any) => ({ ...f, poc_primary: e.target.value }))} />
+                                <TextField name="poc-secondary" label="2nd POC" placeholder="Secondary contact" value={editForm.poc_secondary}
+                                    onChange={e => setEditForm((f: any) => ({ ...f, poc_secondary: e.target.value }))} />
                             </div>
                             <div>
-                                <label className={editLabelCls}>Area Served</label>
+                                <p className="text-xs text-fg-subtle mb-1">Area Served</p>
                                 <div className="flex flex-wrap gap-2">
                                     {AREA_OPTIONS.map(area => {
                                         const selected = (editForm.area_served || []).includes(area);
@@ -670,38 +599,23 @@ const PartnerDetailPage = () => {
                             </div>
                             <Card title="Referred deals" padding="none">
                                 {deals.deals.length > 0 ? (
-                                    <div className="w-full overflow-x-auto">
-                                        <table className="w-full text-sm">
-                                            <thead>
-                                                <tr className="border-b border-line">
-                                                    <th className="text-left px-nb-3 py-nb-2 text-xs font-medium text-fg-muted">Deal name</th>
-                                                    <th className="text-left px-nb-3 py-nb-2 text-xs font-medium text-fg-muted">Customer</th>
-                                                    <th className="text-right px-nb-3 py-nb-2 text-xs font-medium text-fg-muted">Value</th>
-                                                    <th className="text-left px-nb-3 py-nb-2 text-xs font-medium text-fg-muted">Stage</th>
-                                                    <th className="text-left px-nb-3 py-nb-2 text-xs font-medium text-fg-muted">Won date</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-line">
-                                                {deals.deals.map((deal: any) => (
-                                                    <tr
-                                                        key={deal.id}
-                                                        className="hover:bg-surface-high cursor-pointer"
-                                                        onClick={() => navigate(`/crm/deal/${deal.id}`)}
-                                                    >
-                                                        <td className="px-nb-3 py-nb-2 text-fg font-medium">{deal.name}</td>
-                                                        <td className="px-nb-3 py-nb-2 text-fg-subtle">{deal.company || '-'}</td>
-                                                        <td className="px-nb-3 py-nb-2 text-fg-subtle text-right">{formatters.formatCurrency(deal.value || 0)}</td>
-                                                        <td className="px-nb-3 py-nb-2">
-                                                            <Badge size="sm" tone={deal.status === 'won' ? 'success' : deal.status === 'lost' ? 'danger' : 'neutral'}>
-                                                                {deal.stage?.name || deal.status || '-'}
-                                                            </Badge>
-                                                        </td>
-                                                        <td className="px-nb-3 py-nb-2 text-fg-subtle">{deal.won_at ? formatters.formatDate(deal.won_at) : '-'}</td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                    <DataTable
+                                        name="partner-referred-deals"
+                                        columns={[
+                                            { key: 'name', header: 'Deal name', render: (deal: any) => <span className="text-fg font-medium">{deal.name}</span> },
+                                            { key: 'company', header: 'Customer', render: (deal: any) => <span className="text-fg-subtle">{deal.company || '-'}</span> },
+                                            { key: 'value', header: 'Value', render: (deal: any) => <div className="text-right text-fg-subtle">{formatters.formatCurrency(deal.value || 0)}</div> },
+                                            { key: 'stage', header: 'Stage', render: (deal: any) => (
+                                                <Badge size="sm" tone={deal.status === 'won' ? 'success' : deal.status === 'lost' ? 'danger' : 'neutral'}>
+                                                    {deal.stage?.name || deal.status || '-'}
+                                                </Badge>
+                                            ) },
+                                            { key: 'won_at', header: 'Won date', render: (deal: any) => <span className="text-fg-subtle">{deal.won_at ? formatters.formatDate(deal.won_at) : '-'}</span> },
+                                        ]}
+                                        rows={deals.deals}
+                                        rowKey={(deal: any) => String(deal.id)}
+                                        onRowClick={(deal: any) => navigate(`/crm/deal/${deal.id}`)}
+                                    />
                                 ) : (
                                     <EmptyState title="No referred deals yet." />
                                 )}
@@ -725,60 +639,49 @@ const PartnerDetailPage = () => {
                             </div>
                             <Card title="Royalties" padding="none">
                                 {commissions.commissions.length > 0 ? (
-                                    <div className="w-full overflow-x-auto">
-                                        <table className="w-full text-sm">
-                                            <thead>
-                                                <tr className="border-b border-line">
-                                                    <th className="text-left px-nb-3 py-nb-2 text-xs font-medium text-fg-muted">Deal</th>
-                                                    <th className="text-right px-nb-3 py-nb-2 text-xs font-medium text-fg-muted">Deal amount</th>
-                                                    <th className="text-right px-nb-3 py-nb-2 text-xs font-medium text-fg-muted">Rate</th>
-                                                    <th className="text-right px-nb-3 py-nb-2 text-xs font-medium text-fg-muted">Royalty</th>
-                                                    <th className="text-left px-nb-3 py-nb-2 text-xs font-medium text-fg-muted">Status</th>
-                                                    <th className="text-left px-nb-3 py-nb-2 text-xs font-medium text-fg-muted">Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-line">
-                                                {commissions.commissions.map((c: any) => {
-                                                    const statusCfg = COMMISSION_STATUS_CONFIG[c.status] || COMMISSION_STATUS_CONFIG.pending;
-                                                    return (
-                                                        <tr key={c.id}>
-                                                            <td className="px-nb-3 py-nb-2 text-fg">{c.deal?.name || c.deal_id.slice(0, 8)}</td>
-                                                            <td className="px-nb-3 py-nb-2 text-fg-subtle text-right">{formatters.formatCurrency(c.deal_amount || 0)}</td>
-                                                            <td className="px-nb-3 py-nb-2 text-fg-subtle text-right">{c.commission_rate}%</td>
-                                                            <td className="px-nb-3 py-nb-2 text-fg font-medium text-right">{formatters.formatCurrency(c.commission_amount || 0)}</td>
-                                                            <td className="px-nb-3 py-nb-2">
-                                                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${statusCfg.color}`}>
-                                                                    {statusCfg.label}
-                                                                </span>
-                                                            </td>
-                                                            <td className="px-nb-3 py-nb-2">
-                                                                {c.status === 'pending' && (
-                                                                    <Button
-                                                                        variant="secondary"
-                                                                        onClick={() => handleApprove(c.id)}
-                                                                        disabled={approvingId === c.id}
-                                                                    >
-                                                                        {approvingId === c.id ? 'Approving...' : 'Approve'}
-                                                                    </Button>
-                                                                )}
-                                                                {c.status === 'approved' && (
-                                                                    <Button
-                                                                        variant="secondary"
-                                                                        onClick={() => setMarkPaidId(c.id)}
-                                                                    >
-                                                                        Mark Paid
-                                                                    </Button>
-                                                                )}
-                                                                {c.status === 'paid' && c.payment_ref && (
-                                                                    <span className="text-xs text-fg-muted">{c.payment_ref}</span>
-                                                                )}
-                                                            </td>
-                                                        </tr>
-                                                    );
-                                                })}
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                    <DataTable
+                                        name="partner-royalties"
+                                        columns={[
+                                            { key: 'deal', header: 'Deal', render: (c: any) => <span className="text-fg">{c.deal?.name || c.deal_id.slice(0, 8)}</span> },
+                                            { key: 'deal_amount', header: 'Deal amount', render: (c: any) => <div className="text-right text-fg-subtle">{formatters.formatCurrency(c.deal_amount || 0)}</div> },
+                                            { key: 'rate', header: 'Rate', render: (c: any) => <div className="text-right text-fg-subtle">{c.commission_rate}%</div> },
+                                            { key: 'royalty', header: 'Royalty', render: (c: any) => <div className="text-right text-fg font-medium">{formatters.formatCurrency(c.commission_amount || 0)}</div> },
+                                            { key: 'status', header: 'Status', render: (c: any) => {
+                                                const statusCfg = COMMISSION_STATUS_CONFIG[c.status] || COMMISSION_STATUS_CONFIG.pending;
+                                                return (
+                                                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${statusCfg.color}`}>
+                                                        {statusCfg.label}
+                                                    </span>
+                                                );
+                                            } },
+                                            { key: 'actions', header: 'Actions', render: (c: any) => (
+                                                <>
+                                                    {c.status === 'pending' && (
+                                                        <Button
+                                                            variant="secondary"
+                                                            onClick={() => handleApprove(c.id)}
+                                                            disabled={approvingId === c.id}
+                                                        >
+                                                            {approvingId === c.id ? 'Approving...' : 'Approve'}
+                                                        </Button>
+                                                    )}
+                                                    {c.status === 'approved' && (
+                                                        <Button
+                                                            variant="secondary"
+                                                            onClick={() => setMarkPaidId(c.id)}
+                                                        >
+                                                            Mark Paid
+                                                        </Button>
+                                                    )}
+                                                    {c.status === 'paid' && c.payment_ref && (
+                                                        <span className="text-xs text-fg-muted">{c.payment_ref}</span>
+                                                    )}
+                                                </>
+                                            ) },
+                                        ]}
+                                        rows={commissions.commissions}
+                                        rowKey={(c: any) => String(c.id)}
+                                    />
                                 ) : (
                                     <EmptyState title="No royalties yet." description="Royalties are created automatically when a referred deal is won." />
                                 )}

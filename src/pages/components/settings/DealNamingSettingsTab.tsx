@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ToggleLeft, ToggleRight, Loader2 } from 'lucide-react';
 import { crmService } from '../../../services/crmService';
 import { DealNamingConfig, DealNamingResetMode, DEFAULT_DEAL_NAMING_CONFIG } from '../../../types/crm';
-import { Card } from '@so360/design-system';
+import { Card, Button, TextField, NumberInput, Select } from '@so360/design-system';
 import { DEAL_NAME_TOKENS } from '../../../utils/dealNamingTokens';
 
 interface DealNamingSettingsTabProps {
@@ -26,7 +26,6 @@ const RESET_MODES: { value: DealNamingResetMode; label: string }[] = [
     { value: 'continuous', label: 'Continuous' },
 ];
 
-const FIELD_CLS = 'w-full bg-bg border border-line text-fg rounded-nb px-4 py-2.5 outline-none focus:border-primary transition-all font-bold text-sm';
 
 const DealNamingSettingsTab: React.FC<DealNamingSettingsTabProps> = ({ initialConfig, canWrite, onChange }) => {
     const [config, setConfig] = useState<DealNamingConfig>(initialConfig ?? DEFAULT_DEAL_NAMING_CONFIG);
@@ -99,14 +98,16 @@ const DealNamingSettingsTab: React.FC<DealNamingSettingsTabProps> = ({ initialCo
         <Card
             title="Deal naming convention"
             actions={
-                <button
+                <Button
+                    variant="secondary"
+                    size="sm"
+                    type="button"
                     onClick={() => setConfig(prev => ({ ...prev, enabled: !prev.enabled }))}
                     disabled={!canWrite}
-                    className="flex items-center gap-2 text-xs font-semibold text-fg-subtle disabled:opacity-50"
                 >
                     {config.enabled ? <ToggleRight size={22} className="text-success" /> : <ToggleLeft size={22} className="text-fg-muted" />}
                     Auto-Generate Deal Names
-                </button>
+                </Button>
             }
         >
             <p className="text-xs text-fg-muted mb-nb-4">Control how new deal names are generated from leads</p>
@@ -119,45 +120,49 @@ const DealNamingSettingsTab: React.FC<DealNamingSettingsTabProps> = ({ initialCo
 
                 <div className="grid grid-cols-1 wc-medium:grid-cols-3 gap-nb-3">
                     <div>
-                        <label className="text-xs font-semibold text-fg-muted mb-2 block">Prefix</label>
-                        <input className={FIELD_CLS} value={config.prefix} onChange={e => setConfig(prev => ({ ...prev, prefix: e.target.value }))} placeholder="DEAL" />
+                        <TextField name="deal-prefix" label="Prefix" value={config.prefix} onChange={e => setConfig(prev => ({ ...prev, prefix: e.target.value }))} placeholder="DEAL" />
                     </div>
                     <div>
-                        <label className="text-xs font-semibold text-fg-muted mb-2 block">Suffix</label>
-                        <input className={FIELD_CLS} value={config.suffix} onChange={e => setConfig(prev => ({ ...prev, suffix: e.target.value }))} placeholder="2026" />
+                        <TextField name="deal-suffix" label="Suffix" value={config.suffix} onChange={e => setConfig(prev => ({ ...prev, suffix: e.target.value }))} placeholder="2026" />
                     </div>
                     <div>
-                        <label className="text-xs font-semibold text-fg-muted mb-2 block">Separator</label>
-                        <select className={FIELD_CLS} value={config.separator} onChange={e => setConfig(prev => ({ ...prev, separator: e.target.value }))}>
-                            <option value=" - ">-</option>
-                            <option value="_">_</option>
-                            <option value="/">/</option>
-                            <option value=" ">Space</option>
-                            <option value="">None</option>
-                        </select>
+                        <Select
+                            name="deal-separator"
+                            label="Separator"
+                            value={config.separator}
+                            options={[
+                                { value: ' - ', label: '-' },
+                                { value: '_', label: '_' },
+                                { value: '/', label: '/' },
+                                { value: ' ', label: 'Space' },
+                                { value: '', label: 'None' },
+                            ]}
+                            onChange={e => setConfig(prev => ({ ...prev, separator: e.target.value }))}
+                        />
                     </div>
                 </div>
 
                 <div>
-                    <label className="text-xs font-semibold text-fg-muted mb-2 block">Naming Template</label>
-                    <input
+                    <TextField
                         ref={templateInputRef}
-                        className={FIELD_CLS}
+                        name="deal-template"
+                        label="Naming Template"
                         value={config.template}
                         onChange={e => setConfig(prev => ({ ...prev, template: e.target.value }))}
                         placeholder="{lead_name} - {YYYYMMDD}"
                     />
                     <div className="flex flex-wrap gap-1.5 mt-2">
                         {DEAL_NAME_TOKENS.map(t => (
-                            <button
+                            <Button
                                 key={t.token}
+                                variant="secondary"
+                                size="sm"
                                 type="button"
                                 onClick={() => insertToken(t.token)}
-                                className="text-xs font-semibold px-2.5 py-1 rounded-full bg-surface-raised hover:bg-line text-fg-subtle transition-all"
                                 title={t.sample}
                             >
                                 {t.label}
-                            </button>
+                            </Button>
                         ))}
                     </div>
                 </div>
@@ -166,35 +171,30 @@ const DealNamingSettingsTab: React.FC<DealNamingSettingsTabProps> = ({ initialCo
                     <h4 className="text-xs font-semibold text-fg-muted mb-3">Running Number</h4>
                     <div className="grid grid-cols-1 wc-medium:grid-cols-3 gap-nb-3 items-end">
                         <div>
-                            <label className="text-xs font-semibold text-fg-muted mb-2 block">Reset Mode</label>
-                            <select
-                                className={FIELD_CLS}
+                            <Select
+                                name="deal-reset-mode"
+                                label="Reset Mode"
                                 value={config.sequence.reset_mode}
+                                options={RESET_MODES.map(m => ({ value: m.value, label: m.label }))}
                                 onChange={e => setConfig(prev => ({
                                     ...prev,
                                     sequence: { ...prev.sequence, enabled: e.target.value !== 'none', reset_mode: e.target.value as DealNamingResetMode },
                                 }))}
-                            >
-                                {RESET_MODES.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="text-xs font-semibold text-fg-muted mb-2 block">Padding</label>
-                            <input
-                                type="number"
-                                min={1}
-                                max={8}
-                                className={FIELD_CLS}
-                                value={config.sequence.padding}
-                                onChange={e => setConfig(prev => ({ ...prev, sequence: { ...prev.sequence, padding: parseInt(e.target.value) || 1 } }))}
                             />
                         </div>
-                        <button
-                            onClick={() => insertToken('{seq}')}
-                            className="text-xs font-semibold px-3 py-2.5 rounded-nb bg-surface-raised hover:bg-line text-fg-subtle"
-                        >
+                        <div>
+                            <NumberInput
+                                name="deal-padding"
+                                label="Padding"
+                                min={1}
+                                max={8}
+                                value={config.sequence.padding}
+                                onChange={v => setConfig(prev => ({ ...prev, sequence: { ...prev.sequence, padding: Math.floor(v || 1) } }))}
+                            />
+                        </div>
+                        <Button variant="secondary" size="sm" type="button" onClick={() => insertToken('{seq}')}>
                             Insert {'{seq}'} Token
-                        </button>
+                        </Button>
                     </div>
                 </div>
 

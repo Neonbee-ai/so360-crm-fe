@@ -10,7 +10,8 @@ import {
   formatValue,
   reviewPeriodBounds,
 } from './targetUi';
-import { DashboardPageTemplate, Button } from '@so360/design-system';
+import { DashboardPageTemplate, Button, DataTable, TextField, Select } from '@so360/design-system';
+import type { DataTableColumn } from '@so360/design-system';
 
 /**
  * Monthly and quarterly sales reviews.
@@ -163,6 +164,25 @@ export default function SalesReviewsPage() {
     return <div className="text-sm text-fg-subtle">Loading reviews…</div>;
   }
 
+  const columns: DataTableColumn<any>[] = [
+    { key: 'period', header: 'Period', sortable: true, sortValue: (r) => r.period_start || '', render: (r) => <span className="text-fg">{r.period_start}</span> },
+    { key: 'type', header: 'Type', render: (r) => <span className="text-fg-subtle">{r.period_type}</span> },
+    { key: 'person', header: 'Person', render: (r) => <span className="text-fg-subtle"><PersonName id={r.person_id} /></span> },
+    { key: 'attainment', header: 'Attainment', align: 'right', sortable: true, sortValue: (r) => r.results?.headline?.attainment ?? 0, render: (r) => <span className="text-fg-subtle">{formatPct(r.results?.headline?.attainment)}</span> },
+    { key: 'status', header: 'Status', render: (r) => <span className="text-fg-subtle">{r.status}</span> },
+    { key: 'evidence', header: 'HR evidence', render: (r) => (
+      <span className="text-xs">
+        {r.pc_synced_at ? (
+          <span className="text-success">sent</span>
+        ) : r.status === 'finalized' ? (
+          <span className="text-warning">{r.pc_sync_error ? 'failed' : 'pending'}</span>
+        ) : (
+          <span className="text-fg-muted">—</span>
+        )}
+      </span>
+    ) },
+  ];
+
   return (
     <DashboardPageTemplate title="Reviews">
     <div className="space-y-5">
@@ -178,61 +198,50 @@ export default function SalesReviewsPage() {
             </label>
             <PersonPicker value={newPersonId} onChange={setNewPersonId} />
           </div>
-          <div>
-            <label className="block text-xs text-fg-subtle mb-1">
-              Period
-            </label>
-            <select
-              className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
-              value={newPeriodType}
-              aria-label="Period type"
-              onChange={(e) => {
-                const next = e.target.value as 'monthly' | 'quarterly';
-                setNewPeriodType(next);
-                const now = new Date();
-                setNewAnchor(
-                  next === 'monthly'
-                    ? `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`
-                    : `${now.getUTCFullYear()}-Q${Math.floor(now.getUTCMonth() / 3) + 1}`,
+          <Select
+            name="review_period_type"
+            label="Period"
+            aria-label="Period type"
+            value={newPeriodType}
+            onChange={(e: any) => {
+              const next = e.target.value as 'monthly' | 'quarterly';
+              setNewPeriodType(next);
+              const now = new Date();
+              setNewAnchor(
+                next === 'monthly'
+                  ? `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`
+                  : `${now.getUTCFullYear()}-Q${Math.floor(now.getUTCMonth() / 3) + 1}`,
+              );
+            }}
+            options={[
+              { value: 'monthly', label: 'Monthly' },
+              { value: 'quarterly', label: 'Quarterly' },
+            ]}
+          />
+          {newPeriodType === 'monthly' ? (
+            <TextField
+              name="review_month"
+              type="month"
+              label="Month"
+              aria-label="Month"
+              value={newAnchor}
+              onChange={(e: any) => setNewAnchor(e.target.value)}
+            />
+          ) : (
+            <Select
+              name="review_quarter"
+              label="Quarter"
+              aria-label="Quarter"
+              value={newAnchor}
+              onChange={(e: any) => setNewAnchor(e.target.value)}
+              options={(() => {
+                const y = new Date().getUTCFullYear();
+                return [y, y - 1].flatMap((year) =>
+                  [1, 2, 3, 4].map((q) => ({ value: `${year}-Q${q}`, label: `${year} Q${q}` })),
                 );
-              }}
-            >
-              <option value="monthly">Monthly</option>
-              <option value="quarterly">Quarterly</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs text-fg-subtle mb-1">
-              {newPeriodType === 'monthly' ? 'Month' : 'Quarter'}
-            </label>
-            {newPeriodType === 'monthly' ? (
-              <input
-                type="month"
-                aria-label="Month"
-                className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
-                value={newAnchor}
-                onChange={(e) => setNewAnchor(e.target.value)}
-              />
-            ) : (
-              <select
-                aria-label="Quarter"
-                className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
-                value={newAnchor}
-                onChange={(e) => setNewAnchor(e.target.value)}
-              >
-                {(() => {
-                  const y = new Date().getUTCFullYear();
-                  return [y, y - 1].flatMap((year) =>
-                    [1, 2, 3, 4].map((q) => (
-                      <option key={`${year}-Q${q}`} value={`${year}-Q${q}`}>
-                        {year} Q{q}
-                      </option>
-                    )),
-                  );
-                })()}
-              </select>
-            )}
-          </div>
+              })()}
+            />
+          )}
           <Button variant="primary" size="sm"
             onClick={startReview}
             disabled={busy || !newPersonId || !bounds}
@@ -268,52 +277,13 @@ export default function SalesReviewsPage() {
         <EmptyState message="No reviews yet. A review is created for a person and period, pre-filled with that period's numbers." />
       ) : (
         <Panel title="All reviews">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs text-fg-subtle border-b border-line">
-                  <th className="py-2 pr-4 font-medium">Period</th>
-                  <th className="py-2 pr-4 font-medium">Type</th>
-                  <th className="py-2 pr-4 font-medium">Person</th>
-                  <th className="py-2 pr-4 font-medium">Attainment</th>
-                  <th className="py-2 pr-4 font-medium">Status</th>
-                  <th className="py-2 font-medium">HR evidence</th>
-                </tr>
-              </thead>
-              <tbody>
-                {reviews.map((r) => (
-                  <tr
-                    key={r.id}
-                    className="border-b border-line hover:bg-surface-high cursor-pointer"
-                    onClick={() => setActive(r)}
-                  >
-                    <td className="py-2 pr-4 text-fg">
-                      {r.period_start}
-                    </td>
-                    <td className="py-2 pr-4 text-fg-subtle">{r.period_type}</td>
-                    <td className="py-2 pr-4 text-fg-subtle">
-                      <PersonName id={r.person_id} />
-                    </td>
-                    <td className="py-2 pr-4 text-fg-subtle">
-                      {formatPct(r.results?.headline?.attainment)}
-                    </td>
-                    <td className="py-2 pr-4 text-fg-subtle">{r.status}</td>
-                    <td className="py-2 text-xs">
-                      {r.pc_synced_at ? (
-                        <span className="text-success">sent</span>
-                      ) : r.status === 'finalized' ? (
-                        <span className="text-warning">
-                          {r.pc_sync_error ? 'failed' : 'pending'}
-                        </span>
-                      ) : (
-                        <span className="text-fg-muted">—</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable
+            columns={columns}
+            rows={reviews}
+            rowKey={(r: any) => r.id}
+            onRowClick={(r: any) => setActive(r)}
+            getRowProps={(r: any) => ({ 'data-testid': `review-row-${r.id}` })}
+          />
         </Panel>
       )}
 
@@ -393,13 +363,14 @@ export default function SalesReviewsPage() {
                   <div className="flex gap-2 text-xs">
                     {['Messaging', 'ICP', 'Pricing', 'Channel', 'Focus'].map(
                       (k) => (
-                        <button
+                        <Button
                           key={k}
-                          className="text-fg-subtle hover:text-fg"
+                          variant="ghost"
+                          size="sm"
                           onClick={() => addActionItem(k)}
                         >
                           + {k}
-                        </button>
+                        </Button>
                       ),
                     )}
                   </div>
@@ -412,16 +383,19 @@ export default function SalesReviewsPage() {
                     <span className="text-xs text-fg-muted w-20 shrink-0">
                       {a.kind}
                     </span>
-                    <input
-                      className="flex-1 rounded bg-surface-raised px-2 py-1.5 text-sm text-fg outline-none disabled:opacity-60"
-                      value={a.text}
-                      disabled={active.status === 'finalized'}
-                      onChange={(e) => {
-                        const items = [...active.action_items];
-                        items[i] = { ...a, text: e.target.value };
-                        setActive({ ...active, action_items: items });
-                      }}
-                    />
+                    <div className="flex-1">
+                      <TextField
+                        name={`review_action_${i}`}
+                        aria-label={`Action item ${i + 1}`}
+                        value={a.text}
+                        disabled={active.status === 'finalized'}
+                        onChange={(e: any) => {
+                          const items = [...active.action_items];
+                          items[i] = { ...a, text: e.target.value };
+                          setActive({ ...active, action_items: items });
+                        }}
+                      />
+                    </div>
                   </div>
                 ))}
                 {!(active.action_items ?? []).length && (

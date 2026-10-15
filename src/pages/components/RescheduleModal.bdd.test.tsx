@@ -32,7 +32,7 @@ describe('RescheduleModal', () => {
     it('When the X close button is clicked / Then calls onClose', () => {
       const onClose = vi.fn();
       render(<RescheduleModal currentDate="2024-06-15T00:00:00Z" onClose={onClose} onConfirm={vi.fn()} />);
-      const closeBtn = screen.getByTestId('icon-X').closest('button')!;
+      const closeBtn = screen.getByRole('button', { name: 'Close' });
       fireEvent.click(closeBtn);
       expect(onClose).toHaveBeenCalled();
     });
@@ -45,15 +45,10 @@ describe('RescheduleModal', () => {
     });
   });
 
-  describe('Given modal size constraint', () => {
-    it('When rendered / Then modal panel has max-h-[90vh] with a scrolling body', () => {
+  describe('Given the modal is rendered', () => {
+    it('When rendered / Then it is shown as a dialog', () => {
       render(<RescheduleModal currentDate="2024-06-15T00:00:00Z" onClose={vi.fn()} onConfirm={vi.fn()} />);
-      const panels = Array.from(document.querySelectorAll('div')).filter(
-        el => el.className.includes('max-h-[90vh]'),
-      );
-      expect(panels.length).toBeGreaterThan(0);
-      // Shared Modal: the panel is height-capped and its body is the scroll region.
-      expect(panels[0].querySelector('.overflow-y-auto')).not.toBeNull();
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
   });
 

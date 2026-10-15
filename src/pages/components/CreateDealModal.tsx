@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Loader2, Briefcase, Calendar, ChevronDown, Search, User as UserIcon } from 'lucide-react';
+import { Loader2, Briefcase, Search } from 'lucide-react';
 import { crmService, dealsApi } from '../../services/crmService';
 import { Deal, DealStage, User, SalesRep } from '../../types/crm';
-import { toast, Button } from '@so360/design-system';
+import { toast, Button, TextField, Select, NumberInput, DatePicker, Checkbox } from '@so360/design-system';
 import { Modal } from '../../components/common/Modal';
 import { useActivity } from '@so360/shell-context';
 import { useCRMCurrencySymbol } from '../../utils/formatters';
@@ -15,7 +15,6 @@ interface CreateDealModalProps {
     onSuccess: (deal: Deal) => void;
 }
 
-const FIELD_CLS = 'w-full bg-bg border border-line text-fg rounded-nb-lg px-4 py-3 outline-none focus:border-primary transition-all font-bold';
 
 const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, companyName = '', onClose, onSuccess }) => {
     const { recordActivity } = useActivity();
@@ -234,48 +233,63 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
 
         if (type === 'boolean') {
             return (
-                <label key={fieldId} className="flex items-center gap-3 cursor-pointer">
-                    <input
-                        type="checkbox"
-                        checked={!!val}
-                        onChange={e => setVal(e.target.checked)}
-                        className="w-4 h-4 rounded border-line bg-bg text-primary focus:ring-focus"
-                    />
-                    <span className="text-sm font-bold text-fg-subtle">{field.label}</span>
-                </label>
+                <Checkbox
+                    key={fieldId}
+                    name={`deal-cf-${fieldId}`}
+                    label={field.label}
+                    checked={!!val}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVal(e.target.checked)}
+                />
             );
         }
 
         if (type === 'select') {
             const opts: string[] = field.options || [];
             return (
-                <div key={fieldId} className="space-y-2">
-                    <label className="text-xs font-semibold text-fg-muted">{field.label}</label>
-                    <div className="relative">
-                        <select
-                            value={val || ''}
-                            onChange={e => setVal(e.target.value)}
-                            className={`${FIELD_CLS} appearance-none pr-10`}
-                        >
-                            <option value="">Select…</option>
-                            {opts.map(o => <option key={o} value={o}>{o}</option>)}
-                        </select>
-                        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-subtle pointer-events-none" />
-                    </div>
-                </div>
+                <Select
+                    key={fieldId}
+                    name={`deal-cf-${fieldId}`}
+                    label={field.label}
+                    value={val || ''}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setVal(e.target.value)}
+                    options={[{ value: '', label: 'Select…' }, ...opts.map(o => ({ value: o, label: o }))]}
+                />
+            );
+        }
+
+        if (type === 'number') {
+            return (
+                <NumberInput
+                    key={fieldId}
+                    name={`deal-cf-${fieldId}`}
+                    label={field.label}
+                    value={val === undefined || val === null || val === '' ? null : Number(val)}
+                    onChange={(v: number | null) => setVal(v === null ? '' : String(v))}
+                />
+            );
+        }
+
+        if (type === 'date') {
+            return (
+                <DatePicker
+                    key={fieldId}
+                    name={`deal-cf-${fieldId}`}
+                    label={field.label}
+                    value={val || ''}
+                    onChange={(v: string) => setVal(v)}
+                />
             );
         }
 
         return (
-            <div key={fieldId} className="space-y-2">
-                <label className="text-xs font-semibold text-fg-muted">{field.label}</label>
-                <input
-                    type={type === 'number' ? 'number' : type === 'date' ? 'date' : 'text'}
-                    value={val || ''}
-                    onChange={e => setVal(e.target.value)}
-                    className={`${FIELD_CLS}${type === 'date' ? ' cursor-pointer [color-scheme:dark]' : ''}`}
-                />
-            </div>
+            <TextField
+                key={fieldId}
+                name={`deal-cf-${fieldId}`}
+                label={field.label}
+                type="text"
+                value={val || ''}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVal(e.target.value)}
+            />
         );
     };
 
@@ -311,178 +325,139 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                             )}
                             {/* Customer / Company (Pipeline mode only) */}
                             {!leadId && (
-                                <div className="space-y-2" ref={searchRef}>
-                                    <label className="text-xs font-semibold text-fg-muted flex items-center gap-1.5">
-                                        <UserIcon size={11} /> Customer / Company <span className="text-danger">*</span>
-                                    </label>
-                                    <div className="relative">
-                                        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none z-10" />
-                                        <input
-                                            type="text"
-                                            value={selectedCompanyName || customerSearch}
-                                            onChange={e => {
-                                                setSelectedCompanyName('');
-                                                setSelectedLeadId('');
-                                                setCustomerSearch(e.target.value);
-                                                setCompanyError('');
-                                            }}
-                                            placeholder="Search customer or type company name…"
-                                            className="w-full bg-bg border border-line text-fg rounded-nb-lg pl-9 pr-4 py-3 outline-none focus:border-primary transition-all font-bold"
-                                        />
-                                        {customerDropdownOpen && customerResults.length > 0 && (
-                                            <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-line rounded-nb-lg shadow-xl z-menu overflow-hidden">
-                                                {customerResults.map(c => (
-                                                    <button
-                                                        key={c.id}
-                                                        type="button"
-                                                        onClick={() => {
-                                                            const selectedName = c.company_name || c.contact_name || c.name || '';
-                                                            setSelectedCompanyName(selectedName);
-                                                            setSelectedLeadId(c.id);
-                                                            setCustomerSearch('');
-                                                            setCustomerDropdownOpen(false);
-                                                            setCompanyError('');
-                                                            // Auto-generate effect re-fires from the effectiveCompany/
-                                                            // effectiveLeadId change above — no manual fallback needed here.
-                                                        }}
-                                                        className="w-full text-left px-4 py-2.5 hover:bg-surface-raised transition-colors border-b border-line last:border-0"
-                                                    >
-                                                        <div className="text-sm font-bold text-fg">{c.company_name || c.contact_name || c.name}</div>
-                                                        {c.contact_email && <div className="text-xs text-fg-muted">{c.contact_email}</div>}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                    {companyError && <p className="text-xs text-danger font-bold">{companyError}</p>}
+                                <div className="relative" ref={searchRef}>
+                                    <TextField
+                                        name="deal-customer-search"
+                                        label="Customer / Company *"
+                                        type="text"
+                                        leadingIcon={Search}
+                                        value={selectedCompanyName || customerSearch}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                            setSelectedCompanyName('');
+                                            setSelectedLeadId('');
+                                            setCustomerSearch(e.target.value);
+                                            setCompanyError('');
+                                        }}
+                                        placeholder="Search customer or type company name…"
+                                        error={companyError || undefined}
+                                    />
+                                    {customerDropdownOpen && customerResults.length > 0 && (
+                                        <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-line rounded-nb-lg shadow-xl z-menu overflow-hidden">
+                                            {customerResults.map(c => (
+                                                <button
+                                                    key={c.id}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const selectedName = c.company_name || c.contact_name || c.name || '';
+                                                        setSelectedCompanyName(selectedName);
+                                                        setSelectedLeadId(c.id);
+                                                        setCustomerSearch('');
+                                                        setCustomerDropdownOpen(false);
+                                                        setCompanyError('');
+                                                        // Auto-generate effect re-fires from the effectiveCompany/
+                                                        // effectiveLeadId change above — no manual fallback needed here.
+                                                    }}
+                                                    className="w-full text-left px-4 py-2.5 hover:bg-surface-raised transition-colors border-b border-line last:border-0"
+                                                >
+                                                    <div className="text-sm font-bold text-fg">{c.company_name || c.contact_name || c.name}</div>
+                                                    {c.contact_email && <div className="text-xs text-fg-muted">{c.contact_email}</div>}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
                             {/* Deal Name */}
-                            <div className="space-y-2">
-                                <label className="text-xs font-semibold text-fg-muted">Deal Name</label>
-                                <input
-                                    type="text"
-                                    value={name}
-                                    onChange={e => {
-                                        hasUserEditedName.current = true;
-                                        setIsNameAutoGenerated(false);
-                                        setName(e.target.value);
-                                    }}
-                                    className={FIELD_CLS}
-                                    required
-                                />
-                            </div>
+                            <TextField
+                                name="deal-name"
+                                label="Deal Name"
+                                type="text"
+                                value={name}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                    hasUserEditedName.current = true;
+                                    setIsNameAutoGenerated(false);
+                                    setName(e.target.value);
+                                }}
+                                required
+                            />
 
                             {/* Value + Stage */}
                             <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
-                                <div className="space-y-2">
-                                    <label className="text-xs font-semibold text-fg-muted">Value</label>
-                                    <div className="relative">
-                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted text-xs font-bold select-none pointer-events-none">{currencySymbol}</span>
-                                        <input
-                                            type="number"
-                                            value={value}
-                                            onChange={e => setValue(e.target.value)}
-                                            className="w-full bg-bg border border-line text-fg rounded-nb-lg pl-10 pr-4 py-3 outline-none focus:border-primary transition-all font-bold"
+                                <div className="flex items-end gap-nb-2">
+                                    <span className="pb-3 text-fg-muted text-xs font-bold select-none">{currencySymbol}</span>
+                                    <div className="flex-1 min-w-0">
+                                        <NumberInput
+                                            name="deal-value"
+                                            label="Value"
+                                            value={value === '' ? null : Number(value)}
+                                            onChange={(v: number | null) => setValue(v === null ? '' : String(v))}
                                             required
-                                            min="0"
+                                            min={0}
                                         />
                                     </div>
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-xs font-semibold text-fg-muted">Stage</label>
-                                    <div className="relative">
-                                        <select
-                                            value={stage}
-                                            onChange={e => setStage(e.target.value as DealStage)}
-                                            className="w-full bg-bg border border-line text-fg rounded-nb-lg pl-9 pr-10 py-3 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
-                                        >
-                                            {settings.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
-                                        </select>
-                                        <ChevronDown size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none z-10" />
-                                        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-subtle pointer-events-none z-10" />
-                                    </div>
-                                </div>
+                                <Select
+                                    name="deal-stage"
+                                    label="Stage"
+                                    value={stage}
+                                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStage(e.target.value as DealStage)}
+                                    options={settings.map(s => ({ value: s.name, label: s.name }))}
+                                />
                             </div>
 
                             {/* Dates */}
                             <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
-                                <div className="space-y-2">
-                                    <label className="text-xs font-semibold text-fg-muted">Start Date</label>
-                                    <div className="relative">
-                                        <Calendar size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none z-10" />
-                                        <input
-                                            type="date"
-                                            value={startDate}
-                                            onChange={e => setStartDate(e.target.value)}
-                                            className="w-full bg-bg border border-line text-fg rounded-nb-lg pl-9 pr-4 py-3 outline-none focus:border-primary transition-all font-bold cursor-pointer [color-scheme:dark]"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-xs font-semibold text-fg-muted">Close Date</label>
-                                    <div className="relative">
-                                        <Calendar size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none z-10" />
-                                        <input
-                                            type="date"
-                                            value={expectedClose}
-                                            onChange={e => setExpectedClose(e.target.value)}
-                                            className="w-full bg-bg border border-line text-fg rounded-nb-lg pl-9 pr-4 py-3 outline-none focus:border-primary transition-all font-bold cursor-pointer [color-scheme:dark]"
-                                        />
-                                    </div>
-                                </div>
+                                <DatePicker
+                                    name="deal-start-date"
+                                    label="Start Date"
+                                    value={startDate}
+                                    onChange={(v: string) => setStartDate(v)}
+                                />
+                                <DatePicker
+                                    name="deal-close-date"
+                                    label="Close Date"
+                                    value={expectedClose}
+                                    onChange={(v: string) => setExpectedClose(v)}
+                                />
                             </div>
 
                             {/* Owner */}
-                            <div className="space-y-2">
-                                <label className="text-xs font-semibold text-fg-muted">Owner (User)</label>
-                                <div className="relative">
-                                    <select
-                                        value={ownerId}
-                                        onChange={e => setOwnerId(e.target.value)}
-                                        className="w-full bg-bg border border-line text-fg rounded-nb-lg px-4 py-3 pr-10 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
-                                    >
-                                        {users.map(u => <option key={u.id} value={u.id}>{u.full_name}</option>)}
-                                    </select>
-                                    <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-subtle pointer-events-none z-10" />
-                                </div>
-                            </div>
+                            <Select
+                                name="deal-owner"
+                                label="Owner (User)"
+                                value={ownerId}
+                                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setOwnerId(e.target.value)}
+                                options={users.map(u => ({ value: u.id, label: u.full_name }))}
+                            />
 
                             {/* Sales Rep */}
                             <div className="space-y-2">
-                                <label className="text-xs font-semibold text-fg-muted">
-                                    Sales Rep <span className="text-fg font-bold">(optional)</span>
-                                </label>
                                 {salesReps.length > 8 && (
-                                    <div className="relative">
-                                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none" />
-                                        <input
-                                            type="text"
-                                            value={salesRepSearch}
-                                            onChange={e => setSalesRepSearch(e.target.value)}
-                                            placeholder="Search by name, email, designation or department…"
-                                            className="w-full bg-bg border border-line text-fg rounded-nb-lg pl-9 pr-4 py-2 outline-none focus:border-primary transition-all text-xs"
-                                        />
-                                    </div>
+                                    <TextField
+                                        name="deal-sales-rep-search"
+                                        aria-label="Search sales reps"
+                                        type="text"
+                                        leadingIcon={Search}
+                                        size="sm"
+                                        value={salesRepSearch}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSalesRepSearch(e.target.value)}
+                                        placeholder="Search by name, email, designation or department…"
+                                    />
                                 )}
-                                <div className="relative">
-                                    <select
-                                        value={ownerPersonId}
-                                        onChange={e => { hasUserPickedSalesRep.current = true; setOwnerPersonId(e.target.value); }}
-                                        className="w-full bg-bg border border-line text-fg rounded-nb-lg px-4 py-3 pr-10 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
-                                    >
-                                        <option value="">Select sales rep...</option>
-                                        {visibleSalesReps.map((p) => (
-                                            <option key={p.id} value={p.id}>
-                                                {p.full_name}
-                                                {p.job_title ? ` — ${p.job_title}` : ''}
-                                                {p.department_name ? ` · ${p.department_name}` : ''}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-subtle pointer-events-none" />
-                                </div>
+                                <Select
+                                    name="deal-sales-rep"
+                                    label="Sales Rep (optional)"
+                                    value={ownerPersonId}
+                                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { hasUserPickedSalesRep.current = true; setOwnerPersonId(e.target.value); }}
+                                    options={[
+                                        { value: '', label: 'Select sales rep...' },
+                                        ...visibleSalesReps.map((p) => ({
+                                            value: p.id,
+                                            label: `${p.full_name}${p.job_title ? ` — ${p.job_title}` : ''}${p.department_name ? ` · ${p.department_name}` : ''}`,
+                                        })),
+                                    ]}
+                                />
                                 {/* Never fail silently: an empty registry and a failed
                                     fetch look identical in a bare <select>. */}
                                 {salesRepsLoading ? (

@@ -1,5 +1,5 @@
 import React from 'react';
-import { EmptyState as DsEmptyState } from '@so360/design-system';
+import { EmptyState as DsEmptyState, DatePicker, Button } from '@so360/design-system';
 import type { TargetStatus, TrendPoint } from '../../services/targetPlanService';
 
 /**
@@ -496,22 +496,17 @@ export function PeriodPicker({
   return (
     <div className="flex items-end gap-2">
       <div>
-        <label className="block text-xs text-fg-subtle mb-1">{label}</label>
-        <input
-          type="date"
-          aria-label={label}
-          className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
+        <DatePicker
+          name={`date-${label.toLowerCase().replace(/\s+/g, '-')}`}
+          label={label}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(v: string) => onChange(v)}
         />
       </div>
       {value ? (
-        <button
-          className="pb-1.5 text-xs text-fg-subtle hover:text-fg"
-          onClick={() => onChange('')}
-        >
+        <Button type="button" size="sm" variant="secondary" onClick={() => onChange('')}>
           today
-        </button>
+        </Button>
       ) : null}
     </div>
   );

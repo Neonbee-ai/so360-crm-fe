@@ -9,7 +9,8 @@ import {
   type IncentiveRuleForm,
   type IncentiveRuleType,
 } from './incentiveRule';
-import { DashboardPageTemplate, Button } from '@so360/design-system';
+import { DashboardPageTemplate, Button, DataTable, TextField, Select, DatePicker } from '@so360/design-system';
+import type { DataTableColumn } from '@so360/design-system';
 
 /**
  * Incentive and commission review.
@@ -122,6 +123,34 @@ export default function CompensationPage() {
     }
   };
 
+  const summaryColumns: DataTableColumn<any>[] = [
+    { key: 'component', header: 'Component', render: (c) => <span className={c.__total ? 'font-medium text-fg' : 'text-fg'}>{c.rule_name}</span> },
+    { key: 'basis', header: 'Basis', render: (c) => c.__total ? null : (
+      <span className="text-fg-subtle text-xs">
+        {c.basis}
+        {!c.eligible && <span className="text-fg-muted"> — not eligible</span>}
+      </span>
+    ) },
+    { key: 'amount', header: 'Amount', align: 'right', render: (c) => <span className={c.__total ? 'font-medium text-fg' : 'text-fg'}>{formatValue(c.amount, 'currency', currency)}</span> },
+  ];
+
+  const ruleColumns: DataTableColumn<any>[] = [
+    { key: 'name', header: 'Name', sortable: true, sortValue: (r) => r.name || '', render: (r) => <span className="text-fg">{r.name}</span> },
+    { key: 'type', header: 'Type', render: (r) => <span className="text-fg-subtle">{r.rule_type}</span> },
+    { key: 'trigger', header: 'Trigger', render: (r) => (
+      <span className="text-fg-subtle text-xs">
+        {r.rule_type === 'attainment_bonus' && `at ${Math.round(Number(r.attainment_threshold ?? 1) * 100)}% attainment`}
+        {r.rule_type === 'per_unit' && `${formatValue(r.amount, 'currency', currency)} per unit`}
+        {r.rule_type === 'deal_commission' && `${(r.bands ?? []).length} band${(r.bands ?? []).length === 1 ? '' : 's'}`}
+      </span>
+    ) },
+    { key: 'scope', header: 'Scope', render: (r) => (
+      <span className="text-fg-subtle text-xs">
+        {r.applies_to_person_id ? <PersonName id={r.applies_to_person_id} /> : r.applies_to_role ? r.applies_to_role : 'all'}
+      </span>
+    ) },
+  ];
+
   return (
     <DashboardPageTemplate
       title="Compensation"
@@ -139,24 +168,8 @@ export default function CompensationPage() {
             </label>
             <PersonPicker value={personId} onChange={setPersonId} />
           </div>
-          <div>
-            <label className="block text-xs text-fg-subtle mb-1">From</label>
-            <input
-              type="date"
-              className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
-              value={periodStart}
-              onChange={(e) => setPeriodStart(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-fg-subtle mb-1">To</label>
-            <input
-              type="date"
-              className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
-              value={periodEnd}
-              onChange={(e) => setPeriodEnd(e.target.value)}
-            />
-          </div>
+          <DatePicker name="comp_from" label="From" value={periodStart} onChange={(iso: string) => setPeriodStart(iso)} />
+          <DatePicker name="comp_to" label="To" value={periodEnd} onChange={(iso: string) => setPeriodEnd(iso)} />
           <Button variant="primary" size="sm"
             onClick={calculate}
             disabled={busy || !personId}
@@ -168,42 +181,14 @@ export default function CompensationPage() {
 
       {calc && (
         <Panel title="Incentive summary">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs text-fg-subtle border-b border-line">
-                  <th className="py-2 pr-4 font-medium">Component</th>
-                  <th className="py-2 pr-4 font-medium">Basis</th>
-                  <th className="py-2 font-medium text-right">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {calc.components?.map((c: any) => (
-                  <tr key={c.rule_id} className="border-b border-line">
-                    <td className="py-2 pr-4 text-fg">{c.rule_name}</td>
-                    <td className="py-2 pr-4 text-fg-subtle text-xs">
-                      {c.basis}
-                      {!c.eligible && (
-                        <span className="text-fg-muted"> — not eligible</span>
-                      )}
-                    </td>
-                    <td className="py-2 text-right text-fg">
-                      {formatValue(c.amount, 'currency', currency)}
-                    </td>
-                  </tr>
-                ))}
-                <tr>
-                  <td className="py-2 pr-4 font-medium text-fg">
-                    Total calculated
-                  </td>
-                  <td />
-                  <td className="py-2 text-right font-medium text-fg">
-                    {formatValue(calc.total_amount, 'currency', currency)}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <DataTable
+            columns={summaryColumns}
+            rows={[
+              ...(calc.components ?? []),
+              { rule_id: '__total', rule_name: 'Total calculated', __total: true, amount: calc.total_amount },
+            ]}
+            rowKey={(c: any) => c.rule_id}
+          />
           <div className="mt-3 text-xs text-warning">
             {calc.advisory_notice}
           </div>
@@ -229,95 +214,57 @@ export default function CompensationPage() {
           <div className="space-y-3">
             <div className="flex flex-wrap items-end gap-3">
               <div className="grow basis-64">
-                <label className="block text-xs text-fg-subtle mb-1">
-                  Name
-                </label>
-                <input
+                <TextField
+                  name="rule_name"
+                  label="Name"
                   aria-label="Rule name"
-                  className="w-full rounded bg-surface-raised px-2 py-1.5 text-sm text-fg outline-none"
                   value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  onChange={(e: any) => setForm({ ...form, name: e.target.value })}
                   placeholder="Q3 new-business bonus"
                 />
               </div>
-              <div>
-                <label className="block text-xs text-fg-subtle mb-1">
-                  Type
-                </label>
-                <select
-                  aria-label="Rule type"
-                  className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
-                  value={form.rule_type}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      rule_type: e.target.value as IncentiveRuleType,
-                    })
-                  }
-                >
-                  <option value="attainment_bonus">
-                    Bonus at attainment
-                  </option>
-                  <option value="per_unit">Per unit of a metric</option>
-                  <option value="deal_commission">Deal commission</option>
-                </select>
-              </div>
+              <Select
+                name="rule_type"
+                label="Type"
+                aria-label="Rule type"
+                value={form.rule_type}
+                onChange={(e: any) => setForm({ ...form, rule_type: e.target.value as IncentiveRuleType })}
+                options={[
+                  { value: 'attainment_bonus', label: 'Bonus at attainment' },
+                  { value: 'per_unit', label: 'Per unit of a metric' },
+                  { value: 'deal_commission', label: 'Deal commission' },
+                ]}
+              />
 
               {form.rule_type !== 'deal_commission' && (
                 <>
-                  <div>
-                    <label className="block text-xs text-fg-subtle mb-1">
-                      Metric
-                    </label>
-                    <select
-                      aria-label="Metric"
-                      className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
-                      value={form.task_type_id}
-                      onChange={(e) =>
-                        setForm({ ...form, task_type_id: e.target.value })
-                      }
-                    >
-                      <option value="">Select…</option>
-                      {taskTypes.map((t) => (
-                        <option key={t.id} value={t.id}>
-                          {t.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs text-fg-subtle mb-1">
-                      Amount
-                    </label>
-                    <input
-                      aria-label="Amount"
-                      className="w-32 rounded bg-surface-raised px-2 py-1.5 text-sm text-fg outline-none"
-                      value={form.amount}
-                      onChange={(e) =>
-                        setForm({ ...form, amount: e.target.value })
-                      }
-                    />
-                  </div>
+                  <Select
+                    name="rule_metric"
+                    label="Metric"
+                    aria-label="Metric"
+                    value={form.task_type_id}
+                    onChange={(e: any) => setForm({ ...form, task_type_id: e.target.value })}
+                    options={[{ value: '', label: 'Select…' }, ...taskTypes.map((t) => ({ value: t.id, label: t.name }))]}
+                  />
+                  <TextField
+                    name="rule_amount"
+                    label="Amount"
+                    aria-label="Amount"
+                    value={form.amount}
+                    onChange={(e: any) => setForm({ ...form, amount: e.target.value })}
+                  />
                 </>
               )}
 
               {form.rule_type === 'attainment_bonus' && (
-                <div>
-                  <label className="block text-xs text-fg-subtle mb-1">
-                    At attainment (%)
-                  </label>
-                  <input
-                    aria-label="Attainment threshold"
-                    className="w-24 rounded bg-surface-raised px-2 py-1.5 text-sm text-fg outline-none"
-                    value={form.attainment_threshold_pct}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        attainment_threshold_pct: e.target.value,
-                      })
-                    }
-                  />
-                </div>
+                <TextField
+                  name="rule_threshold"
+                  label="At attainment (%)"
+                  aria-label="Attainment threshold"
+                  value={form.attainment_threshold_pct}
+                  onChange={(e: any) => setForm({ ...form, attainment_threshold_pct: e.target.value })}
+                />
+              )}
               )}
             </div>
 
@@ -329,42 +276,24 @@ export default function CompensationPage() {
                 </div>
                 {form.bands.map((b, i) => (
                   <div key={i} className="flex items-center gap-2">
-                    <input
-                      aria-label={`Band ${i + 1} minimum`}
-                      className="w-28 rounded bg-surface-raised px-2 py-1.5 text-sm text-fg outline-none"
-                      placeholder="min"
-                      value={b.min}
-                      onChange={(e) => {
-                        const bands = [...form.bands];
-                        bands[i] = { ...b, min: e.target.value };
-                        setForm({ ...form, bands });
-                      }}
-                    />
-                    <input
-                      aria-label={`Band ${i + 1} maximum`}
-                      className="w-28 rounded bg-surface-raised px-2 py-1.5 text-sm text-fg outline-none"
-                      placeholder="max (open)"
-                      value={b.max}
-                      onChange={(e) => {
-                        const bands = [...form.bands];
-                        bands[i] = { ...b, max: e.target.value };
-                        setForm({ ...form, bands });
-                      }}
-                    />
-                    <input
-                      aria-label={`Band ${i + 1} percent`}
-                      className="w-24 rounded bg-surface-raised px-2 py-1.5 text-sm text-fg outline-none"
-                      placeholder="%"
-                      value={b.percent}
-                      onChange={(e) => {
-                        const bands = [...form.bands];
-                        bands[i] = { ...b, percent: e.target.value };
-                        setForm({ ...form, bands });
-                      }}
-                    />
+                    {(['min', 'max', 'percent'] as const).map((f) => (
+                      <TextField
+                        key={f}
+                        name={`band_${i}_${f}`}
+                        aria-label={`Band ${i + 1} ${f === 'percent' ? 'percent' : f === 'min' ? 'minimum' : 'maximum'}`}
+                        placeholder={f === 'min' ? 'min' : f === 'max' ? 'max (open)' : '%'}
+                        value={b[f]}
+                        onChange={(e: any) => {
+                          const bands = [...form.bands];
+                          bands[i] = { ...b, [f]: e.target.value };
+                          setForm({ ...form, bands });
+                        }}
+                      />
+                    ))}
                     {form.bands.length > 1 && (
-                      <button
-                        className="text-xs text-fg-muted hover:text-fg-subtle"
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         aria-label={`Remove band ${i + 1}`}
                         onClick={() =>
                           setForm({
@@ -374,7 +303,7 @@ export default function CompensationPage() {
                         }
                       >
                         remove
-                      </button>
+                      </Button>
                     )}
                   </div>
                 ))}
@@ -392,40 +321,26 @@ export default function CompensationPage() {
             )}
 
             <div className="flex flex-wrap items-end gap-3">
-              <div>
-                <label className="block text-xs text-fg-subtle mb-1">
-                  Applies to
-                </label>
-                <select
-                  aria-label="Scope"
-                  className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
-                  value={form.scope}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      scope: e.target.value as IncentiveRuleForm['scope'],
-                    })
-                  }
-                >
-                  <option value="all">Everyone</option>
-                  <option value="role">A role</option>
-                  <option value="person">One person</option>
-                </select>
-              </div>
+              <Select
+                name="rule_scope"
+                label="Applies to"
+                aria-label="Scope"
+                value={form.scope}
+                onChange={(e: any) => setForm({ ...form, scope: e.target.value as IncentiveRuleForm['scope'] })}
+                options={[
+                  { value: 'all', label: 'Everyone' },
+                  { value: 'role', label: 'A role' },
+                  { value: 'person', label: 'One person' },
+                ]}
+              />
               {form.scope === 'role' && (
-                <div>
-                  <label className="block text-xs text-fg-subtle mb-1">
-                    Role
-                  </label>
-                  <input
-                    aria-label="Role"
-                    className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg outline-none"
-                    value={form.applies_to_role}
-                    onChange={(e) =>
-                      setForm({ ...form, applies_to_role: e.target.value })
-                    }
-                  />
-                </div>
+                <TextField
+                  name="rule_role"
+                  label="Role"
+                  aria-label="Role"
+                  value={form.applies_to_role}
+                  onChange={(e: any) => setForm({ ...form, applies_to_role: e.target.value })}
+                />
               )}
               {form.scope === 'person' && (
                 <div className="min-w-64">
@@ -434,40 +349,12 @@ export default function CompensationPage() {
                   </label>
                   <PersonPicker
                     value={form.applies_to_person_id}
-                    onChange={(id) =>
-                      setForm({ ...form, applies_to_person_id: id })
-                    }
+                    onChange={(id) => setForm({ ...form, applies_to_person_id: id })}
                   />
                 </div>
               )}
-              <div>
-                <label className="block text-xs text-fg-subtle mb-1">
-                  From
-                </label>
-                <input
-                  type="date"
-                  aria-label="Effective from"
-                  className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
-                  value={form.effective_from}
-                  onChange={(e) =>
-                    setForm({ ...form, effective_from: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-fg-subtle mb-1">
-                  To
-                </label>
-                <input
-                  type="date"
-                  aria-label="Effective to"
-                  className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
-                  value={form.effective_to}
-                  onChange={(e) =>
-                    setForm({ ...form, effective_to: e.target.value })
-                  }
-                />
-              </div>
+              <DatePicker name="rule_from" label="From" aria-label="Effective from" value={form.effective_from} onChange={(iso: string) => setForm({ ...form, effective_from: iso })} />
+              <DatePicker name="rule_to" label="To" aria-label="Effective to" value={form.effective_to} onChange={(iso: string) => setForm({ ...form, effective_to: iso })} />
               <Button variant="primary" size="sm"
                 onClick={saveRule}
                 disabled={busy}
@@ -485,43 +372,7 @@ export default function CompensationPage() {
         <EmptyState message="No incentive rules configured." />
       ) : (
         <Panel title="Rules">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs text-fg-subtle border-b border-line">
-                  <th className="py-2 pr-4 font-medium">Name</th>
-                  <th className="py-2 pr-4 font-medium">Type</th>
-                  <th className="py-2 pr-4 font-medium">Trigger</th>
-                  <th className="py-2 font-medium">Scope</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rules.map((r) => (
-                  <tr key={r.id} className="border-b border-line">
-                    <td className="py-2 pr-4 text-fg">{r.name}</td>
-                    <td className="py-2 pr-4 text-fg-subtle">{r.rule_type}</td>
-                    <td className="py-2 pr-4 text-fg-subtle text-xs">
-                      {r.rule_type === 'attainment_bonus' &&
-                        `at ${Math.round(Number(r.attainment_threshold ?? 1) * 100)}% attainment`}
-                      {r.rule_type === 'per_unit' &&
-                        `${formatValue(r.amount, 'currency', currency)} per unit`}
-                      {r.rule_type === 'deal_commission' &&
-                        `${(r.bands ?? []).length} band${(r.bands ?? []).length === 1 ? '' : 's'}`}
-                    </td>
-                    <td className="py-2 text-fg-subtle text-xs">
-                      {r.applies_to_person_id ? (
-                        <PersonName id={r.applies_to_person_id} />
-                      ) : r.applies_to_role ? (
-                        r.applies_to_role
-                      ) : (
-                        'all'
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable columns={ruleColumns} rows={rules} rowKey={(r: any) => r.id} />
         </Panel>
       )}
     </div>

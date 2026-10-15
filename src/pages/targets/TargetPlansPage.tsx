@@ -14,7 +14,8 @@ import {
 import AllocateTeamPlanPanel from './AllocateTeamPlanPanel';
 import EditPlanPanel from './EditPlanPanel';
 import { canCreatePlan, canEditPlan, canAllocatePlan } from './targetPlanPermissions';
-import { DashboardPageTemplate, Button, EmptyState as DsEmptyState } from '@so360/design-system';
+import { DashboardPageTemplate, Button, IconButton, DataTable, TextField, Select, NumberInput, DatePicker, Checkbox, Badge, EmptyState as DsEmptyState } from '@so360/design-system';
+import type { DataTableColumn } from '@so360/design-system';
 
 type Period = 'week' | 'month' | 'quarter' | 'year';
 
@@ -310,6 +311,114 @@ export default function TargetPlansPage() {
     isWeightValid &&
     (ownerType !== 'rep' || ownerId.trim().length > 0);
 
+  const metricOptions = (groupedTaskTypes
+    ? [...groupedTaskTypes.leadStage, ...groupedTaskTypes.standard, ...groupedTaskTypes.custom]
+    : taskTypes
+  ).map((t: any) => ({ value: t.id, label: t.name }));
+
+  const lineColumns: DataTableColumn<DraftLine>[] = [
+    { key: 'idx', header: '#', render: (l) => <span className="text-fg-muted font-mono">{lines.findIndex((x) => x.key === l.key) + 1}</span> },
+    { key: 'metric', header: 'Metric', render: (l) => (
+      <div className="space-y-nb-2">
+        <Select
+          name={`line_metric_${l.key}`}
+          aria-label="Metric"
+          value={l.task_type_id}
+          onChange={(e: any) => updateLine(l.key, { task_type_id: e.target.value })}
+          options={metricOptions}
+        />
+        {l.useRamp && (
+          <TextField
+            name={`line_ramp_${l.key}`}
+            aria-label="Ramp curve"
+            placeholder="e.g. 20, 35, 50, 75 (comma-separated values per period)"
+            value={l.ramp.join(', ')}
+            onChange={(e: any) =>
+              updateLine(l.key, {
+                ramp: e.target.value
+                  .split(',')
+                  .map((s: string) => Number(s.trim()))
+                  .filter((n: number) => Number.isFinite(n)),
+              })
+            }
+          />
+        )}
+      </div>
+    ) },
+    { key: 'unit', header: 'Unit', render: (l) => {
+      const metric = taskTypes.find((t) => t.id === l.task_type_id);
+      return <Badge tone="neutral">{metric?.unit || metric?.kind || 'count'}</Badge>;
+    } },
+    { key: 'value', header: 'Target Value', align: 'right', render: (l) => (
+      <NumberInput
+        name={`line_value_${l.key}`}
+        aria-label="Target value"
+        min={0}
+        value={l.value}
+        onChange={(v: number | null) => updateLine(l.key, { value: Number(v ?? 0) })}
+      />
+    ) },
+    { key: 'weight', header: 'Weight (%)', align: 'right', render: (l) => (
+      <NumberInput
+        name={`line_weight_${l.key}`}
+        aria-label="Weight percent"
+        min={0}
+        max={100}
+        value={l.weight ?? 0}
+        onChange={(v: number | null) => updateLine(l.key, { weight: Number(v ?? 0) })}
+      />
+    ) },
+    { key: 'channel', header: 'Channel / Dimension', render: (l) => {
+      const metric = taskTypes.find((t) => t.id === l.task_type_id);
+      return metric?.kind === 'TOUCHPOINT' ? (
+        <Select
+          name={`line_channel_${l.key}`}
+          aria-label="Channel"
+          value={l.dimension_value ?? ''}
+          onChange={(e: any) =>
+            updateLine(l.key, {
+              dimension_key: e.target.value ? 'channel' : undefined,
+              dimension_value: e.target.value || undefined,
+            })
+          }
+          options={[
+            { value: '', label: 'All channels (Roll-up)' },
+            ...channels.map((c: any) => ({ value: c.value, label: `${c.label} ${c.actuals_source === 'manual' ? '(manual)' : ''}`.trim() })),
+          ]}
+        />
+      ) : (
+        <span className="text-xs text-fg-muted italic">All Channels / N/A</span>
+      );
+    } },
+    { key: 'ramp', header: 'Ramp', render: (l) => (
+      <Checkbox
+        aria-label="Enable stepped ramp curve"
+        title="Enable stepped ramp curve"
+        checked={l.useRamp}
+        onChange={(e: any) => updateLine(l.key, { useRamp: e.target.checked })}
+      />
+    ) },
+    { key: 'actions', header: '', align: 'right', render: (l) => (
+      <div className="flex items-center justify-end gap-nb-1">
+        <IconButton label="Duplicate row" icon={<Copy size={13} />} variant="ghost" size="sm" onClick={() => duplicateLine(l)} />
+        <IconButton label="Remove line" icon={<Trash2 size={13} />} variant="ghost" size="sm" onClick={() => removeLine(l.key)} />
+      </div>
+    ) },
+  ];
+
+  const planColumns: DataTableColumn<any>[] = [
+    { key: 'name', header: 'Name', sortable: true, sortValue: (p) => p.name || '', render: (p) => <span className="text-fg">{p.name}</span> },
+    { key: 'owner', header: 'Owner', render: (p) => (
+      <span className="text-fg-subtle">
+        {p.owner_type}
+        {p.owner_id ? (<>{' · '}<PersonName id={p.owner_id} /></>) : null}
+      </span>
+    ) },
+    { key: 'period', header: 'Period', render: (p) => <span className="text-fg-subtle">{p.period}</span> },
+    { key: 'window', header: 'Window', sortable: true, sortValue: (p) => p.start_date || '', render: (p) => <span className="text-fg-subtle">{p.start_date} → {p.end_date}</span> },
+    { key: 'status', header: 'Status', render: (p) => <span className="text-fg-subtle">{p.status}</span> },
+  ];
+
   return (
     <DashboardPageTemplate
       title="Target Plans"
@@ -364,25 +473,26 @@ export default function TargetPlansPage() {
         <Panel title="New target plan">
           <div className="space-y-4">
             <div className="flex flex-wrap gap-4">
-              <Field label="Plan name" grow>
-                <input
-                  className="w-full rounded bg-surface-raised px-2 py-1.5 text-sm text-fg outline-none"
+              <div className="grow basis-64">
+                <TextField
+                  name="plan_name"
+                  label="Plan name"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e: any) => setName(e.target.value)}
                   placeholder="Sales Intern — Sep–Dec 2026"
                 />
-              </Field>
-              <Field label="Assign to">
-                <select
-                  className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
-                  value={ownerType}
-                  onChange={(e) => setOwnerType(e.target.value as any)}
-                >
-                  <option value="rep">Individual</option>
-                  <option value="team">Team</option>
-                  <option value="org">Organisation</option>
-                </select>
-              </Field>
+              </div>
+              <Select
+                name="plan_owner_type"
+                label="Assign to"
+                value={ownerType}
+                onChange={(e: any) => setOwnerType(e.target.value as any)}
+                options={[
+                  { value: 'rep', label: 'Individual' },
+                  { value: 'team', label: 'Team' },
+                  { value: 'org', label: 'Organisation' },
+                ]}
+              />
               {/* Only an individual plan has a person owner. A team plan is
                   owned by the team and then allocated to its members from the
                   plans list, which is what creates each person's own plan; an
@@ -404,52 +514,32 @@ export default function TargetPlansPage() {
             </div>
 
             <div className="flex flex-wrap gap-4">
-              <Field label="Role">
-                <input
-                  className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg outline-none"
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                />
-              </Field>
-              <Field label="Period">
-                <select
-                  className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
-                  value={period}
-                  onChange={(e) => setPeriod(e.target.value as Period)}
-                >
-                  <option value="week">Weekly</option>
-                  <option value="month">Monthly</option>
-                  <option value="quarter">Quarterly</option>
-                  <option value="year">Annual</option>
-                </select>
-              </Field>
-              <Field label="Priority">
-                <select
-                  className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
-                  value={priority}
-                  onChange={(e) => setPriority(e.target.value as any)}
-                >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                </select>
-              </Field>
-              <Field label="Start">
-                <input
-                  type="date"
-                  className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                />
-              </Field>
-              <Field label="End">
-                <input
-                  type="date"
-                  className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                />
-              </Field>
+              <TextField name="plan_role" label="Role" value={role} onChange={(e: any) => setRole(e.target.value)} />
+              <Select
+                name="plan_period"
+                label="Period"
+                value={period}
+                onChange={(e: any) => setPeriod(e.target.value as Period)}
+                options={[
+                  { value: 'week', label: 'Weekly' },
+                  { value: 'month', label: 'Monthly' },
+                  { value: 'quarter', label: 'Quarterly' },
+                  { value: 'year', label: 'Annual' },
+                ]}
+              />
+              <Select
+                name="plan_priority"
+                label="Priority"
+                value={priority}
+                onChange={(e: any) => setPriority(e.target.value as any)}
+                options={[
+                  { value: 'low', label: 'Low' },
+                  { value: 'medium', label: 'Medium' },
+                  { value: 'high', label: 'High' },
+                ]}
+              />
+              <DatePicker name="plan_start" label="Start" value={startDate} onChange={(iso: string) => setStartDate(iso)} />
+              <DatePicker name="plan_end" label="End" value={endDate} onChange={(iso: string) => setEndDate(iso)} />
             </div>
 
             <div className="border-t border-line pt-3 space-y-3">
@@ -500,215 +590,26 @@ export default function TargetPlansPage() {
               {lines.length === 0 ? (
                 <DsEmptyState title="No target lines added yet." description='Click "Add Metric Row" to configure quotas for this plan.' />
               ) : (
-                <div className="overflow-x-auto rounded-nb border border-line bg-surface-sunken shadow-sm">
-                  <table className="w-full text-left border-collapse text-xs">
-                    <thead>
-                      <tr className="border-b border-line bg-surface-high text-fg-subtle font-semibold text-xs">
-                        <th className="py-2.5 px-3 w-10 text-center">#</th>
-                        <th className="py-2.5 px-3 min-w-48">Metric</th>
-                        <th className="py-2.5 px-3 w-28">Unit</th>
-                        <th className="py-2.5 px-3 w-32 text-right">Target Value</th>
-                        <th className="py-2.5 px-3 w-32 text-right">Weight (%)</th>
-                        <th className="py-2.5 px-3 min-w-40">Channel / Dimension</th>
-                        <th className="py-2.5 px-3 w-16 text-center">Ramp</th>
-                        <th className="py-2.5 px-3 w-20 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-line">
-                      {lines.map((l, idx) => {
-                        const metric = taskTypes.find((t) => t.id === l.task_type_id);
-                        const isTouchpoint = metric?.kind === 'TOUCHPOINT';
-                        return (
-                          <React.Fragment key={l.key}>
-                            <tr className="hover:bg-surface-high transition-colors">
-                              <td className="py-2.5 px-3 text-center text-fg-muted font-mono">{idx + 1}</td>
-                              <td className="py-2 px-3">
-                                <select
-                                  className="w-full rounded bg-surface-raised border border-line px-2 py-1.5 text-xs text-fg focus:border-primary focus:outline-none"
-                                  value={l.task_type_id}
-                                  onChange={(e) =>
-                                    updateLine(l.key, { task_type_id: e.target.value })
-                                  }
-                                >
-                                  {groupedTaskTypes ? (
-                                    <>
-                                      {groupedTaskTypes.leadStage.length > 0 && (
-                                        <optgroup label="Lead Stage Metrics">
-                                          {groupedTaskTypes.leadStage.map((t) => (
-                                            <option key={t.id} value={t.id}>
-                                              {t.name}
-                                            </option>
-                                          ))}
-                                        </optgroup>
-                                      )}
-                                      {groupedTaskTypes.standard.length > 0 && (
-                                        <optgroup label="Standard Sales Metrics">
-                                          {groupedTaskTypes.standard.map((t) => (
-                                            <option key={t.id} value={t.id}>
-                                              {t.name}
-                                            </option>
-                                          ))}
-                                        </optgroup>
-                                      )}
-                                      {groupedTaskTypes.custom.length > 0 && (
-                                        <optgroup label="Custom Metrics">
-                                          {groupedTaskTypes.custom.map((t) => (
-                                            <option key={t.id} value={t.id}>
-                                              {t.name}
-                                            </option>
-                                          ))}
-                                        </optgroup>
-                                      )}
-                                    </>
-                                  ) : (
-                                    taskTypes.map((t) => (
-                                      <option key={t.id} value={t.id}>
-                                        {t.name}
-                                      </option>
-                                    ))
-                                  )}
-                                </select>
-                              </td>
-                              <td className="py-2 px-3">
-                                <span className="inline-block px-2 py-0.5 rounded bg-surface-raised border border-line text-xs text-fg-subtle font-mono truncate max-w-28">
-                                  {metric?.unit || metric?.kind || 'count'}
-                                </span>
-                              </td>
-                              <td className="py-2 px-3">
-                                <input
-                                  type="number"
-                                  min={0}
-                                  step="any"
-                                  className="w-full rounded bg-surface-raised border border-line px-2 py-1.5 text-xs text-fg text-right font-mono focus:border-primary focus:outline-none"
-                                  value={l.value}
-                                  onChange={(e) =>
-                                    updateLine(l.key, { value: Number(e.target.value) })
-                                  }
-                                />
-                              </td>
-                              <td className="py-2 px-3">
-                                <div className="relative">
-                                  <input
-                                    type="number"
-                                    min={0}
-                                    max={100}
-                                    step="any"
-                                    className="w-full rounded bg-surface-raised border border-line pl-2 pr-5 py-1.5 text-xs text-fg text-right font-mono focus:border-primary focus:outline-none"
-                                    value={l.weight ?? 0}
-                                    onChange={(e) =>
-                                      updateLine(l.key, { weight: Number(e.target.value) })
-                                    }
-                                  />
-                                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-fg-muted text-xs pointer-events-none">%</span>
-                                </div>
-                              </td>
-                              <td className="py-2 px-3">
-                                {isTouchpoint ? (
-                                  <select
-                                    className="w-full rounded bg-surface-raised border border-line px-2 py-1.5 text-xs text-fg focus:border-primary focus:outline-none"
-                                    value={l.dimension_value ?? ''}
-                                    onChange={(e) =>
-                                      updateLine(l.key, {
-                                        dimension_key: e.target.value ? 'channel' : undefined,
-                                        dimension_value: e.target.value || undefined,
-                                      })
-                                    }
-                                  >
-                                    <option value="">All channels (Roll-up)</option>
-                                    {channels.map((c) => (
-                                      <option key={c.id} value={c.value}>
-                                        {c.label} {c.actuals_source === 'manual' ? '(manual)' : ''}
-                                      </option>
-                                    ))}
-                                  </select>
-                                ) : (
-                                  <span className="text-xs text-fg-muted italic px-1">All Channels / N/A</span>
-                                )}
-                              </td>
-                              <td className="py-2 px-3 text-center">
-                                <input
-                                  type="checkbox"
-                                  className="rounded border-line bg-surface-raised text-primary focus:ring-0 cursor-pointer"
-                                  checked={l.useRamp}
-                                  onChange={(e) =>
-                                    updateLine(l.key, { useRamp: e.target.checked })
-                                  }
-                                  title="Enable stepped ramp curve"
-                                />
-                              </td>
-                              <td className="py-2 px-3 text-right">
-                                <div className="flex items-center justify-end gap-1">
-                                  <button
-                                    type="button"
-                                    onClick={() => duplicateLine(l)}
-                                    className="p-1 rounded hover:bg-surface-raised text-fg-subtle hover:text-fg transition-colors"
-                                    title="Duplicate row"
-                                  >
-                                    <Copy size={13} />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => removeLine(l.key)}
-                                    className="p-1 rounded hover:bg-surface-raised text-fg-muted hover:text-danger transition-colors"
-                                    title="Remove line"
-                                  >
-                                    <Trash2 size={13} />
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                            {l.useRamp && (
-                              <tr className="bg-surface-sunken border-b border-line">
-                                <td colSpan={8} className="px-4 py-2 text-xs">
-                                  <div className="flex items-center gap-3">
-                                    <span className="text-xs text-fg-subtle font-medium whitespace-nowrap">Ramp Curve:</span>
-                                    <input
-                                      className="flex-1 rounded bg-surface-raised border border-line px-2.5 py-1 text-xs text-fg font-mono focus:border-primary focus:outline-none"
-                                      placeholder="e.g. 20, 35, 50, 75 (comma-separated values per period)"
-                                      value={l.ramp.join(', ')}
-                                      onChange={(e) =>
-                                        updateLine(l.key, {
-                                          ramp: e.target.value
-                                            .split(',')
-                                            .map((s) => Number(s.trim()))
-                                            .filter((n) => Number.isFinite(n)),
-                                        })
-                                      }
-                                    />
-                                  </div>
-                                </td>
-                              </tr>
-                            )}
-                          </React.Fragment>
-                        );
-                      })}
-                    </tbody>
-                    <tfoot>
-                      <tr className="border-t border-line bg-surface-high text-xs font-semibold">
-                        <td colSpan={3} className="py-2.5 px-3 text-fg-subtle">
-                          Total Lines: <span className="text-fg">{lines.length}</span>
-                        </td>
-                        <td className="py-2.5 px-3 text-right font-mono text-fg">
-                          {lines.reduce((acc, curr) => acc + (Number(curr.value) || 0), 0)}
-                        </td>
-                        <td className="py-2.5 px-3 text-right font-mono">
-                          <span
-                            className={`px-2 py-0.5 rounded text-xs ${
-                              isWeightValid
-                                ? 'bg-success/15 text-success border border-success/30'
-                                : 'bg-warning/15 text-warning border border-warning/30'
-                            }`}
-                          >
-                            {totalWeight.toFixed(1)}% {isWeightValid ? '✓ 100% Valid' : '⚠ Sum to 100%'}
-                          </span>
-                        </td>
-                        <td colSpan={3} className="py-2.5 px-3 text-fg-muted text-right text-xs">
-                          {!isWeightValid && 'Total line weights must equal 100% to save'}
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
+                <>
+                  <DataTable
+                    columns={lineColumns}
+                    rows={lines}
+                    rowKey={(l: DraftLine) => l.key}
+                    getRowProps={(l: DraftLine) => ({ 'data-testid': `plan-line-${l.key}` })}
+                  />
+                  <div className="flex flex-wrap items-center justify-between gap-nb-2 text-xs font-semibold">
+                    <span className="text-fg-subtle">
+                      Total Lines: <span className="text-fg">{lines.length}</span> · Total Target:{' '}
+                      <span className="text-fg">{lines.reduce((acc, curr) => acc + (Number(curr.value) || 0), 0)}</span>
+                    </span>
+                    <Badge tone={isWeightValid ? 'success' : 'warning'}>
+                      {totalWeight.toFixed(1)}% {isWeightValid ? '✓ 100% Valid' : '⚠ Sum to 100%'}
+                    </Badge>
+                    {!isWeightValid && (
+                      <span className="text-fg-muted">Total line weights must equal 100% to save</span>
+                    )}
+                  </div>
+                </>
               )}
             </div>
 
@@ -730,59 +631,16 @@ export default function TargetPlansPage() {
         <EmptyState message="No target plans yet." />
       ) : (
         <Panel title="Plans">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs text-fg-subtle border-b border-line">
-                  <th className="py-2 pr-4 font-medium">Name</th>
-                  <th className="py-2 pr-4 font-medium">Owner</th>
-                  <th className="py-2 pr-4 font-medium">Period</th>
-                  <th className="py-2 pr-4 font-medium">Window</th>
-                  <th className="py-2 pr-4 font-medium">Status</th>
-                  <th className="py-2 font-medium" />
-                </tr>
-              </thead>
-              <tbody>
-                {plans.map((p) => (
-                  <tr key={p.id} className="border-b border-line">
-                    <td className="py-2 pr-4 text-fg">{p.name}</td>
-                    <td className="py-2 pr-4 text-fg-subtle">
-                      {p.owner_type}
-                      {p.owner_id ? (
-                        <>
-                          {' · '}
-                          <PersonName id={p.owner_id} />
-                        </>
-                      ) : null}
-                    </td>
-                    <td className="py-2 pr-4 text-fg-subtle">{p.period}</td>
-                    <td className="py-2 pr-4 text-fg-subtle">
-                      {p.start_date} → {p.end_date}
-                    </td>
-                    <td className="py-2 pr-4 text-fg-subtle">{p.status}</td>
-                    <td className="py-2 text-right">
-                      <div className="flex justify-end gap-3">
-                        {canEditPlan(shell) && (
-                          <Button variant="secondary" size="sm"
-                            onClick={() => setEditing(p.id)}
-                          >
-                            Edit
-                          </Button>
-                        )}
-                        {canAllocatePlan(shell, p.owner_type) && (
-                          <Button variant="secondary" size="sm"
-                            onClick={() => setAllocating(p.id)}
-                          >
-                            Allocate
-                          </Button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable
+            columns={planColumns}
+            rows={plans}
+            rowKey={(p: any) => p.id}
+            rowActions={(p: any) => [
+              ...(canEditPlan(shell) ? [{ label: 'Edit', onSelect: () => setEditing(p.id) }] : []),
+              ...(canAllocatePlan(shell, p.owner_type) ? [{ label: 'Allocate', onSelect: () => setAllocating(p.id) }] : []),
+            ]}
+            getRowProps={(p: any) => ({ 'data-testid': `plan-row-${p.id}` })}
+          />
         </Panel>
       )}
 
@@ -794,19 +652,14 @@ export default function TargetPlansPage() {
           size="md"
         >
           <form onSubmit={handleCreateCustomMetric} className="space-y-4">
-            <div>
-              <label className="block text-xs font-medium text-fg-subtle mb-1">
-                Metric Name <span className="text-danger">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                className="w-full rounded bg-surface-raised border border-line px-3 py-2 text-sm text-fg placeholder-fg-subtle focus:border-primary focus:outline-none"
-                placeholder="e.g. Enterprise Demos Held, Referral Introductions"
-                value={customMetricName}
-                onChange={(e) => setCustomMetricName(e.target.value)}
-              />
-            </div>
+            <TextField
+              name="custom_metric_name"
+              label="Metric Name"
+              required
+              placeholder="e.g. Enterprise Demos Held, Referral Introductions"
+              value={customMetricName}
+              onChange={(e: any) => setCustomMetricName(e.target.value)}
+            />
 
             <div>
               <label className="block text-xs font-medium text-fg-subtle mb-1">
@@ -818,40 +671,30 @@ export default function TargetPlansPage() {
                   { value: 'SUM', label: 'Sum / Value', desc: 'Financial or numeric total' },
                   { value: 'TOUCHPOINT', label: 'Touchpoint', desc: 'Multi-channel interactions' },
                 ].map((k) => (
-                  <button
+                  <Button
                     key={k.value}
                     type="button"
+                    variant={customMetricKind === k.value ? 'primary' : 'secondary'}
                     onClick={() => {
                       setCustomMetricKind(k.value as any);
                       if (k.value === 'SUM') setCustomMetricUnit('currency');
                       else if (k.value === 'COUNT') setCustomMetricUnit('count');
                       else if (k.value === 'TOUCHPOINT') setCustomMetricUnit('touchpoints');
                     }}
-                    className={`flex flex-col p-2.5 rounded-lg border text-left text-xs transition-colors ${
-                      customMetricKind === k.value
-                        ? 'border-primary bg-primary/10 text-primary'
-                        : 'border-line bg-surface-high text-fg-subtle hover:border-line'
-                    }`}
                   >
-                    <span className="font-semibold text-fg">{k.label}</span>
-                    <span className="text-xs mt-0.5 text-fg-subtle">{k.desc}</span>
-                  </button>
+                    {k.label} — {k.desc}
+                  </Button>
                 ))}
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-fg-subtle mb-1">
-                Measurement Unit
-              </label>
-              <input
-                type="text"
-                className="w-full rounded bg-surface-raised border border-line px-3 py-2 text-sm text-fg placeholder-fg-subtle focus:border-primary focus:outline-none font-mono"
-                placeholder="count, currency, hours, calls, etc."
-                value={customMetricUnit}
-                onChange={(e) => setCustomMetricUnit(e.target.value)}
-              />
-            </div>
+            <TextField
+              name="custom_metric_unit"
+              label="Measurement Unit"
+              placeholder="count, currency, hours, calls, etc."
+              value={customMetricUnit}
+              onChange={(e: any) => setCustomMetricUnit(e.target.value)}
+            />
 
             <div className="flex justify-end gap-2 pt-2 border-t border-line">
               <Button
@@ -894,17 +737,17 @@ export default function TargetPlansPage() {
                 {unlinkedLeadStages
                   .sort((a: any, b: any) => a.order - b.order)
                   .map((stage: any) => (
-                    <button
+                    <Button
                       key={stage.stage_id}
                       type="button"
+                      variant="secondary"
                       disabled={leadStageSavingId === stage.stage_id}
                       onClick={async () => {
                         await handleAddLeadStageMetric(stage);
                         setShowLeadStageModal(false);
                       }}
-                      className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-line bg-surface-high hover:border-primary/40 text-left text-xs text-fg disabled:opacity-50"
                     >
-                      <span className="flex items-center gap-2">
+                      <span className="flex items-center gap-nb-2">
                         <span
                           className="w-2 h-2 rounded-full"
                           style={{ backgroundColor: stage.color || '#64748B' }}
@@ -914,7 +757,7 @@ export default function TargetPlansPage() {
                       {leadStageSavingId === stage.stage_id && (
                         <Loader2 size={12} className="animate-spin text-fg-subtle" />
                       )}
-                    </button>
+                    </Button>
                   ))}
               </div>
             )}

@@ -4,11 +4,30 @@ import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
 import { formatDateTime, formatMoney } from './marketing/marketingMappers';
 import { useBusinessSettings, useShell, useShellBridge } from '@so360/shell-context';
-import { Button, ListPageTemplate, Menu } from '@so360/design-system';
+import { Button, DataTable, EmptyState, ListPageTemplate, SearchInput, Select, TextField } from '@so360/design-system';
+import type { DataTableColumn, FilterValues } from '@so360/design-system';
 
 const STORE_KEY = 'crm_marketing_store_id';
 
 type SegmentMemberType = 'lead' | 'customer';
+
+const CHANNEL_OPTIONS = [
+  { value: 'storefront_web', label: 'Web' },
+  { value: 'storefront_mobile', label: 'Mobile' },
+  { value: 'pos', label: 'POS' },
+  { value: 'manual', label: 'Manual' },
+];
+const CATEGORY_OPTIONS = [
+  { value: 'b2b', label: 'B2B' },
+  { value: 'b2c', label: 'B2C' },
+];
+const FORM_CHANNEL_OPTIONS = [{ value: '', label: 'All Channels' }, ...CHANNEL_OPTIONS];
+const FORM_CATEGORY_OPTIONS = [{ value: '', label: 'All Categories' }, ...CATEGORY_OPTIONS];
+const PRESET_OPTIONS = [
+  { value: '', label: 'No Preset' },
+  { value: 'top_buyer', label: 'Top Buyer' },
+  { value: 'inactive', label: 'Inactive' },
+];
 
 const MarketingSegmentsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -30,6 +49,8 @@ const MarketingSegmentsPage: React.FC = () => {
   const [inactive, setInactive] = useState<any[]>([]);
   const [manualSegments, setManualSegments] = useState<any[]>([]);
 
+  const [search, setSearch] = useState('');
+  const [filters, setFilters] = useState<FilterValues>({ channel: '', category: '' });
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
 
@@ -237,6 +258,46 @@ const MarketingSegmentsPage: React.FC = () => {
     }
   };
 
+  const visibleSegments = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return manualSegments.filter((row) => {
+      if (q && !`${row.name || ''} ${row.description || ''}`.toLowerCase().includes(q)) return false;
+      if (filters.channel && row.rules?.channel !== filters.channel) return false;
+      if (filters.category && row.rules?.category !== filters.category) return false;
+      return true;
+    });
+  }, [manualSegments, search, filters]);
+
+  const deleteSegment = async (row: any) => {
+    await crmService.deleteCustomerSegment(row.id);
+    setManualSegments((prev) => prev.filter((seg) => seg.id !== row.id));
+    if (activeSegment?.id === row.id) {
+      setActiveSegment(null);
+      setSegmentMembers([]);
+      setMemberCandidates([]);
+    }
+  };
+
+  const segmentColumns: DataTableColumn<any>[] = [
+    { key: 'name', header: 'Name', sortable: true, sortValue: (r) => r.name || '', render: (r) => <span className="text-fg font-medium">{r.name}</span> },
+    { key: 'description', header: 'Description', render: (r) => <span className="text-fg-subtle">{r.description || '-'}</span> },
+    { key: 'rules', header: 'Rules', render: (r) => <span className="text-fg-subtle text-xs font-mono whitespace-nowrap">{getRulesPreview(r.rules)}</span> },
+  ];
+
+  const buyerColumns: DataTableColumn<any>[] = [
+    { key: 'customer', header: 'Customer', render: (r) => <span className="text-fg font-medium">{r.name || r.email || r.customerId || '-'}</span> },
+    { key: 'orders', header: 'Orders', align: 'right', sortable: true, sortValue: (r) => Number(r.orderCount || 0), render: (r) => r.orderCount || 0 },
+    { key: 'spent', header: 'Spent', align: 'right', sortable: true, sortValue: (r) => Number(r.totalSpent || 0), render: (r) => <span className="text-success font-semibold">{formatMoney(r.totalSpent, currencyCode, locale)}</span> },
+    { key: 'last', header: 'Last Order', render: (r) => <span className="text-fg-muted text-xs">{formatDateTime(r.lastOrderAt)}</span> },
+  ];
+
+  const inactiveColumns: DataTableColumn<any>[] = [
+    { key: 'customer', header: 'Customer', render: (r) => <span className="text-fg font-medium">{r.name || r.customerId || '-'}</span> },
+    { key: 'email', header: 'Email', render: (r) => <span className="text-fg-subtle">{r.email || '-'}</span> },
+    { key: 'spent', header: 'Total Spent', align: 'right', sortable: true, sortValue: (r) => Number(r.totalSpent || 0), render: (r) => formatMoney(r.totalSpent, currencyCode, locale) },
+    { key: 'days', header: 'Days Inactive', align: 'right', sortable: true, sortValue: (r) => Number(r.daysSinceLastOrder || 0), render: (r) => `${r.daysSinceLastOrder || 0} days` },
+  ];
+
   return (
     <ListPageTemplate
       title="Customer Segments"
@@ -246,6 +307,17 @@ const MarketingSegmentsPage: React.FC = () => {
           {showCreate ? 'Close Form' : 'Create Segment'}
         </Button>
       ) : undefined}
+      count={visibleSegments.length}
+      search={<SearchInput value={search} onChange={setSearch} placeholder="Search segments" />}
+      filterConfig={{
+        fields: [
+          { key: 'channel', label: 'Channel', type: 'select', quick: true, options: CHANNEL_OPTIONS },
+          { key: 'category', label: 'Category', type: 'select', options: CATEGORY_OPTIONS },
+        ],
+        values: filters,
+        onChange: setFilters,
+        onClear: () => setFilters({ channel: '', category: '' }),
+      }}
       toolbarEnd={dailystoreEnabled ? <MarketingStorePicker storeId={storeId} onChange={applyStore} /> : undefined}
     >
       {loading && <p className="text-fg-subtle text-sm mb-4">Loading Storefront insights...</p>}
@@ -253,64 +325,53 @@ const MarketingSegmentsPage: React.FC = () => {
       {error && <p className="text-danger mb-4 bg-danger/10 border border-danger/20 p-3 rounded-lg text-sm">{error}</p>}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-nb-4">
-        <div className="bg-surface border border-line rounded-nb-lg p-nb-4 lg:col-span-3">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-sm font-semibold text-fg">Segments</h3>
-          </div>
-
+        <div className="lg:col-span-3">
           {showCreate && (
             <div className="mb-nb-4 rounded-nb p-nb-4 bg-surface-sunken">
               <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
-                <input
-                  className="bg-surface border border-line rounded-lg px-4 py-2.5 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus"
+                <TextField
+                  aria-label="Segment name"
                   placeholder="Segment name"
                   value={segmentForm.name}
                   onChange={(e) => setSegmentForm((prev) => ({ ...prev, name: e.target.value }))}
                 />
-                <input
-                  className="bg-surface border border-line rounded-lg px-4 py-2.5 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus"
+                <TextField
+                  aria-label="Description"
                   placeholder="Description (optional)"
                   value={segmentForm.description}
                   onChange={(e) => setSegmentForm((prev) => ({ ...prev, description: e.target.value }))}
                 />
-                <input
-                  className="bg-surface border border-line rounded-lg px-4 py-2.5 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus wc-medium:col-span-2"
-                  placeholder="Search query (name/email/phone/company)"
-                  value={segmentForm.q}
-                  onChange={(e) => setSegmentForm((prev) => ({ ...prev, q: e.target.value }))}
-                />
-                <select
-                  className="bg-surface border border-line rounded-lg px-4 py-2.5 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus appearance-none cursor-pointer w-full"
+                <div className="wc-medium:col-span-2">
+                  <TextField
+                    aria-label="Search query"
+                    placeholder="Search query (name/email/phone/company)"
+                    value={segmentForm.q}
+                    onChange={(e) => setSegmentForm((prev) => ({ ...prev, q: e.target.value }))}
+                  />
+                </div>
+                <Select
+                  aria-label="Channel"
+                  options={FORM_CHANNEL_OPTIONS}
                   value={segmentForm.channel}
                   onChange={(e) => setSegmentForm((prev) => ({ ...prev, channel: e.target.value }))}
-                >
-                  <option value="">All Channels</option>
-                  <option value="storefront_web">Web</option>
-                  <option value="storefront_mobile">Mobile</option>
-                  <option value="pos">POS</option>
-                  <option value="manual">Manual</option>
-                </select>
-                <select
-                  className="bg-surface border border-line rounded-lg px-4 py-2.5 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus appearance-none cursor-pointer w-full"
+                />
+                <Select
+                  aria-label="Category"
+                  options={FORM_CATEGORY_OPTIONS}
                   value={segmentForm.category}
                   onChange={(e) => setSegmentForm((prev) => ({ ...prev, category: e.target.value }))}
-                >
-                  <option value="">All Categories</option>
-                  <option value="b2b">B2B</option>
-                  <option value="b2c">B2C</option>
-                </select>
-                <select
-                  className="bg-surface border border-line rounded-lg px-4 py-2.5 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus appearance-none cursor-pointer w-full wc-medium:col-span-2"
-                  value={segmentForm.preset}
-                  onChange={(e) => setSegmentForm((prev) => ({ ...prev, preset: e.target.value }))}
-                  disabled={!dailystoreEnabled}
-                >
-                  <option value="">No Preset</option>
-                  <option value="top_buyer">Top Buyer</option>
-                  <option value="inactive">Inactive</option>
-                </select>
+                />
+                <div className="wc-medium:col-span-2">
+                  <Select
+                    aria-label="Preset"
+                    options={PRESET_OPTIONS}
+                    value={segmentForm.preset}
+                    onChange={(e) => setSegmentForm((prev) => ({ ...prev, preset: e.target.value }))}
+                    disabled={!dailystoreEnabled}
+                  />
+                </div>
               </div>
-              <div className="mt-5 flex justify-end">
+              <div className="mt-nb-4 flex justify-end">
                 <Button
                   variant="primary"
                   onClick={createManualSegment}
@@ -322,84 +383,25 @@ const MarketingSegmentsPage: React.FC = () => {
             </div>
           )}
 
-          <div className="bg-surface rounded-xl border border-line overflow-hidden mt-2">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-surface-raised text-fg-subtle font-medium">
-                  <tr>
-                    <th className="px-4 py-3 font-semibold">Name</th>
-                    <th className="px-4 py-3 font-semibold">Description</th>
-                    <th className="px-4 py-3 font-semibold">Rules</th>
-                    <th className="px-4 py-3 font-semibold">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-line border-t border-line">
-                  {manualSegments.map((row) => (
-                    <tr key={row.id} className="hover:bg-surface-high transition-colors">
-                      <td className="px-4 py-3 text-fg font-medium">{row.name}</td>
-                      <td className="px-4 py-3 text-fg-subtle">{row.description || '-'}</td>
-                      <td className="px-4 py-3">
-                        <span className="text-fg-subtle text-xs font-mono bg-surface border border-line rounded px-2.5 py-1 whitespace-nowrap">
-                          {getRulesPreview(row.rules)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => setActiveSegment(row)}
-                          >
-                            Manage Members
-                          </Button>
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            onClick={() => navigateToLeads({ segmentId: row.id, segmentName: row.name })}
-                          >
-                            Leads
-                          </Button>
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            onClick={() => navigateToCustomers({ segmentId: row.id, segmentName: row.name })}
-                          >
-                            Customers
-                          </Button>
-                          {canCreateMarketing && (
-                            <Menu
-                              trigger={<Button variant="secondary" size="sm" aria-label="Row actions">&#8942;</Button>}
-                              items={[{
-                                label: 'Delete',
-                                danger: true,
-                                onSelect: async () => {
-                                  await crmService.deleteCustomerSegment(row.id);
-                                  setManualSegments((prev) => prev.filter((seg) => seg.id !== row.id));
-                                  if (activeSegment?.id === row.id) {
-                                    setActiveSegment(null);
-                                    setSegmentMembers([]);
-                                    setMemberCandidates([]);
-                                  }
-                                },
-                              }]}
-                            />
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {manualSegments.length === 0 && (
-                    <tr><td colSpan={4} className="px-4 py-8 text-center text-fg-muted text-sm">No segments yet.</td></tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <DataTable
+            columns={segmentColumns}
+            rows={visibleSegments}
+            rowKey={(r: any) => r.id}
+            loading={manualLoading && manualSegments.length === 0}
+            rowActions={(row: any) => [
+              { label: 'Manage Members', onSelect: () => setActiveSegment(row) },
+              { label: 'Leads', onSelect: () => navigateToLeads({ segmentId: row.id, segmentName: row.name }) },
+              { label: 'Customers', onSelect: () => navigateToCustomers({ segmentId: row.id, segmentName: row.name }) },
+              ...(canCreateMarketing ? [{ label: 'Delete', danger: true, onSelect: () => deleteSegment(row) }] : []),
+            ]}
+            getRowProps={(r: any) => ({ 'data-testid': `segment-row-${r.id}` })}
+            emptyState={<EmptyState title="No segments yet." />}
+          />
         </div>
 
         {activeSegment && (
           <div className="bg-surface border border-line rounded-nb-lg p-nb-4 lg:col-span-3">
-            <div className="flex items-center justify-between mb-5 gap-2 flex-wrap pb-4 border-b border-line">
+            <div className="flex items-center justify-between mb-nb-4 gap-nb-2 flex-wrap pb-nb-4 border-b border-line">
               <h3 className="text-sm font-semibold text-fg">
                 Manage Members: <span className="text-fg-subtle font-normal">{activeSegment.name}</span>
               </h3>
@@ -416,70 +418,56 @@ const MarketingSegmentsPage: React.FC = () => {
               </Button>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 mb-6 bg-surface border border-line p-2 rounded-xl">
-              <button
-                className={`text-sm px-4 py-2.5 rounded-lg font-medium transition-all ${memberType === 'customer' ? 'bg-primary text-fg' : 'hover:bg-surface-raised text-fg-subtle hover:text-fg'}`}
-                onClick={() => setMemberType('customer')}
-              >
+            <div className="flex flex-wrap items-center gap-nb-3 mb-nb-4">
+              <Button variant={memberType === 'customer' ? 'primary' : 'secondary'} size="sm" onClick={() => setMemberType('customer')}>
                 Customers
-              </button>
-              <button
-                className={`text-sm px-4 py-2.5 rounded-lg font-medium transition-all ${memberType === 'lead' ? 'bg-primary text-fg' : 'hover:bg-surface-raised text-fg-subtle hover:text-fg'}`}
-                onClick={() => setMemberType('lead')}
-              >
+              </Button>
+              <Button variant={memberType === 'lead' ? 'primary' : 'secondary'} size="sm" onClick={() => setMemberType('lead')}>
                 Leads
-              </button>
-              <input
-                value={memberSearch}
-                onChange={(e) => setMemberSearch(e.target.value)}
-                placeholder={`Search ${memberType}s...`}
-                className="ml-auto bg-surface-raised border border-line rounded-lg px-4 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus transition-shadow w-full md:w-72"
-              />
+              </Button>
+              <div className="ml-auto w-full md:w-72">
+                <SearchInput value={memberSearch} onChange={setMemberSearch} placeholder={`Search ${memberType}s...`} />
+              </div>
             </div>
 
-            {membersLoading && <div className="flex items-center justify-center p-4"><div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div></div>}
+            {membersLoading && <p className="text-fg-subtle text-sm mb-nb-3">Loading members...</p>}
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-surface p-5 border border-line rounded-xl">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-nb-4">
+              <div className="bg-surface p-nb-4 border border-line rounded-nb-lg">
                 <h4 className="text-sm font-semibold text-fg mb-nb-3">Current Members</h4>
-                <div className="space-y-2 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
+                <div className="space-y-nb-2 max-h-80 overflow-y-auto">
                   {segmentMembers.map((member: any) => {
                     const row = member.lead_record;
                     return (
-                      <div key={`${member.type}-${row?.id || member.id}`} className="flex items-center justify-between border-b border-line pb-2 mb-2">
+                      <div key={`${member.type}-${row?.id || member.id}`} className="flex items-center justify-between border-b border-line pb-nb-2">
                         <div className="overflow-hidden">
                           <p className="text-fg text-sm font-medium truncate">{row?.contact_name || row?.company_name || row?.email || row?.id}</p>
-                          <p className="text-fg-muted text-xs truncate mt-0.5">{row?.email || row?.phone || '-'}</p>
+                          <p className="text-fg-muted text-xs truncate">{row?.email || row?.phone || '-'}</p>
                         </div>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          className="shrink-0"
-                          onClick={() => removeMember(row?.id || member.id)}
-                        >
+                        <Button variant="secondary" size="sm" className="shrink-0" onClick={() => removeMember(row?.id || member.id)}>
                           Remove
                         </Button>
                       </div>
                     );
                   })}
-                  {segmentMembers.length === 0 && <p className="text-fg-muted text-sm py-4 text-center">No current members found.</p>}
+                  {segmentMembers.length === 0 && <p className="text-fg-muted text-sm py-nb-4 text-center">No current members found.</p>}
                 </div>
               </div>
 
-              <div className="bg-surface p-5 border border-line rounded-xl">
+              <div className="bg-surface p-nb-4 border border-line rounded-nb-lg">
                 <h4 className="text-sm font-semibold text-fg mb-nb-3">Add {memberType === 'customer' ? 'Customers' : 'Leads'}</h4>
-                <div className="space-y-2 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
+                <div className="space-y-nb-2 max-h-80 overflow-y-auto">
                   {memberCandidates.map((candidate: any) => {
                     const id = candidate.id;
                     const exists = existingMemberIds.has(id);
                     return (
-                      <div key={id} className="flex items-center justify-between border-b border-line pb-2 mb-2">
+                      <div key={id} className="flex items-center justify-between border-b border-line pb-nb-2">
                         <div className="overflow-hidden">
                           <p className="text-fg text-sm font-medium truncate">{candidate.contact_name || candidate.company_name || candidate.email || id}</p>
-                          <p className="text-fg-muted text-xs truncate mt-0.5">{candidate.email || candidate.phone || '-'}</p>
+                          <p className="text-fg-muted text-xs truncate">{candidate.email || candidate.phone || '-'}</p>
                         </div>
                         <Button
-                          variant={exists ? "secondary" : "primary"}
+                          variant={exists ? 'secondary' : 'primary'}
                           size="sm"
                           className="shrink-0"
                           onClick={() => !exists && addMember(id)}
@@ -490,7 +478,7 @@ const MarketingSegmentsPage: React.FC = () => {
                       </div>
                     );
                   })}
-                  {memberCandidates.length === 0 && <p className="text-fg-muted text-sm py-4 text-center">No records available to add.</p>}
+                  {memberCandidates.length === 0 && <p className="text-fg-muted text-sm py-nb-4 text-center">No records available to add.</p>}
                 </div>
               </div>
             </div>
@@ -501,106 +489,47 @@ const MarketingSegmentsPage: React.FC = () => {
           <>
             <div className="bg-surface border border-line rounded-nb-lg p-nb-4 h-fit">
               <h3 className="text-sm font-semibold text-fg mb-nb-3">Storefront Summary</h3>
-              <div className="space-y-2">
+              <div className="space-y-nb-2">
                 {mappedSummarySegments.map((entry) => (
-                  <button
+                  <Button
                     key={entry.key}
+                    variant="secondary"
+                    className="w-full justify-between"
                     onClick={() => entry.rule && navigateToCustomers({
                       channel: (entry.rule as any).channel,
                       category: (entry.rule as any).category,
                     })}
                     disabled={!entry.rule}
-                    className={`w-full flex justify-between items-center bg-surface border border-line hover:bg-surface-raised rounded-lg p-3 text-left transition-colors ${entry.rule ? 'group' : 'opacity-60 cursor-not-allowed'}`}
                     title={entry.rule ? 'Open matching customers' : 'No filter mapping for this segment'}
                   >
-                    <span className="text-fg-subtle font-medium capitalize">{entry.label}</span>
-                    <span className="text-fg font-bold bg-surface-raised px-2 py-0.5 rounded border border-line">{String(entry.value)}</span>
-                  </button>
+                    <span className="capitalize">{entry.label}</span>
+                    <span className="font-bold">{String(entry.value)}</span>
+                  </Button>
                 ))}
-                {mappedSummarySegments.length === 0 && <p className="text-fg-muted text-sm py-4 text-center">No segment data.</p>}
+                {mappedSummarySegments.length === 0 && <p className="text-fg-muted text-sm py-nb-4 text-center">No segment data.</p>}
               </div>
             </div>
 
-            <div className="bg-surface border border-line rounded-nb-lg p-nb-4 lg:col-span-2">
+            <div className="lg:col-span-2">
               <h3 className="text-sm font-semibold text-fg mb-nb-3">Top Buyers</h3>
-              <div className="bg-surface rounded-xl border border-line overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm text-left">
-                    <thead className="bg-surface-raised text-fg-subtle font-medium">
-                      <tr>
-                        <th className="px-4 py-3 font-semibold">Customer</th>
-                        <th className="px-4 py-3 font-semibold">Orders</th>
-                        <th className="px-4 py-3 font-semibold">Spent</th>
-                        <th className="px-4 py-3 font-semibold">Last Order</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-line border-t border-line">
-                      {topBuyers.map((row) => (
-                        <tr
-                          key={row.customerId}
-                          className="hover:bg-surface-high transition-colors cursor-pointer"
-                          onClick={() => navigateToCustomers({
-                            customer_ids: row.customerId,
-                            preset: 'top_buyer',
-                            storeId,
-                          })}
-                          title="Open in Customers"
-                        >
-                          <td className="px-4 py-4 text-fg font-medium">{row.name || row.email || row.customerId || '-'}</td>
-                          <td className="px-4 py-4 text-fg-subtle">{row.orderCount || 0}</td>
-                          <td className="px-4 py-4 text-success font-semibold">{formatMoney(row.totalSpent, currencyCode, locale)}</td>
-                          <td className="px-4 py-4 text-fg-muted text-xs font-medium">{formatDateTime(row.lastOrderAt)}</td>
-                        </tr>
-                      ))}
-                      {topBuyers.length === 0 && (
-                        <tr><td colSpan={4} className="px-4 py-8 text-center text-fg-muted text-sm">No buyer data.</td></tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+              <DataTable
+                columns={buyerColumns}
+                rows={topBuyers}
+                rowKey={(r: any) => r.customerId}
+                onRowClick={(r: any) => navigateToCustomers({ customer_ids: r.customerId, preset: 'top_buyer', storeId })}
+                emptyState={<EmptyState title="No buyer data." />}
+              />
             </div>
 
-            <div className="bg-surface border border-line rounded-nb-lg p-nb-4 lg:col-span-3">
+            <div className="lg:col-span-3">
               <h3 className="text-sm font-semibold text-fg mb-nb-3">Inactive Customers</h3>
-              <div className="bg-surface rounded-xl border border-line overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm text-left">
-                    <thead className="bg-surface-raised text-fg-subtle font-medium">
-                      <tr>
-                        <th className="px-4 py-3 font-semibold">Customer</th>
-                        <th className="px-4 py-3 font-semibold">Email</th>
-                        <th className="px-4 py-3 font-semibold">Total Spent</th>
-                        <th className="px-4 py-3 font-semibold">Days Inactive</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-line border-t border-line">
-                      {inactive.map((row) => (
-                        <tr
-                          key={row.customerId}
-                          className="hover:bg-surface-high transition-colors cursor-pointer"
-                          onClick={() => navigateToCustomers({
-                            customer_ids: row.customerId,
-                            preset: 'inactive',
-                            storeId,
-                          })}
-                          title="Open in Customers"
-                        >
-                          <td className="px-4 py-4 text-fg font-medium">{row.name || row.customerId || '-'}</td>
-                          <td className="px-4 py-4 text-fg-subtle">{row.email || '-'}</td>
-                          <td className="px-4 py-4 text-fg-subtle font-medium">{formatMoney(row.totalSpent, currencyCode, locale)}</td>
-                          <td className="px-4 py-4">
-                            <span className="text-fg-subtle text-xs font-semibold">{row.daysSinceLastOrder || 0} days</span>
-                          </td>
-                        </tr>
-                      ))}
-                      {inactive.length === 0 && (
-                        <tr><td colSpan={4} className="px-4 py-8 text-center text-fg-muted text-sm">No inactive customers identified.</td></tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+              <DataTable
+                columns={inactiveColumns}
+                rows={inactive}
+                rowKey={(r: any) => r.customerId}
+                onRowClick={(r: any) => navigateToCustomers({ customer_ids: r.customerId, preset: 'inactive', storeId })}
+                emptyState={<EmptyState title="No inactive customers identified." />}
+              />
             </div>
           </>
         )}

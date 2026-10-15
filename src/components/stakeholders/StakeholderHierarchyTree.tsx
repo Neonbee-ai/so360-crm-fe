@@ -1,4 +1,5 @@
 import React from 'react';
+import { Select } from '@so360/design-system';
 import { Stakeholder } from '../../types/crm';
 
 interface Props {
@@ -44,16 +45,18 @@ const TreeRow: React.FC<{ node: TreeNode; depth: number; allStakeholders: Stakeh
                 </div>
                 <span className="text-xs font-medium text-fg">{node.stakeholder.full_name || 'Unnamed'}</span>
                 {node.stakeholder.job_title && <span className="text-xs text-fg-muted">{node.stakeholder.job_title}</span>}
-                <select
+                <Select
+                    name={`manager-${node.stakeholder.id}`}
+                    aria-label="Reports to"
+                    size="sm"
+                    className="ml-auto"
                     value={node.stakeholder.reports_to_stakeholder_id || ''}
-                    onChange={(e) => onSetManager(node.stakeholder.id, e.target.value || null)}
-                    className="ml-auto bg-surface border border-line rounded px-2 py-1 text-xs text-fg-subtle outline-none"
-                >
-                    <option value="">No manager (top level)</option>
-                    {allStakeholders.filter((s) => s.id !== node.stakeholder.id).map((s) => (
-                        <option key={s.id} value={s.id}>{s.full_name || 'Unnamed'}</option>
-                    ))}
-                </select>
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => onSetManager(node.stakeholder.id, e.target.value || null)}
+                    options={[
+                        { value: '', label: 'No manager (top level)' },
+                        ...allStakeholders.filter((s) => s.id !== node.stakeholder.id).map((s) => ({ value: s.id, label: s.full_name || 'Unnamed' })),
+                    ]}
+                />
             </div>
             {node.children.map((child) => (
                 <TreeRow key={child.stakeholder.id} node={child} depth={depth + 1} allStakeholders={allStakeholders} onSetManager={onSetManager} />

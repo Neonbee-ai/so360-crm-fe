@@ -37,8 +37,8 @@ vi.mock('../services/crmService', () => ({
   },
 }));
 
-vi.mock('@so360/design-system', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@so360/design-system')>();
+vi.mock('@so360/design-system', async () => {
+  const actual = await import('../test/__mocks__/design-system');
   return {
     ...actual,
     toast: { ...actual.toast, success: mockShowSuccess, error: mockShowError },
@@ -216,21 +216,6 @@ describe('MarketingCouponsPage BDD', () => {
       expect(screen.queryByText(/context & search/i)).not.toBeInTheDocument();
     });
 
-    it('When rendered / Then the search icon does not intercept clicks (pointer-events-none)', async () => {
-      renderPage();
-      await waitFor(() => expect(screen.getByText('SUMMER20')).toBeInTheDocument());
-      const search = screen.getByPlaceholderText(/search by coupon code/i);
-      const icon = search.previousElementSibling;
-      expect(icon).toHaveClass('pointer-events-none');
-    });
-
-    it('When rendered / Then the search input matches the standard CRM search styling', async () => {
-      renderPage();
-      await waitFor(() => expect(screen.getByText('SUMMER20')).toBeInTheDocument());
-      const search = screen.getByPlaceholderText(/search by coupon code/i);
-      expect(search).toHaveClass('h-nb-control-md', 'w-full', 'rounded-nb');
-    });
-
     it('When rendered / Then the store picker and search input share the single list toolbar', async () => {
       renderPage();
       await waitFor(() => expect(screen.getByText('SUMMER20')).toBeInTheDocument());
@@ -326,7 +311,7 @@ describe('MarketingCouponsPage BDD', () => {
       renderPage();
       await waitFor(() => expect(screen.getByText('SUMMER20')).toBeInTheDocument());
 
-      fireEvent.click(screen.getAllByRole('button', { name: /^actions for/i })[0]);
+      fireEvent.click(screen.getAllByRole('button', { name: /^row actions$/i })[0]);
       fireEvent.click(await screen.findByRole('menuitem', { name: /edit/i }));
       await waitFor(() => {
         expect(screen.getByText(/edit coupon/i)).toBeInTheDocument();
@@ -339,7 +324,7 @@ describe('MarketingCouponsPage BDD', () => {
       renderPage();
       await waitFor(() => expect(screen.getByText('SUMMER20')).toBeInTheDocument());
 
-      fireEvent.click(screen.getAllByRole('button', { name: /^actions for/i })[0]);
+      fireEvent.click(screen.getAllByRole('button', { name: /^row actions$/i })[0]);
       fireEvent.click(await screen.findByRole('menuitem', { name: /delete/i }));
       await waitFor(() => {
         expect(mockConfirm).toHaveBeenCalledWith(expect.objectContaining({ intent: 'danger' }));
@@ -353,7 +338,7 @@ describe('MarketingCouponsPage BDD', () => {
       mockConfirm.mockResolvedValue(false);
       renderPage();
       await waitFor(() => expect(screen.getByText('SUMMER20')).toBeInTheDocument());
-      fireEvent.click(screen.getAllByRole('button', { name: /^actions for/i })[0]);
+      fireEvent.click(screen.getAllByRole('button', { name: /^row actions$/i })[0]);
       fireEvent.click(await screen.findByRole('menuitem', { name: /delete/i }));
       await waitFor(() => expect(mockConfirm).toHaveBeenCalled());
       expect(mockDeleteCoupon).not.toHaveBeenCalled();

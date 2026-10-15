@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, CheckCircle2, Circle, AlertCircle, Calendar, Trash2, ChevronUp, ChevronDown, ChevronsUpDown, UserPlus, Building2, Plus, MoreVertical } from 'lucide-react';
+import { CheckCircle2, Circle, AlertCircle, Calendar, Trash2, UserPlus, Building2, Plus } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { Task } from '../types/crm';
-import { ListPageTemplate, Pagination, Button, Tabs, Menu, toast } from '@so360/design-system';
-import { Table } from '../components/common/Table';
+import { ListPageTemplate, Pagination, Button, Tabs, DataTable, SearchInput, toast, type DataTableColumn, type FilterValues, type ListFilterConfig } from '@so360/design-system';
 import { useShell, useShellBridge, useSandboxLimit } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import { canCurrentUserBeAssigned, isTaskAssignedToUser, isTaskLocked, isTaskOverdue, TASK_LOCKED_HINT } from '../utils/taskUtils';
@@ -144,34 +143,6 @@ const TasksPage = () => {
         }
     };
 
-    const toggleSort = (field: SortField) => {
-        if (sortField === field) {
-            if (sortDirection === 'asc') setSortDirection('desc');
-            else if (sortDirection === 'desc') { setSortField(null); setSortDirection(null); }
-            else setSortDirection('asc');
-        } else {
-            setSortField(field);
-            setSortDirection('asc');
-        }
-    };
-
-    const SortIcon = ({ field }: { field: SortField }) => {
-        if (sortField !== field) return <ChevronsUpDown size={14} className="text-fg-muted" />;
-        if (sortDirection === 'asc') return <ChevronUp size={14} className="text-primary" />;
-        if (sortDirection === 'desc') return <ChevronDown size={14} className="text-primary" />;
-        return <ChevronsUpDown size={14} className="text-fg-muted" />;
-    };
-
-    const SortableHeader = ({ label, field }: { label: string, field: SortField }) => (
-        <button
-            onClick={() => toggleSort(field)}
-            className="flex items-center gap-1 hover:text-fg transition-colors cursor-pointer"
-        >
-            {label}
-            <SortIcon field={field} />
-        </button>
-    );
-
     const sortedAndFilteredTasks = useMemo(() => {
         let result = tasks.filter(task => {
             const lc = searchTerm.toLowerCase();
@@ -236,10 +207,12 @@ const TasksPage = () => {
         setCurrentPage(1);
     }, [searchTerm, filter]);
 
-    const columns = [
+    const columns: DataTableColumn<Task>[] = [
         {
-            header: <SortableHeader label="Task" field="title" />,
-            accessor: (task: Task) => (
+            key: 'title',
+            header: 'Task',
+            sortable: true,
+            render: (task: Task) => (
                 <div className="flex items-start gap-3">
                     <button
                         onClick={(e) => {
@@ -259,8 +232,10 @@ const TasksPage = () => {
             )
         },
         {
-            header: <SortableHeader label="Due Date" field="due_date" />,
-            accessor: (task: Task) => {
+            key: 'due_date',
+            header: 'Due Date',
+            sortable: true,
+            render: (task: Task) => {
                 const isOverdue = isTaskOverdue(task);
                 return (
                     <div className={`flex items-center gap-2 text-xs font-medium whitespace-nowrap ${isOverdue ? 'text-danger' : 'text-fg-subtle'}`}>
@@ -276,8 +251,10 @@ const TasksPage = () => {
             }
         },
         {
-            header: <SortableHeader label="Associated With" field="associated_with" />,
-            accessor: (task: Task) => {
+            key: 'associated_with',
+            header: 'Associated With',
+            sortable: true,
+            render: (task: Task) => {
                 const entity = task.deal
                     ? { label: task.deal.name || task.deal.company_name, sub: task.deal.company_name !== task.deal.name ? task.deal.company_name : null, type: 'deal' as const }
                     : task.lead
@@ -303,8 +280,10 @@ const TasksPage = () => {
             }
         },
         {
-            header: <SortableHeader label="Assigned To" field="assigned_to" />,
-            accessor: (task: Task) => (
+            key: 'assigned_to',
+            header: 'Assigned To',
+            sortable: true,
+            render: (task: Task) => (
                 <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-2">
                     <select
                         value={task.assigned_to.id}
@@ -341,8 +320,10 @@ const TasksPage = () => {
             )
         },
         {
-            header: <SortableHeader label="Status" field="status" />,
-            accessor: (task: Task) => (
+            key: 'status',
+            header: 'Status',
+            sortable: true,
+            render: (task: Task) => (
                 <div onClick={(e) => e.stopPropagation()}>
                     <select
                         value={task.status}
@@ -367,30 +348,14 @@ const TasksPage = () => {
                 </div>
             )
         },
-        {
-            header: '',
-            accessor: (task: Task) => (
-                <div onClick={(e) => e.stopPropagation()}>
-                    {canCreateTask && (
-                        <Menu
-                            name={`task-actions-${task.id}`}
-                            trigger={
-                                <button
-                                    type="button"
-                                    className="p-1.5 text-fg-subtle hover:text-fg hover:bg-surface-raised rounded-nb transition-colors"
-                                    title="More actions"
-                                    aria-label="More actions"
-                                >
-                                    <MoreVertical size={16} />
-                                </button>
-                            }
-                            items={[{ label: 'Delete task', icon: <Trash2 size={14} />, danger: true, onSelect: () => setShowDeleteConfirm(task.id) }]}
-                        />
-                    )}
-                </div>
-            )
-        }
     ];
+    const statusOptions = ['Open', 'In Progress', 'Done', 'On Hold', 'Cancelled', 'Overdue'].map(v => ({ value: v, label: v }));
+    const filterConfig: ListFilterConfig = {
+        fields: [{ key: 'status', label: 'Status', type: 'select', quick: true, options: statusOptions }],
+        values: (filter !== 'All' ? { status: filter } : {}) as FilterValues,
+        onChange: (next: FilterValues) => setFilter((next.status as string) || 'All'),
+        onClear: () => { setSearchTerm(''); setFilter('All'); },
+    };
 
     return (
         <ListPageTemplate
@@ -401,9 +366,15 @@ const TasksPage = () => {
                     Create Task
                 </Button>
             ) : undefined}
-            filters={
-                <>
-            {(canViewTeamTasks || canViewAllTasks) && (
+            search={
+                <SearchInput
+                    placeholder="Search tasks..."
+                    value={searchTerm}
+                    onChange={setSearchTerm}
+                />
+            }
+            filterConfig={filterConfig}
+            filters={(canViewTeamTasks || canViewAllTasks) ? (
                 <Tabs
                     name="task-scope"
                     value={taskScope}
@@ -414,33 +385,7 @@ const TasksPage = () => {
                         ...(canViewAllTasks ? [{ id: 'all', label: 'All Tasks' }] : []),
                     ]}
                 />
-            )}
-                <div className="relative w-full wc-medium:w-72">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none" size={16} />
-                    <input
-                        type="text"
-                        placeholder="Search tasks..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="h-nb-control-md w-full rounded-nb border border-line bg-surface pl-10 pr-4 text-nb-body text-fg placeholder:text-fg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-                    />
-                </div>
-                <div className="flex flex-wrap items-center gap-nb-1">
-                    {['All', 'Open', 'In Progress', 'Done', 'On Hold', 'Cancelled', 'Overdue'].map((btn) => (
-                        <button
-                            key={btn}
-                            onClick={() => setFilter(btn)}
-                            className={`h-nb-control-md px-nb-3 rounded-nb text-nb-body transition-colors ${filter === btn
-                                ? 'bg-surface-raised text-fg font-medium'
-                                : 'text-fg-muted hover:text-fg hover:bg-surface-raised'
-                                }`}
-                        >
-                            {btn}
-                        </button>
-                    ))}
-                </div>
-                </>
-            }
+            ) : undefined}
             pagination={sandboxLimitedTasks.length > 0 ? (
                 <Pagination
                     currentPage={currentPage}
@@ -469,12 +414,21 @@ const TasksPage = () => {
                 </div>
             )}
 
-            <Table
-                data={paginatedTasks}
+            <DataTable
+                name="tasks"
+                data-testid="tasks-table"
+                rows={paginatedTasks}
+                rowKey={(task: Task) => task.id}
                 columns={columns}
-                isLoading={isLoading}
-                onRowClick={(task) => navigate(`${task.id}`)}
-                emptyMessage="No tasks found for the selected filter."
+                loading={isLoading}
+                onRowClick={(task: Task) => navigate(`${task.id}`)}
+                emptyState="No tasks found for the selected filter."
+                sortKey={sortField ?? undefined}
+                sortDir={sortDirection ?? undefined}
+                onSortChange={(key: string, dir?: SortDirection) => { setSortField(dir ? (key as SortField) : null); setSortDirection(dir ?? null); }}
+                rowActions={canCreateTask ? (task: Task) => [
+                    { label: 'Delete task', danger: true, onSelect: () => setShowDeleteConfirm(task.id) },
+                ] : undefined}
             />
 
             </div>

@@ -2,10 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Save, Send, CheckCircle, XCircle, FileText, Plus, Trash2, Edit2, Package, Printer, RotateCcw, Clock, Users, ShieldAlert } from 'lucide-react';
 import { goBackFrom } from '../components/common/DetailBackLink';
-import { EDITABLE_FIELD_CLASS, EDITABLE_FIELD_SM_CLASS, EDITABLE_FIELD_SM_NUMERIC_CLASS } from '../components/common/fieldStyles';
 import { Modal } from '../components/common/Modal';
 import { crmService } from '../services/crmService';
-import { toast, getErrorMessage, useConfirm, DetailPageTemplate, Button, Card, Badge, Alert, type BadgeTone } from '@so360/design-system';
+import { toast, getErrorMessage, useConfirm, DetailPageTemplate, Button, Card, Badge, Alert, TextField, Textarea, Select, DataTable, IconButton, type DataTableColumn, type BadgeTone } from '@so360/design-system';
 import { Quote, QuoteLine, QuoteStatus, ProductPickerSelection, Lead } from '../types/crm';
 import { INCOTERMS_2020, INCOTERM_LABELS } from '../utils/incoterms';
 import { useBusinessSettings, useActivity, useShellBridge, useOrganization } from '@so360/shell-context';
@@ -15,6 +14,8 @@ import { quoteToDocumentData } from '../utils/quoteToDocumentData';
 import { quoteLinePreTaxAmount, quoteTotals } from '../utils/quoteLineAmounts';
 import { QuoteApprovalModal } from '../components/quotes/QuoteApprovalModal';
 import { QuoteApprovalHistory, ApprovalRequestRecord } from '../components/quotes/QuoteApprovalHistory';
+
+type QuoteLineRow = { line: QuoteLine; index: number };
 
 const statusConfig: Record<QuoteStatus, { bg: string; text: string; label: string; tone: BadgeTone }> = {
     draft: { bg: 'bg-fg-muted/20', text: 'text-fg-subtle', label: 'Draft', tone: 'neutral' },
@@ -400,12 +401,9 @@ const QuoteDetailPage = () => {
                 <div className="text-center py-16">
                     <FileText className="w-16 h-16 mx-auto text-fg-subtle mb-4" />
                     <h2 className="text-xl font-semibold text-fg-subtle mb-2">Quote not found</h2>
-                    <button
-                        onClick={() => navigate('/crm/quotes')}
-                        className="text-primary hover:text-primary"
-                    >
+                    <Button variant="secondary" onClick={() => navigate('/crm/quotes')}>
                         Back to Quotes
-                    </button>
+                    </Button>
                 </div>
             </div>
         );
@@ -645,11 +643,10 @@ const QuoteDetailPage = () => {
                             <div>
                                 <label className="block text-sm font-medium text-fg-subtle mb-1">Title</label>
                                 {isEditing ? (
-                                    <input
-                                        type="text"
+                                    <TextField
+                                        name="quote-title"
                                         value={title}
                                         onChange={(e) => setTitle(e.target.value)}
-                                        className={EDITABLE_FIELD_CLASS}
                                         placeholder="Enter quote title..."
                                     />
                                 ) : (
@@ -659,11 +656,11 @@ const QuoteDetailPage = () => {
                             <div>
                                 <label className="block text-sm font-medium text-fg-subtle mb-1">Valid Until</label>
                                 {isEditing ? (
-                                    <input
+                                    <TextField
+                                        name="quote-valid-until"
                                         type="date"
                                         value={validUntil}
                                         onChange={(e) => setValidUntil(e.target.value)}
-                                        className={EDITABLE_FIELD_CLASS}
                                     />
                                 ) : (
                                     <p className="text-fg">
@@ -676,181 +673,179 @@ const QuoteDetailPage = () => {
 
                     {/* Line Items */}
                     <Card title="Line Items" actions={canCreateQuote && isEditing ? (<Button variant="secondary" onClick={addLine}><Plus className="w-4 h-4" />Add Line</Button>) : undefined}>
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead>
-                                    <tr className="border-b border-line">
-                                        <th className="text-left py-3 px-4 text-xs font-medium text-fg-subtle ">Description</th>
-                                        <th className="text-left py-3 px-4 text-xs font-medium text-fg-subtle w-28">Stock</th>
-                                        <th className="text-right py-3 px-4 text-xs font-medium text-fg-subtle w-24">Qty</th>
-                                        <th className="text-right py-3 px-4 text-xs font-medium text-fg-subtle w-32">Unit Price</th>
-                                        <th className="text-right py-3 px-4 text-xs font-medium text-fg-subtle w-24">Disc %</th>
-                                        <th className="text-right py-3 px-4 text-xs font-medium text-fg-subtle w-24">Tax %</th>
-                                        <th className="text-right py-3 px-4 text-xs font-medium text-fg-subtle w-32">Amount</th>
-                                        {isEditing && <th className="w-12"></th>}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {lines.map((line, index) => {
+                        <DataTable<QuoteLineRow>
+                            name="quote-lines"
+                            data-testid="quote-lines"
+                            rows={lines.map((line, index) => ({ line, index }))}
+                            rowKey={(r) => r.line.id || `new-${r.index}`}
+                            emptyState={<span className="text-fg-subtle">No line items added yet</span>}
+                            columns={[
+                                {
+                                    key: 'description',
+                                    header: 'Description',
+                                    render: ({ line, index }) => isEditing ? (
+                                        <div className="space-y-1.5">
+                                            {/* Product selector button */}
+                                            <button
+                                                type="button"
+                                                onClick={() => setPickerLineIndex(index)}
+                                                className="w-full flex items-center gap-2 px-3 py-1.5 bg-surface border border-line hover:border-primary/50 rounded text-sm transition-colors text-left"
+                                            >
+                                                {line.item_image_url ? (
+                                                    <img src={line.item_image_url} alt="" className="w-6 h-6 rounded object-cover flex-shrink-0" />
+                                                ) : (
+                                                    <Package className="w-4 h-4 text-fg-muted flex-shrink-0" />
+                                                )}
+                                                {line.item_name ? (
+                                                    <span className="flex-1 min-w-0">
+                                                        <span className="text-fg truncate block">{line.item_name}</span>
+                                                        <span className="flex items-center gap-1 mt-0.5">
+                                                            <span className="text-xs px-1.5 py-0.5 bg-fg-muted/20 text-fg-subtle rounded">{line.sku}</span>
+                                                            {line.sub_sku && line.sub_sku !== 'NIL' && (
+                                                                <span className="text-xs px-1.5 py-0.5 bg-primary/50 text-primary rounded">{line.sub_sku}</span>
+                                                            )}
+                                                        </span>
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-fg-muted">Select product...</span>
+                                                )}
+                                            </button>
+                                            {/* Free-text description */}
+                                            <TextField
+                                                name={`quote-line-${index}-description`}
+                                                value={line.description}
+                                                onChange={(e) => updateLine(index, 'description', e.target.value)}
+                                                placeholder="Description / notes..."
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-start gap-2">
+                                            {line.item_image_url && (
+                                                <img src={line.item_image_url} alt="" className="w-8 h-8 rounded object-cover flex-shrink-0 mt-0.5" />
+                                            )}
+                                            <div className="min-w-0">
+                                                <span className="text-fg block">{line.description}</span>
+                                                {line.sku && (
+                                                    <span className="flex items-center gap-1 mt-0.5">
+                                                        <span className="text-xs px-1.5 py-0.5 bg-fg-muted/20 text-fg-subtle rounded">{line.sku}</span>
+                                                        {line.sub_sku && line.sub_sku !== 'NIL' && (
+                                                            <span className="text-xs px-1.5 py-0.5 bg-primary/40 text-primary rounded">{line.sub_sku}</span>
+                                                        )}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ),
+                                },
+                                {
+                                    key: 'stock',
+                                    header: 'Stock',
+                                    render: ({ line }) => {
                                         const stock = line.item_id ? stockMap.get(line.item_id) : undefined;
                                         const isLowStock = stock !== undefined && stock > 0 && stock < line.quantity;
                                         const isOOS = stock !== undefined && stock <= 0;
-                                        return (
-                                        <tr key={line.id || `new-${index}`} className="border-b border-line">
-                                            <td className="py-3 px-4">
-                                                {isEditing ? (
-                                                    <div className="space-y-1.5">
-                                                        {/* Product selector button */}
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setPickerLineIndex(index)}
-                                                            className="w-full flex items-center gap-2 px-3 py-1.5 bg-surface border border-line hover:border-primary/50 rounded text-sm transition-colors text-left"
-                                                        >
-                                                            {line.item_image_url ? (
-                                                                <img src={line.item_image_url} alt="" className="w-6 h-6 rounded object-cover flex-shrink-0" />
-                                                            ) : (
-                                                                <Package className="w-4 h-4 text-fg-muted flex-shrink-0" />
-                                                            )}
-                                                            {line.item_name ? (
-                                                                <span className="flex-1 min-w-0">
-                                                                    <span className="text-fg truncate block">{line.item_name}</span>
-                                                                    <span className="flex items-center gap-1 mt-0.5">
-                                                                        <span className="text-xs px-1.5 py-0.5 bg-fg-muted/20 text-fg-subtle rounded">{line.sku}</span>
-                                                                        {line.sub_sku && line.sub_sku !== 'NIL' && (
-                                                                            <span className="text-xs px-1.5 py-0.5 bg-primary/50 text-primary rounded">{line.sub_sku}</span>
-                                                                        )}
-                                                                    </span>
-                                                                </span>
-                                                            ) : (
-                                                                <span className="text-fg-muted">Select product...</span>
-                                                            )}
-                                                        </button>
-                                                        {/* Free-text description */}
-                                                        <input
-                                                            type="text"
-                                                            value={line.description}
-                                                            onChange={(e) => updateLine(index, 'description', e.target.value)}
-                                                            className={EDITABLE_FIELD_SM_CLASS}
-                                                            placeholder="Description / notes..."
-                                                        />
-                                                    </div>
-                                                ) : (
-                                                    <div className="flex items-start gap-2">
-                                                        {line.item_image_url && (
-                                                            <img src={line.item_image_url} alt="" className="w-8 h-8 rounded object-cover flex-shrink-0 mt-0.5" />
-                                                        )}
-                                                        <div className="min-w-0">
-                                                            <span className="text-fg block">{line.description}</span>
-                                                            {line.sku && (
-                                                                <span className="flex items-center gap-1 mt-0.5">
-                                                                    <span className="text-xs px-1.5 py-0.5 bg-fg-muted/20 text-fg-subtle rounded">{line.sku}</span>
-                                                                    {line.sub_sku && line.sub_sku !== 'NIL' && (
-                                                                        <span className="text-xs px-1.5 py-0.5 bg-primary/40 text-primary rounded">{line.sub_sku}</span>
-                                                                    )}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </td>
-                                            <td className="py-3 px-4">
-                                                {line.item_id ? (
-                                                    stock === undefined ? (
-                                                        <span className="text-xs text-fg-muted">—</span>
-                                                    ) : isOOS ? (
-                                                        <span className="text-xs font-medium text-danger bg-danger/10 px-2 py-0.5 rounded">OOS</span>
-                                                    ) : isLowStock ? (
-                                                        <span className="text-xs font-medium text-warning bg-warning/10 px-2 py-0.5 rounded">{stock} avail</span>
-                                                    ) : (
-                                                        <span className="text-xs font-medium text-success bg-success/10 px-2 py-0.5 rounded">{stock} avail</span>
-                                                    )
-                                                ) : (
-                                                    <span className="text-xs text-fg-subtle">—</span>
-                                                )}
-                                            </td>
-                                            <td className="py-3 px-4 text-right">
-                                                {isEditing ? (
-                                                    <input
-                                                        type="text"
-                                                        inputMode="numeric"
-                                                        value={draftValues[`${index}_quantity`] ?? String(line.quantity)}
-                                                        onChange={(e) => handleNumericInput(index, 'quantity', e.target.value)}
-                                                        onBlur={(e) => commitNumericInput(index, 'quantity', e.target.value, 1)}
-                                                        className={EDITABLE_FIELD_SM_NUMERIC_CLASS}
-                                                    />
-                                                ) : (
-                                                    <span className="text-fg">{line.quantity}</span>
-                                                )}
-                                            </td>
-                                            <td className="py-3 px-4 text-right">
-                                                {isEditing ? (
-                                                    <input
-                                                        type="text"
-                                                        inputMode="decimal"
-                                                        value={draftValues[`${index}_unit_price`] ?? String(line.unit_price)}
-                                                        onChange={(e) => handleNumericInput(index, 'unit_price', e.target.value)}
-                                                        onBlur={(e) => commitNumericInput(index, 'unit_price', e.target.value, 0)}
-                                                        className={EDITABLE_FIELD_SM_NUMERIC_CLASS}
-                                                    />
-                                                ) : (
-                                                    <span className="text-fg">{formatCurrency(line.unit_price)}</span>
-                                                )}
-                                            </td>
-                                            <td className="py-3 px-4 text-right">
-                                                {isEditing ? (
-                                                    <input
-                                                        type="text"
-                                                        inputMode="decimal"
-                                                        value={draftValues[`${index}_discount_percent`] ?? String(line.discount_percent || 0)}
-                                                        onChange={(e) => handleNumericInput(index, 'discount_percent', e.target.value)}
-                                                        onBlur={(e) => commitNumericInput(index, 'discount_percent', e.target.value, 0)}
-                                                        className={EDITABLE_FIELD_SM_NUMERIC_CLASS}
-                                                    />
-                                                ) : (
-                                                    <span className="text-fg-subtle">{line.discount_percent || 0}%</span>
-                                                )}
-                                            </td>
-                                            <td className="py-3 px-4 text-right">
-                                                {isEditing ? (
-                                                    <input
-                                                        type="text"
-                                                        inputMode="decimal"
-                                                        value={draftValues[`${index}_tax_rate`] ?? String(line.tax_rate || 0)}
-                                                        onChange={(e) => handleNumericInput(index, 'tax_rate', e.target.value)}
-                                                        onBlur={(e) => commitNumericInput(index, 'tax_rate', e.target.value, 0)}
-                                                        className={EDITABLE_FIELD_SM_NUMERIC_CLASS}
-                                                    />
-                                                ) : (
-                                                    <span className="text-fg-subtle">{line.tax_rate || 0}%</span>
-                                                )}
-                                            </td>
-                                            <td className="py-3 px-4 text-right" data-testid="quote-line-amount">
-                                                <span className="text-fg font-medium">
-                                                    {formatCurrency(quoteLinePreTaxAmount(line))}
-                                                </span>
-                                            </td>
-                                            {isEditing && (
-                                                <td className="py-3 px-4">
-                                                    <button
-                                                        onClick={() => removeLine(index)}
-                                                        className="p-1.5 text-fg-subtle hover:text-danger hover:bg-line rounded transition-colors"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
-                                                </td>
-                                            )}
-                                        </tr>
-                                    ); })}
-                                    {lines.length === 0 && (
-                                        <tr>
-                                            <td colSpan={isEditing ? 8 : 7} className="py-8 text-center text-fg-subtle">
-                                                No line items added yet
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
+                                        return line.item_id ? (
+                                            stock === undefined ? (
+                                                <span className="text-xs text-fg-muted">—</span>
+                                            ) : isOOS ? (
+                                                <span className="text-xs font-medium text-danger bg-danger/10 px-2 py-0.5 rounded">OOS</span>
+                                            ) : isLowStock ? (
+                                                <span className="text-xs font-medium text-warning bg-warning/10 px-2 py-0.5 rounded">{stock} avail</span>
+                                            ) : (
+                                                <span className="text-xs font-medium text-success bg-success/10 px-2 py-0.5 rounded">{stock} avail</span>
+                                            )
+                                        ) : (
+                                            <span className="text-xs text-fg-subtle">—</span>
+                                        );
+                                    },
+                                },
+                                {
+                                    key: 'quantity',
+                                    header: 'Qty',
+                                    align: 'right',
+                                    render: ({ line, index }) => isEditing ? (
+                                        <TextField
+                                            name={`quote-line-${index}-quantity`}
+                                            type="text"
+                                            inputMode="numeric"
+                                            value={draftValues[`${index}_quantity`] ?? String(line.quantity)}
+                                            onChange={(e) => handleNumericInput(index, 'quantity', e.target.value)}
+                                            onBlur={(e) => commitNumericInput(index, 'quantity', e.target.value, 1)}
+                                        />
+                                    ) : (
+                                        <span className="text-fg">{line.quantity}</span>
+                                    ),
+                                },
+                                {
+                                    key: 'unit_price',
+                                    header: 'Unit Price',
+                                    align: 'right',
+                                    render: ({ line, index }) => isEditing ? (
+                                        <TextField
+                                            name={`quote-line-${index}-unit_price`}
+                                            type="text"
+                                            inputMode="decimal"
+                                            value={draftValues[`${index}_unit_price`] ?? String(line.unit_price)}
+                                            onChange={(e) => handleNumericInput(index, 'unit_price', e.target.value)}
+                                            onBlur={(e) => commitNumericInput(index, 'unit_price', e.target.value, 0)}
+                                        />
+                                    ) : (
+                                        <span className="text-fg">{formatCurrency(line.unit_price)}</span>
+                                    ),
+                                },
+                                {
+                                    key: 'discount_percent',
+                                    header: 'Disc %',
+                                    align: 'right',
+                                    render: ({ line, index }) => isEditing ? (
+                                        <TextField
+                                            name={`quote-line-${index}-discount_percent`}
+                                            type="text"
+                                            inputMode="decimal"
+                                            value={draftValues[`${index}_discount_percent`] ?? String(line.discount_percent || 0)}
+                                            onChange={(e) => handleNumericInput(index, 'discount_percent', e.target.value)}
+                                            onBlur={(e) => commitNumericInput(index, 'discount_percent', e.target.value, 0)}
+                                        />
+                                    ) : (
+                                        <span className="text-fg-subtle">{line.discount_percent || 0}%</span>
+                                    ),
+                                },
+                                {
+                                    key: 'tax_rate',
+                                    header: 'Tax %',
+                                    align: 'right',
+                                    render: ({ line, index }) => isEditing ? (
+                                        <TextField
+                                            name={`quote-line-${index}-tax_rate`}
+                                            type="text"
+                                            inputMode="decimal"
+                                            value={draftValues[`${index}_tax_rate`] ?? String(line.tax_rate || 0)}
+                                            onChange={(e) => handleNumericInput(index, 'tax_rate', e.target.value)}
+                                            onBlur={(e) => commitNumericInput(index, 'tax_rate', e.target.value, 0)}
+                                        />
+                                    ) : (
+                                        <span className="text-fg-subtle">{line.tax_rate || 0}%</span>
+                                    ),
+                                },
+                                {
+                                    key: 'amount',
+                                    header: 'Amount',
+                                    align: 'right',
+                                    render: ({ line }) => (
+                                        <span className="text-fg font-medium" data-testid="quote-line-amount">
+                                            {formatCurrency(quoteLinePreTaxAmount(line))}
+                                        </span>
+                                    ),
+                                },
+                                ...(isEditing ? [{
+                                    key: 'actions',
+                                    header: '',
+                                    render: ({ index }: QuoteLineRow) => (
+                                        <IconButton label={`Remove line ${index + 1}`} variant="danger" icon={<Trash2 className="w-4 h-4" />} onClick={() => removeLine(index)} />
+                                    ),
+                                }] : []),
+                            ] as DataTableColumn<QuoteLineRow>[]}
+                        />
 
                         {/* Totals */}
                         <div className="mt-6 pt-4 border-t border-line">
@@ -883,11 +878,11 @@ const QuoteDetailPage = () => {
                             <div>
                                 <label className="block text-sm font-medium text-fg-subtle mb-1">Notes</label>
                                 {isEditing ? (
-                                    <textarea
+                                    <Textarea
+                                        name="quote-notes"
                                         value={notes}
                                         onChange={(e) => setNotes(e.target.value)}
                                         rows={3}
-                                        className={EDITABLE_FIELD_CLASS}
                                         placeholder="Add any notes..."
                                     />
                                 ) : (
@@ -898,11 +893,10 @@ const QuoteDetailPage = () => {
                                 <div>
                                     <label className="block text-sm font-medium text-fg-subtle mb-1">Payment Terms</label>
                                     {isEditing ? (
-                                        <input
-                                            type="text"
+                                        <TextField
+                                            name="quote-payment-terms"
                                             value={paymentTerms}
                                             onChange={(e) => setPaymentTerms(e.target.value)}
-                                            className={EDITABLE_FIELD_CLASS}
                                             placeholder="e.g. Net 30"
                                         />
                                     ) : (
@@ -912,11 +906,10 @@ const QuoteDetailPage = () => {
                                 <div>
                                     <label className="block text-sm font-medium text-fg-subtle mb-1">Customer Reference</label>
                                     {isEditing ? (
-                                        <input
-                                            type="text"
+                                        <TextField
+                                            name="quote-customer-reference"
                                             value={customerReference}
                                             onChange={(e) => setCustomerReference(e.target.value)}
-                                            className={EDITABLE_FIELD_CLASS}
                                             placeholder="Buyer's RFQ / PO number"
                                         />
                                     ) : (
@@ -926,11 +919,10 @@ const QuoteDetailPage = () => {
                                 <div>
                                     <label className="block text-sm font-medium text-fg-subtle mb-1">Delivery Terms</label>
                                     {isEditing ? (
-                                        <input
-                                            type="text"
+                                        <TextField
+                                            name="quote-delivery-terms"
                                             value={deliveryTerms}
                                             onChange={(e) => setDeliveryTerms(e.target.value)}
-                                            className={EDITABLE_FIELD_CLASS}
                                             placeholder="e.g. Ex-stock, 2-3 weeks from PO"
                                         />
                                     ) : (
@@ -942,16 +934,13 @@ const QuoteDetailPage = () => {
                                         Incoterm <span className="text-fg-muted font-normal">(Incoterms&reg; 2020)</span>
                                     </label>
                                     {isEditing ? (
-                                        <select
+                                        <Select
+                                            name="quote-incoterm"
+                                            aria-label="Incoterm"
                                             value={incoterm}
+                                            options={[{ value: '', label: 'Not specified' }, ...INCOTERMS_2020.map((t) => ({ value: t.code, label: `${t.code} — ${t.label}` }))]}
                                             onChange={(e) => setIncoterm(e.target.value)}
-                                            className={EDITABLE_FIELD_CLASS}
-                                        >
-                                            <option value="">Not specified</option>
-                                            {INCOTERMS_2020.map((t) => (
-                                                <option key={t.code} value={t.code}>{t.code} — {t.label}</option>
-                                            ))}
-                                        </select>
+                                        />
                                     ) : (
                                         <p className="text-fg-subtle">
                                             {quote.incoterm
@@ -964,11 +953,11 @@ const QuoteDetailPage = () => {
                             <div>
                                 <label className="block text-sm font-medium text-fg-subtle mb-1">Terms & Conditions</label>
                                 {isEditing ? (
-                                    <textarea
+                                    <Textarea
+                                        name="quote-terms"
                                         value={termsAndConditions}
                                         onChange={(e) => setTermsAndConditions(e.target.value)}
                                         rows={4}
-                                        className={EDITABLE_FIELD_CLASS}
                                         placeholder="Add terms and conditions..."
                                     />
                                 ) : (
@@ -1019,11 +1008,11 @@ const QuoteDetailPage = () => {
                     <label className="block text-sm font-medium text-fg-subtle mb-2">
                         Reason for rejection *
                     </label>
-                    <textarea
+                    <Textarea
+                        name="quote-reject-reason"
                         value={rejectReason}
                         onChange={(e) => setRejectReason(e.target.value)}
                         rows={4}
-                        className={EDITABLE_FIELD_CLASS}
                         placeholder="Please provide a reason..."
                     />
                 </Modal>
@@ -1079,12 +1068,12 @@ const QuoteDetailPage = () => {
                     </p>
                     <div>
                         <label className="block text-sm font-medium text-fg-subtle mb-1">Send to</label>
-                        <input
+                        <TextField
+                            name="quote-send-to"
                             type="email"
                             value={sendTo}
                             onChange={(e) => setSendTo(e.target.value)}
                             placeholder="customer@example.com"
-                            className={EDITABLE_FIELD_CLASS}
                         />
                         {!customer?.contact_email && (
                             <p className="mt-1 text-xs text-warning">
@@ -1096,12 +1085,12 @@ const QuoteDetailPage = () => {
                         <label className="block text-sm font-medium text-fg-subtle mb-1">
                             Message <span className="text-fg-muted font-normal">(optional)</span>
                         </label>
-                        <textarea
+                        <Textarea
+                            name="quote-send-message"
                             value={sendMessage}
                             onChange={(e) => setSendMessage(e.target.value)}
                             rows={3}
                             placeholder="As discussed, please find our quotation attached."
-                            className={EDITABLE_FIELD_CLASS}
                         />
                     </div>
                 </div>
@@ -1144,11 +1133,11 @@ const QuoteDetailPage = () => {
                     <label className="block text-sm font-medium text-fg-subtle mb-1.5">
                         Reason for withdrawal <span className="text-fg-muted font-normal">(optional)</span>
                     </label>
-                    <textarea
+                    <Textarea
+                        name="quote-withdraw-reason"
                         value={withdrawReason}
                         onChange={(e) => setWithdrawReason(e.target.value)}
                         rows={3}
-                        className={EDITABLE_FIELD_CLASS}
                         placeholder="e.g. Updating line item quantities or pricing..."
                     />
                 </Modal>

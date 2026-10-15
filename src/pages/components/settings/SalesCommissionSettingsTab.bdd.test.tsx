@@ -26,7 +26,8 @@ vi.mock('@so360/shell-context', () => ({
         isFeatureEnabled: (k: string) => flags.on.has(k),
     }),
 }));
-vi.mock('@so360/design-system', async () => {
+vi.mock('@so360/design-system', async (importOriginal) => {
+    const actual = await importOriginal<Record<string, unknown>>();
     const R = await import('react');
     const btn = (label: string, v: unknown, p: { onChange: (v: unknown) => void }) =>
         R.createElement('button', { key: label, type: 'button', onClick: () => p.onChange(v) }, label);
@@ -35,7 +36,7 @@ vi.mock('@so360/design-system', async () => {
     const Card = (p: { title?: string; children?: unknown }) =>
         R.createElement('section', { 'aria-label': p.title }, p.title ? R.createElement('h2', {}, p.title) : null, p.children as any);
     const Button = ({ children, variant: _v, ...rest }: any) => R.createElement('button', { type: 'button', ...rest }, children);
-    return { toast: toasts, UserSelector, Card, Button };
+    return { ...actual, toast: toasts, UserSelector, Card, Button };
 });
 
 import SalesCommissionSettingsTab from './SalesCommissionSettingsTab';

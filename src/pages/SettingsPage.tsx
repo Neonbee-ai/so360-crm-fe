@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { crmService, settingsApi } from '../services/crmService';
 import { CRMSettings, SourceTypeOption, LeadScoringRule, ScoreCategory } from '../types/crm';
 import { Save, AlertCircle, Edit2, Archive, Plus, Trash2, Loader2, Zap, Trophy, ShieldCheck, ToggleLeft, ToggleRight, X, Check, RefreshCw } from 'lucide-react';
-import { toast, SettingsPageTemplate, Button, Card } from '@so360/design-system';
+import { toast, SettingsPageTemplate, Button, IconButton, TextField, Select, Card } from '@so360/design-system';
 import { StageStatusSelect } from '../components/common/StageStatusSelect';
 import { useShellBridge } from '@so360/shell-context';
 import DealNamingSettingsTab from './components/settings/DealNamingSettingsTab';
@@ -534,12 +534,7 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
             <div className="flex flex-col gap-nb-4">
                 {activeTab === 'pipeline' && (
                     <Card title="Deal Pipeline Stages" padding="none" actions={(
-                        <button
-                                onClick={addStage}
-                                className="text-xs bg-primary hover:bg-primary/90 text-primary-fg px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-all active:scale-95"
-                            >
-                                <Plus size={12} /> ADD STAGE
-                            </button>
+                        <Button size="sm" variant="primary" onClick={addStage}><Plus size={12} /> ADD STAGE</Button>
                     )}>
                         <p className="px-nb-4 pt-nb-3 text-xs text-fg-muted">The order defines your sales funnel</p>
                         <div className="p-6">
@@ -550,15 +545,14 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
                                             {idx + 1}
                                         </div>
                                         <div className="flex-1">
-                                            <input
-                                                type="text"
+                                            <TextField
+                                                name="settings-field-1"
                                                 value={stage.name}
                                                 onChange={(e) => updateStageName(idx, e.target.value)}
                                                 onFocus={() => { stageNameOnFocus.current[idx] = stage.name; }}
                                                 onKeyDown={(e) => handleStageNameKeyDown(e, idx)}
                                                 onBlur={() => handleStageNameBlur(idx)}
                                                 placeholder="Stage Name"
-                                                className="w-full bg-transparent border-none p-0 text-sm font-bold text-fg outline-none focus:ring-0 focus:outline-none focus:text-primary-hover placeholder:text-fg-muted"
                                             />
                                         </div>
                                         <StageStatusSelect
@@ -570,13 +564,12 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
                                             }}
                                         />
                                         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button
+                                            <IconButton
+                                                label="Remove Stage"
+                                                variant="danger"
+                                                icon={<Trash2 size={16} />}
                                                 onClick={() => removeStage(stage.id)}
-                                                className="p-2 hover:bg-danger/10 rounded-lg text-fg-subtle hover:text-danger transition-all"
-                                                title="Remove Stage"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
+                                            />
                                         </div>
                                     </div>
                                 ))}
@@ -609,15 +602,10 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-nb-3">
                         {/* Lead Custom Fields */}
                         <Card title="Lead Fields" padding="none" className="h-fit lg:col-span-4 min-w-0" actions={(
-                            <button
-                                    onClick={() => {
+                            <Button size="sm" variant="primary" onClick={() => {
                                         const newField = { id: `lcf-${Date.now()}`, label: 'New Field', type: 'text' as const, required: false };
                                         setSettings({ ...settings, lead_custom_fields: [...settings.lead_custom_fields, newField] });
-                                    }}
-                                    className="text-xs bg-primary hover:bg-primary/90 text-primary-fg px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-all active:scale-95"
-                                >
-                                    <Plus size={12} /> ADD
-                                </button>
+                                    }}><Plus size={12} /> ADD</Button>
                         )}>
                             <div className="p-6">
                                 <div className="space-y-3">
@@ -625,51 +613,45 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
                                         <div key={field.id} className="bg-surface-sunken border border-line rounded-nb group hover:border-line transition-all">
                                             <div className="flex items-center gap-3 p-3">
                                                 <div className="flex-1">
-                                                    <input
-                                                        type="text"
+                                                    <TextField
+                                                        name="settings-field-2"
                                                         value={field.label}
                                                         onChange={(e) => {
                                                             const newFields = [...settings.lead_custom_fields];
                                                             newFields[idx] = { ...newFields[idx], label: e.target.value };
                                                             setSettings({ ...settings, lead_custom_fields: newFields });
                                                         }}
-                                                        className="w-full bg-transparent border-none p-0 text-sm font-bold text-fg outline-none focus:ring-0 focus:outline-none focus:text-primary-hover"
                                                     />
                                                 </div>
-                                                <select
+                                                <Select
+                                                    name="settings-field-3"
                                                     value={field.type}
                                                     onChange={(e) => {
                                                         const newFields = [...settings.lead_custom_fields];
                                                         newFields[idx] = { ...newFields[idx], type: e.target.value as any, options: e.target.value === 'SELECT' ? (newFields[idx].options || []) : newFields[idx].options };
                                                         setSettings({ ...settings, lead_custom_fields: newFields });
                                                     }}
-                                                    className="bg-surface border border-line text-xs font-semibold text-fg-subtle rounded-lg px-2 py-1 outline-none"
-                                                >
-                                                    <option value="text">TEXT</option>
-                                                    <option value="number">NUM</option>
-                                                    <option value="date">DATE</option>
-                                                    <option value="boolean">BOOL</option>
-                                                    <option value="SELECT">SELECT</option>
-                                                </select>
-                                                <button
+                                                    options={[{ value: 'text', label: 'TEXT' }, { value: 'number', label: 'NUM' }, { value: 'date', label: 'DATE' }, { value: 'boolean', label: 'BOOL' }, { value: 'SELECT', label: 'SELECT' }]}
+                                                />
+                                                <IconButton
+                                                    label="Delete"
+                                                    variant="danger"
+                                                    icon={<Trash2 size={14} />}
                                                     onClick={() => {
                                                         setSettings({
                                                             ...settings,
                                                             lead_custom_fields: settings.lead_custom_fields.filter(f => f.id !== field.id)
                                                         });
                                                     }}
-                                                    className="p-1.5 hover:bg-danger/10 rounded-lg text-fg-muted hover:text-danger transition-all opacity-0 group-hover:opacity-100"
-                                                >
-                                                    <Trash2 size={14} />
-                                                </button>
+                                                />
                                             </div>
                                             {field.type === 'SELECT' && (
                                                 <div className="px-3 pb-3 border-t border-line pt-2">
                                                     <div className="space-y-1.5">
                                                         {((field as any).options || []).map((opt: string, optIdx: number) => (
                                                             <div key={optIdx} className="flex items-center gap-2">
-                                                                <input
-                                                                    type="text"
+                                                                <TextField
+                                                                    name="settings-field-4"
                                                                     value={opt}
                                                                     onChange={(e) => {
                                                                         const newFields = [...settings.lead_custom_fields];
@@ -678,30 +660,27 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
                                                                         newFields[idx] = { ...newFields[idx], options: newOpts } as any;
                                                                         setSettings({ ...settings, lead_custom_fields: newFields });
                                                                     }}
-                                                                    className="flex-1 bg-surface border border-line text-xs text-fg px-2 py-1 rounded-lg outline-none focus:border-primary"
                                                                     placeholder={`Option ${optIdx + 1}`}
                                                                 />
-                                                                <button
+                                                                <IconButton
+                                                                    label="Remove"
+                                                                    variant="danger"
+                                                                    icon={<X size={12} />}
                                                                     type="button"
                                                                     onClick={() => {
                                                                         const newFields = [...settings.lead_custom_fields];
                                                                         newFields[idx] = { ...newFields[idx], options: ((newFields[idx] as any).options || []).filter((_: any, i: number) => i !== optIdx) } as any;
                                                                         setSettings({ ...settings, lead_custom_fields: newFields });
                                                                     }}
-                                                                    className="p-1 hover:bg-danger/10 rounded text-fg-muted hover:text-danger transition-all"
-                                                                ><X size={12} /></button>
+                                                                />
                                                             </div>
                                                         ))}
                                                     </div>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
+                                                    <Button size="sm" variant="primary" type="button" onClick={() => {
                                                             const newFields = [...settings.lead_custom_fields];
                                                             newFields[idx] = { ...newFields[idx], options: [...((newFields[idx] as any).options || []), ''] } as any;
                                                             setSettings({ ...settings, lead_custom_fields: newFields });
-                                                        }}
-                                                        className="mt-2 text-xs text-primary hover:text-primary-hover font-semibold flex items-center gap-1 transition-colors"
-                                                    ><Plus size={10} /> Add Option</button>
+                                                        }}><Plus size={10} /> Add Option</Button>
                                                 </div>
                                             )}
                                         </div>
@@ -712,15 +691,10 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
 
                         {/* Deal Custom Fields */}
                         <Card title="Deal Fields" padding="none" className="h-fit lg:col-span-4 min-w-0" actions={(
-                            <button
-                                    onClick={() => {
+                            <Button size="sm" variant="primary" onClick={() => {
                                         const newField = { id: `dcf-${Date.now()}`, label: 'New Field', type: 'text' as const, required: false };
                                         setSettings({ ...settings, deal_custom_fields: [...settings.deal_custom_fields, newField] });
-                                    }}
-                                    className="text-xs bg-primary hover:bg-primary/90 text-primary-fg px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-all active:scale-95"
-                                >
-                                    <Plus size={12} /> ADD
-                                </button>
+                                    }}><Plus size={12} /> ADD</Button>
                         )}>
                             <div className="p-6">
                                 <div className="space-y-3">
@@ -728,51 +702,45 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
                                         <div key={field.id} className="bg-surface-sunken border border-line rounded-nb group hover:border-line transition-all">
                                             <div className="flex items-center gap-3 p-3">
                                                 <div className="flex-1">
-                                                    <input
-                                                        type="text"
+                                                    <TextField
+                                                        name="settings-field-5"
                                                         value={field.label}
                                                         onChange={(e) => {
                                                             const newFields = [...settings.deal_custom_fields];
                                                             newFields[idx] = { ...newFields[idx], label: e.target.value };
                                                             setSettings({ ...settings, deal_custom_fields: newFields });
                                                         }}
-                                                        className="w-full bg-transparent border-none p-0 text-sm font-bold text-fg outline-none focus:ring-0 focus:outline-none focus:text-primary-hover"
                                                     />
                                                 </div>
-                                                <select
+                                                <Select
+                                                    name="settings-field-6"
                                                     value={field.type}
                                                     onChange={(e) => {
                                                         const newFields = [...settings.deal_custom_fields];
                                                         newFields[idx] = { ...newFields[idx], type: e.target.value as any, options: e.target.value === 'SELECT' ? ((newFields[idx] as any).options || []) : (newFields[idx] as any).options };
                                                         setSettings({ ...settings, deal_custom_fields: newFields });
                                                     }}
-                                                    className="bg-surface border border-line text-xs font-semibold text-fg-subtle rounded-lg px-2 py-1 outline-none"
-                                                >
-                                                    <option value="text">TEXT</option>
-                                                    <option value="number">NUM</option>
-                                                    <option value="date">DATE</option>
-                                                    <option value="boolean">BOOL</option>
-                                                    <option value="SELECT">SELECT</option>
-                                                </select>
-                                                <button
+                                                    options={[{ value: 'text', label: 'TEXT' }, { value: 'number', label: 'NUM' }, { value: 'date', label: 'DATE' }, { value: 'boolean', label: 'BOOL' }, { value: 'SELECT', label: 'SELECT' }]}
+                                                />
+                                                <IconButton
+                                                    label="Delete"
+                                                    variant="danger"
+                                                    icon={<Trash2 size={14} />}
                                                     onClick={() => {
                                                         setSettings({
                                                             ...settings,
                                                             deal_custom_fields: settings.deal_custom_fields.filter(f => f.id !== field.id)
                                                         });
                                                     }}
-                                                    className="p-1.5 hover:bg-danger/10 rounded-lg text-fg-muted hover:text-danger transition-all opacity-0 group-hover:opacity-100"
-                                                >
-                                                    <Trash2 size={14} />
-                                                </button>
+                                                />
                                             </div>
                                             {field.type === 'SELECT' && (
                                                 <div className="px-3 pb-3 border-t border-line pt-2">
                                                     <div className="space-y-1.5">
                                                         {((field as any).options || []).map((opt: string, optIdx: number) => (
                                                             <div key={optIdx} className="flex items-center gap-2">
-                                                                <input
-                                                                    type="text"
+                                                                <TextField
+                                                                    name="settings-field-7"
                                                                     value={opt}
                                                                     onChange={(e) => {
                                                                         const newFields = [...settings.deal_custom_fields];
@@ -781,30 +749,27 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
                                                                         newFields[idx] = { ...newFields[idx], options: newOpts } as any;
                                                                         setSettings({ ...settings, deal_custom_fields: newFields });
                                                                     }}
-                                                                    className="flex-1 bg-surface border border-line text-xs text-fg px-2 py-1 rounded-lg outline-none focus:border-primary"
                                                                     placeholder={`Option ${optIdx + 1}`}
                                                                 />
-                                                                <button
+                                                                <IconButton
+                                                                    label="Remove"
+                                                                    variant="danger"
+                                                                    icon={<X size={12} />}
                                                                     type="button"
                                                                     onClick={() => {
                                                                         const newFields = [...settings.deal_custom_fields];
                                                                         newFields[idx] = { ...newFields[idx], options: ((newFields[idx] as any).options || []).filter((_: any, i: number) => i !== optIdx) } as any;
                                                                         setSettings({ ...settings, deal_custom_fields: newFields });
                                                                     }}
-                                                                    className="p-1 hover:bg-danger/10 rounded text-fg-muted hover:text-danger transition-all"
-                                                                ><X size={12} /></button>
+                                                                />
                                                             </div>
                                                         ))}
                                                     </div>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
+                                                    <Button size="sm" variant="primary" type="button" onClick={() => {
                                                             const newFields = [...settings.deal_custom_fields];
                                                             newFields[idx] = { ...newFields[idx], options: [...((newFields[idx] as any).options || []), ''] } as any;
                                                             setSettings({ ...settings, deal_custom_fields: newFields });
-                                                        }}
-                                                        className="mt-2 text-xs text-primary hover:text-primary-hover font-semibold flex items-center gap-1 transition-colors"
-                                                    ><Plus size={10} /> Add Option</button>
+                                                        }}><Plus size={10} /> Add Option</Button>
                                                 </div>
                                             )}
                                         </div>
@@ -815,15 +780,10 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
 
                         {/* Partner Custom Fields */}
                         <Card title="Partner Fields" padding="none" className="h-fit lg:col-span-4 min-w-0" actions={(
-                            <button
-                                    onClick={() => {
+                            <Button size="sm" variant="primary" onClick={() => {
                                         const newField = { id: `pcf-${Date.now()}`, label: 'New Field', type: 'text' as const, required: false };
                                         setSettings({ ...settings, partner_custom_fields: [...(settings.partner_custom_fields || []), newField] });
-                                    }}
-                                    className="text-xs bg-primary hover:bg-primary/90 text-primary-fg px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-all active:scale-95"
-                                >
-                                    <Plus size={12} /> ADD
-                                </button>
+                                    }}><Plus size={12} /> ADD</Button>
                         )}>
                             <div className="p-6">
                                 <div className="space-y-3">
@@ -831,51 +791,45 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
                                         <div key={field.id} className="bg-surface-sunken border border-line rounded-nb group hover:border-line transition-all">
                                             <div className="flex items-center gap-3 p-3">
                                                 <div className="flex-1">
-                                                    <input
-                                                        type="text"
+                                                    <TextField
+                                                        name="settings-field-8"
                                                         value={field.label}
                                                         onChange={(e) => {
                                                             const newFields = [...(settings.partner_custom_fields || [])];
                                                             newFields[idx] = { ...newFields[idx], label: e.target.value };
                                                             setSettings({ ...settings, partner_custom_fields: newFields });
                                                         }}
-                                                        className="w-full bg-transparent border-none p-0 text-sm font-bold text-fg outline-none focus:ring-0 focus:outline-none focus:text-primary-hover"
                                                     />
                                                 </div>
-                                                <select
+                                                <Select
+                                                    name="settings-field-9"
                                                     value={field.type}
                                                     onChange={(e) => {
                                                         const newFields = [...(settings.partner_custom_fields || [])];
                                                         newFields[idx] = { ...newFields[idx], type: e.target.value as any, options: e.target.value === 'SELECT' ? (newFields[idx].options || []) : newFields[idx].options };
                                                         setSettings({ ...settings, partner_custom_fields: newFields });
                                                     }}
-                                                    className="bg-surface border border-line text-xs font-semibold text-fg-subtle rounded-lg px-2 py-1 outline-none"
-                                                >
-                                                    <option value="text">TEXT</option>
-                                                    <option value="number">NUM</option>
-                                                    <option value="date">DATE</option>
-                                                    <option value="boolean">BOOL</option>
-                                                    <option value="SELECT">SELECT</option>
-                                                </select>
-                                                <button
+                                                    options={[{ value: 'text', label: 'TEXT' }, { value: 'number', label: 'NUM' }, { value: 'date', label: 'DATE' }, { value: 'boolean', label: 'BOOL' }, { value: 'SELECT', label: 'SELECT' }]}
+                                                />
+                                                <IconButton
+                                                    label="Delete"
+                                                    variant="danger"
+                                                    icon={<Trash2 size={14} />}
                                                     onClick={() => {
                                                         setSettings({
                                                             ...settings,
                                                             partner_custom_fields: (settings.partner_custom_fields || []).filter(f => f.id !== field.id)
                                                         });
                                                     }}
-                                                    className="p-1.5 hover:bg-danger/10 rounded-lg text-fg-muted hover:text-danger transition-all opacity-0 group-hover:opacity-100"
-                                                >
-                                                    <Trash2 size={14} />
-                                                </button>
+                                                />
                                             </div>
                                             {field.type === 'SELECT' && (
                                                 <div className="px-3 pb-3 border-t border-line pt-2">
                                                     <div className="space-y-1.5">
                                                         {(field.options || []).map((opt: string, optIdx: number) => (
                                                             <div key={optIdx} className="flex items-center gap-2">
-                                                                <input
-                                                                    type="text"
+                                                                <TextField
+                                                                    name="settings-field-10"
                                                                     value={opt}
                                                                     onChange={(e) => {
                                                                         const newFields = [...(settings.partner_custom_fields || [])];
@@ -884,30 +838,27 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
                                                                         newFields[idx] = { ...newFields[idx], options: newOpts };
                                                                         setSettings({ ...settings, partner_custom_fields: newFields });
                                                                     }}
-                                                                    className="flex-1 bg-surface border border-line text-xs text-fg px-2 py-1 rounded-lg outline-none focus:border-primary"
                                                                     placeholder={`Option ${optIdx + 1}`}
                                                                 />
-                                                                <button
+                                                                <IconButton
+                                                                    label="Remove"
+                                                                    variant="danger"
+                                                                    icon={<X size={12} />}
                                                                     type="button"
                                                                     onClick={() => {
                                                                         const newFields = [...(settings.partner_custom_fields || [])];
                                                                         newFields[idx] = { ...newFields[idx], options: (newFields[idx].options || []).filter((_: any, i: number) => i !== optIdx) };
                                                                         setSettings({ ...settings, partner_custom_fields: newFields });
                                                                     }}
-                                                                    className="p-1 hover:bg-danger/10 rounded text-fg-muted hover:text-danger transition-all"
-                                                                ><X size={12} /></button>
+                                                                />
                                                             </div>
                                                         ))}
                                                     </div>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
+                                                    <Button size="sm" variant="primary" type="button" onClick={() => {
                                                             const newFields = [...(settings.partner_custom_fields || [])];
                                                             newFields[idx] = { ...newFields[idx], options: [...(newFields[idx].options || []), ''] };
                                                             setSettings({ ...settings, partner_custom_fields: newFields });
-                                                        }}
-                                                        className="mt-2 text-xs text-primary hover:text-primary-hover font-semibold flex items-center gap-1 transition-colors"
-                                                    ><Plus size={10} /> Add Option</button>
+                                                        }}><Plus size={10} /> Add Option</Button>
                                                 </div>
                                             )}
                                         </div>
@@ -937,21 +888,19 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
                                         )}
                                         {canWriteSettings && (
                                             <div className="flex items-center gap-2">
-                                                <button
+                                                <IconButton
+                                                    label={option.is_active ? 'Deactivate' : 'Activate'}
+                                                    variant="ghost"
+                                                    icon={option.is_active ? <ToggleRight size={18} className="text-success" /> : <ToggleLeft size={18} />}
                                                     onClick={() => handleToggleSourceActive(option)}
-                                                    className="p-1.5 rounded-lg text-fg-muted hover:text-fg hover:bg-line transition-all"
-                                                    title={option.is_active ? 'Deactivate' : 'Activate'}
-                                                >
-                                                    {option.is_active ? <ToggleRight size={18} className="text-success" /> : <ToggleLeft size={18} />}
-                                                </button>
+                                                />
                                                 {!option.is_system && (
-                                                    <button
+                                                    <IconButton
+                                                        label="Delete"
+                                                        variant="danger"
+                                                        icon={<Trash2 size={16} />}
                                                         onClick={() => handleDeleteSourceType(option.id)}
-                                                        className="p-1.5 rounded-lg text-fg-muted hover:text-danger hover:bg-danger/10 transition-all"
-                                                        title="Delete"
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
+                                                    />
                                                 )}
                                             </div>
                                         )}
@@ -960,21 +909,14 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
                             </div>
                             {canWriteSettings && (
                                 <div className="flex items-center gap-3 pt-2 border-t border-line">
-                                    <input
-                                        type="text"
+                                    <TextField
+                                        name="settings-field-11"
                                         value={newSourceLabel}
                                         onChange={(e) => setNewSourceLabel(e.target.value)}
                                         onKeyDown={(e) => e.key === 'Enter' && handleAddSourceType()}
                                         placeholder="New source type label…"
-                                        className="flex-1 bg-bg border border-line px-3 py-2 rounded-lg text-sm text-fg placeholder:text-fg-muted focus:outline-none focus:ring-2 focus:ring-focus"
                                     />
-                                    <button
-                                        onClick={handleAddSourceType}
-                                        disabled={isAddingSource || !newSourceLabel.trim()}
-                                        className="text-xs bg-success hover:bg-success/90 text-primary-fg px-3 py-2 rounded-lg font-semibold flex items-center gap-1.5 transition-all active:scale-95 disabled:opacity-50"
-                                    >
-                                        <Plus size={12} /> ADD
-                                    </button>
+                                    <Button size="sm" variant="primary" onClick={handleAddSourceType} disabled={isAddingSource || !newSourceLabel.trim()}><Plus size={12} /> ADD</Button>
                                 </div>
                             )}
                         </div>
@@ -985,23 +927,9 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
                         {/* ── Rules Section ── */}
                         <Card title="Lead Scoring Rules" padding="none" actions={(
                             <div className="flex items-center gap-2">
-                                    <button
-                                        onClick={handleRecalculateScores}
-                                        disabled={isRecalculating}
-                                        className="text-xs border border-line hover:border-warning text-fg-subtle hover:text-warning px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-all active:scale-95 disabled:opacity-50"
-                                    >
-                                        {isRecalculating
-                                            ? <Loader2 size={12} className="animate-spin" />
-                                            : <RefreshCw size={12} />
-                                        } Recalculate scores
-                                    </button>
+                                    <Button size="sm" variant="secondary" onClick={handleRecalculateScores} disabled={isRecalculating}>{isRecalculating ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} /> } Recalculate scores</Button>
                                     {!isAddingRule && (
-                                        <button
-                                            onClick={handleStartAddRule}
-                                            className="text-xs bg-warning hover:bg-warning/90 text-primary-fg px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-all active:scale-95"
-                                        >
-                                            <Plus size={12} /> ADD RULE
-                                        </button>
+                                        <Button size="sm" variant="primary" onClick={handleStartAddRule}><Plus size={12} /> ADD RULE</Button>
                                     )}
                                 </div>
                         )}>
@@ -1069,31 +997,27 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
                                             </div>
 
                                             {/* Active toggle */}
-                                            <button
+                                            <IconButton
+                                                label={rule.is_active ? 'Deactivate' : 'Activate'}
+                                                variant="ghost"
+                                                icon={rule.is_active ? <ToggleRight size={22} className="text-success" /> : <ToggleLeft size={22} className="text-fg-muted" />}
                                                 onClick={() => handleToggleRuleActive(rule)}
-                                                className="shrink-0"
-                                                title={rule.is_active ? 'Deactivate' : 'Activate'}
-                                            >
-                                                {rule.is_active
-                                                    ? <ToggleRight size={22} className="text-success" />
-                                                    : <ToggleLeft size={22} className="text-fg-muted" />
-                                                }
-                                            </button>
+                                            />
 
                                             {/* Edit / Delete */}
                                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                                                <button
+                                                <IconButton
+                                                    label="Edit"
+                                                    variant="ghost"
+                                                    icon={<Edit2 size={14} />}
                                                     onClick={() => handleStartEditRule(rule)}
-                                                    className="p-1.5 hover:bg-primary/10 rounded-lg text-fg-subtle hover:text-primary-hover transition-all"
-                                                >
-                                                    <Edit2 size={14} />
-                                                </button>
-                                                <button
+                                                />
+                                                <IconButton
+                                                    label="Delete"
+                                                    variant="danger"
+                                                    icon={<Trash2 size={14} />}
                                                     onClick={() => handleDeleteRule(rule.id)}
-                                                    className="p-1.5 hover:bg-danger/10 rounded-lg text-fg-subtle hover:text-danger transition-all"
-                                                >
-                                                    <Trash2 size={14} />
-                                                </button>
+                                                />
                                             </div>
                                         </div>
                                     )
@@ -1109,29 +1033,28 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
                                     <div key={cat.id} className="flex items-center gap-4 bg-surface-sunken border border-line p-3 rounded-nb">
                                         <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
                                         <div className="flex-1 flex items-center gap-3">
-                                            <input
-                                                type="text"
+                                            <TextField
+                                                name="settings-field-12"
                                                 value={cat.label}
                                                 onChange={e => setScoreCategories(prev => prev.map(c => c.id === cat.id ? { ...c, label: e.target.value } : c))}
                                                 onBlur={e => handleUpdateCategory(cat, { label: e.target.value })}
-                                                className="bg-transparent text-sm font-bold text-fg border-none outline-none w-24"
                                             />
                                             <div className="flex items-center gap-1 text-xs font-semibold text-fg-muted">
-                                                <input
+                                                <TextField
+                                                    name="settings-field-13"
                                                     type="number"
                                                     value={cat.min_score}
                                                     onChange={e => setScoreCategories(prev => prev.map(c => c.id === cat.id ? { ...c, min_score: parseInt(e.target.value) || 0 } : c))}
                                                     onBlur={e => handleUpdateCategory(cat, { min_score: parseInt(e.target.value) || 0 })}
-                                                    className="bg-surface-raised text-fg-subtle rounded px-1.5 py-0.5 w-14 text-center border-none outline-none text-xs font-semibold"
                                                 />
                                                 <span>→</span>
                                                 {cat.max_score !== null ? (
-                                                    <input
+                                                    <TextField
+                                                        name="settings-field-14"
                                                         type="number"
                                                         value={cat.max_score ?? ''}
                                                         onChange={e => setScoreCategories(prev => prev.map(c => c.id === cat.id ? { ...c, max_score: parseInt(e.target.value) || 0 } : c))}
                                                         onBlur={e => handleUpdateCategory(cat, { max_score: parseInt(e.target.value) || 0 })}
-                                                        className="bg-surface-raised text-fg-subtle rounded px-1.5 py-0.5 w-14 text-center border-none outline-none text-xs font-semibold"
                                                     />
                                                 ) : (
                                                     <span className="text-fg-muted italic">∞</span>
@@ -1211,12 +1134,11 @@ function ScoringRuleForm({
             {/* Row 1: Name */}
             <div>
                 <label className={labelCls}>Rule Name</label>
-                <input
-                    type="text"
+                <TextField
+                    name="settings-field-15"
                     value={draft.name || ''}
                     onChange={e => onChange({ ...draft, name: e.target.value })}
                     placeholder="e.g. High Budget Lead"
-                    className={inputCls}
                     autoFocus
                 />
             </div>
@@ -1225,51 +1147,43 @@ function ScoringRuleForm({
             <div className="grid grid-cols-2 wc-medium:grid-cols-4 gap-nb-3">
                 <div>
                     <label className={labelCls}>Rule Type</label>
-                    <select
+                    <Select
+                        name="settings-field-16"
                         value={ruleType}
                         onChange={e => onChange({ ...draft, rule_type: e.target.value as any, target_field: '', condition: 'equals', value: '' })}
-                        className={inputCls}
-                    >
-                        <option value="source">Source</option>
-                        <option value="activity">Activity</option>
-                        <option value="field">Data Field</option>
-                    </select>
+                        options={[{ value: 'source', label: 'Source' }, { value: 'activity', label: 'Activity' }, { value: 'field', label: 'Data Field' }]}
+                    />
                 </div>
 
                 <div>
                     <label className={labelCls}>{ruleType === 'source' ? 'Source' : ruleType === 'activity' ? 'Activity' : 'Field'}</label>
-                    <select
+                    <Select
+                        name="settings-field-17"
                         value={targetField}
                         onChange={e => onChange({ ...draft, target_field: e.target.value, condition: conditions[0]?.value as any || 'equals', value: '' })}
-                        className={inputCls}
-                    >
-                        <option value="">Select…</option>
-                        {getTargetOptions().map(o => (
-                            <option key={o.value} value={o.value}>{o.label}</option>
-                        ))}
-                    </select>
+                        options={[{ value: '', label: 'Select…' }, ...getTargetOptions().map(o => ({ value: o.value, label: o.label }))]}
+                    />
                 </div>
 
                 <div>
                     <label className={labelCls}>Condition</label>
-                    <select
+                    <Select
+                        name="settings-field-18"
                         value={draft.condition || 'equals'}
                         onChange={e => onChange({ ...draft, condition: e.target.value as any })}
-                        className={inputCls}
-                    >
-                        {conditions.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-                    </select>
+                        options={[...conditions.map(c => ({ value: c.value, label: c.label }))]}
+                    />
                 </div>
 
                 {!hideValue && (
                     <div>
                         <label className={labelCls}>Value</label>
-                        <input
+                        <TextField
+                            name="settings-field-19"
                             type={fieldType === 'number' || fieldType === 'NUMBER' ? 'number' : 'text'}
                             value={draft.value || ''}
                             onChange={e => onChange({ ...draft, value: e.target.value })}
                             placeholder="Compare value"
-                            className={inputCls}
                         />
                     </div>
                 )}
@@ -1279,42 +1193,33 @@ function ScoringRuleForm({
             <div className="flex items-end gap-4">
                 <div className="w-32">
                     <label className={labelCls}>Score Points</label>
-                    <input
+                    <TextField
+                        name="settings-field-20"
                         type="number"
                         value={draft.score_points ?? 10}
                         onChange={e => onChange({ ...draft, score_points: parseInt(e.target.value) || 0 })}
-                        className={`${inputCls} text-warning`}
                     />
                 </div>
 
                 <div className="flex items-center gap-2 pb-2">
                     <label className={`${labelCls} mb-0`}>Active</label>
-                    <button
+                    <IconButton
+                        label="Toggle"
+                        variant="ghost"
+                        icon={draft.is_active !== false ? <ToggleRight size={22} className="text-success" /> : <ToggleLeft size={22} className="text-fg-muted" />}
                         type="button"
                         onClick={() => onChange({ ...draft, is_active: !draft.is_active })}
-                    >
-                        {draft.is_active !== false
-                            ? <ToggleRight size={22} className="text-success" />
-                            : <ToggleLeft size={22} className="text-fg-muted" />
-                        }
-                    </button>
+                    />
                 </div>
 
                 <div className="flex gap-2 ml-auto">
-                    <button
+                    <IconButton
+                        label="Remove"
+                        variant="ghost"
+                        icon={<X size={12} />}
                         onClick={onCancel}
-                        className="text-xs font-semibold px-3 py-2 rounded-lg border border-line text-fg-subtle hover:text-fg transition-all"
-                    >
-                        <X size={12} />
-                    </button>
-                    <button
-                        onClick={onSave}
-                        disabled={isSaving}
-                        className="text-xs font-semibold px-4 py-2 rounded-lg bg-warning hover:bg-warning/90 text-primary-fg flex items-center gap-1.5 transition-all disabled:opacity-50"
-                    >
-                        {isSaving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
-                        Save rule
-                    </button>
+                    />
+                    <Button size="sm" variant="primary" onClick={onSave} disabled={isSaving}>{isSaving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} Save rule</Button>
                 </div>
             </div>
         </div>
