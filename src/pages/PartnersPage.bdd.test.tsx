@@ -111,16 +111,11 @@ describe('PartnersPage', () => {
             });
         });
 
-        it('When data loads / Then shows the Partner type distribution status overview instead of KPI cards', async () => {
+        it('When data loads / Then no type-distribution strip or KPI cards are drawn above the toolbar', async () => {
             render(<PartnersPage />);
-            await waitFor(() => {
-                // "Partner type distribution" is unique to the new overview component —
-                // its own "N partners" count text is NOT asserted here because the
-                // pre-existing pagination footer independently renders the same
-                // "2 partners" string (see the dedicated segment-count assertions in
-                // "Given the Partner Status Overview" below for count/percentage coverage).
-                expect(screen.getByText('Partner type distribution')).toBeInTheDocument();
-            });
+            await waitFor(() => expect(screen.getByTestId('partner-row-p1')).toBeInTheDocument());
+            expect(screen.queryByText('Partner type distribution')).not.toBeInTheDocument();
+            expect(document.querySelector('[data-slot="kpis"]')).toBeNull();
         });
 
         it('When no partners returned / Then shows empty message', async () => {
@@ -541,33 +536,21 @@ describe('PartnersPage', () => {
     });
 
     // ── status overview (replaces the old KPI card grid — task 52daf7c7) ───────
-    describe('Given the Partner Status Overview', () => {
-        it('When partners span multiple types / Then shows a segment and count per type', async () => {
+    describe('Given the Type filter carries counts (no separate overview strip)', () => {
+        it('When partners span multiple types / Then each Type option shows its count and no overview renders', async () => {
             render(<PartnersPage />);
-            await waitFor(() => {
-                expect(screen.getByTestId('partner-status-segment-referral')).toBeInTheDocument();
-                expect(screen.getByTestId('partner-status-segment-reseller')).toBeInTheDocument();
-            });
-            // p1=referral, p2=reseller → 1 each out of 2 = 50% each
-            expect(screen.getAllByText('(50%)')).toHaveLength(2);
+            await waitFor(() => expect(screen.getByTestId('partner-row-p1')).toBeInTheDocument());
+            const typeSelect = screen.getByLabelText('Type');
+            expect(typeSelect.querySelector('option[value="referral"]')).toHaveAttribute('data-count', '1');
+            expect(typeSelect.querySelector('option[value="reseller"]')).toHaveAttribute('data-count', '1');
+            expect(screen.queryByTestId('partner-status-segment-referral')).not.toBeInTheDocument();
         });
 
-        it('When no partners exist / Then the status overview is not rendered', async () => {
+        it('When no partners exist / Then the type counts are zero', async () => {
             mockPartnersGetAll.mockResolvedValue([]);
             render(<PartnersPage />);
             await waitFor(() => expect(screen.getByTestId('table')).toBeInTheDocument());
-            expect(screen.queryByText('Partner type distribution')).not.toBeInTheDocument();
-        });
-
-        it('When a partner has a type not present in Settings / Then it still gets its own segment', async () => {
-            mockPartnersGetAll.mockResolvedValue([
-                ...partners,
-                { id: 'p3', contact_name: 'Gamma LLC', partner_type: 'legacy_unlisted', grading: 'low', total_deals: 0, total_deal_value: 0, pending_commission: 0 },
-            ]);
-            render(<PartnersPage />);
-            await waitFor(() => {
-                expect(screen.getByTestId('partner-status-segment-legacy_unlisted')).toBeInTheDocument();
-            });
+            expect(screen.getByLabelText('Type').querySelector('option[value="referral"]')).toHaveAttribute('data-count', '0');
         });
     });
     // ── Field-format rules shared with the lead forms ──────────────────────────

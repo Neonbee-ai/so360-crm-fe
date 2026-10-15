@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
-import { Globe, Smartphone, ShoppingCart, UserPlus, Mail, Phone, Calendar, Store, Building2, CreditCard, Shield, CheckCircle2, Tag, GitMerge } from 'lucide-react';
+import { Globe, Smartphone, ShoppingCart, UserPlus, Mail, Phone, Calendar, Store, Building2, CreditCard, Shield, CheckCircle2, GitMerge } from 'lucide-react';
 import { useShellBridge, useSandboxLimit } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import { crmService } from '../services/crmService';
 import { ListPageTemplate, Pagination, DataTable, SearchInput, type DataTableColumn, type FilterValues, type ListFilterConfig } from '@so360/design-system';
-import { SummaryMetricChips } from '../components/common/SummaryMetricChips';
 
 type SortField = 'contact_name' | 'email' | 'channel' | 'created_at';
 type SortDirection = 'asc' | 'desc' | null;
@@ -33,13 +32,6 @@ const CustomersPage = () => {
     const shell = useShellBridge();
     const { isSandboxMode, sandboxEntryLimit, isLimited } = useSandboxLimit();
 
-    // Feature-flag-driven KPI visibility
-    // Guard on effectiveFlagsLoaded to prevent "visible then snaps hidden" flicker
-    const flagsReady     = shell?.effectiveFlagsLoaded ?? false;
-    const showModelSplit = flagsReady && (shell?.isFeatureEnabled ? shell.isFeatureEnabled('action:crm:customers:show_model_split') : false);
-    const showWeb        = flagsReady && (shell?.isFeatureEnabled ? shell.isFeatureEnabled('action:crm:customers:kpi_channel_web') : true);
-    const showMobile     = flagsReady && (shell?.isFeatureEnabled ? shell.isFeatureEnabled('action:crm:customers:kpi_channel_mobile') : true);
-    const showOffline    = flagsReady && (shell?.isFeatureEnabled ? shell.isFeatureEnabled('action:crm:customers:kpi_channel_offline') : true);
     const [customers, setCustomers] = useState<any[]>([]);
     const [stats, setStats] = useState<any>({});
     const [partners, setPartners] = useState<any[]>([]);
@@ -302,21 +294,24 @@ const CustomersPage = () => {
     const filterConfig: ListFilterConfig = {
         fields: [
             { key: 'channel', label: 'Channel', type: 'select', quick: true, options: [
-                { value: 'storefront_web', label: 'Web' },
-                { value: 'storefront_mobile', label: 'Mobile' },
-                { value: 'pos', label: 'POS' },
-                { value: 'manual', label: 'Manual' },
+                { value: 'storefront_web', label: 'Web', count: stats.storefront_web || 0 },
+                { value: 'storefront_mobile', label: 'Mobile', count: stats.storefront_mobile || 0 },
+                { value: 'pos', label: 'POS', count: stats.pos || 0 },
+                { value: 'manual', label: 'Manual', count: stats.manual || 0 },
             ] },
             { key: 'category', label: 'Category', type: 'select', quick: true, options: [
-                { value: 'b2b', label: 'B2B' },
-                { value: 'b2c', label: 'B2C' },
+                { value: 'b2b', label: 'B2B', count: stats.b2b_count || 0 },
+                { value: 'b2c', label: 'B2C', count: stats.b2c_count || 0 },
             ] },
+            ...(activeSegmentName ? [{ key: 'segment', label: 'Segment', type: 'select' as const, options: [{ value: activeSegmentName, label: activeSegmentName }] }] : []),
         ],
         values: {
             ...(channelFilter !== 'All' ? { channel: channelFilter } : {}),
             ...(categoryFilter !== 'All' ? { category: categoryFilter } : {}),
+            ...(activeSegmentName ? { segment: activeSegmentName } : {}),
         } as FilterValues,
         onChange: (next: FilterValues) => {
+            if (activeSegmentName && !next.segment) navigate('/crm/customers');
             setChannelFilter((next.channel as string) || 'All');
             setCategoryFilter((next.category as string) || 'All');
         },
@@ -332,27 +327,6 @@ const CustomersPage = () => {
         <ListPageTemplate
             title="Customers"
             description="Customers from Storefront, POS, guest checkout, and promoted leads"
-            kpis={
-            <SummaryMetricChips
-                chips={[
-                    { key: 'total', label: 'Total', count: stats.total || 0, active: channelFilter === 'All' && categoryFilter === 'All', onClick: () => { setChannelFilter('All'); setCategoryFilter('All'); } },
-                    ...(showModelSplit ? [
-                        { key: 'b2b', label: 'B2B', count: stats.b2b_count || 0, active: categoryFilter === 'b2b', onClick: () => setCategoryFilter(categoryFilter === 'b2b' ? 'All' : 'b2b') },
-                        { key: 'b2c', label: 'B2C', count: stats.b2c_count || 0, active: categoryFilter === 'b2c', onClick: () => setCategoryFilter(categoryFilter === 'b2c' ? 'All' : 'b2c') },
-                    ] : []),
-                    ...(showWeb ? [
-                        { key: 'web', label: 'Web', count: stats.storefront_web || 0, active: channelFilter === 'storefront_web', onClick: () => setChannelFilter(channelFilter === 'storefront_web' ? 'All' : 'storefront_web') },
-                    ] : []),
-                    ...(showMobile ? [
-                        { key: 'mobile', label: 'Mobile', count: stats.storefront_mobile || 0, active: channelFilter === 'storefront_mobile', onClick: () => setChannelFilter(channelFilter === 'storefront_mobile' ? 'All' : 'storefront_mobile') },
-                    ] : []),
-                    ...(showOffline ? [
-                        { key: 'pos', label: 'POS', count: stats.pos || 0, active: channelFilter === 'pos', onClick: () => setChannelFilter(channelFilter === 'pos' ? 'All' : 'pos') },
-                        { key: 'manual', label: 'Manual', count: stats.manual || 0, active: channelFilter === 'manual', onClick: () => setChannelFilter(channelFilter === 'manual' ? 'All' : 'manual') },
-                    ] : []),
-                ]}
-            />
-            }
             search={
                 <SearchInput
                     placeholder="Search customers by name, email, phone..."
@@ -361,12 +335,6 @@ const CustomersPage = () => {
                 />
             }
             filterConfig={filterConfig}
-            filters={activeSegmentName ? (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border bg-info/10 text-info border-info/20">
-                    <Tag size={12} />
-                    Segment: {activeSegmentName}
-                </span>
-            ) : undefined}
             pagination={sandboxLimitedCustomers.length > 0 ? (
                 <Pagination
                     className="w-full"

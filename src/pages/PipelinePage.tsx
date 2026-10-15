@@ -6,7 +6,7 @@ import { usePersistedState } from '../hooks/useListViewState';
 import { Deal, FlowState } from '../types/crm';
 import { Loader2, Plus } from 'lucide-react';
 import { StageTransitionModal } from '../components/kanban/StageTransitionModal';
-import { toast, ListPageTemplate, Button } from '@so360/design-system';
+import { toast, ListPageTemplate, Button, SearchInput } from '@so360/design-system';
 import CreateDealModal from '../pages/components/CreateDealModal';
 
 import { useDealFilterConfig } from '../pages/components/DealFilters';
@@ -33,7 +33,12 @@ const PipelinePage = () => {
     const [isFiltering, setIsFiltering] = useState(false);
     // Filters survive a trip to a deal's detail page and back.
     const [filters, setFilters] = usePersistedState<Filters>('pipeline.filters', {});
-    const filterConfig = useDealFilterConfig(filters, setFilters);
+    const dealFilterConfig = useDealFilterConfig(filters, setFilters);
+    // Company moves out of the drawer into the toolbar search box (same `company_name` filter).
+    const filterConfig = {
+        ...dealFilterConfig,
+        fields: dealFilterConfig.fields.filter((f) => f.key !== 'company_name'),
+    };
     const [pollTick, setPollTick] = useState(0);
 
     const [transitionModal, setTransitionModal] = useState<{
@@ -151,6 +156,13 @@ const PipelinePage = () => {
             headerSecondaryActions={canExportDeals ? [
                 <ExportMenu key="export" label="Export deals" onExport={(format) => exportService.deals(filters, format)} />,
             ] : undefined}
+            search={
+                <SearchInput
+                    placeholder="Search deals by company..."
+                    value={filters.company_name ?? ''}
+                    onChange={(v: string) => setFilters({ ...filters, company_name: v || undefined })}
+                />
+            }
             filterConfig={filterConfig}
             toolbarEnd={isFiltering ? (
                 <div className="flex items-center gap-2 text-info h-nb-control-md px-3">

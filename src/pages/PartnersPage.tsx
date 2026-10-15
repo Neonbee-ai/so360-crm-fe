@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { partnersApi, settingsApi, crmService } from '../services/crmService';
 import { ListPageTemplate, Pagination, Button, DataTable, SearchInput, TextField, Select, type DataTableColumn, type FilterValues, type ListFilterConfig } from '@so360/design-system';
-import { PartnerStatusOverview } from '../components/partners/PartnerStatusOverview';
 import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
 import { validatePhone } from '../utils/phoneValidation';
 import {
@@ -480,7 +479,7 @@ const PartnersPage = () => {
 
     const filterConfig: ListFilterConfig = {
         fields: [
-            { key: 'type', label: 'Type', type: 'select', quick: true, options: partnerTypes.map((pt: any) => ({ value: pt.value, label: pt.label })) },
+            { key: 'type', label: 'Type', type: 'select', quick: true, options: partnerTypes.map((pt: any) => ({ value: pt.value, label: pt.label, count: partners.filter((p: any) => p.partner_type === pt.value).length })) },
         ],
         values: (typeFilter !== 'All' ? { type: typeFilter } : {}) as FilterValues,
         onChange: (next: FilterValues) => setTypeFilter((next.type as string) || 'All'),
@@ -497,7 +496,6 @@ const PartnersPage = () => {
                     Add Partner
                 </Button>
             }
-            kpis={<PartnerStatusOverview partners={partners} partnerTypes={partnerTypes} />}
             search={
                 <SearchInput
                     placeholder="Search partners by name, email..."

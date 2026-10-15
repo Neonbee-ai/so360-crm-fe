@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-    Plus, FileText, Search, CheckCircle, XCircle, Clock, Send, ChevronDown, Eye, User, Inbox, Check, X,
+    Plus, FileText, Search, CheckCircle, XCircle, Clock, ChevronDown, Eye, User, Check, X,
     Download, Copy, RotateCcw, AlertCircle, RefreshCw,
     Building2, CheckSquare, Square
 } from 'lucide-react';
@@ -10,7 +10,7 @@ import { usePersistedState, useListScrollRestore } from '../hooks/useListViewSta
 import { Quote, QuoteStatus, Deal } from '../types/crm';
 import { useBusinessSettings, useActivity, useShellBridge, useQuota, useSandboxLimit } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
-import { QuotaGate, CrossLinkChip, toast, ListPageTemplate, Button, Pagination, DataTable, SearchInput, Menu, TextField, Textarea, type DataTableColumn, type FilterValues, type ListFilterConfig } from '@so360/design-system';
+import { QuotaGate, CrossLinkChip, SegmentedControl, toast, ListPageTemplate, Button, Pagination, DataTable, SearchInput, Menu, TextField, Textarea, type DataTableColumn, type FilterValues, type ListFilterConfig } from '@so360/design-system';
 import { quotesToCsv, downloadCsv } from '../components/quotes/quotesCsv';
 import { quoteToDocumentData } from '../utils/quoteToDocumentData';
 import ExportMenu from '../components/ExportMenu';
@@ -234,17 +234,6 @@ const QuotesPage = () => {
             name: deal?.name || quote.deal?.name || 'Deal',
         };
     }, [dealsMap]);
-
-    // Summary KPI stats calculation
-    const quoteStats = useMemo(() => {
-        return {
-            total: quotes.length,
-            draft: quotes.filter(q => q.status === 'draft').length,
-            pending: quotes.filter(q => q.status === 'pending_approval').length,
-            approved: quotes.filter(q => q.status === 'approved').length,
-            converted: quotes.filter(q => q.status === 'converted').length,
-        };
-    }, [quotes]);
 
     // Filtering & Sorting
     const filteredQuotes = useMemo(() => {
@@ -787,7 +776,7 @@ const QuotesPage = () => {
 
     const filterConfig: ListFilterConfig = {
         fields: [
-            { key: 'status', label: 'Status', type: 'select', quick: true, options: (Object.entries(statusColors) as [QuoteStatus, typeof statusColors[QuoteStatus]][]).map(([value, cfg]) => ({ value, label: cfg.label })) },
+            { key: 'status', label: 'Status', type: 'select', quick: true, options: (Object.entries(statusColors) as [QuoteStatus, typeof statusColors[QuoteStatus]][]).map(([value, cfg]) => ({ value, label: cfg.label, count: quotes.filter((q) => q.status === value).length })) },
             ...(deals.length > 0 ? [{ key: 'deal', label: 'Deal', type: 'select' as const, options: deals.map(d => ({ value: d.id, label: d.name })) }] : []),
             { key: 'validity', label: 'Validity', type: 'select', quick: true, options: [{ value: 'valid', label: 'Valid Proposals' }, { value: 'expired', label: 'Expired Proposals' }] },
         ],
@@ -840,35 +829,18 @@ const QuotesPage = () => {
                             </div>
     ) : null;
 
-    const viewTabsNode = (
-        <div role="tablist" aria-label="Quote views" className="inline-flex h-nb-control-md items-center gap-nb-1 rounded-nb border border-line bg-surface p-0.5">
-            {([
-                { id: 'all' as const, label: 'All Quotes', Icon: FileText },
-                { id: 'approvals' as const, label: 'Approvals', Icon: Inbox },
-            ]).map(({ id, label, Icon }) => (
-                <button
-                    key={id}
-                    type="button"
-                    role="tab"
-                    aria-selected={activeTab === id}
-                    onClick={() => setActiveTab(id)}
-                    className={`flex h-full items-center gap-1.5 rounded-nb px-nb-3 text-nb-body transition-colors ${
-                        activeTab === id ? 'bg-surface-raised text-fg font-medium' : 'text-fg-muted hover:text-fg'
-                    }`}
-                >
-                    <Icon className="w-4 h-4" />
-                    <span>{label}</span>
-                    {id === 'approvals' && pendingApprovalsCount > 0 && (
-                        <span
-                            data-testid="approvals-pending-badge"
-                            className="text-xs px-1.5 rounded-full bg-warning/20 text-warning font-medium"
-                        >
-                            {pendingApprovalsCount}
-                        </span>
-                    )}
-                </button>
-            ))}
-        </div>
+    const viewsNode = (
+        <SegmentedControl
+            size="sm"
+            aria-label="Quote views"
+            data-testid="quotes-views"
+            value={activeTab}
+            onChange={(v: string) => setActiveTab(v as 'all' | 'approvals')}
+            options={[
+                { value: 'all', label: 'All Quotes' },
+                { value: 'approvals', label: pendingApprovalsCount > 0 ? `Approvals (${pendingApprovalsCount})` : 'Approvals' },
+            ]}
+        />
     );
 
     return (
@@ -899,79 +871,7 @@ const QuotesPage = () => {
                     </Button>
                 </QuotaGate>
             ) : undefined}
-            kpis={
-            <>
-            {/* Error Notification */}
-            {error && (
-                <div className="mb-5 p-3.5 bg-danger/10 border border-danger/30 rounded-lg text-danger text-sm flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4 shrink-0 text-danger" />
-                        <span>{error}</span>
-                    </div>
-                    <button
-                        type="button"
-                        onClick={fetchData}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-danger/20 hover:bg-danger/30 rounded text-xs font-semibold text-danger transition-colors"
-                    >
-                        <RefreshCw className="w-3 h-3" />
-                        Retry
-                    </button>
-                </div>
-            )}
-
-            {/* Status Summary: Compact Interactive KPI Cards */}
-            <div className="grid grid-cols-2 wc-medium:grid-cols-3 lg:grid-cols-5 gap-nb-3 mb-nb-4">
-                {[
-                    { id: 'All', label: 'Total Quotes', count: quoteStats.total, icon: FileText, color: 'text-primary', border: 'border-line' },
-                    { id: 'draft', label: 'Draft', count: quoteStats.draft, icon: Clock, color: 'text-fg-subtle', border: 'border-line' },
-                    { id: 'pending_approval', label: 'Pending Approval', count: quoteStats.pending, icon: Send, color: 'text-warning', border: 'border-warning/30' },
-                    { id: 'approved', label: 'Approved', count: quoteStats.approved, icon: CheckCircle, color: 'text-success', border: 'border-success/30' },
-                    { id: 'converted', label: 'Converted', count: quoteStats.converted, icon: Check, color: 'text-primary', border: 'border-primary/30' },
-                ].map((stat) => {
-                    const isActive = statusFilter === stat.id;
-                    const Icon = stat.icon;
-                    return (
-                        <div
-                            key={stat.id}
-                            role="group"
-                            aria-label={`KPI ${stat.label}`}
-                            tabIndex={0}
-                            onClick={() => setStatusFilter(isActive && stat.id !== 'All' ? 'All' : stat.id)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                    e.preventDefault();
-                                    setStatusFilter(isActive && stat.id !== 'All' ? 'All' : stat.id);
-                                }
-                            }}
-                            className={`p-3.5 rounded-xl border text-left transition-all relative overflow-hidden cursor-pointer select-none ${
-                                isActive
-                                    ? 'bg-surface border-primary ring-1 ring-primary/40'
-                                    : 'bg-surface border-line hover:bg-surface-raised'
-                            }`}
-                        >
-                            <div className="flex items-center justify-between gap-2">
-                                <span className="text-xs text-fg-muted truncate">
-                                    {stat.label}
-                                </span>
-                                <Icon className={`w-4 h-4 ${stat.color} shrink-0 opacity-80`} />
-                            </div>
-                            <div className="mt-2 flex items-baseline justify-between">
-                                <span className="text-2xl font-bold text-fg font-mono">
-                                    {stat.count}
-                                </span>
-                                {isActive && (
-                                    <span className="text-xs text-primary">
-                                        Filtered
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-            </>
-            }
-            filters={viewTabsNode}
+            views={viewsNode}
             search={activeTab === 'all' ? (
                 <SearchInput placeholder="Search quotes..." value={searchTerm} onChange={setSearchTerm} />
             ) : (
@@ -992,6 +892,23 @@ const QuotesPage = () => {
             ) : undefined}
         >
             <div ref={listAnchorRef}>
+            {/* Error Notification */}
+            {error && (
+                <div className="mb-5 p-3.5 bg-danger/10 border border-danger/30 rounded-lg text-danger text-sm flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 shrink-0 text-danger" />
+                        <span>{error}</span>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={fetchData}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-danger/20 hover:bg-danger/30 rounded text-xs font-semibold text-danger transition-colors"
+                    >
+                        <RefreshCw className="w-3 h-3" />
+                        Retry
+                    </button>
+                </div>
+            )}
             {activeTab === 'all' && (
                 <>
                     {/* Sandbox limit notice */}

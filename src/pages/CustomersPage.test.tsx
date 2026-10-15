@@ -71,11 +71,11 @@ describe('Given CustomersPage', () => {
     });
   });
 
-  it('When action / Then displays stats', async () => {
-    mockGetCustomerStats.mockResolvedValue({ total: 42 });
+  it('When action / Then shows stats as filter option counts', async () => {
+    mockGetCustomerStats.mockResolvedValue({ total: 42, b2b_count: 7 });
     render(<CustomersPage />);
     await waitFor(() => {
-      expect(screen.getByTestId('summary-metric-chip-total')).toHaveTextContent('42');
+      expect(screen.getByLabelText('Category').querySelector('option[value="b2b"]')).toHaveAttribute('data-count', '7');
     });
   });
 });

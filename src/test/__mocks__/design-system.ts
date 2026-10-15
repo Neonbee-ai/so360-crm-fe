@@ -152,10 +152,10 @@ const lfControl = (f: any, values: any, onChange: (v: any) => void, setOne: (k: 
   if (f.type === 'custom') return React.createElement('div', { key: f.key, 'data-testid': name }, f.render?.(v, (n: any) => setOne(f.key, n)));
   if (f.type === 'select')
     return React.createElement('select', { key: f.key, 'aria-label': f.label, 'data-testid': name, value: typeof v === 'string' ? v : '', onChange: (e: any) => setOne(f.key, e.target.value || null) },
-      React.createElement('option', { value: '' }, f.label), (f.options ?? []).map((o: any) => React.createElement('option', { key: o.value, value: o.value }, o.label)));
+      React.createElement('option', { value: '' }, f.label), (f.options ?? []).map((o: any) => React.createElement('option', { key: o.value, value: o.value, 'data-count': o.count }, o.label)));
   if (f.type === 'multiselect')
     return React.createElement('select', { key: f.key, multiple: true, 'aria-label': f.label, 'data-testid': name, value: Array.isArray(v) ? v : [], onChange: (e: any) => setOne(f.key, Array.from(e.target.selectedOptions).map((o: any) => o.value)) },
-      (f.options ?? []).map((o: any) => React.createElement('option', { key: o.value, value: o.value }, o.label)));
+      (f.options ?? []).map((o: any) => React.createElement('option', { key: o.value, value: o.value, 'data-count': o.count }, o.label)));
   if (f.type === 'boolean')
     return React.createElement('input', { key: f.key, type: 'checkbox', 'aria-label': f.label, 'data-testid': name, checked: !!v, onChange: (e: any) => setOne(f.key, e.target.checked || null) });
   if (f.type === 'daterange')
@@ -192,7 +192,7 @@ export const ListPageTemplate = (p: any) =>
       React.createElement('h1', null, p.title), p.count != null ? React.createElement('span', { 'data-slot': 'count' }, p.count) : null,
       slot('primary', p.primaryAction), slot('secondary', p.headerSecondaryActions), slot('overflow', Array.isArray(p.overflowActions) ? p.overflowActions.map((a: any) => React.createElement('button', { key: a.label, onClick: a.onSelect }, a.label)) : p.overflowActions)),
     slot('kpis', p.kpis),
-    React.createElement('div', { 'data-slot': 'toolbar' }, p.search, p.filterConfig ? React.createElement(ListFilters, p.filterConfig) : null, p.filters, p.toolbar, p.toolbarEnd),
+    React.createElement('div', { 'data-slot': 'toolbar' }, p.views ? React.createElement('div', { 'data-slot': 'views' }, p.views) : null, p.search, p.filterConfig ? React.createElement(ListFilters, p.filterConfig) : null, p.filters, p.toolbar, p.toolbarEnd),
     p.loading ? React.createElement('div', { 'data-slot': 'skeleton' }) : null,
     !p.loading && p.isEmpty ? React.createElement('div', { 'data-slot': 'empty' }, p.empty) : null,
     !p.loading && p.isFilteredEmpty ? React.createElement('div', { 'data-slot': 'filtered-empty' }, React.createElement('button', { onClick: p.onClearFilters }, 'Clear filters')) : null,

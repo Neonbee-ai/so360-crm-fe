@@ -18,9 +18,10 @@ vi.mock('../services/crmService', () => ({
   },
 }));
 
+let mockSearch = '';
 vi.mock('react-router-dom', () => ({
   useNavigate: () => mockNavigate,
-  useLocation: () => ({ pathname: '/crm/customers', search: '' }),
+  useLocation: () => ({ pathname: '/crm/customers', search: mockSearch }),
 }));
 
 vi.mock('@so360/shell-context', () => ({
@@ -104,6 +105,7 @@ beforeEach(async () => {
   mockUseShellBridge = vi.mocked(shell.useShellBridge);
   mockUseShellBridge.mockImplementation(defaultShellImpl);
   tableProps = {};
+  mockSearch = '';
   mockGetCustomers.mockResolvedValue(customers);
   mockGetCustomerStats.mockResolvedValue(stats);
   mockGetPartners.mockResolvedValue(mockPartners);
@@ -125,28 +127,35 @@ describe('CustomersPage', () => {
       });
     });
 
-    it('When the page renders / Then shows total stat', async () => {
+    it('When the page renders / Then no stat chip strip is drawn above the toolbar', async () => {
       render(<CustomersPage />);
-      await waitFor(() => {
-        expect(screen.getByTestId('summary-metric-chip-total')).toHaveTextContent('3');
-      });
+      await waitFor(() => expect(screen.getByTestId('customer-row-c1')).toBeInTheDocument());
+      expect(screen.queryByTestId('summary-metric-chip-total')).not.toBeInTheDocument();
+      expect(document.querySelector('[data-slot="kpis"]')).toBeNull();
     });
 
-    it('When model split is enabled / Then shows B2B and B2C summary chips', async () => {
+    it('When stats load / Then Category options carry the B2B and B2C counts', async () => {
       render(<CustomersPage />);
-      await waitFor(() => {
-        expect(screen.getByTestId('summary-metric-chip-b2b')).toBeInTheDocument();
-        expect(screen.getByTestId('summary-metric-chip-b2c')).toBeInTheDocument();
-      });
+      await waitFor(() => expect(screen.getByLabelText('Category').querySelector('option[value="b2b"]')).toHaveAttribute('data-count', '1'));
+      expect(screen.getByLabelText('Category').querySelector('option[value="b2c"]')).toHaveAttribute('data-count', '2');
     });
 
-    it('When channel KPIs are enabled / Then shows channel summary chips', async () => {
+    it('When stats load / Then Channel options carry the per-channel counts', async () => {
       render(<CustomersPage />);
-      await waitFor(() => {
-        expect(screen.getByTestId('summary-metric-chip-web')).toBeInTheDocument();
-        expect(screen.getByTestId('summary-metric-chip-mobile')).toBeInTheDocument();
-        expect(screen.getByTestId('summary-metric-chip-pos')).toBeInTheDocument();
-      });
+      const ch = () => screen.getByLabelText('Channel');
+      await waitFor(() => expect(ch().querySelector('option[value="pos"]')).toHaveAttribute('data-count', '1'));
+      expect(ch().querySelector('option[value="storefront_web"]')).toHaveAttribute('data-count', '1');
+      expect(ch().querySelector('option[value="storefront_mobile"]')).toHaveAttribute('data-count', '0');
+    });
+
+    it('When opened from a segment link / Then the segment is a filter field and clearing it leaves the segment', async () => {
+      mockSearch = '?segmentId=s1&segmentName=VIPs';
+      mockGetCustomerSegmentCustomers.mockResolvedValue({ customers, segment: { name: 'VIPs' } });
+      render(<CustomersPage />);
+      await waitFor(() => expect(screen.getByTestId('filters-button')).toBeInTheDocument());
+      fireEvent.click(screen.getByTestId('filters-button'));
+      const seg = await screen.findByLabelText('Segment');
+      expect(seg.querySelector('option[value="VIPs"]')).not.toBeNull();
     });
   });
 
@@ -425,23 +434,12 @@ describe('CustomersPage', () => {
     });
   });
 
-  describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
-    it('When effectiveFlagsLoaded is false / Then channel summary chips are absent (no flicker)', async () => {
+  describe('Given channel filtering no longer depends on KPI flags', () => {
+    it('When flags are not loaded / Then the Channel filter options are still available', async () => {
       mockUseShellBridge.mockReturnValue({ effectiveFlagsLoaded: false, isFeatureEnabled: () => false } as any);
       render(<CustomersPage />);
       await waitFor(() => expect(screen.getByText('Customers')).toBeInTheDocument());
-      expect(screen.queryByTestId('summary-metric-chip-web')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('summary-metric-chip-mobile')).not.toBeInTheDocument();
-    });
-
-    it('When effectiveFlagsLoaded is true and flags return true / Then channel summary chips are present', async () => {
-      mockUseShellBridge.mockReturnValue({
-        effectiveFlagsLoaded: true,
-        isFeatureEnabled: () => true,
-      } as any);
-      render(<CustomersPage />);
-      await waitFor(() => expect(screen.getByText('Customers')).toBeInTheDocument());
-      await waitFor(() => expect(screen.getByTestId('summary-metric-chip-web')).toBeInTheDocument());
+      expect(screen.getByLabelText('Channel').querySelector('option[value="pos"]')).not.toBeNull();
     });
   });
 });

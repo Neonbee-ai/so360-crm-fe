@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CheckCircle2, Circle, AlertCircle, Calendar, Trash2, UserPlus, Building2, Plus } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { Task } from '../types/crm';
-import { ListPageTemplate, Pagination, Button, Tabs, DataTable, Select, SearchInput, toast, type DataTableColumn, type FilterValues, type ListFilterConfig } from '@so360/design-system';
+import { ListPageTemplate, Pagination, Button, SegmentedControl, DataTable, Select, SearchInput, toast, type DataTableColumn, type FilterValues, type ListFilterConfig } from '@so360/design-system';
 import { useShell, useShellBridge, useSandboxLimit } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import { canCurrentUserBeAssigned, isTaskAssignedToUser, isTaskLocked, isTaskOverdue, TASK_LOCKED_HINT } from '../utils/taskUtils';
@@ -212,6 +212,7 @@ const TasksPage = () => {
             key: 'title',
             header: 'Task',
             sortable: true,
+            widthClassName: 'min-w-64',
             render: (task: Task) => (
                 <div className="flex items-start gap-3">
                     <button
@@ -223,8 +224,8 @@ const TasksPage = () => {
                     >
                         {task.status === 'DONE' ? <CheckCircle2 size={18} className="text-success" /> : <Circle size={18} />}
                     </button>
-                    <div className="flex flex-col gap-0.5">
-                        <span className={`font-semibold ${task.status === 'DONE' ? 'text-fg-muted line-through' : 'text-fg'}`}>
+                    <div className="flex min-w-0 flex-col gap-0.5">
+                        <span className={`line-clamp-2 font-semibold ${task.status === 'DONE' ? 'text-fg-muted line-through' : 'text-fg'}`}>
                             {task.title}
                         </span>
                     </div>
@@ -283,6 +284,7 @@ const TasksPage = () => {
             key: 'assigned_to',
             header: 'Assigned To',
             sortable: true,
+            widthClassName: 'min-w-48',
             render: (task: Task) => (
                 <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-2">
                     <Select
@@ -374,15 +376,17 @@ const TasksPage = () => {
                 />
             }
             filterConfig={filterConfig}
-            filters={(canViewTeamTasks || canViewAllTasks) ? (
-                <Tabs
-                    name="task-scope"
+            views={(canViewTeamTasks || canViewAllTasks) ? (
+                <SegmentedControl
+                    size="sm"
+                    aria-label="Task scope"
+                    data-testid="tasks-scope-views"
                     value={taskScope}
                     onChange={(id) => setTaskScope(id as typeof taskScope)}
-                    items={[
-                        { id: 'own', label: 'My Tasks' },
-                        ...(canViewTeamTasks ? [{ id: 'team', label: 'Team Tasks' }] : []),
-                        ...(canViewAllTasks ? [{ id: 'all', label: 'All Tasks' }] : []),
+                    options={[
+                        { value: 'own', label: 'My Tasks' },
+                        ...(canViewTeamTasks ? [{ value: 'team', label: 'Team Tasks' }] : []),
+                        ...(canViewAllTasks ? [{ value: 'all', label: 'All Tasks' }] : []),
                     ]}
                 />
             ) : undefined}

@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Filter,
   Plus,
-  Tag,
   UserCheck,
   Trash2,
   Archive,
@@ -30,7 +29,6 @@ import { LeadDetailPanel } from '../components/leads/LeadDetailPanel';
 import LeadFilterBuilder from '../components/leads/LeadFilterBuilder';
 import { countActiveRules, type FilterGroup } from '../components/leads/leadFilterModel';
 import { leadsToCsv, downloadCsv } from '../components/leads/leadsCsv';
-import { SummaryMetricChips } from '../components/common/SummaryMetricChips';
 import { useNotify, useActivity, useShellBridge, useQuota, useSandboxLimit } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import { describeApiError } from '../utils/apiErrorMessage';
@@ -38,7 +36,7 @@ import { publishLeadsChanged } from '../utils/leadEvents';
 import ExportMenu, { useCanExport } from '../components/ExportMenu';
 import { exportService } from '../services/exportService';
 import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
-import { QuotaGate, toast, ListPageTemplate, Button, Badge, SearchInput, EmptyState, Pagination, ConfirmDialog, TextField } from '@so360/design-system';
+import { QuotaGate, toast, ListPageTemplate, Button, SearchInput, EmptyState, Pagination, ConfirmDialog, TextField, SegmentedControl } from '@so360/design-system';
 import type { FilterValues, ListFilterConfig } from '@so360/design-system';
 
 // ─── Saved views (lightweight local version) ──────────────────────────────────
@@ -52,6 +50,9 @@ interface FilterState {
   customDateStart: string;
   customDateEnd: string;
 }
+
+/** Sentinel owner-filter value for the Unassigned view (leads with no owner). */
+const UNASSIGNED_OWNER = '__unassigned__';
 
 const DEFAULT_FILTERS: FilterState = {
   search: '',
@@ -182,6 +183,7 @@ const LeadsPage = () => {
   const [leadSources, setLeadSources] = useState<string[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [customFields, setCustomFields] = useState<{ id: string; label: string }[]>([]);
+  const [gridControlsSlot, setGridControlsSlot] = useState<HTMLElement | null>(null);
   const [activeSegmentName, setActiveSegmentName] = useState<string | null>(null);
 
   // UI
@@ -337,27 +339,21 @@ const LeadsPage = () => {
         if (!hit) return false;
       }
       if (filters.status !== 'All' && lead.status !== filters.status) return false;
-      if (filters.owner !== 'All' && lead.owner?.id !== filters.owner) return false;
+      if (filters.owner === UNASSIGNED_OWNER) { if (lead.owner?.id) return false; }
+      else if (filters.owner !== 'All' && lead.owner?.id !== filters.owner) return false;
       if (filters.creator !== 'All' && lead.creator?.id !== filters.creator) return false;
       if (!isDateInRange(lead.created_at, filters.dateRange, filters.customDateStart, filters.customDateEnd)) return false;
       return true;
     });
   }, [leads, filters]);
 
-  // KPI chip counts — derived purely for display, computed off the full unpaginated
-  // list (not filteredLeads) so the chips always reflect totals regardless of the
-  // active filter/search state.
+  // Status counts shown on the Status filter options — computed off the full unpaginated
+  // list so they reflect totals regardless of the active filter/search state.
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const lead of leads) counts[lead.status] = (counts[lead.status] ?? 0) + 1;
     return counts;
   }, [leads]);
-
-  const kpiStages = leadStages;
-
-  const toggleStatusChip = useCallback((stageName: string) => {
-    setFilter('status', filters.status === stageName ? 'All' : stageName);
-  }, [filters.status, setFilter]);
 
   const sandboxLeads = useMemo(
     () => (isSandboxMode ? filteredLeads.slice(0, sandboxEntryLimit) : filteredLeads),
@@ -711,10 +707,22 @@ const LeadsPage = () => {
   ].filter((a: any) => !a.options || a.options.length > 0),
   [users, leadStages, leadSources, canDeleteLead, handleBulkOwnerChange, handleBulkStatusChange, handleBulkSourceChange, handleBulkExport, handleBulkDelete]);
 
+  const ownerScope: 'all' | 'mine' | 'unassigned' =
+    filters.owner === UNASSIGNED_OWNER ? 'unassigned' : shell?.user?.id && filters.owner === shell.user.id ? 'mine' : 'all';
+  const handleOwnerScope = useCallback((scope: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      owner: scope === 'unassigned' ? UNASSIGNED_OWNER : scope === 'mine' && shell?.user?.id ? shell.user.id : 'All',
+    }));
+    setCurrentPage(1);
+    setActiveViewId(null);
+  }, [shell?.user?.id]);
+
   const leadFilterConfig: ListFilterConfig = {
     fields: [
-      { key: 'status', label: 'Status', type: 'select', quick: true, options: leadStages.map((st) => ({ value: st.name, label: st.name })) },
-      { key: 'owner', label: 'Owner', type: 'select', quick: true, options: users.map((u) => ({ value: u.id, label: u.full_name })) },
+      { key: 'status', label: 'Status', type: 'select', quick: true, options: leadStages.map((st) => ({ value: st.name, label: st.name, count: statusCounts[st.name] ?? 0 })) },
+      { key: 'owner', label: 'Owner', type: 'select', quick: true, options: [{ value: UNASSIGNED_OWNER, label: 'Unassigned' }, ...users.map((u) => ({ value: u.id, label: u.full_name }))] },
+      ...(activeSegmentName ? [{ key: 'segment', label: 'Segment', type: 'select' as const, options: [{ value: activeSegmentName, label: activeSegmentName }] }] : []),
       {
         key: 'dateRange', label: 'Date range', type: 'select', quick: true,
         options: ['Today', 'Yesterday', 'This Week', 'Last Week', 'This Month', 'Last Month', 'Custom'].map((v) => ({ value: v, label: v === 'Custom' ? 'Custom Range' : v })),
@@ -728,8 +736,10 @@ const LeadsPage = () => {
       ...(filters.dateRange !== 'All' ? { dateRange: filters.dateRange } : {}),
       ...(filters.customDateStart || filters.customDateEnd ? { customDates: { start: filters.customDateStart, end: filters.customDateEnd } } : {}),
       ...(filters.creator !== 'All' ? { creator: filters.creator } : {}),
+      ...(activeSegmentName ? { segment: activeSegmentName } : {}),
     } as FilterValues,
     onChange: (next: FilterValues) => {
+      if (activeSegmentName && !next.segment) navigate({ search: '' }, { replace: true });
       const cd = next.customDates as { start?: string; end?: string } | null | undefined;
       setFilters((prev) => ({
         ...prev,
@@ -776,17 +786,17 @@ const LeadsPage = () => {
           ...(canExportLeads ? [<ExportMenu key="export" label="Export leads" onExport={(format) => exportService.leads({ status: filters.status }, format)} />] : []),
         ]}
         overflowActions={canImportLeads ? [{ label: 'Import', icon: <UploadCloud size={16} aria-hidden="true" />, onSelect: () => setIsImportOpen(true) }] : undefined}
-        kpis={
-          <SummaryMetricChips
-            chips={[
-              { key: 'total', label: 'Total', count: leads.length, active: filters.status === 'All', onClick: () => setFilter('status', 'All') },
-              ...kpiStages.map((stage) => ({
-                key: stage.id,
-                label: stage.name,
-                count: statusCounts[stage.name] ?? 0,
-                active: filters.status === stage.name,
-                onClick: () => toggleStatusChip(stage.name),
-              })),
+        views={
+          <SegmentedControl
+            size="sm"
+            aria-label="Lead scope"
+            data-testid="leads-scope-views"
+            value={ownerScope}
+            onChange={handleOwnerScope}
+            options={[
+              { value: 'all', label: 'All' },
+              { value: 'mine', label: 'My', disabled: !shell?.user?.id },
+              { value: 'unassigned', label: 'Unassigned' },
             ]}
           />
         }
@@ -798,16 +808,9 @@ const LeadsPage = () => {
           />
         }
         filterConfig={leadFilterConfig}
-        filters={
-          activeSegmentName ? (
-            <Badge tone="primary">
-              <Tag size={12} aria-hidden="true" />
-              Segment: {activeSegmentName}
-            </Badge>
-          ) : undefined
-        }
         toolbarEnd={
           <>
+        <div ref={setGridControlsSlot} className="flex shrink-0 items-center" data-slot="grid-controls" />
         {/* Saved views */}
         <div ref={viewsDropdownRef} className="relative shrink-0">
             <button
@@ -1015,6 +1018,7 @@ const LeadsPage = () => {
           onRowClick={(lead) => setDetailLead((prev) => (prev?.id === lead.id ? null : lead))}
           bulkActions={bulkActions}
           customFields={customFields}
+          controlsSlot={gridControlsSlot}
         />
       </ListPageTemplate>
 

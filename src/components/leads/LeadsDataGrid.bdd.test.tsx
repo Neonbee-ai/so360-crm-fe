@@ -574,3 +574,21 @@ describe('LeadsDataGrid — group by', () => {
     expect(screen.getByText('Acme Corp')).toBeDefined();
   });
 });
+
+describe('LeadsDataGrid — compact controls slot (Comb toolbarEnd)', () => {
+  it('Given a controls slot / When rendered / Then group, density and columns controls portal into it, compact', () => {
+    const slot = document.createElement('div');
+    document.body.appendChild(slot);
+    render(<LeadsDataGrid leads={[makeLead()]} context={buildContext()} onRowClick={vi.fn()} controlsSlot={slot} />);
+    const bar = within(slot).getByTestId('leads-grid-controls');
+    expect(within(bar).getByRole('button', { name: /group by/i })).toHaveClass('h-nb-control-md');
+    expect(within(bar).getByRole('button', { name: /row density/i })).toBeInTheDocument();
+    expect(within(bar).getByRole('button', { name: /customize columns/i })).toBeInTheDocument();
+    slot.remove();
+  });
+
+  it('Given no controls slot / When rendered / Then the controls are not portalled', () => {
+    render(<LeadsDataGrid leads={[makeLead()]} context={buildContext()} onRowClick={vi.fn()} />);
+    expect(screen.queryByTestId('leads-grid-controls')).not.toBeInTheDocument();
+  });
+});

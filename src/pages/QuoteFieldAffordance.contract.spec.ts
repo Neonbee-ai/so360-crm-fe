@@ -55,10 +55,12 @@ describe('Given the editable-field style tokens', () => {
 });
 
 describe('Given the Quote page', () => {
-    it('When it renders an editable control / Then it uses the shared tokens', () => {
-        expect(source).toContain("from '../components/common/fieldStyles'");
-        expect(source).toContain('className={EDITABLE_FIELD_CLASS}');
-        expect(source).toContain('className={EDITABLE_FIELD_SM_NUMERIC_CLASS}');
+    it('When it renders an editable control / Then it uses the Comb form controls, which own the editable look', () => {
+        // The page no longer hand-styles inputs with the fieldStyles tokens (Comb adoption);
+        // TextField/Textarea/Select from the design system carry the well-style affordance.
+        expect(source).toMatch(/import \{[^}]*\bTextField\b[^}]*\} from '@so360\/design-system'/);
+        expect(source).toMatch(/import \{[^}]*\bTextarea\b[^}]*\} from '@so360\/design-system'/);
+        expect(source).not.toMatch(/<input\b|<textarea\b/);
     });
 
     it('Then no control is left with the old disabled-looking fill', () => {
@@ -66,12 +68,8 @@ describe('Given the Quote page', () => {
     });
 
     it('Then the whole form — details, line items and notes & terms — is restyled, not just one section', () => {
-        // 16 controls carried the disabled-looking fill: Title and Valid Until,
-        // the line-item cells, and every Notes & Terms field.
-        const usages =
-            source.split('className={EDITABLE_FIELD_CLASS}').length - 1 +
-            (source.split('className={EDITABLE_FIELD_SM_CLASS}').length - 1) +
-            (source.split('className={EDITABLE_FIELD_SM_NUMERIC_CLASS}').length - 1);
+        // 16 controls carried the disabled-looking fill; all are now DS form controls.
+        const usages = (source.match(/<(TextField|Textarea|Select)\b/g) ?? []).length;
         expect(usages).toBeGreaterThanOrEqual(16);
     });
 });

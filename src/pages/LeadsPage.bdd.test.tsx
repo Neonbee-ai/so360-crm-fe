@@ -329,61 +329,6 @@ describe('LeadsPage', () => {
     });
   });
 
-  describe('Given the compact KPI status chips', () => {
-    it('When the page renders / Then each chip shows the count for its stage', async () => {
-      render(<LeadsPage />);
-      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      expect(screen.getByText('3 Total')).toBeInTheDocument();
-      expect(screen.getByText('2 New')).toBeInTheDocument();
-      expect(screen.getByText('1 Qualified')).toBeInTheDocument();
-      expect(screen.getByText('0 Converted')).toBeInTheDocument();
-    });
-
-    it('When there are more than 4 lead stages / Then every stage still gets a chip (no truncation)', async () => {
-      mockGetSettings.mockResolvedValueOnce({
-        ...settings,
-        lead_stages: [
-          { id: 'new', name: 'New' },
-          { id: 'contacted', name: 'Contacted' },
-          { id: 'qualified', name: 'Qualified' },
-          { id: 'proposal', name: 'Proposal Sent' },
-          { id: 'negotiation', name: 'Negotiation' },
-          { id: 'converted', name: 'Converted' },
-          { id: 'lost', name: 'Lost' },
-        ],
-      });
-      render(<LeadsPage />);
-      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      expect(screen.getByText('0 Negotiation')).toBeInTheDocument();
-      expect(screen.getByText('0 Converted')).toBeInTheDocument();
-      expect(screen.getByText('0 Lost')).toBeInTheDocument();
-    });
-
-    it('When a stage chip is clicked / Then it applies the same status filter as the Status select', async () => {
-      const user = userEvent.setup();
-      render(<LeadsPage />);
-      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      await user.click(screen.getByText('1 Qualified'));
-      await waitFor(() => {
-        expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument();
-        expect(screen.getByTestId('lead-row-l2')).toBeInTheDocument();
-      });
-    });
-
-    it('When an active stage chip is clicked again / Then it resets the status filter to All', async () => {
-      const user = userEvent.setup();
-      render(<LeadsPage />);
-      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      await user.click(screen.getByText('1 Qualified'));
-      await waitFor(() => expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument());
-      await user.click(screen.getByText('1 Qualified'));
-      await waitFor(() => {
-        expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument();
-        expect(screen.getByTestId('lead-row-l2')).toBeInTheDocument();
-      });
-    });
-  });
-
   describe('Given no leads exist', () => {
     it('When the page renders / Then shows the empty state message', async () => {
       mockGetLeads.mockResolvedValue([]);
@@ -455,41 +400,11 @@ describe('LeadsPage', () => {
     });
   });
 
-  describe('Given the leads KPI total chip (replaces the removed quota progress bar)', () => {
-    it('When 3 leads are loaded / Then the Total chip shows leads.length', async () => {
-      render(<LeadsPage />);
-      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      expect(screen.getByText('3 Total')).toBeInTheDocument();
-    });
-
-    it('When a lead is deleted / Then the Total chip decrements to reflect the new leads.length', async () => {
-      render(<LeadsPage />);
-      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      expect(screen.getByText('3 Total')).toBeInTheDocument();
-      fireEvent.click(screen.getByTestId('delete-btn-l1'));
-      await waitFor(() => expect(screen.getByText('Delete Lead')).toBeInTheDocument());
-      fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete' }));
-      await waitFor(() => expect(mockDeleteLead).toHaveBeenCalledWith('l1'));
-      await waitFor(() => expect(screen.getByText('2 Total')).toBeInTheDocument());
-    });
-
-    it('When no leads exist / Then the Total chip shows 0', async () => {
-      mockGetLeads.mockResolvedValue([]);
-      render(<LeadsPage />);
-      await waitFor(() => expect(screen.getByText('0 Total')).toBeInTheDocument());
-    });
-
-    it('When the page loads / Then no quota progress bar is rendered', async () => {
-      render(<LeadsPage />);
-      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      expect(screen.queryByTestId('quota-bar')).not.toBeInTheDocument();
-    });
-  });
-
   describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
     it('When effectiveFlagsLoaded is false / Then New Lead button is absent', async () => {
       const { useShellBridge } = await import('@so360/shell-context');
-      vi.mocked(useShellBridge).mockReturnValueOnce({
+      // Persistent (not Once): the toolbar-slot ref callback re-renders the page on mount.
+      vi.mocked(useShellBridge).mockReturnValue({
         effectiveFlagsLoaded: false,
         permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => false,
       } as any);
@@ -950,5 +865,59 @@ describe('LeadsPage - ListPageTemplate slots', () => {
     render(<LeadsPage />);
     await waitFor(() => expect(screen.getByText('No leads yet')).toBeInTheDocument());
     expect(within(document.querySelector('[data-slot="empty"]') as HTMLElement).getByRole('button', { name: /new lead/i })).toBeInTheDocument();
+  });
+});
+
+describe('LeadsPage — Comb list standard (views, counts, grid controls)', () => {
+  it('Given leads load / When rendered / Then no KPI strip is drawn and Status options carry counts', async () => {
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+    expect(document.querySelector('[data-slot="kpis"]')).toBeNull();
+    const status = screen.getByLabelText('Status');
+    const counts = Array.from(status.querySelectorAll('option')).filter((o) => o.getAttribute('data-count') != null);
+    expect(counts.find((o) => o.value === 'New')).toHaveAttribute('data-count', '2');
+    expect(counts.find((o) => o.value === 'Qualified')).toHaveAttribute('data-count', '1');
+  });
+
+  it('Given the views control / When rendered / Then it offers All, My and Unassigned (no Team) with My disabled without a user', async () => {
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('leads-scope-views')).toBeInTheDocument());
+    expect(screen.getByRole('radio', { name: 'All' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'My' })).toBeDisabled();
+    expect(screen.getByRole('radio', { name: 'Unassigned' })).toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: 'Team' })).not.toBeInTheDocument();
+  });
+
+  it('Given an unowned lead / When Unassigned is chosen / Then only leads without an owner remain', async () => {
+    mockGetLeads.mockResolvedValue([...leads, { ...leads[0], id: 'l4', company_name: 'Orphan Ltd', owner: undefined }]);
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l4')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('radio', { name: 'Unassigned' }));
+    await waitFor(() => {
+      expect(screen.getByTestId('lead-row-l4')).toBeInTheDocument();
+      expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('lead-row-l2')).not.toBeInTheDocument();
+    });
+  });
+
+  it('Given a signed-in user / When My is chosen / Then only that user\'s leads remain', async () => {
+    const shell = await import('@so360/shell-context');
+    vi.mocked(shell.useShellBridge).mockImplementation(() => ({
+      effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true,
+      isFeatureEnabled: () => true, isFeatureHidden: () => false, currentOrg: { id: 'org-1' }, user: { id: 'u2' },
+    } as any));
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('radio', { name: 'My' }));
+    await waitFor(() => {
+      expect(screen.getByTestId('lead-row-l2')).toBeInTheDocument();
+      expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument();
+    });
+  });
+
+  it('Given the toolbar / When rendered / Then a grid-controls slot is provided to the grid', async () => {
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+    expect(document.querySelector('[data-slot="grid-controls"]')).not.toBeNull();
   });
 });

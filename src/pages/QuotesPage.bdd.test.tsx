@@ -324,12 +324,13 @@ describe('QuotesPage', () => {
       expect(screen.queryByPlaceholderText('Search deals...')).not.toBeInTheDocument();
     });
 
-    it('When the page renders / Then shows stats cards with correct counts', async () => {
+    it('When the page renders / Then no stat cards are drawn and the Status options carry counts', async () => {
       render(<QuotesPage />);
-      await waitFor(() => {
-        expect(screen.getByText('Total Quotes')).toBeInTheDocument();
-        expect(screen.getByText('3')).toBeInTheDocument();
-      });
+      await waitFor(() => expect(screen.getByLabelText('Status')).toBeInTheDocument());
+      expect(screen.queryByText('Total Quotes')).not.toBeInTheDocument();
+      expect(document.querySelector('[data-slot="kpis"]')).toBeNull();
+      const withCount = Array.from(screen.getByLabelText('Status').querySelectorAll('option')).filter((o) => o.hasAttribute('data-count'));
+      expect(withCount.length).toBeGreaterThan(0);
     });
   });
 

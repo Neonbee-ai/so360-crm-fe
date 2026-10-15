@@ -7,6 +7,7 @@ import React, {
   useLayoutEffect,
   ReactNode,
 } from 'react';
+import { createPortal } from 'react-dom';
 import {
   ChevronUp,
   ChevronDown,
@@ -101,6 +102,8 @@ export interface LeadsDataGridProps {
   onRowClick: (lead: Lead) => void;
   bulkActions?: BulkAction[];
   customFields?: { id: string; label: string }[];
+  /** When set, group/density/columns controls render compact into this toolbar slot instead of their own row. */
+  controlsSlot?: HTMLElement | null;
 }
 
 // ─── Status helpers ────────────────────────────────────────────────────────────
@@ -897,6 +900,7 @@ export function LeadsDataGrid({
   onRowClick,
   bulkActions = [],
   customFields = [],
+  controlsSlot = null,
 }: LeadsDataGridProps) {
   const formatters = useCRMFormatters();
   const fmt = formatters.formatDate;
@@ -1294,6 +1298,86 @@ export function LeadsDataGrid({
   return (
     <>
       {/* Toolbar */}
+      {controlsSlot ? createPortal(
+        <div className="flex items-center gap-1" data-testid="leads-grid-controls">
+          {/* Group by */}
+          <div className="relative" ref={groupMenuRef}>
+            <button
+              onClick={() => setShowGroupMenu((v) => !v)}
+              className={`flex h-nb-control-md items-center gap-1.5 px-2 rounded-nb text-nb-body transition-colors border ${
+                grouped
+                  ? 'text-primary bg-primary/10 border-primary/40'
+                  : 'text-fg-subtle hover:text-fg hover:bg-surface-raised border-line'
+              }`}
+              title="Group by"
+              aria-label="Group by"
+            >
+              <Layers size={14} />
+              {grouped && <span>{GROUP_BY_OPTIONS.find((o) => o.key === groupBy)?.label}</span>}
+            </button>
+            {showGroupMenu && (
+              <div
+                data-testid="group-by-menu"
+                className="absolute right-0 top-full mt-1.5 z-menu bg-surface border border-line rounded-xl shadow-xl py-1 min-w-40"
+              >
+                {GROUP_BY_OPTIONS.map((o) => (
+                  <button
+                    key={o.key}
+                    onClick={() => { setGroupBy(o.key); setCollapsedGroups(new Set()); setShowGroupMenu(false); }}
+                    className={`w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors ${
+                      groupBy === o.key ? 'text-primary bg-primary/10' : 'text-fg-subtle hover:bg-surface-raised'
+                    }`}
+                  >
+                    {groupBy === o.key && <Check size={12} />}
+                    <span className={groupBy === o.key ? '' : 'ml-4'}>{o.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Density picker */}
+          <div className="relative" ref={densityMenuRef}>
+            <button
+              onClick={() => setShowDensityMenu((v) => !v)}
+              className="flex h-nb-control-md items-center gap-1.5 px-2 rounded-nb text-nb-body text-fg-subtle hover:text-fg hover:bg-surface-raised transition-colors border border-line"
+              title="Row density"
+              aria-label="Row density"
+            >
+              <AlignJustify size={14} />
+              <span className="sr-only capitalize">{density}</span>
+            </button>
+            {showDensityMenu && (
+              <div className="absolute right-0 top-full mt-1.5 z-menu bg-surface border border-line rounded-xl shadow-xl py-1 min-w-36">
+                {(['compact', 'comfortable', 'spacious'] as GridDensity[]).map((d) => (
+                  <button
+                    key={d}
+                    onClick={() => { setDensity(d); setShowDensityMenu(false); }}
+                    className={`w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors capitalize ${
+                      density === d ? 'text-primary bg-primary/10' : 'text-fg-subtle hover:bg-surface-raised'
+                    }`}
+                  >
+                    {density === d && <Check size={12} />}
+                    <span className={density === d ? '' : 'ml-4'}>{d}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Column manager */}
+          <button
+            onClick={() => setShowColumnManager(true)}
+            className="flex h-nb-control-md items-center gap-1.5 px-2 rounded-nb text-nb-body text-fg-subtle hover:text-fg hover:bg-surface-raised transition-colors border border-line"
+            title="Customize columns"
+            aria-label="Customize columns"
+          >
+            <Settings2 size={14} />
+            <span className="sr-only">Columns</span>
+          </button>
+        </div>
+      , controlsSlot) : null}
+      {(!controlsSlot || sorts.length > 0) && (
       <div className="flex w-full min-w-0 items-center justify-between mb-2">
         <span className="text-sm text-fg-muted">
           {sorts.length > 0 && (
@@ -1305,6 +1389,7 @@ export function LeadsDataGrid({
             </button>
           )}
         </span>
+        {!controlsSlot && (
         <div className="flex items-center gap-2">
           {/* Group by */}
           <div className="relative" ref={groupMenuRef}>
@@ -1379,7 +1464,9 @@ export function LeadsDataGrid({
             Columns
           </button>
         </div>
+        )}
       </div>
+      )}
 
       {/* Grid (desktop) / card list (narrow) */}
       {isNarrow ? (

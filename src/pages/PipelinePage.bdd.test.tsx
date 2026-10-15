@@ -200,6 +200,27 @@ describe('PipelinePage', () => {
     });
   });
 
+  describe('Given the toolbar carries the company search', () => {
+    it('When rendered / Then a search box sits in the toolbar beside the filters', async () => {
+      render(<PipelinePage />);
+      await waitFor(() => expect(screen.getByTestId('deal-filters')).toBeInTheDocument());
+      const slot = document.querySelector('[data-slot="toolbar"]') as HTMLElement;
+      expect(slot).not.toBeNull();
+      expect(slot.querySelector('input')).toHaveAttribute('placeholder', 'Search deals by company...');
+    });
+
+    it('When the user types a company / Then the pipeline is re-fetched with company_name', async () => {
+      const user = userEvent.setup();
+      render(<PipelinePage />);
+      await waitFor(() => expect(screen.getByTestId('deal-filters')).toBeInTheDocument());
+      await user.type(screen.getByPlaceholderText('Search deals by company...'), 'Acme');
+      await waitFor(() => {
+        const last = mockGetPipeline.mock.calls[mockGetPipeline.mock.calls.length - 1];
+        expect(last[0]).toEqual({ company_name: 'Acme' });
+      });
+    });
+  });
+
   describe('Given an empty pipeline', () => {
     it('When no stages are returned / Then renders the kanban with zero stages', async () => {
       mockGetPipeline.mockResolvedValue({ stages: [] });

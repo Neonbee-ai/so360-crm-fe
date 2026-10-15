@@ -94,6 +94,33 @@ beforeEach(async () => {
 });
 
 describe('TasksPage', () => {
+  describe('Given the user may view team and all tasks', () => {
+    it('When rendered / Then scope is a views segmented control with My, Team and All options', async () => {
+      render(<TasksPage />);
+      await waitFor(() => expect(screen.getByTestId('table')).toBeInTheDocument());
+      const group = screen.getByTestId('tasks-scope-views');
+      expect(group).toBeInTheDocument();
+      expect(screen.getByRole('radio', { name: 'My Tasks' })).toBeInTheDocument();
+      expect(screen.getByRole('radio', { name: 'Team Tasks' })).toBeInTheDocument();
+      expect(screen.getByRole('radio', { name: 'All Tasks' })).toBeInTheDocument();
+    });
+
+    it('When Team Tasks is chosen / Then tasks are reloaded with team scope', async () => {
+      render(<TasksPage />);
+      await waitFor(() => expect(mockGetTasks).toHaveBeenCalled());
+      fireEvent.click(screen.getByRole('radio', { name: 'Team Tasks' }));
+      await waitFor(() => expect(mockGetTasks).toHaveBeenLastCalledWith('team'));
+    });
+
+    it('When columns are built / Then the title column is wide and the assignee column cannot collapse', async () => {
+      render(<TasksPage />);
+      await waitFor(() => expect(tableProps.columns).toBeDefined());
+      const col = (k: string) => tableProps.columns.find((c: any) => c.key === k);
+      expect(col('title').widthClassName).toBe('min-w-64');
+      expect(col('assigned_to').widthClassName).toBe('min-w-48');
+    });
+  });
+
   describe('Given tasks are loading', () => {
     it('When rendered / Then shows loading state via Table', async () => {
       mockGetTasks.mockReturnValue(new Promise(() => {}));
