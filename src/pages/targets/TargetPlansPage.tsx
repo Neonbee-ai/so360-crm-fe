@@ -1,10 +1,14 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useShellBridge } from '@so360/shell-context';
 import { Copy, Trash2, Plus, Sparkles, X, Loader2, AlertCircle } from 'lucide-react';
-import { Modal } from '../../components/common/Modal';
 import { targetPlanService } from '../../services/targetPlanService';
 import { salesTargetService } from '../../services/salesTargetService';
-import { EmptyState, Panel, PersonName, PersonPicker, formatValue } from './targetUi';
+import {
+  EmptyState,
+  PersonName,
+  PersonPicker,
+  formatValue,
+} from './targetUi';
 import {
   classifyTaskTypes,
   unlinkedLeadStages as computeUnlinkedLeadStages,
@@ -14,7 +18,7 @@ import {
 import AllocateTeamPlanPanel from './AllocateTeamPlanPanel';
 import EditPlanPanel from './EditPlanPanel';
 import { canCreatePlan, canEditPlan, canAllocatePlan } from './targetPlanPermissions';
-import { DashboardPageTemplate, Button, IconButton, DataTable, TextField, Select, NumberInput, DatePicker, Checkbox, Badge, EmptyState as DsEmptyState, Grid, GridItem } from '@so360/design-system';
+import { ListPageTemplate, SearchInput, Grid, GridItem, Button, IconButton, DataTable, TextField, Select, NumberInput, DatePicker, Checkbox, Badge, EmptyState as DsEmptyState, Card , Modal } from '@so360/design-system';
 import type { DataTableColumn } from '@so360/design-system';
 
 type Period = 'week' | 'month' | 'quarter' | 'year';
@@ -46,6 +50,7 @@ export default function TargetPlansPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [allocating, setAllocating] = useState<string | null>(null);
@@ -408,6 +413,11 @@ export default function TargetPlansPage() {
     ) },
   ];
 
+  const filteredPlans = plans.filter((p: any) => {
+    const q = search.trim().toLowerCase();
+    return !q || `${p.name ?? ''} ${p.owner_type ?? ''} ${p.period ?? ''} ${p.status ?? ''}`.toLowerCase().includes(q);
+  });
+
   const planColumns: DataTableColumn<any>[] = [
     { key: 'name', header: 'Name', sortable: true, sortValue: (p) => p.name || '', render: (p) => <span className="text-fg">{p.name}</span> },
     { key: 'owner', header: 'Owner', render: (p) => (
@@ -422,8 +432,11 @@ export default function TargetPlansPage() {
   ];
 
   return (
-    <DashboardPageTemplate
+    <ListPageTemplate
       title="Target Plans"
+      count={plans.length}
+      search={<SearchInput value={search} onChange={setSearch} placeholder="Search plans…" />}
+      loading={loading}
       primaryAction={canCreatePlan(shell) ? (
         <Button onClick={() => setShowForm((s) => !s)}>
           {showForm ? 'Cancel' : 'New plan'}
@@ -436,7 +449,7 @@ export default function TargetPlansPage() {
       {notice && <div className="text-sm text-success">{notice}</div>}
 
       {!loading && !taskTypes.length && (
-        <Panel title="Set up your metrics first">
+        <Card title="Set up your metrics first">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="text-sm text-fg-subtle">
               This organisation has no metrics yet, so a plan cannot be built
@@ -451,7 +464,7 @@ export default function TargetPlansPage() {
               Load starter metrics
             </Button>
           </div>
-        </Panel>
+        </Card>
       )}
 
       {editing && (
@@ -472,7 +485,7 @@ export default function TargetPlansPage() {
       )}
 
       {showForm && (
-        <Panel title="New target plan">
+        <Card title="New target plan">
           <div className="space-y-4">
             <div className="flex flex-wrap gap-4">
               <div className="grow basis-64">
@@ -624,18 +637,16 @@ export default function TargetPlansPage() {
               </Button>
             </div>
           </div>
-        </Panel>
+        </Card>
       )}
 
-      {loading ? (
-        <div className="text-sm text-fg-subtle">Loading plans…</div>
-      ) : !plans.length ? (
+      {loading ? null : !plans.length ? (
         <EmptyState message="No target plans yet." />
       ) : (
-        <Panel title="Plans">
+        <Card title="Plans">
           <DataTable
             columns={planColumns}
-            rows={plans}
+            rows={filteredPlans}
             rowKey={(p: any) => p.id}
             rowActions={(p: any) => [
               ...(canEditPlan(shell) ? [{ label: 'Edit', onSelect: () => setEditing(p.id) }] : []),
@@ -643,12 +654,12 @@ export default function TargetPlansPage() {
             ]}
             getRowProps={(p: any) => ({ 'data-testid': `plan-row-${p.id}` })}
           />
-        </Panel>
+        </Card>
       )}
 
       {showCustomMetricModal && (
         <Modal
-          isOpen={showCustomMetricModal}
+          open={showCustomMetricModal}
           onClose={() => setShowCustomMetricModal(false)}
           title="Create Custom Metric"
           size="md"
@@ -673,7 +684,9 @@ export default function TargetPlansPage() {
                   { value: 'SUM', label: 'Sum / Value', desc: 'Financial or numeric total' },
                   { value: 'TOUCHPOINT', label: 'Touchpoint', desc: 'Multi-channel interactions' },
                 ].map((k) => (
-<GridItem key={k.value} span={4}>                  <Button
+                  <GridItem key={k.value} span={4}>
+                  <Button
+                    key={k.value}
                     type="button"
                     variant={customMetricKind === k.value ? 'primary' : 'secondary'}
                     onClick={() => {
@@ -684,7 +697,8 @@ export default function TargetPlansPage() {
                     }}
                   >
                     {k.label} — {k.desc}
-                  </Button></GridItem>
+                  </Button>
+                  </GridItem>
                 ))}
               </Grid>
             </div>
@@ -718,7 +732,7 @@ export default function TargetPlansPage() {
 
       {showLeadStageModal && (
         <Modal
-          isOpen={showLeadStageModal}
+          open={showLeadStageModal}
           onClose={() => setShowLeadStageModal(false)}
           title="Add Lead Stage Metric"
           size="md"
@@ -774,7 +788,7 @@ export default function TargetPlansPage() {
         </Modal>
       )}
     </div>
-    </DashboardPageTemplate>
+    </ListPageTemplate>
   );
 }
 

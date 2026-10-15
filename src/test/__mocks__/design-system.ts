@@ -358,3 +358,7 @@ export const Split = ({ rail, children, 'data-testid': testId }: any) =>
   React.createElement('div', { 'data-testid': testId ?? 'split' },
     React.createElement('div', { 'data-testid': 'split-main' }, children),
     rail ? React.createElement('aside', { 'data-testid': 'split-rail' }, rail) : null);
+export const FormField = ({ label, children }: any) =>
+  React.createElement('div', null, label ? React.createElement('label', null, label) : null, children);
+export const Progress = ({ value, max = 100, label, showValue, 'data-testid': testId }: any) =>
+  React.createElement('div', { role: 'progressbar', 'aria-valuenow': value, 'aria-valuemax': max, 'data-testid': testId }, label ?? null, showValue ? String(value) : null);

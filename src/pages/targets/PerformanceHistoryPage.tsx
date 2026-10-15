@@ -1,8 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useShellBridge } from '@so360/shell-context';
 import { targetPlanService } from '../../services/targetPlanService';
-import { EmptyState, ErrorState, LoadingState, Panel, formatPct, formatValue } from './targetUi';
-import { DashboardPageTemplate, DataTable } from '@so360/design-system';
+import {
+  EmptyState,
+  ErrorState,
+  formatPct,
+  formatValue,
+} from './targetUi';
+import { ListPageTemplate, DataTable } from '@so360/design-system';
 import type { DataTableColumn } from '@so360/design-system';
 
 /**
@@ -46,28 +51,11 @@ export default function PerformanceHistoryPage() {
     load();
   }, [load]);
 
-  if (loading || error || !data?.periods?.length) {
-    return (
-      <DashboardPageTemplate title="Performance History">
-        {loading ? (
-          <LoadingState />
-        ) : error ? (
-          <ErrorState error={error} onRetry={load} />
-        ) : (
-          <EmptyState
-            title="No completed periods yet"
-            description="History appears once a target period closes."
-          />
-        )}
-      </DashboardPageTemplate>
-    );
-  }
-
   // Metric columns are derived from the data, never hardcoded — the same
   // screen renders whatever metrics the org actually configured.
   const metricNames: string[] = Array.from(
     new Set(
-      data.periods.flatMap((p: any) =>
+      (data?.periods ?? []).flatMap((p: any) =>
         p.metrics.map((m: any) => m.metric_name),
       ),
     ),
@@ -95,29 +83,38 @@ export default function PerformanceHistoryPage() {
     { key: 'changed', header: '', render: (p) => <span className="text-xs text-fg-muted">{p.plan_changed ? 'target changed' : ''}</span> },
   ];
 
+  const periods: any[] = data?.periods ?? [];
+  const summary = periods.length
+    ? [
+        `Average ${formatPct(data.average)}`,
+        data.best ? `Best ${data.best.period_start} (${formatPct(data.best.overall_attainment)})` : null,
+        `Plan changes ${data.plan_changes}`,
+      ].filter(Boolean).join(' · ')
+    : undefined;
+
   return (
-    <DashboardPageTemplate title="Performance History">
-    <div className="space-y-5">
-
-      <Panel title="By period">
-        <DataTable
-          columns={columns}
-          rows={data.periods}
-          rowKey={(p: any) => p.period_start}
-        />
-
-        <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-fg-subtle">
-          <span>Average {formatPct(data.average)}</span>
-          {data.best && (
-            <span>
-              Best {data.best.period_start} (
-              {formatPct(data.best.overall_attainment)})
-            </span>
-          )}
-          <span>Plan changes {data.plan_changes}</span>
-        </div>
-      </Panel>
-    </div>
-    </DashboardPageTemplate>
+    <ListPageTemplate
+      title="Performance History"
+      description={summary}
+      count={periods.length || undefined}
+      loading={loading}
+      isEmpty={!loading && (!!error || !periods.length)}
+      empty={
+        error ? (
+          <ErrorState error={error} onRetry={load} />
+        ) : (
+          <EmptyState
+            title="No completed periods yet"
+            description="History appears once a target period closes."
+          />
+        )
+      }
+    >
+      <DataTable
+        columns={columns}
+        rows={periods}
+        rowKey={(p: any) => p.period_start}
+      />
+    </ListPageTemplate>
   );
 }

@@ -1,7 +1,10 @@
-import { Button, TextField, Select } from '@so360/design-system';
+import { Button, TextField, Select, Card } from '@so360/design-system';
 import React, { useEffect, useState } from 'react';
 import { targetPlanService } from '../../services/targetPlanService';
-import { Panel, PersonPicker, formatValue } from './targetUi';
+import {
+  PersonPicker,
+  formatValue,
+} from './targetUi';
 import {
   buildAllocationEntries,
   summariseAllocation,
@@ -87,9 +90,9 @@ export default function AllocateTeamPlanPanel({
   };
 
   return (
-    <Panel
+    <Card
       title={plan ? `Allocate · ${plan.name}` : 'Allocate'}
-      action={
+      actions={
         <Button variant="secondary" size="sm"
           onClick={onClose}
         >
@@ -214,6 +217,6 @@ export default function AllocateTeamPlanPanel({
           </div>
         </div>
       )}
-    </Panel>
+    </Card>
   );
 }

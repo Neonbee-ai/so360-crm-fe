@@ -5,19 +5,18 @@ import {
   type Overview,
 } from '../../services/targetPlanService';
 import {
-  ElapsedBar,
   EmptyState,
   ErrorState,
   LoadingState,
-  Panel,
-  ProgressBar,
+  STATUS_TONE,
   Sparkline,
-  StatusChip,
   TrendArrow,
+  attainmentProps,
   formatPct,
   formatValue,
+  statusText,
 } from './targetUi';
-import { DashboardPageTemplate } from '@so360/design-system';
+import { DashboardPageTemplate, Badge, Progress, Card, Grid, GridItem } from '@so360/design-system';
 
 /**
  * The landing screen.
@@ -93,19 +92,20 @@ export default function TargetsOverviewPage() {
         </div>
       )}
     >
-    <div className="space-y-5">
+    <Grid>
       {h && (
-        <div className="max-w-md">
-          <div className="flex justify-between text-xs text-fg-muted mb-1">
-            <span>Period elapsed</span>
-            <span>{formatPct(h.elapsed_fraction)}</span>
-          </div>
-          <ElapsedBar fraction={h.elapsed_fraction} />
-        </div>
+        <GridItem span={6}>
+          <Progress
+            value={Math.min(Math.max(h.elapsed_fraction, 0), 1) * 100}
+            size="sm"
+            label={`Period elapsed · ${formatPct(h.elapsed_fraction)}`}
+          />
+        </GridItem>
       )}
 
       {h && (
-        <Panel title={h.metric_name}>
+        <GridItem span={12}>
+        <Card title={h.metric_name}>
           <div className="space-y-4">
             <div>
               <div className="flex items-baseline justify-between">
@@ -122,13 +122,9 @@ export default function TargetsOverviewPage() {
                   of {formatValue(h.target, h.unit, currency)}
                 </span>
               </div>
-              <ProgressBar
-                actual={h.actual}
-                target={h.target}
-                status={h.status}
-              />
+              <Progress {...attainmentProps(h.actual, h.target, h.status)} />
               <div className="mt-2">
-                <StatusChip status={h.status} label={h.status_label} />
+                <Badge tone={STATUS_TONE[h.status]} dot>{statusText(h.status, h.status_label)}</Badge>
               </div>
             </div>
 
@@ -166,7 +162,7 @@ export default function TargetsOverviewPage() {
                   </div>
                   {h.projection.projectedStatus && (
                     <div className="mt-2">
-                      <StatusChip status={h.projection.projectedStatus} />
+                      <Badge tone={STATUS_TONE[h.projection.projectedStatus]} dot>{statusText(h.projection.projectedStatus)}</Badge>
                     </div>
                   )}
                 </>
@@ -179,13 +175,15 @@ export default function TargetsOverviewPage() {
               )}
             </div>
           </div>
-        </Panel>
+        </Card>
+        </GridItem>
       )}
 
       {data.trend && data.trend.points.length > 0 && (
-        <Panel
+        <GridItem span={6}>
+        <Card
           title="Trend"
-          action={
+          actions={
             <span className="flex items-center gap-2 text-xs text-fg-subtle">
               average {formatPct(data.trend.average)}
               <TrendArrow direction={data.trend.direction} />
@@ -207,11 +205,13 @@ export default function TargetsOverviewPage() {
               mid-flight
             </div>
           )}
-        </Panel>
+        </Card>
+        </GridItem>
       )}
 
       {data.needs_attention.length > 0 && (
-        <Panel title="Needs attention">
+        <GridItem span={6}>
+        <Card title="Needs attention">
           <div className="space-y-2">
             {data.needs_attention.map((n) => (
               <div
@@ -219,7 +219,7 @@ export default function TargetsOverviewPage() {
                 className="flex items-center justify-between gap-4 text-sm"
               >
                 <div className="flex items-center gap-2 min-w-0">
-                  <StatusChip status={n.status.status} label="" />
+                  <Badge tone={STATUS_TONE[n.status.status]} dot />
                   <span className="text-fg truncate">
                     {n.metric_name}
                     {n.dimension_value ? ` · ${n.dimension_value}` : ''}
@@ -234,10 +234,12 @@ export default function TargetsOverviewPage() {
               </div>
             ))}
           </div>
-        </Panel>
+        </Card>
+        </GridItem>
       )}
 
-      <Panel title="All metrics">
+      <GridItem span={12}>
+      <Card title="All metrics">
         <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
           {data.metrics
             .filter((m) => !m.dimension_key)
@@ -247,12 +249,13 @@ export default function TargetsOverviewPage() {
                 <span className="text-fg-subtle">
                   {formatPct(m.attainment)}
                 </span>
-                <StatusChip status={m.status} label="" />
+                <Badge tone={STATUS_TONE[m.status]} dot />
               </div>
             ))}
         </div>
-      </Panel>
-    </div>
+      </Card>
+      </GridItem>
+    </Grid>
     </DashboardPageTemplate>
   );
 }

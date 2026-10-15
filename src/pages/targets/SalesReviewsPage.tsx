@@ -4,18 +4,15 @@ import { targetPlanService } from '../../services/targetPlanService';
 import {
   EmptyState,
   ErrorState,
-  LoadingState,
-  Panel,
   PersonName,
   PersonPicker,
   formatPct,
   formatValue,
   reviewPeriodBounds,
 } from './targetUi';
-import { DashboardPageTemplate, Button, DataTable, TextField, Select, FormField } from '@so360/design-system';
+import { ListPageTemplate, Button, DataTable, TextField, Select, FormField, Modal, Drawer, Alert, Badge, SearchInput, Stack, Grid, GridItem } from '@so360/design-system';
 import { ClipboardList, Plus } from 'lucide-react';
-import { Modal } from '../../components/common/Modal';
-import type { DataTableColumn } from '@so360/design-system';
+import type { DataTableColumn, FilterValues } from '@so360/design-system';
 
 /**
  * Monthly and quarterly sales reviews.
@@ -32,6 +29,8 @@ export default function SalesReviewsPage() {
   const shell = useShellBridge();
   const [reviews, setReviews] = useState<any[]>([]);
   const [active, setActive] = useState<any | null>(null);
+  const [search, setSearch] = useState('');
+  const [filters, setFilters] = useState<FilterValues>({ status: '', period_type: '' });
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -183,18 +182,26 @@ export default function SalesReviewsPage() {
     setStartOpen(true);
   };
 
+  const q = search.trim().toLowerCase();
+  const rows = reviews.filter(
+    (r) =>
+      (!filters.status || r.status === filters.status) &&
+      (!filters.period_type || r.period_type === filters.period_type) &&
+      (!q || String(r.period_start || '').toLowerCase().includes(q)),
+  );
+
   const columns: DataTableColumn<any>[] = [
     { key: 'period', header: 'Period', sortable: true, sortValue: (r) => r.period_start || '', render: (r) => <span className="text-fg">{r.period_start}</span> },
     { key: 'type', header: 'Type', render: (r) => <span className="text-fg-subtle">{r.period_type}</span> },
     { key: 'person', header: 'Person', render: (r) => <span className="text-fg-subtle"><PersonName id={r.person_id} /></span> },
     { key: 'attainment', header: 'Attainment', align: 'right', sortable: true, sortValue: (r) => r.results?.headline?.attainment ?? 0, render: (r) => <span className="text-fg-subtle">{formatPct(r.results?.headline?.attainment)}</span> },
-    { key: 'status', header: 'Status', render: (r) => <span className="text-fg-subtle">{r.status}</span> },
+    { key: 'status', header: 'Status', render: (r) => <Badge tone={r.status === 'finalized' ? 'success' : 'neutral'}>{r.status}</Badge> },
     { key: 'evidence', header: 'HR evidence', render: (r) => (
       <span className="text-xs">
         {r.pc_synced_at ? (
-          <span className="text-success">sent</span>
+          <Badge tone="success">sent</Badge>
         ) : r.status === 'finalized' ? (
-          <span className="text-warning">{r.pc_sync_error ? 'failed' : 'pending'}</span>
+          <Badge tone={r.pc_sync_error ? 'danger' : 'warning'}>{r.pc_sync_error ? 'failed' : 'pending'}</Badge>
         ) : (
           <span className="text-fg-muted">—</span>
         )}
@@ -202,22 +209,73 @@ export default function SalesReviewsPage() {
     ) },
   ];
 
+  const needsSync = reviews.some((r) => r.status === 'finalized' && !r.pc_synced_at);
+
   return (
-    <DashboardPageTemplate
+    <>
+    <ListPageTemplate
       title="Reviews"
+      count={reviews.length}
       primaryAction={(
         <Button variant="primary" onClick={openStart}>
           <Plus size={16} aria-hidden="true" /> New review
         </Button>
       )}
+      search={<SearchInput value={search} onChange={setSearch} placeholder="Search by period…" />}
+      filterConfig={{
+        fields: [
+          { key: 'status', label: 'Status', type: 'select', options: [
+            { value: 'draft', label: 'Draft' },
+            { value: 'finalized', label: 'Finalized' },
+          ] },
+          { key: 'period_type', label: 'Type', type: 'select', options: [
+            { value: 'monthly', label: 'Monthly' },
+            { value: 'quarterly', label: 'Quarterly' },
+          ] },
+        ],
+        values: filters,
+        onChange: setFilters,
+        onClear: () => setFilters({ status: '', period_type: '' }),
+      }}
+      loading={loading}
+      isEmpty={!loading && !reviews.length}
+      empty={
+        error ? (
+          <ErrorState error={error} onRetry={load} />
+        ) : (
+          <EmptyState
+            icon={ClipboardList}
+            title="No reviews yet"
+            description="A review is created for a person and period, pre-filled with that period's numbers."
+            action={{ label: 'New review', onClick: openStart }}
+          />
+        )
+      }
+      isFilteredEmpty={!loading && reviews.length > 0 && !rows.length}
+      onClearFilters={() => { setFilters({ status: '', period_type: '' }); setSearch(''); }}
     >
-    <div className="space-y-5">
-
-      {error && !loading && <ErrorState error={error} onRetry={load} />}
-      {notice && <div className="text-sm text-success">{notice}</div>}
+      {error && !loading && reviews.length > 0 && <ErrorState error={error} onRetry={load} />}
+      {notice && <Alert variant="success">{notice}</Alert>}
+      {needsSync && (
+        <Alert
+          variant="warning"
+          action={{ label: 'Retry push', onClick: retrySync }}
+        >
+          Some finalized reviews have not reached People Connect, so they are
+          not yet usable as appraisal evidence.
+        </Alert>
+      )}
+      <DataTable
+        columns={columns}
+        rows={rows}
+        rowKey={(r: any) => r.id}
+        onRowClick={(r: any) => setActive(r)}
+        getRowProps={(r: any) => ({ 'data-testid': `review-row-${r.id}` })}
+      />
+    </ListPageTemplate>
 
       <Modal
-        isOpen={startOpen}
+        open={startOpen}
         onClose={() => setStartOpen(false)}
         title="New review"
         size="md"
@@ -294,58 +352,15 @@ export default function SalesReviewsPage() {
         </div>
       </Modal>
 
-      {reviews.some(
-        (r) => r.status === 'finalized' && !r.pc_synced_at,
-      ) && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded border border-warning/30 bg-warning/5 px-3 py-2">
-          <span className="text-xs text-warning">
-            Some finalized reviews have not reached People Connect, so they are
-            not yet usable as appraisal evidence.
-          </span>
-          <Button variant="primary" size="sm"
-            onClick={retrySync}
-            disabled={busy}
-          >
-            Retry push
-          </Button>
-        </div>
-      )}
-
-      {loading ? (
-        <LoadingState />
-      ) : !reviews.length ? (
-        error ? null :
-        <EmptyState
-          icon={ClipboardList}
-          title="No reviews yet"
-          description="A review is created for a person and period, pre-filled with that period's numbers."
-          action={{ label: 'New review', onClick: openStart }}
-        />
-      ) : (
-        <Panel title="All reviews">
-          <DataTable
-            columns={columns}
-            rows={reviews}
-            rowKey={(r: any) => r.id}
-            onRowClick={(r: any) => setActive(r)}
-            getRowProps={(r: any) => ({ 'data-testid': `review-row-${r.id}` })}
-          />
-        </Panel>
-      )}
-
-      {active && (
-        <Panel
-          title={`Review · ${active.period_start} → ${active.period_end}`}
-          action={
-            <Button variant="secondary" size="sm"
-              onClick={() => setActive(null)}
-            >
-              Close
-            </Button>
-          }
-        >
-          <div className="space-y-4">
-            <div className="flex flex-wrap gap-6 text-sm">
+      <Drawer
+        isOpen={!!active}
+        onClose={() => setActive(null)}
+        title={active ? `Review · ${active.period_start} → ${active.period_end}` : 'Review'}
+        size="lg"
+      >
+        {active && (
+          <Stack>
+            <Grid>
               <Block title="Results">
                 {(active.results?.metrics ?? []).map((m: any) => (
                   <div
@@ -400,7 +415,7 @@ export default function SalesReviewsPage() {
                   </span>
                 </div>
               </Block>
-            </div>
+            </Grid>
 
             <div className="border-t border-line pt-3">
               <div className="flex items-center justify-between mb-2">
@@ -480,11 +495,10 @@ export default function SalesReviewsPage() {
                 )}
               </div>
             )}
-          </div>
-        </Panel>
-      )}
-    </div>
-    </DashboardPageTemplate>
+          </Stack>
+        )}
+      </Drawer>
+    </>
   );
 }
 
@@ -496,11 +510,11 @@ function Block({
   children: React.ReactNode;
 }) {
   return (
-    <div className="grow basis-64">
+    <GridItem span={4}>
       <div className="text-xs text-fg-muted mb-2">
         {title}
       </div>
       <div className="space-y-1">{children}</div>
-    </div>
+    </GridItem>
   );
 }

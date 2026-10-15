@@ -1,5 +1,5 @@
 import React from 'react';
-import { EmptyState as DsEmptyState, DatePicker, Button, IconButton, TextField, Skeleton } from '@so360/design-system';
+import { EmptyState as DsEmptyState, DatePicker, Button, IconButton, TextField, Skeleton, Alert, type BadgeTone } from '@so360/design-system';
 import { AlertCircle, Inbox, UserX, X } from 'lucide-react';
 import type { TargetStatus, TrendPoint } from '../../services/targetPlanService';
 
@@ -12,86 +12,40 @@ import type { TargetStatus, TrendPoint } from '../../services/targetPlanService'
  * without an industry branch in the UI.
  */
 
-export const STATUS_DOT: Record<TargetStatus, string> = {
-  on_track: 'bg-success',
-  at_risk: 'bg-warning',
-  behind: 'bg-danger',
-  achieved: 'bg-success',
-  exceeded: 'bg-info',
+/** Badge tone per target status — Comb Badge draws the chip. */
+export const STATUS_TONE: Record<TargetStatus, BadgeTone> = {
+  on_track: 'success',
+  at_risk: 'warning',
+  behind: 'danger',
+  achieved: 'success',
+  exceeded: 'info',
 };
 
-export const STATUS_TEXT: Record<TargetStatus, string> = {
-  on_track: 'text-success',
-  at_risk: 'text-warning',
-  behind: 'text-danger',
-  achieved: 'text-success',
-  exceeded: 'text-info',
+const PROGRESS_TONE: Record<TargetStatus, 'success' | 'warning' | 'danger' | 'brand'> = {
+  on_track: 'success',
+  at_risk: 'warning',
+  behind: 'danger',
+  achieved: 'success',
+  exceeded: 'brand',
 };
 
-export const STATUS_BAR: Record<TargetStatus, string> = {
-  on_track: 'bg-success',
-  at_risk: 'bg-warning',
-  behind: 'bg-danger',
-  achieved: 'bg-success',
-  exceeded: 'bg-info',
-};
-
-export function StatusChip({
-  status,
-  label,
-}: {
-  status: TargetStatus;
-  label?: string;
-}) {
-  return (
-    <span className={`inline-flex items-center gap-1.5 text-xs ${STATUS_TEXT[status]}`}>
-      <span className={`h-2 w-2 rounded-full ${STATUS_DOT[status]}`} />
-      {label ?? status.replace('_', ' ')}
-    </span>
-  );
+/** Default chip text for a status when the API supplies no label. */
+export function statusText(status: TargetStatus, label?: string): string {
+  return label ?? status.replace('_', ' ');
 }
 
 /**
- * Progress bar. The fill is capped at 100% so the bar never overflows its
- * track, but the percentage label is NOT capped — 133% stays visible, because
+ * Props for the DS Progress bar. The fill is clamped by Progress, but the
+ * percentage is never capped in text — 133% stays visible elsewhere, because
  * hiding overachievement is as misleading as hiding a shortfall.
  */
-export function ProgressBar({
-  actual,
-  target,
-  status,
-  compact,
-}: {
-  actual: number;
-  target: number;
-  status: TargetStatus;
-  compact?: boolean;
-}) {
+export function attainmentProps(actual: number, target: number, status: TargetStatus) {
   const raw = target > 0 ? (actual / target) * 100 : 0;
-  const pct = Math.min(raw, 100);
-  return (
-    <div className={compact ? '' : 'mt-2'}>
-      <div className={`${compact ? 'h-1.5' : 'h-2'} bg-surface-raised rounded-full overflow-hidden`}>
-        <div
-          className={`h-full rounded-full transition-all duration-500 ${STATUS_BAR[status]}`}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-    </div>
-  );
-}
-
-/** Elapsed-time bar. Without this, an attainment number cannot be judged. */
-export function ElapsedBar({ fraction }: { fraction: number }) {
-  const pct = Math.min(Math.max(fraction, 0), 1) * 100;
-  return (
-    <div className="h-1.5 bg-surface-raised rounded-full overflow-hidden">
-      <div
-        className="h-full rounded-full bg-fg-subtle"
-        style={{ width: `${pct}%` }}
-      />
-    </div>
-  );
+  return {
+    value: Math.min(raw, 100),
+    max: 100,
+    tone: PROGRESS_TONE[status],
+  };
 }
 
 export function formatPct(value: number | null | undefined): string {
@@ -179,26 +133,6 @@ export function TrendArrow({
   } as const;
   const { glyph, cls } = map[direction];
   return <span className={`text-xs ${cls}`}>{glyph}</span>;
-}
-
-export function Panel({
-  title,
-  action,
-  children,
-}: {
-  title: string;
-  action?: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-lg border border-line bg-surface-sunken p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-medium text-fg">{title}</h3>
-        {action}
-      </div>
-      {children}
-    </div>
-  );
 }
 
 type EmptyIcon = React.ComponentType<{ className?: string }>;
@@ -588,8 +522,6 @@ export function PeriodPicker({
 export function AsOfBanner({ asOf }: { asOf: string }) {
   if (!asOf) return null;
   return (
-    <div className="rounded border border-warning/30 bg-warning/5 px-3 py-1.5 text-xs text-warning">
-      Showing the period containing {asOf}, not today.
-    </div>
+    <Alert variant="warning">Showing the period containing {asOf}, not today.</Alert>
   );
 }

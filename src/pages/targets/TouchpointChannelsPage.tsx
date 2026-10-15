@@ -2,10 +2,12 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useShellBridge } from '@so360/shell-context';
 import { targetPlanService } from '../../services/targetPlanService';
 import { Plus, Radio } from 'lucide-react';
-import { Modal } from '../../components/common/Modal';
-import { EmptyState, ErrorState, LoadingState, Panel } from './targetUi';
-import { DashboardPageTemplate, Button, DataTable, TextField, Select, Checkbox } from '@so360/design-system';
-import type { DataTableColumn } from '@so360/design-system';
+import {
+  EmptyState,
+  ErrorState,
+} from './targetUi';
+import { ListPageTemplate, Button, DataTable, TextField, Select, Checkbox, Modal, SearchInput, Alert } from '@so360/design-system';
+import type { DataTableColumn, FilterValues } from '@so360/design-system';
 
 /**
  * Channel catalog admin.
@@ -18,6 +20,8 @@ import type { DataTableColumn } from '@so360/design-system';
  */
 export default function TouchpointChannelsPage() {
   const shell = useShellBridge();
+  const [search, setSearch] = useState('');
+  const [filters, setFilters] = useState<FilterValues>({ source: '', active: '' });
   const [channels, setChannels] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -171,56 +175,84 @@ export default function TouchpointChannelsPage() {
     setAddOpen(true);
   };
 
+  const q = search.trim().toLowerCase();
+  const rows = channels.filter(
+    (c) =>
+      (!filters.source || c.actuals_source === filters.source) &&
+      (!filters.active || String(!!c.is_active) === filters.active) &&
+      (!q || (c.label || '').toLowerCase().includes(q)),
+  );
+
   return (
-    <DashboardPageTemplate
+    <>
+    <ListPageTemplate
       title="Touchpoint Channels"
-      secondaryActions={(
-        <Button variant="secondary" onClick={importSources} disabled={busy}>
+      count={channels.length}
+      headerSecondaryActions={[
+        <Button key="import" variant="secondary" onClick={importSources} disabled={busy}>
           Import from Lead Sources
-        </Button>
-      )}
+        </Button>,
+      ]}
       primaryAction={(
         <Button variant="primary" onClick={openAdd}>
           <Plus size={16} aria-hidden="true" /> Add channel
         </Button>
       )}
-    >
-      {notice && <div className="text-sm text-success">{notice}</div>}
-
-      {loading ? (
-        <LoadingState />
-      ) : error ? (
-        <ErrorState error={error} onRetry={load} />
-      ) : !channels.length ? (
-        <EmptyState
-          icon={Radio}
-          title="No channels configured"
-          description="Import your lead sources or add a channel to start tracking touchpoints."
-          action={{ label: 'Add channel', onClick: openAdd }}
-        />
-      ) : (
-        <Panel title="Channels">
-          <DataTable
-            columns={columns}
-            rows={channels}
-            rowKey={(c: any) => c.id}
+      search={<SearchInput value={search} onChange={setSearch} placeholder="Search channels…" />}
+      filterConfig={{
+        fields: [
+          { key: 'source', label: 'Source', type: 'select', options: [
+            { value: 'auto', label: 'Auto' },
+            { value: 'manual', label: 'Manual' },
+          ] },
+          { key: 'active', label: 'Active', type: 'select', options: [
+            { value: 'true', label: 'Active' },
+            { value: 'false', label: 'Inactive' },
+          ] },
+        ],
+        values: filters,
+        onChange: setFilters,
+        onClear: () => setFilters({ source: '', active: '' }),
+      }}
+      loading={loading}
+      isEmpty={!loading && (!!error || !channels.length)}
+      empty={
+        error ? (
+          <ErrorState error={error} onRetry={load} />
+        ) : (
+          <EmptyState
+            icon={Radio}
+            title="No channels configured"
+            description="Import your lead sources or add a channel to start tracking touchpoints."
+            action={{ label: 'Add channel', onClick: openAdd }}
           />
-
-          <div className="mt-3 space-y-1 text-xs text-fg-muted">
-            <div>
-              ↔ linked to an existing CRM lead source — configured once,
-              reconcilable in reporting
-            </div>
-            <div className="text-warning">
-              ⚠ Manual channels are self-reported. Compensation eligibility is
-              off by default and must be enabled deliberately.
-            </div>
+        )
+      }
+      isFilteredEmpty={!loading && channels.length > 0 && !rows.length}
+      onClearFilters={() => { setFilters({ source: '', active: '' }); setSearch(''); }}
+      footer={(
+        <div className="space-y-1 text-xs text-fg-muted">
+          <div>
+            ↔ linked to an existing CRM lead source — configured once,
+            reconcilable in reporting
           </div>
-        </Panel>
+          <div className="text-warning">
+            ⚠ Manual channels are self-reported. Compensation eligibility is
+            off by default and must be enabled deliberately.
+          </div>
+        </div>
       )}
+    >
+      {notice && <Alert variant="success">{notice}</Alert>}
+      <DataTable
+        columns={columns}
+        rows={rows}
+        rowKey={(c: any) => c.id}
+      />
+    </ListPageTemplate>
 
       <Modal
-        isOpen={addOpen}
+        open={addOpen}
         onClose={() => setAddOpen(false)}
         title="Add a channel"
         size="md"
@@ -274,6 +306,6 @@ export default function TouchpointChannelsPage() {
           )}
         </div>
       </Modal>
-    </DashboardPageTemplate>
+    </>
   );
 }

@@ -6,13 +6,12 @@ import {
   EmptyState,
   ErrorState,
   LoadingState,
-  isUnlinkedProfileError,
-  Panel,
   PeriodPicker,
   formatPct,
   formatValue,
+  isUnlinkedProfileError,
 } from './targetUi';
-import { DashboardPageTemplate } from '@so360/design-system';
+import { DashboardPageTemplate, Card, Grid, GridItem, Progress } from '@so360/design-system';
 
 /**
  * Pipeline health, deal mix, sales cycle and win/loss.
@@ -100,21 +99,23 @@ export default function MeasurementPage() {
 
   return (
     <DashboardPageTemplate title="Measurement" filters={header}>
-    <div className="space-y-5">
-      <div>
-        <div className="mt-1 text-xs text-fg-subtle">
+    <Grid>
+      <GridItem span={12}>
+        <div className="text-xs text-fg-subtle">
           {data.period_start} → {data.period_end}
         </div>
-      </div>
+      </GridItem>
 
       {nothingApplies && (
-        <EmptyState title="Nothing to measure yet" description="No pipeline, product lines or closed deals in this period." />
+        <GridItem span={12}>
+          <EmptyState title="Nothing to measure yet" description="No pipeline, product lines or closed deals in this period." />
+        </GridItem>
       )}
 
-      <div className="flex flex-wrap gap-4">
         {pipeline?.applicable && (
-          <Panel title="Pipeline Health">
-            <div className="space-y-2 text-sm min-w-[18rem]">
+          <GridItem span={4}>
+          <Card title="Pipeline Health">
+            <div className="space-y-2 text-sm">
               <Row
                 label="Period target"
                 value={formatValue(pipeline.target, 'currency', currency)}
@@ -158,12 +159,14 @@ export default function MeasurementPage() {
                 value={formatValue(pipeline.expected_revenue, 'currency', currency)}
               />
             </div>
-          </Panel>
+          </Card>
+          </GridItem>
         )}
 
         {mix?.applicable && (
-          <Panel title="Deal Mix">
-            <div className="space-y-2 text-sm min-w-[18rem]">
+          <GridItem span={4}>
+          <Card title="Deal Mix">
+            <div className="space-y-2 text-sm">
               {mix.lines.map((l: any) => (
                 <div key={l.key}>
                   <div className="flex items-center justify-between">
@@ -173,11 +176,8 @@ export default function MeasurementPage() {
                       {formatPct(l.share)}
                     </span>
                   </div>
-                  <div className="mt-1 h-1.5 bg-surface-raised rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-fg-subtle rounded-full"
-                      style={{ width: `${Math.min(l.share * 100, 100)}%` }}
-                    />
+                  <div className="mt-1">
+                    <Progress value={Math.min(l.share * 100, 100)} size="sm" />
                   </div>
                 </div>
               ))}
@@ -194,12 +194,14 @@ export default function MeasurementPage() {
                 </div>
               )}
             </div>
-          </Panel>
+          </Card>
+          </GridItem>
         )}
 
         {(winLoss?.won_count > 0 || winLoss?.lost_count > 0) && (
-          <Panel title="Win / Loss">
-            <div className="space-y-2 text-sm min-w-[18rem]">
+          <GridItem span={4}>
+          <Card title="Win / Loss">
+            <div className="space-y-2 text-sm">
               <Row
                 label="Won"
                 value={`${winLoss.won_count} · ${formatValue(winLoss.won_value, 'currency', currency)}`}
@@ -240,10 +242,10 @@ export default function MeasurementPage() {
                 </div>
               )}
             </div>
-          </Panel>
+          </Card>
+          </GridItem>
         )}
-      </div>
-    </div>
+    </Grid>
     </DashboardPageTemplate>
   );
 }

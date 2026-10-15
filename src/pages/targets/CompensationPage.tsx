@@ -2,16 +2,22 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useShellBridge } from '@so360/shell-context';
 import { targetPlanService } from '../../services/targetPlanService';
 import { salesTargetService } from '../../services/salesTargetService';
-import { EmptyState, ErrorState, LoadingState, Panel, PersonName, PersonPicker, formatValue } from './targetUi';
+import {
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  PersonName,
+  PersonPicker,
+  formatValue,
+} from './targetUi';
 import {
   EMPTY_INCENTIVE_RULE,
   buildIncentiveRulePayload,
   type IncentiveRuleForm,
   type IncentiveRuleType,
 } from './incentiveRule';
-import { DashboardPageTemplate, Button, DataTable, TextField, Select, DatePicker, DateInput, FormField } from '@so360/design-system';
+import { DashboardPageTemplate, Button, DataTable, TextField, Select, DatePicker, DateInput, FormField, Card, Modal, Grid, GridItem } from '@so360/design-system';
 import { Calculator, Plus } from 'lucide-react';
-import { Modal } from '../../components/common/Modal';
 import type { DataTableColumn } from '@so360/design-system';
 
 /**
@@ -164,16 +170,24 @@ export default function CompensationPage() {
         </Button>
       )}
       filters={(
-        <div className="grid grid-cols-1 items-end gap-nb-3 wc-medium:grid-cols-[minmax(16rem,1fr)_auto_auto_auto]">
-          <FormField label="Person" name="comp_person">
-            <PersonPicker value={personId} onChange={setPersonId} />
-          </FormField>
-          <DateInput name="comp_from" label="From" value={periodStart} onChange={(iso: string) => setPeriodStart(iso)} />
-          <DateInput name="comp_to" label="To" value={periodEnd} onChange={(iso: string) => setPeriodEnd(iso)} />
-          <Button variant="primary" onClick={calculate} disabled={busy || !personId}>
-            {busy ? 'Calculating…' : 'Calculate'}
-          </Button>
-        </div>
+        <Grid columns={12}>
+          <GridItem span={6}>
+            <FormField label="Person" name="comp_person">
+              <PersonPicker value={personId} onChange={setPersonId} />
+            </FormField>
+          </GridItem>
+          <GridItem span={3}>
+            <DateInput name="comp_from" label="From" value={periodStart} onChange={(iso: string) => setPeriodStart(iso)} />
+          </GridItem>
+          <GridItem span={3}>
+            <DateInput name="comp_to" label="To" value={periodEnd} onChange={(iso: string) => setPeriodEnd(iso)} />
+          </GridItem>
+          <GridItem span={12}>
+            <Button variant="primary" onClick={calculate} disabled={busy || !personId}>
+              {busy ? 'Calculating…' : 'Calculate'}
+            </Button>
+          </GridItem>
+        </Grid>
       )}
     >
     <div className="space-y-5">
@@ -181,7 +195,7 @@ export default function CompensationPage() {
       {error && !loading && <ErrorState error={error} onRetry={load} />}
 
       {calc && (
-        <Panel title="Incentive summary">
+        <Card title="Incentive summary">
           <DataTable
             columns={summaryColumns}
             rows={[
@@ -193,11 +207,11 @@ export default function CompensationPage() {
           <div className="mt-3 text-xs text-warning">
             {calc.advisory_notice}
           </div>
-        </Panel>
+        </Card>
       )}
 
       <Modal
-        isOpen={showRuleForm}
+        open={showRuleForm}
         onClose={() => setShowRuleForm(false)}
         title="New rule"
         subtitle="Rules are read during calculation only. Adding one never pays anyone."
@@ -372,9 +386,9 @@ export default function CompensationPage() {
           />
         )
       ) : (
-        <Panel title="Rules">
+        <Card title="Rules">
           <DataTable columns={ruleColumns} rows={rules} rowKey={(r: any) => r.id} />
-        </Panel>
+        </Card>
       )}
     </div>
     </DashboardPageTemplate>
