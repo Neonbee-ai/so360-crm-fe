@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { TextField, Textarea, Select, NumberInput, IconButton, ColorPicker, Slider } from '@so360/design-system';
+import { TextField, Textarea, Select, NumberInput, IconButton, ColorPicker, Slider, Button } from '@so360/design-system';
 
 interface Block {
   id: string;
@@ -286,14 +286,13 @@ const CampaignTemplateEditor: React.FC<CampaignTemplateEditorProps> = ({ value, 
         <div className="mt-6 space-y-2">
           <p className="text-xs font-semibold text-fg-subtle mb-2">Variables</p>
           {['customer_name', 'email', 'first_name'].map(v => (
-            <button
+            <Button variant="secondary" size="sm" className="w-full"
               key={v}
               onClick={() => navigator.clipboard.writeText(`{{${v}}}`)}
-              className="block w-full text-left px-2 py-1 rounded text-xs text-primary hover:bg-surface-raised transition-colors"
               title={`Copy {{${v}}} to clipboard`}
             >
               {`{{${v}}}`}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -301,18 +300,16 @@ const CampaignTemplateEditor: React.FC<CampaignTemplateEditorProps> = ({ value, 
       {/* Canvas */}
       <div className="flex-1 flex flex-col">
         <div className="flex items-center gap-2 mb-3">
-          <button
+          <Button variant={!showPreview ? 'primary' : 'secondary'} size="sm" aria-pressed={!showPreview}
             onClick={() => setShowPreview(false)}
-            className={`px-3 py-1 rounded text-xs font-medium transition-colors ${!showPreview ? 'bg-primary text-fg' : 'bg-surface-raised text-fg-subtle hover:text-fg'}`}
           >
             Editor
-          </button>
-          <button
+          </Button>
+          <Button variant={showPreview ? 'primary' : 'secondary'} size="sm" aria-pressed={showPreview}
             onClick={() => setShowPreview(true)}
-            className={`px-3 py-1 rounded text-xs font-medium transition-colors ${showPreview ? 'bg-primary text-fg' : 'bg-surface-raised text-fg-subtle hover:text-fg'}`}
           >
             Preview
-          </button>
+          </Button>
           <span className="ml-auto text-xs text-fg-muted">{blocks.length} block{blocks.length !== 1 ? 's' : ''}</span>
         </div>
 

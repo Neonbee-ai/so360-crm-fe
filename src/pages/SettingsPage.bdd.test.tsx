@@ -288,7 +288,7 @@ describe('SettingsPage BDD', () => {
     it('When a stage is removed / Then it stays local (no save call) but Save Configuration becomes enabled', async () => {
       const user = userEvent.setup();
       render(<SettingsPage />);
-      await waitFor(() => expect(screen.getByDisplayValue('Won')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getAllByDisplayValue('Won')[0]).toBeInTheDocument());
 
       const allButtons = screen.getAllByRole('button');
       const trashBtn = allButtons.find(btn => btn.title === 'Remove Stage');
@@ -383,7 +383,7 @@ describe('SettingsPage BDD', () => {
       expect(screen.getByText(/unsaved changes/i)).toBeInTheDocument();
     });
 
-    it('When saving / Then shows Saving... text on button', async () => {
+    it('When saving / Then shows Saving… text on button', async () => {
       let resolveUpdate: (v: any) => void;
       mockUpdateSettings.mockReturnValue(new Promise(resolve => { resolveUpdate = resolve; }));
 
@@ -393,7 +393,7 @@ describe('SettingsPage BDD', () => {
 
       await dirtyStageName(user);
       await user.click(screen.getByRole('button', { name: /save configuration/i }));
-      expect(screen.getByText(/saving\.\.\./i)).toBeInTheDocument();
+      expect(screen.getByText(/saving…/i)).toBeInTheDocument();
 
       // Resolve to avoid hanging test
       resolveUpdate!(mockSettings);
@@ -506,7 +506,7 @@ describe('SettingsPage BDD', () => {
       render(<SettingsPage />);
       await waitFor(() => expect(screen.getByText('CRM Settings')).toBeInTheDocument());
       // canWriteSettings is false before flags resolve — save button must not flash
-      expect(screen.queryByText('Save Configuration')).not.toBeInTheDocument();
+      expect(screen.queryByText('Save configuration')).not.toBeInTheDocument();
     });
 
     it('When effectiveFlagsLoaded is true and isFeatureEnabled returns true / Then Save Configuration button is present', async () => {
@@ -517,7 +517,7 @@ describe('SettingsPage BDD', () => {
       } as any);
       render(<SettingsPage />);
       await waitFor(() => expect(screen.getByText('CRM Settings')).toBeInTheDocument());
-      expect(screen.getByText('Save Configuration')).toBeInTheDocument();
+      expect(screen.getByText('Save configuration')).toBeInTheDocument();
     });
   });
 

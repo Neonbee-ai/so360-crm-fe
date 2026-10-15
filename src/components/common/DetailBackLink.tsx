@@ -1,3 +1,4 @@
+import { Button } from '@so360/design-system';
 import React, { useEffect, useRef, useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { useNavigate, type NavigateFunction } from 'react-router-dom';
@@ -117,29 +118,25 @@ export const DetailBackLink: React.FC<DetailBackLinkProps> = ({ fallbackTo, labe
 
     return (
         <>
-            <button
+            <Button variant="secondary" size="sm" className="group"
                 type="button"
                 onClick={goBack}
                 aria-label={label}
-                className={`flex items-center gap-1 text-fg-subtle hover:text-fg transition-colors group ${className}`}
             >
                 <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
                 {label}
-            </button>
+            </Button>
 
-            <button
+            <Button variant="secondary" size="sm" className={`fixed left-6 bottom-6 z-chrome ${showFloating ? 'opacity-100 translate-y-0' : 'pointer-events-none opacity-0 translate-y-2'}`}
                 type="button"
                 onClick={goBack}
                 aria-label={label}
                 title={label}
                 data-testid="detail-back-floating"
-                className={`fixed left-6 bottom-6 z-chrome flex items-center gap-2 rounded-full border border-line bg-surface-sunken px-4 py-3 text-xs font-bold text-fg shadow-xl backdrop-blur transition-all hover:border-primary/60 hover:text-fg ${
-                    showFloating ? 'opacity-100 translate-y-0' : 'pointer-events-none opacity-0 translate-y-2'
-                }`}
             >
                 <ChevronLeft size={16} />
                 {label}
-            </button>
+            </Button>
         </>
     );
 };

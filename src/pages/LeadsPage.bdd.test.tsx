@@ -239,7 +239,7 @@ describe('LeadsPage', () => {
       const user = userEvent.setup();
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      const searchInput = screen.getByPlaceholderText('Search leads...');
+      const searchInput = screen.getByPlaceholderText('Search leads…');
       await user.type(searchInput, 'Jane');
       await waitFor(() => {
         expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument();
@@ -251,7 +251,7 @@ describe('LeadsPage', () => {
       const user = userEvent.setup();
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      const searchInput = screen.getByPlaceholderText('Search leads...');
+      const searchInput = screen.getByPlaceholderText('Search leads…');
       await user.type(searchInput, 'Gamma');
       await waitFor(() => {
         expect(screen.getByTestId('lead-row-l3')).toBeInTheDocument();
@@ -429,19 +429,19 @@ describe('LeadsPage', () => {
     it('When Views button is clicked / Then shows saved views dropdown', async () => {
       const user = userEvent.setup();
       render(<LeadsPage />);
-      await user.click(screen.getByText('Views'));
+      await user.click(screen.getByText(/^Saved views/));
       expect(screen.getByText('Save current view')).toBeInTheDocument();
     });
   });
 
   describe('Given the Views popover', () => {
-    it('When Views is open and an outside click occurs / Then it closes', async () => {
+    it('When the saved views modal is open and Close is clicked / Then it closes', async () => {
       const user = userEvent.setup();
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      await user.click(screen.getByText('Views'));
+      await user.click(screen.getByText(/^Saved views/));
       expect(screen.getByText('Save current view')).toBeInTheDocument();
-      fireEvent.mouseDown(document.body);
+      await user.click(screen.getByLabelText('Close'));
       await waitFor(() => expect(screen.queryByText('Save current view')).not.toBeInTheDocument());
     });
   });
@@ -524,7 +524,7 @@ describe('LeadsPage — saved views (backend)', () => {
     const user = userEvent.setup();
     render(<LeadsPage />);
     await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-    await user.click(screen.getByText('Views'));
+    await user.click(screen.getByText(/^Saved views/));
     await waitFor(() => expect(screen.getByText('Server View')).toBeInTheDocument());
   });
 
@@ -532,9 +532,9 @@ describe('LeadsPage — saved views (backend)', () => {
     const user = userEvent.setup();
     render(<LeadsPage />);
     await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-    await user.click(screen.getByText('Views'));
+    await user.click(screen.getByText(/^Saved views/));
     await user.click(screen.getByText('Save current view'));
-    await user.type(screen.getByPlaceholderText('View name...'), 'My Hot Leads');
+    await user.type(screen.getByPlaceholderText('View name…'), 'My Hot Leads');
     await user.click(screen.getByText('Save'));
     await waitFor(() =>
       expect(mockViewsCreate).toHaveBeenCalledWith(expect.objectContaining({ name: 'My Hot Leads' })),
@@ -548,7 +548,7 @@ describe('LeadsPage — saved views (backend)', () => {
     const user = userEvent.setup();
     render(<LeadsPage />);
     await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-    await user.click(screen.getByText('Views'));
+    await user.click(screen.getByText(/^Saved views/));
     await waitFor(() => expect(screen.getByText('Doomed View')).toBeInTheDocument());
     // The delete (X) button sits next to the view name in the dropdown row.
     const row = screen.getByText('Doomed View').closest('div')!;
@@ -563,11 +563,11 @@ describe('LeadsPage — saved views (backend)', () => {
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
 
-      await user.click(screen.getByText('Advanced'));
+      await user.click(screen.getByTestId('filters-button'));
       await user.click(screen.getByText(/add condition/i));
       const rule = screen.getByTestId('filter-rule');
       fireEvent.change(rule.querySelector('input[aria-label="Value"]')!, { target: { value: 'Beta' } });
-      await user.click(screen.getByText(/^apply/i));
+      await user.click(screen.getAllByText(/^apply/i)[0]);
 
       await waitFor(() =>
         expect(mockGetLeadsPaged).toHaveBeenCalledWith(
@@ -653,7 +653,7 @@ describe('LeadsPage — saved views (backend)', () => {
     const openViews = async () => {
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      fireEvent.click(screen.getByText('Views'));
+      fireEvent.click(screen.getByText(/^Saved views/));
       await waitFor(() => expect(screen.getByText('Alpha')).toBeInTheDocument());
     };
 
@@ -694,8 +694,9 @@ describe('LeadsPage — saved views (backend)', () => {
       withView({ is_default: true });
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      await waitFor(() => expect(screen.getByText('Alpha')).toBeInTheDocument()); // active-view chip
-      fireEvent.click(screen.getByText('Alpha'));
+      await waitFor(() => expect(screen.getByText('Saved views (Alpha)')).toBeInTheDocument()); // active view in menu
+      fireEvent.click(screen.getByText('Saved views (Alpha)'));
+      await waitFor(() => expect(screen.getByText('Alpha')).toBeInTheDocument());
       await waitFor(() => expect(screen.getByLabelText('Default view')).toBeInTheDocument());
     });
   });

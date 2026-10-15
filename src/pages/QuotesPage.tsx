@@ -10,7 +10,7 @@ import { usePersistedState, useListScrollRestore } from '../hooks/useListViewSta
 import { Quote, QuoteStatus, Deal } from '../types/crm';
 import { useBusinessSettings, useActivity, useShellBridge, useQuota, useSandboxLimit } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
-import { QuotaGate, CrossLinkChip, SegmentedControl, toast, ListPageTemplate, Button, Pagination, DataTable, SearchInput, Menu, TextField, Textarea, type DataTableColumn, type FilterValues, type ListFilterConfig } from '@so360/design-system';
+import { QuotaGate, CrossLinkChip, SegmentedControl, toast, ListPageTemplate, Button, IconButton, Pagination, DataTable, SearchInput, Menu, TextField, Textarea, type DataTableColumn, type FilterValues, type ListFilterConfig } from '@so360/design-system';
 import { quotesToCsv, downloadCsv } from '../components/quotes/quotesCsv';
 import { quoteToDocumentData } from '../utils/quoteToDocumentData';
 import ExportMenu from '../components/ExportMenu';
@@ -47,16 +47,16 @@ export const QuoteStatusCell: React.FC<QuoteStatusCellProps> = ({ quote, isActio
     const status = statusColors[quote.status] || statusColors.draft;
 
     const badge = (
-        <button
-            type="button"
+        <Button
+            variant="secondary"
+            size="sm"
             disabled={isActionLoading}
-            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border transition-all ${status.bg} ${status.text} ${status.border} ${transitions.length > 0 ? 'cursor-pointer hover:brightness-125' : 'cursor-default'} disabled:opacity-50`}
             title={transitions.length > 0 ? 'Click to update status' : status.label}
         >
             <span className={`w-1.5 h-1.5 rounded-full ${quote.status === 'approved' ? 'bg-success' : quote.status === 'pending_approval' ? 'bg-warning' : quote.status === 'rejected' ? 'bg-danger' : quote.status === 'converted' ? 'bg-primary' : 'bg-fg-subtle'}`} />
             <span>{status.label}</span>
-            {transitions.length > 0 && <ChevronDown className="w-3 h-3 opacity-60 ml-0.5" />}
-        </button>
+            {transitions.length > 0 && <ChevronDown className="w-3 h-3 opacity-60 ml-0.5" aria-hidden="true" />}
+        </Button>
     );
 
     return (
@@ -442,13 +442,14 @@ const QuotesPage = () => {
             header: 'Quote #',
             sortable: true,
             render: (quote: Quote) => (
-                <button
-                    type="button"
+                <Button
+                    variant="secondary"
+                    size="sm"
+                    className="font-mono"
                     onClick={(e) => { e.stopPropagation(); openQuote(quote.id); }}
-                    className="font-mono text-sm font-semibold text-primary hover:text-primary whitespace-nowrap transition-colors text-left"
                 >
                     {quote.quote_number || `Q-${quote.id.slice(0, 8)}`}
-                </button>
+                </Button>
             ),
         },
         {
@@ -629,12 +630,14 @@ const QuotesPage = () => {
             key: 'quote_number',
             header: 'Quote #',
             render: (item: any) => (
-                <button
+                <Button
+                    variant="secondary"
+                    size="sm"
+                    className="font-mono"
                     onClick={(e) => { e.stopPropagation(); openQuote(item.quote_id); }}
-                    className="font-mono text-sm font-semibold text-primary hover:text-primary text-left whitespace-nowrap"
                 >
                     {item.quote_number || `Q-${item.quote_id.slice(0, 8)}`}
-                </button>
+                </Button>
             ),
         },
         {
@@ -736,28 +739,29 @@ const QuotesPage = () => {
                 <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                     {item.approver_status === 'pending' && (
                         <>
-                            <button
+                            <Button
+                                variant="secondary"
+                                size="sm"
                                 onClick={() => handleQuickApprove(item.quote_id)}
                                 disabled={actionLoading === item.quote_id + 'approve'}
-                                className="px-2.5 py-1 text-xs font-semibold text-success bg-success/10 hover:bg-success/20 border border-success/30 rounded transition-colors disabled:opacity-50"
                             >
                                 Approve
-                            </button>
-                            <button
+                            </Button>
+                            <Button
+                                variant="danger"
+                                size="sm"
                                 onClick={() => handleQuickReject(item.quote_id)}
-                                className="px-2.5 py-1 text-xs font-semibold text-danger bg-danger/10 hover:bg-danger/20 border border-danger/30 rounded transition-colors"
                             >
                                 Reject
-                            </button>
+                            </Button>
                         </>
                     )}
-                    <button
+                    <IconButton
+                        label="View details"
+                        size="sm"
+                        icon={<Eye className="w-4 h-4" aria-hidden="true" />}
                         onClick={() => openQuote(item.quote_id)}
-                        className="p-1 text-fg-subtle hover:text-fg hover:bg-surface-raised rounded transition-colors"
-                        title="View Details"
-                    >
-                        <Eye className="w-4 h-4" />
-                    </button>
+                    />
                 </div>
             ),
         },
@@ -812,20 +816,12 @@ const QuotesPage = () => {
                                     {selectedQuoteIds.length} selected
                                 </span>
                                 <span className="text-fg-muted">|</span>
-                                <button
-                                    type="button"
-                                    onClick={handleExportSelected}
-                                    className="text-fg hover:text-fg font-medium underline"
-                                >
+                                <Button variant="secondary" size="sm" onClick={handleExportSelected}>
                                     Export CSV
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setSelectedQuoteIds([])}
-                                    className="text-fg-subtle hover:text-fg ml-1"
-                                >
+                                </Button>
+                                <Button variant="secondary" size="sm" onClick={() => setSelectedQuoteIds([])}>
                                     Deselect
-                                </button>
+                                </Button>
                             </div>
     ) : null;
 
@@ -899,14 +895,10 @@ const QuotesPage = () => {
                         <AlertCircle className="w-4 h-4 shrink-0 text-danger" />
                         <span>{error}</span>
                     </div>
-                    <button
-                        type="button"
-                        onClick={fetchData}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-danger/20 hover:bg-danger/30 rounded text-xs font-semibold text-danger transition-colors"
-                    >
-                        <RefreshCw className="w-3 h-3" />
+                    <Button variant="secondary" size="sm" onClick={fetchData}>
+                        <RefreshCw className="w-3 h-3" aria-hidden="true" />
                         Retry
-                    </button>
+                    </Button>
                 </div>
             )}
             {activeTab === 'all' && (
@@ -930,21 +922,15 @@ const QuotesPage = () => {
                                     : 'Create your first quote to get started'}
                             </p>
                             {hasActiveFilters ? (
-                                <button
-                                    onClick={resetFilters}
-                                    className="inline-flex items-center gap-2 px-4 py-2 bg-surface-raised hover:bg-line border border-line text-fg rounded-lg text-sm font-medium transition-colors"
-                                >
+                                <Button variant="secondary" onClick={resetFilters}>
                                     Clear filters
-                                </button>
+                                </Button>
                             ) : (
                                 canCreateQuote && (
-                                    <button
-                                        onClick={() => setIsCreateModalOpen(true)}
-                                        className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-fg rounded-lg text-sm font-medium transition-colors"
-                                    >
-                                        <Plus className="w-4 h-4" />
-                                        Create Quote
-                                    </button>
+                                    <Button variant="primary" onClick={() => setIsCreateModalOpen(true)}>
+                                        <Plus className="w-4 h-4" aria-hidden="true" />
+                                        Create quote
+                                    </Button>
                                 )
                             )}
                         </div>
@@ -1043,10 +1029,11 @@ const QuotesPage = () => {
                                         Select Deal *
                                     </label>
                                     <div ref={dealDropdownRef} className="relative">
-                                        <button
+                                        <Button
                                             type="button"
+                                            variant="secondary"
+                                            className="w-full justify-between"
                                             onClick={() => { setDealDropdownOpen(o => !o); setDealSearchTerm(''); }}
-                                            className="w-full flex items-center justify-between px-4 py-2 bg-surface-raised border border-line rounded-lg text-left focus:outline-none focus:ring-2 focus:ring-focus transition-colors hover:border-line"
                                         >
                                             {selectedDealId ? (() => {
                                                 const d = deals.find(d => d.id === selectedDealId);
@@ -1057,8 +1044,8 @@ const QuotesPage = () => {
                                                     </span>
                                                 ) : <span className="text-fg-subtle text-sm">Select a deal...</span>;
                                             })() : <span className="text-fg-subtle text-sm">Select a deal...</span>}
-                                            <ChevronDown className={`ml-2 h-4 w-4 text-fg-subtle shrink-0 transition-transform ${dealDropdownOpen ? 'rotate-180' : ''}`} />
-                                        </button>
+                                            <ChevronDown className={`ml-2 h-4 w-4 text-fg-subtle shrink-0 transition-transform ${dealDropdownOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+                                        </Button>
                                         {dealDropdownOpen && (
                                             <div className="absolute z-menu mt-1 w-full bg-surface-raised border border-line rounded-lg shadow-xl overflow-hidden">
                                                 <div className="p-2 border-b border-line">
@@ -1087,14 +1074,15 @@ const QuotesPage = () => {
                                                         )
                                                         .map(deal => (
                                                             <li key={deal.id}>
-                                                                <button
+                                                                <Button
                                                                     type="button"
+                                                                    variant="secondary"
+                                                                    className={`w-full flex-col items-start justify-start border-0 ${selectedDealId === deal.id ? 'bg-primary/20' : ''}`}
                                                                     onClick={() => { setSelectedDealId(deal.id); setDealDropdownOpen(false); }}
-                                                                    className={`w-full flex flex-col items-start px-4 py-2.5 text-left hover:bg-line transition-colors ${selectedDealId === deal.id ? 'bg-primary/20' : ''}`}
                                                                 >
                                                                     <span className={`text-sm font-medium truncate w-full ${selectedDealId === deal.id ? 'text-primary' : 'text-fg'}`}>{deal.name}</span>
                                                                     {deal.company_name && <span className="text-xs text-fg-subtle truncate w-full mt-0.5">{deal.company_name}</span>}
-                                                                </button>
+                                                                </Button>
                                                             </li>
                                                         ))
                                                     }

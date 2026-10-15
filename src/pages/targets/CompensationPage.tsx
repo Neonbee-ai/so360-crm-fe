@@ -9,7 +9,7 @@ import {
   type IncentiveRuleForm,
   type IncentiveRuleType,
 } from './incentiveRule';
-import { DashboardPageTemplate, Button, DataTable, TextField, Select, DatePicker, FormField } from '@so360/design-system';
+import { DashboardPageTemplate, Button, DataTable, TextField, Select, DatePicker, DateInput, FormField } from '@so360/design-system';
 import { Calculator, Plus } from 'lucide-react';
 import { Modal } from '../../components/common/Modal';
 import type { DataTableColumn } from '@so360/design-system';
@@ -164,14 +164,12 @@ export default function CompensationPage() {
         </Button>
       )}
       filters={(
-        <div className="flex flex-wrap items-end gap-nb-2">
-          <div className="w-64">
-            <FormField label="Person" name="comp_person">
-              <PersonPicker value={personId} onChange={setPersonId} />
-            </FormField>
-          </div>
-          <DatePicker name="comp_from" label="From" value={periodStart} onChange={(iso: string) => setPeriodStart(iso)} />
-          <DatePicker name="comp_to" label="To" value={periodEnd} onChange={(iso: string) => setPeriodEnd(iso)} />
+        <div className="grid grid-cols-1 items-end gap-nb-3 wc-medium:grid-cols-[minmax(16rem,1fr)_auto_auto_auto]">
+          <FormField label="Person" name="comp_person">
+            <PersonPicker value={personId} onChange={setPersonId} />
+          </FormField>
+          <DateInput name="comp_from" label="From" value={periodStart} onChange={(iso: string) => setPeriodStart(iso)} />
+          <DateInput name="comp_to" label="To" value={periodEnd} onChange={(iso: string) => setPeriodEnd(iso)} />
           <Button variant="primary" onClick={calculate} disabled={busy || !personId}>
             {busy ? 'Calculating…' : 'Calculate'}
           </Button>

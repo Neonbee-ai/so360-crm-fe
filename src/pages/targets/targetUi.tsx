@@ -1,6 +1,6 @@
 import React from 'react';
-import { EmptyState as DsEmptyState, DatePicker, Button, TextField, Skeleton } from '@so360/design-system';
-import { AlertCircle, Inbox, UserX } from 'lucide-react';
+import { EmptyState as DsEmptyState, DatePicker, Button, IconButton, TextField, Skeleton } from '@so360/design-system';
+import { AlertCircle, Inbox, UserX, X } from 'lucide-react';
 import type { TargetStatus, TrendPoint } from '../../services/targetPlanService';
 
 /**
@@ -416,31 +416,28 @@ export function PersonPicker({
   if (value && selected && !open) {
     return (
       <div className="flex items-center gap-2" ref={boxRef}>
-        <button
+        <Button
           type="button"
+          variant="secondary"
           onClick={() => {
             setQuery('');
             setOpen(true);
           }}
-          className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg text-left"
         >
           {selected.full_name}
           {selected.job_title ? (
             <span className="text-fg-subtle"> · {selected.job_title}</span>
           ) : null}
-        </button>
+        </Button>
         {allowClear ? (
-          <button
-            type="button"
-            aria-label="Clear selection"
+          <IconButton
+            label="Clear selection"
+            icon={<X size={14} aria-hidden="true" />}
             onClick={() => {
               onChange('');
               setQuery('');
             }}
-            className="text-xs text-fg-subtle hover:text-fg"
-          >
-            clear
-          </button>
+          />
         ) : null}
       </div>
     );
@@ -450,7 +447,6 @@ export function PersonPicker({
     <div className="relative" ref={boxRef}>
       <TextField
         name="target-person-query"
-        size="sm"
         value={query}
         onFocus={() => setOpen(true)}
         onChange={(e) => {
@@ -471,9 +467,10 @@ export function PersonPicker({
           ) : (
             matches.map((p) => (
               <li key={p.id}>
-                <button
+                <Button
                   type="button"
-                  className="block w-full px-2 py-1.5 text-left text-fg hover:bg-surface-raised"
+                  variant="secondary"
+                  className="w-full justify-start border-0"
                   onClick={() => {
                     onChange(p.id);
                     setQuery('');
@@ -487,7 +484,7 @@ export function PersonPicker({
                       {[p.job_title, p.department_name].filter(Boolean).join(' · ')}
                     </span>
                   ) : null}
-                </button>
+                </Button>
               </li>
             ))
           )}

@@ -154,9 +154,8 @@ export const ProductPickerModal = ({ isOpen, onClose, onSelect }: ProductPickerM
                                 return (
                                     <div key={item.id}>
                                         {/* Parent item row */}
-                                        <button
+                                        <Button variant="secondary" size="sm" className="w-full group"
                                             onClick={() => item.has_variants ? toggleExpand(item.id) : selectItem(item)}
-                                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-surface-raised transition-colors text-left group"
                                         >
                                             {/* Thumbnail */}
                                             <div className="w-10 h-10 rounded-md overflow-hidden bg-line flex-shrink-0 flex items-center justify-center">
@@ -192,16 +191,15 @@ export const ProductPickerModal = ({ isOpen, onClose, onSelect }: ProductPickerM
                                             ) : (
                                                 <ChevronRight className="w-4 h-4 text-info opacity-0 group-hover:opacity-100 flex-shrink-0 transition-opacity" />
                                             )}
-                                        </button>
+                                        </Button>
 
                                         {/* Variant rows */}
                                         {item.has_variants && isExpanded && (
                                             <div className="ml-10 space-y-0.5 mb-1">
                                                 {(item.variants || []).map(variant => (
-                                                    <button
+                                                    <Button variant="secondary" size="sm" className="w-full group"
                                                         key={variant.id}
                                                         onClick={() => selectVariant(item, variant)}
-                                                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-raised transition-colors text-left group"
                                                     >
                                                         {/* Variant thumbnail */}
                                                         <div className="w-8 h-8 rounded overflow-hidden bg-surface-high flex-shrink-0 flex items-center justify-center">
@@ -239,7 +237,7 @@ export const ProductPickerModal = ({ isOpen, onClose, onSelect }: ProductPickerM
                                                         )}
 
                                                         <ChevronRight className="w-4 h-4 text-info opacity-0 group-hover:opacity-100 flex-shrink-0 transition-opacity" />
-                                                    </button>
+                                                    </Button>
                                                 ))}
                                             </div>
                                         )}

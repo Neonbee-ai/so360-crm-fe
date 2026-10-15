@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Building2, Check, Loader2, Plus, Share2 } from 'lucide-react';
-import { toast } from '@so360/design-system';
+import { toast, Button, IconButton } from '@so360/design-system';
 import { useCRMFormatters } from '../../utils/formatters';
 import {
     matchingUnitsService,
@@ -116,25 +116,23 @@ export const MatchingUnitsPanel: React.FC<Props> = ({ entity, id, existingItemId
                                 )}
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
-                                <button
-                                    type="button"
-                                    aria-label={`Share ${name}`}
-                                    title="Copy unit details"
+                                <IconButton
+                                    label={`Share ${name}`}
+                                    size="sm"
+                                    icon={<Share2 size={14} aria-hidden="true" />}
                                     onClick={() => share(u)}
-                                    className="p-1.5 text-fg-subtle hover:text-info rounded-lg"
-                                >
-                                    <Share2 size={14} />
-                                </button>
-                                <button
+                                />
+                                <Button
                                     type="button"
+                                    variant="primary"
+                                    size="sm"
                                     aria-label={added ? `${name} added` : `Attach ${name}`}
                                     disabled={added || busy}
                                     onClick={() => attach(u)}
-                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-primary hover:bg-primary/90 text-white disabled:bg-surface-raised disabled:text-fg-muted"
                                 >
                                     {busy ? <Loader2 size={12} className="animate-spin" /> : added ? <Check size={12} /> : <Plus size={12} />}
                                     {added ? 'Added' : 'Attach'}
-                                </button>
+                                </Button>
                             </div>
                         </li>
                     );

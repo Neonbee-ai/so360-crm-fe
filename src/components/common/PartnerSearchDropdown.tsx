@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, X, ChevronDown } from 'lucide-react';
-import { TextField } from '@so360/design-system';
+import { TextField, Button, IconButton } from '@so360/design-system';
 
 interface Partner {
     id: string;
@@ -105,15 +105,14 @@ export const PartnerSearchDropdown: React.FC<PartnerSearchDropdownProps> = ({
                     </span>
                 )}
                 {value && !isOpen ? (
-                    <button
+                    <Button variant="secondary" size="sm" className="shrink-0"
                         type="button"
                         onClick={handleClear}
-                        className="text-fg-muted hover:text-fg-subtle transition-colors shrink-0"
                         data-testid="partner-clear-btn"
                         aria-label="Clear selection"
                     >
                         <X size={14} />
-                    </button>
+                    </Button>
                 ) : (
                     <ChevronDown
                         size={14}
@@ -129,31 +128,26 @@ export const PartnerSearchDropdown: React.FC<PartnerSearchDropdownProps> = ({
                     data-testid="partner-dropdown-list"
                 >
                     <div className="max-h-48 overflow-y-auto">
-                        <button
+                        <Button variant="secondary" size="sm" className="w-full justify-start border-0"
                             type="button"
                             role="option"
                             aria-selected={!value}
                             onClick={() => handleSelect('')}
-                            className="w-full text-left px-3 py-2 text-sm text-fg-muted hover:bg-surface-raised transition-colors italic"
                         >
                             — None —
-                        </button>
+                        </Button>
                         {filtered.length === 0 ? (
                             <div className="px-3 py-3 text-sm text-fg-muted text-center italic">
                                 No partners found
                             </div>
                         ) : (
                             filtered.map(p => (
-                                <button
+                                <Button variant="secondary" size="sm" className="w-full justify-between border-0"
                                     key={p.id}
                                     type="button"
                                     role="option"
                                     aria-selected={p.id === value}
                                     onClick={() => handleSelect(p.id)}
-                                    className={`w-full text-left px-3 py-2 text-sm transition-colors flex items-center justify-between
-                                        ${p.id === value
-                                            ? 'bg-primary/10 text-primary'
-                                            : 'text-fg hover:bg-surface-raised'}`}
                                     data-testid={`partner-option-${p.id}`}
                                 >
                                     <span className="font-medium truncate">{getPrimaryName(p)}</span>
@@ -162,7 +156,7 @@ export const PartnerSearchDropdown: React.FC<PartnerSearchDropdownProps> = ({
                                             {getSecondaryName(p)}
                                         </span>
                                     )}
-                                </button>
+                                </Button>
                             ))
                         )}
                     </div>

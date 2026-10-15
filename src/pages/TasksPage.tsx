@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle2, Circle, AlertCircle, Calendar, Trash2, UserPlus, Building2, Plus } from 'lucide-react';
+import { CheckCircle2, Circle, AlertCircle, Calendar, Trash2, UserPlus, Building2, Plus, X } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { Task } from '../types/crm';
-import { ListPageTemplate, Pagination, Button, SegmentedControl, DataTable, Select, SearchInput, toast, type DataTableColumn, type FilterValues, type ListFilterConfig } from '@so360/design-system';
+import { ListPageTemplate, Pagination, Button, IconButton, SegmentedControl, DataTable, Select, SearchInput, toast, type DataTableColumn, type FilterValues, type ListFilterConfig } from '@so360/design-system';
 import { useShell, useShellBridge, useSandboxLimit } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import { canCurrentUserBeAssigned, isTaskAssignedToUser, isTaskLocked, isTaskOverdue, TASK_LOCKED_HINT } from '../utils/taskUtils';
@@ -215,15 +215,15 @@ const TasksPage = () => {
             widthClassName: 'min-w-64',
             render: (task: Task) => (
                 <div className="flex items-start gap-3">
-                    <button
+                    <IconButton
+                        label={task.status === 'DONE' ? 'Mark as open' : 'Mark as done'}
+                        size="sm"
+                        icon={task.status === 'DONE' ? <CheckCircle2 size={18} className="text-success" /> : <Circle size={18} />}
                         onClick={(e) => {
                             e.stopPropagation();
                             handleStatusChange(task, task.status === 'DONE' ? 'OPEN' : 'DONE');
                         }}
-                        className="mt-0.5 text-fg-muted hover:text-primary transition-colors"
-                    >
-                        {task.status === 'DONE' ? <CheckCircle2 size={18} className="text-success" /> : <Circle size={18} />}
-                    </button>
+                    />
                     <div className="flex min-w-0 flex-col gap-0.5">
                         <span className={`line-clamp-2 font-semibold ${task.status === 'DONE' ? 'text-fg-muted line-through' : 'text-fg'}`}>
                             {task.title}
@@ -300,20 +300,19 @@ const TasksPage = () => {
                     />
 
                     {!isTaskAssignedToUser(task, currentUserId) && (
-                        <button
+                        <IconButton
+                            size="sm"
                             onClick={() => handleQuickAssignToMe(task)}
                             disabled={!canCurrentUserBeAssigned(currentUser, users) || isTaskLocked(task.status)}
-                            className="p-1 text-fg-subtle hover:text-primary hover:bg-primary/10 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                            title={
+                            label={
                                 isTaskLocked(task.status)
                                     ? TASK_LOCKED_HINT
                                     : canCurrentUserBeAssigned(currentUser, users)
                                         ? "Assign to me"
                                         : "You don't have permission to be assigned tasks"
                             }
-                        >
-                            <UserPlus className="w-4 h-4" />
-                        </button>
+                            icon={<UserPlus className="w-4 h-4" />}
+                        />
                     )}
                 </div>
             )
@@ -330,21 +329,12 @@ const TasksPage = () => {
                         size="sm"
                         value={task.status}
                         onValueChange={(v) => handleStatusChange(task, v)}
-                        className={`rounded-full text-xs font-semibold cursor-pointer ${
-                            task.status === 'DONE'
-                                ? 'bg-success/10 text-success border-success/20'
-                                : task.status === 'IN_PROGRESS' || task.status === 'ON_HOLD'
-                                ? 'bg-warning/10 text-warning border-warning/20'
-                                : task.status === 'CANCELLED'
-                                ? 'bg-danger/10 text-danger border-danger/20'
-                                : 'bg-surface-raised text-fg-subtle border-line'
-                        }`}
                         options={[
-                            { value: 'OPEN', label: 'OPEN' },
-                            { value: 'IN_PROGRESS', label: 'IN PROGRESS' },
-                            { value: 'DONE', label: 'DONE' },
-                            { value: 'ON_HOLD', label: 'ON HOLD' },
-                            { value: 'CANCELLED', label: 'CANCELLED' },
+                            { value: 'OPEN', label: 'Open' },
+                            { value: 'IN_PROGRESS', label: 'In progress' },
+                            { value: 'DONE', label: 'Done' },
+                            { value: 'ON_HOLD', label: 'On hold' },
+                            { value: 'CANCELLED', label: 'Cancelled' },
                         ]}
                     />
                 </div>
@@ -378,7 +368,6 @@ const TasksPage = () => {
             filterConfig={filterConfig}
             views={(canViewTeamTasks || canViewAllTasks) ? (
                 <SegmentedControl
-                    size="sm"
                     aria-label="Task scope"
                     data-testid="tasks-scope-views"
                     value={taskScope}
@@ -406,7 +395,7 @@ const TasksPage = () => {
             {error && (
                 <div className="mb-4 p-4 bg-danger/20 border border-danger/50 rounded-lg text-danger">
                     {error}
-                    <button onClick={() => setError(null)} className="ml-2 text-danger hover:text-danger/80">×</button>
+                    <IconButton label="Dismiss error" size="sm" icon={<X size={14} />} onClick={() => setError(null)} />
                 </div>
             )}
 

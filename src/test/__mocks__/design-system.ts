@@ -299,6 +299,7 @@ export const NumberInput = numberStub('number');
 export const CurrencyInput = numberStub('currency');
 export const DatePicker = ({ label, hint: _h, error, size: _sz, name, onChange, weekStartsOn: _w, isDateDisabled: _d, today: _t, trailing: _tr, ...rest }: any) =>
   fieldWrap(name, label, error, React.createElement('input', { id: rest.id ?? (label ? `f-${name}` : undefined), name, type: 'date', onChange: (e: any) => onChange?.(e.target.value), ...rest }));
+export const DateInput = DatePicker;
 export const TimePicker = ({ label, hint: _h, error, size: _sz, name, onChange, format: _f, step: _st, minTime: _mi, maxTime: _ma, ...rest }: any) =>
   fieldWrap(name, label, error, React.createElement('input', { id: rest.id ?? (label ? `f-${name}` : undefined), name, type: 'time', onChange: (e: any) => onChange?.(e.target.value), ...rest }));
 export const Checkbox = ({ label, description: _d, indeterminate: _i, name, ...rest }: any) =>

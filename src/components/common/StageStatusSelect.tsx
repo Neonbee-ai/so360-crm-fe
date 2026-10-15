@@ -1,19 +1,12 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown } from 'lucide-react';
+import React from 'react';
+import { Select } from '@so360/design-system';
 
 export type StageStatusType = 'OPEN' | 'WON' | 'LOST';
 
-interface StatusOption {
-    value: StageStatusType;
-    label: string;
-    dotClassName: string;
-    collapsedTextClassName: string;
-}
-
-const STATUS_OPTIONS: StatusOption[] = [
-    { value: 'OPEN', label: 'OPEN', dotClassName: 'bg-fg-subtle', collapsedTextClassName: 'text-fg-subtle border-line' },
-    { value: 'WON', label: 'WON', dotClassName: 'bg-success', collapsedTextClassName: 'text-success border-success/30' },
-    { value: 'LOST', label: 'LOST', dotClassName: 'bg-danger', collapsedTextClassName: 'text-danger border-danger/30' },
+const STATUS_OPTIONS: { value: StageStatusType; label: string }[] = [
+    { value: 'OPEN', label: 'Open' },
+    { value: 'WON', label: 'Won' },
+    { value: 'LOST', label: 'Lost' },
 ];
 
 interface StageStatusSelectProps {
@@ -21,80 +14,15 @@ interface StageStatusSelectProps {
     onChange: (value: StageStatusType) => void;
 }
 
-/**
- * Custom status dropdown for pipeline stages.
- * Collapsed state keeps the business status color (design-system convention);
- * the expanded menu uses one consistent selection highlight plus a colored
- * dot per option, so status color and selection state never conflict.
- */
-export const StageStatusSelect: React.FC<StageStatusSelectProps> = ({ value, onChange }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const containerRef = useRef<HTMLDivElement>(null);
-    const selected = STATUS_OPTIONS.find(o => o.value === value) || STATUS_OPTIONS[0];
-
-    useEffect(() => {
-        const handleOutsideClick = (e: MouseEvent) => {
-            if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-                setIsOpen(false);
-            }
-        };
-        const handleEscape = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') setIsOpen(false);
-        };
-        document.addEventListener('mousedown', handleOutsideClick);
-        document.addEventListener('keydown', handleEscape);
-        return () => {
-            document.removeEventListener('mousedown', handleOutsideClick);
-            document.removeEventListener('keydown', handleEscape);
-        };
-    }, []);
-
-    const handleSelect = (v: StageStatusType) => {
-        onChange(v);
-        setIsOpen(false);
-    };
-
-    return (
-        <div ref={containerRef} className="relative" data-testid="stage-status-select">
-            <button
-                type="button"
-                role="combobox"
-                aria-expanded={isOpen}
-                aria-haspopup="listbox"
-                onClick={() => setIsOpen(o => !o)}
-                className={`flex items-center gap-1 bg-surface border text-xs font-semibold rounded-lg px-2 py-1 outline-none focus:border-primary transition-colors ${selected.collapsedTextClassName}`}
-                data-testid="stage-status-trigger"
-            >
-                {selected.label}
-                <ChevronDown size={10} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-            </button>
-
-            {isOpen && (
-                <div
-                    role="listbox"
-                    className="absolute z-menu top-full right-0 mt-1 min-w-24 bg-surface border border-line rounded-lg shadow-xl overflow-hidden"
-                    data-testid="stage-status-list"
-                >
-                    {STATUS_OPTIONS.map(opt => (
-                        <button
-                            key={opt.value}
-                            type="button"
-                            role="option"
-                            aria-selected={opt.value === value}
-                            onClick={() => handleSelect(opt.value)}
-                            className={`w-full flex items-center gap-2 text-left px-2.5 py-1.5 text-xs font-semibold transition-colors ${
-                                opt.value === value
-                                    ? 'bg-primary text-primary-fg'
-                                    : 'text-fg-subtle hover:bg-surface-raised'
-                            }`}
-                            data-testid={`stage-status-option-${opt.value}`}
-                        >
-                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${opt.dotClassName}`} />
-                            {opt.label}
-                        </button>
-                    ))}
-                </div>
-            )}
-        </div>
-    );
-};
+/** Pipeline-stage status picker — the Comb compact (sm) Select. */
+export const StageStatusSelect: React.FC<StageStatusSelectProps> = ({ value, onChange }) => (
+    <Select
+        name="stage-status"
+        aria-label="Stage status"
+        size="sm"
+        data-testid="stage-status-select"
+        value={value}
+        onValueChange={(v) => onChange(v as StageStatusType)}
+        options={STATUS_OPTIONS}
+    />
+);

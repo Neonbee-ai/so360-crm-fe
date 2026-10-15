@@ -512,8 +512,8 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
                     {isDirty && !isSaving && (
                         <Button variant="secondary" onClick={() => { if (savedSnapshotRef.current) setSettings(JSON.parse(savedSnapshotRef.current)); }}>Cancel</Button>
                     )}
-                    <Button onClick={handleSave} disabled={isSaving || !isDirty}><Save size={16} />
-                        {isSaving ? 'Saving...' : 'Save Configuration'}
+                    <Button onClick={handleSave} disabled={isSaving || !isDirty}><Save size={16} aria-hidden="true" />
+                        {isSaving ? 'Saving…' : 'Save configuration'}
                     </Button>
                     </>)}
                 </div>
@@ -534,7 +534,7 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
             <div className="flex flex-col gap-nb-4">
                 {activeTab === 'pipeline' && (
                     <Card title="Deal Pipeline Stages" padding="none" actions={(
-                        <Button size="sm" variant="primary" onClick={addStage}><Plus size={12} /> ADD STAGE</Button>
+                        <Button variant="secondary" onClick={addStage}><Plus size={16} aria-hidden="true" /> Add stage</Button>
                     )}>
                         <p className="px-nb-4 pt-nb-3 text-xs text-fg-muted">The order defines your sales funnel</p>
                         <div className="p-6">
@@ -602,10 +602,10 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-nb-3">
                         {/* Lead Custom Fields */}
                         <Card title="Lead Fields" padding="none" className="h-fit lg:col-span-4 min-w-0" actions={(
-                            <Button size="sm" variant="primary" onClick={() => {
+                            <Button variant="secondary" onClick={() => {
                                         const newField = { id: `lcf-${Date.now()}`, label: 'New Field', type: 'text' as const, required: false };
                                         setSettings({ ...settings, lead_custom_fields: [...settings.lead_custom_fields, newField] });
-                                    }}><Plus size={12} /> ADD</Button>
+                                    }}><Plus size={16} aria-hidden="true" /> Add</Button>
                         )}>
                             <div className="p-6">
                                 <div className="space-y-3">
@@ -676,7 +676,7 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
                                                             </div>
                                                         ))}
                                                     </div>
-                                                    <Button size="sm" variant="primary" type="button" onClick={() => {
+                                                    <Button variant="secondary" type="button" onClick={() => {
                                                             const newFields = [...settings.lead_custom_fields];
                                                             newFields[idx] = { ...newFields[idx], options: [...((newFields[idx] as any).options || []), ''] } as any;
                                                             setSettings({ ...settings, lead_custom_fields: newFields });
@@ -691,10 +691,10 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
 
                         {/* Deal Custom Fields */}
                         <Card title="Deal Fields" padding="none" className="h-fit lg:col-span-4 min-w-0" actions={(
-                            <Button size="sm" variant="primary" onClick={() => {
+                            <Button variant="secondary" onClick={() => {
                                         const newField = { id: `dcf-${Date.now()}`, label: 'New Field', type: 'text' as const, required: false };
                                         setSettings({ ...settings, deal_custom_fields: [...settings.deal_custom_fields, newField] });
-                                    }}><Plus size={12} /> ADD</Button>
+                                    }}><Plus size={16} aria-hidden="true" /> Add</Button>
                         )}>
                             <div className="p-6">
                                 <div className="space-y-3">
@@ -765,7 +765,7 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
                                                             </div>
                                                         ))}
                                                     </div>
-                                                    <Button size="sm" variant="primary" type="button" onClick={() => {
+                                                    <Button variant="secondary" type="button" onClick={() => {
                                                             const newFields = [...settings.deal_custom_fields];
                                                             newFields[idx] = { ...newFields[idx], options: [...((newFields[idx] as any).options || []), ''] } as any;
                                                             setSettings({ ...settings, deal_custom_fields: newFields });
@@ -780,10 +780,10 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
 
                         {/* Partner Custom Fields */}
                         <Card title="Partner Fields" padding="none" className="h-fit lg:col-span-4 min-w-0" actions={(
-                            <Button size="sm" variant="primary" onClick={() => {
+                            <Button variant="secondary" onClick={() => {
                                         const newField = { id: `pcf-${Date.now()}`, label: 'New Field', type: 'text' as const, required: false };
                                         setSettings({ ...settings, partner_custom_fields: [...(settings.partner_custom_fields || []), newField] });
-                                    }}><Plus size={12} /> ADD</Button>
+                                    }}><Plus size={16} aria-hidden="true" /> Add</Button>
                         )}>
                             <div className="p-6">
                                 <div className="space-y-3">
@@ -854,7 +854,7 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
                                                             </div>
                                                         ))}
                                                     </div>
-                                                    <Button size="sm" variant="primary" type="button" onClick={() => {
+                                                    <Button variant="secondary" type="button" onClick={() => {
                                                             const newFields = [...(settings.partner_custom_fields || [])];
                                                             newFields[idx] = { ...newFields[idx], options: [...(newFields[idx].options || []), ''] };
                                                             setSettings({ ...settings, partner_custom_fields: newFields });
@@ -864,7 +864,7 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
                                         </div>
                                     ))}
                                     {(settings.partner_custom_fields || []).length === 0 && (
-                                        <p className="text-xs text-fg-muted font-bold text-center py-4">No partner fields yet. Click ADD to create one.</p>
+                                        <p className="text-xs text-fg-muted font-bold text-center py-4">No partner fields yet. Click Add to create one.</p>
                                     )}
                                 </div>
                             </div>
@@ -916,7 +916,7 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
                                         onKeyDown={(e) => e.key === 'Enter' && handleAddSourceType()}
                                         placeholder="New source type label…"
                                     />
-                                    <Button size="sm" variant="primary" onClick={handleAddSourceType} disabled={isAddingSource || !newSourceLabel.trim()}><Plus size={12} /> ADD</Button>
+                                    <Button variant="secondary" onClick={handleAddSourceType} disabled={isAddingSource || !newSourceLabel.trim()}><Plus size={16} aria-hidden="true" /> Add</Button>
                                 </div>
                             )}
                         </div>
@@ -927,9 +927,9 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
                         {/* ── Rules Section ── */}
                         <Card title="Lead Scoring Rules" padding="none" actions={(
                             <div className="flex items-center gap-2">
-                                    <Button size="sm" variant="secondary" onClick={handleRecalculateScores} disabled={isRecalculating}>{isRecalculating ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} /> } Recalculate scores</Button>
+                                    <Button variant="secondary" onClick={handleRecalculateScores} disabled={isRecalculating}>{isRecalculating ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} /> } Recalculate scores</Button>
                                     {!isAddingRule && (
-                                        <Button size="sm" variant="primary" onClick={handleStartAddRule}><Plus size={12} /> ADD RULE</Button>
+                                        <Button variant="secondary" onClick={handleStartAddRule}><Plus size={12} /> Add rule</Button>
                                     )}
                                 </div>
                         )}>
@@ -951,7 +951,7 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
 
                                 {scoringRules.length === 0 && !isAddingRule && (
                                     <p className="text-center text-xs text-fg-muted font-bold py-8">
-                                        No scoring rules yet. Click ADD RULE to get started.
+                                        No scoring rules yet. Click Add rule to get started.
                                     </p>
                                 )}
 
@@ -1220,7 +1220,7 @@ function ScoringRuleForm({
                         icon={<X size={12} />}
                         onClick={onCancel}
                     />
-                    <Button size="sm" variant="primary" onClick={onSave} disabled={isSaving}>{isSaving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} Save rule</Button>
+                    <Button variant="secondary" onClick={onSave} disabled={isSaving}>{isSaving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} Save rule</Button>
                 </div>
             </div>
         </div>

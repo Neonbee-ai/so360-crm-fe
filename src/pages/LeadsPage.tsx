@@ -9,10 +9,8 @@ import {
   Download,
   Flag,
   X,
-  ChevronDown,
   BookmarkPlus,
   Bookmark,
-  SlidersHorizontal,
   Pencil,
   Copy,
   Star,
@@ -36,7 +34,7 @@ import { publishLeadsChanged } from '../utils/leadEvents';
 import ExportMenu, { useCanExport } from '../components/ExportMenu';
 import { exportService } from '../services/exportService';
 import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
-import { QuotaGate, toast, ListPageTemplate, Button, SearchInput, EmptyState, Pagination, ConfirmDialog, TextField, SegmentedControl } from '@so360/design-system';
+import { QuotaGate, toast, ListPageTemplate, Button, SearchInput, EmptyState, Pagination, ConfirmDialog, TextField, SegmentedControl, Modal, IconButton } from '@so360/design-system';
 import type { FilterValues, ListFilterConfig } from '@so360/design-system';
 
 // ─── Saved views (lightweight local version) ──────────────────────────────────
@@ -192,10 +190,8 @@ const LeadsPage = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [detailLead, setDetailLead] = useState<Lead | null>(null);
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   // Only one filter/views popover may be open at a time.
   const [openDropdown, setOpenDropdown] = useState<'views' | null>(null);
-  const viewsDropdownRef = useRef<HTMLDivElement>(null);
   // Advanced (server-side) filter tree. null = feature inactive, the normal
   // fetchInitialData list governs. Non-null triggers a server-side refetch via
   // getLeadsPaged so nested AND/OR filters run against the whole dataset, not
@@ -311,7 +307,6 @@ const LeadsPage = () => {
   }, [advancedFilter]);
 
   const handleApplyAdvancedFilter = useCallback((tree: FilterGroup | null) => {
-    setShowAdvancedFilters(false);
     setCurrentPage(1);
     if (tree) {
       setAdvancedFilter(tree);
@@ -367,26 +362,6 @@ const LeadsPage = () => {
   }, [sandboxLeads, currentPage, pageSize]);
 
   useEffect(() => { setCurrentPage(1); }, [filters]);
-
-  // Close the More Filters / Views popover on outside click or Escape.
-  useEffect(() => {
-    if (!openDropdown) return;
-    const activeRef = viewsDropdownRef;
-    const handleOutsideClick = (e: MouseEvent) => {
-      if (activeRef.current && !activeRef.current.contains(e.target as Node)) {
-        setOpenDropdown(null);
-      }
-    };
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpenDropdown(null);
-    };
-    document.addEventListener('mousedown', handleOutsideClick);
-    document.addEventListener('keydown', handleEscape);
-    return () => {
-      document.removeEventListener('mousedown', handleOutsideClick);
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [openDropdown]);
 
   // Handlers
   const handleOwnerChange = useCallback(async (lead: Lead, newOwnerId: string) => {
@@ -729,6 +704,13 @@ const LeadsPage = () => {
       },
       { key: 'customDates', label: 'Custom dates', type: 'daterange' },
       { key: 'creator', label: 'Created by', type: 'select', options: users.map((u) => ({ value: u.id, label: u.full_name })) },
+      {
+        key: 'advanced', label: 'Advanced', type: 'custom',
+        formatValue: () => `Advanced (${advancedFilter ? countActiveRules(advancedFilter) : 0})`,
+        render: () => (
+          <LeadFilterBuilder value={advancedFilter} onApply={handleApplyAdvancedFilter} onClose={() => undefined} />
+        ),
+      },
     ],
     values: {
       ...(filters.status !== 'All' ? { status: filters.status } : {}),
@@ -737,9 +719,11 @@ const LeadsPage = () => {
       ...(filters.customDateStart || filters.customDateEnd ? { customDates: { start: filters.customDateStart, end: filters.customDateEnd } } : {}),
       ...(filters.creator !== 'All' ? { creator: filters.creator } : {}),
       ...(activeSegmentName ? { segment: activeSegmentName } : {}),
+      ...(advancedFilter ? { advanced: 'on' } : {}),
     } as FilterValues,
     onChange: (next: FilterValues) => {
       if (activeSegmentName && !next.segment) navigate({ search: '' }, { replace: true });
+      if (advancedFilter && !next.advanced) setAdvancedFilter(null);
       const cd = next.customDates as { start?: string; end?: string } | null | undefined;
       setFilters((prev) => ({
         ...prev,
@@ -785,10 +769,12 @@ const LeadsPage = () => {
         headerSecondaryActions={[
           ...(canExportLeads ? [<ExportMenu key="export" label="Export leads" onExport={(format) => exportService.leads({ status: filters.status }, format)} />] : []),
         ]}
-        overflowActions={canImportLeads ? [{ label: 'Import', icon: <UploadCloud size={16} aria-hidden="true" />, onSelect: () => setIsImportOpen(true) }] : undefined}
+        overflowActions={[
+          { label: activeViewId ? `Saved views (${savedViews.find((v) => v.id === activeViewId)?.name ?? 'Views'})` : 'Saved views', icon: <Bookmark size={16} aria-hidden="true" />, onSelect: () => setOpenDropdown('views') },
+          ...(canImportLeads ? [{ label: 'Import', icon: <UploadCloud size={16} aria-hidden="true" />, onSelect: () => setIsImportOpen(true) }] : []),
+        ]}
         views={
           <SegmentedControl
-            size="sm"
             aria-label="Lead scope"
             data-testid="leads-scope-views"
             value={ownerScope}
@@ -802,169 +788,14 @@ const LeadsPage = () => {
         }
         search={
           <SearchInput
-            placeholder="Search leads..."
+            placeholder="Search leads…"
             value={filters.search}
             onChange={(v: string) => setFilter('search', v)}
           />
         }
         filterConfig={leadFilterConfig}
         toolbarEnd={
-          <>
-        <div ref={setGridControlsSlot} className="flex shrink-0 items-center" data-slot="grid-controls" />
-        {/* Saved views */}
-        <div ref={viewsDropdownRef} className="relative shrink-0">
-            <button
-              onClick={() => setOpenDropdown((v) => (v === 'views' ? null : 'views'))}
-              className="flex h-nb-control-md items-center gap-1.5 px-3 rounded-nb text-nb-body text-fg-subtle hover:text-fg hover:bg-surface-raised border border-line transition-colors"
-            >
-              <Bookmark size={14} />
-              {activeViewId ? savedViews.find((v) => v.id === activeViewId)?.name ?? 'Views' : 'Views'}
-              <ChevronDown size={14} />
-            </button>
-
-            {openDropdown === 'views' && (
-              <div className="absolute left-0 top-full mt-1.5 z-menu bg-surface border border-line rounded-xl shadow-xl min-w-72 py-1.5">
-                {savedViews.length === 0 && (
-                  <p className="px-4 py-2 text-xs text-fg-muted">No saved views yet</p>
-                )}
-                {savedViews.map((view) => (
-                  <div key={view.id} className="group" data-testid={`saved-view-${view.id}`}>
-                    {renamingViewId === view.id ? (
-                      <div className="flex items-center gap-2 px-3 py-2">
-                        <TextField
-                          autoFocus
-                          name="rename-view"
-                          size="sm"
-                          aria-label="Rename view"
-                          value={renameValue}
-                          onChange={(e) => setRenameValue(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') { handleRenameView(view.id, renameValue); setRenamingViewId(null); }
-                            if (e.key === 'Escape') setRenamingViewId(null);
-                          }}
-                          className="flex-1"
-                        />
-                        <button
-                          onClick={() => { handleRenameView(view.id, renameValue); setRenamingViewId(null); }}
-                          className="text-primary hover:text-primary text-xs font-semibold"
-                        >
-                          Save
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center">
-                        <button
-                          onClick={() => handleApplyView(view)}
-                          className={`flex-1 flex items-center gap-1.5 text-left px-4 py-2 text-sm transition-colors ${activeViewId === view.id ? 'text-primary' : 'text-fg-subtle hover:bg-surface-raised'}`}
-                        >
-                          {view.is_default && <Star size={11} className="text-warning fill-warning shrink-0" />}
-                          <span className="truncate">{view.name}</span>
-                          {view.is_shared && (
-                            <span title="Shared with your team">
-                              <Share2 size={10} className="text-fg-muted shrink-0" />
-                            </span>
-                          )}
-                        </button>
-                        <div className="flex items-center pr-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            aria-label="Rename view"
-                            onClick={() => { setRenamingViewId(view.id); setRenameValue(view.name); }}
-                            className="p-1 text-fg-muted hover:text-fg"
-                          >
-                            <Pencil size={12} />
-                          </button>
-                          <button
-                            aria-label="Duplicate view"
-                            onClick={() => handleDuplicateView(view.id)}
-                            className="p-1 text-fg-muted hover:text-fg"
-                          >
-                            <Copy size={12} />
-                          </button>
-                          <button
-                            aria-label={view.is_default ? 'Default view' : 'Set as default'}
-                            onClick={() => handleSetDefaultView(view.id)}
-                            className={`p-1 ${view.is_default ? 'text-warning' : 'text-fg-muted hover:text-warning'}`}
-                          >
-                            <Star size={12} className={view.is_default ? 'fill-warning' : ''} />
-                          </button>
-                          <button
-                            aria-label={view.is_shared ? 'Unshare view' : 'Share view'}
-                            onClick={() => handleToggleShareView(view.id)}
-                            className={`p-1 ${view.is_shared ? 'text-primary' : 'text-fg-muted hover:text-primary'}`}
-                          >
-                            <Share2 size={12} />
-                          </button>
-                          <button
-                            aria-label="Delete view"
-                            onClick={() => handleDeleteView(view.id)}
-                            className="p-1 text-fg-muted hover:text-danger"
-                          >
-                            <X size={12} />
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-                <div className="border-t border-line mt-1 pt-1">
-                  {showSaveViewInput ? (
-                    <div className="flex items-center gap-2 px-3 py-2">
-                      <TextField
-                        autoFocus
-                        name="save-view-name"
-                        size="sm"
-                        placeholder="View name..."
-                        value={saveViewName}
-                        onChange={(e) => setSaveViewName(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === 'Enter') handleSaveView(); if (e.key === 'Escape') setShowSaveViewInput(false); }}
-                        className="flex-1"
-                      />
-                      <button onClick={handleSaveView} className="text-primary hover:text-primary text-xs font-semibold">Save</button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setShowSaveViewInput(true)}
-                      className="flex items-center gap-1.5 w-full px-4 py-2 text-sm text-fg-subtle hover:text-fg hover:bg-surface-raised transition-colors"
-                    >
-                      <BookmarkPlus size={13} />
-                      Save current view
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Advanced filter builder */}
-          <div className="relative">
-            <button
-              onClick={() => setShowAdvancedFilters((v) => !v)}
-              className={`flex h-nb-control-md items-center gap-1.5 px-3 rounded-nb text-nb-body border transition-colors ${
-                advancedFilter
-                  ? 'text-primary bg-primary/10 border-primary/40'
-                  : 'text-fg-subtle hover:text-fg hover:bg-surface-raised border-line'
-              }`}
-            >
-              <SlidersHorizontal size={14} />
-              Advanced
-              {advancedFilter && (
-                <span className="text-xs bg-primary text-primary-fg rounded-full px-1.5">
-                  {countActiveRules(advancedFilter)}
-                </span>
-              )}
-            </button>
-
-            {showAdvancedFilters && (
-              <div className="absolute right-0 top-full mt-1.5 z-menu">
-                <LeadFilterBuilder
-                  value={advancedFilter}
-                  onApply={handleApplyAdvancedFilter}
-                  onClose={() => setShowAdvancedFilters(false)}
-                />
-              </div>
-            )}
-          </div>
-          </>
+          <div ref={setGridControlsSlot} className="flex shrink-0 items-center" data-slot="grid-controls" />
         }
         loading={isLoading && !hasLeads}
         isEmpty={isTrulyEmpty}
@@ -1021,6 +852,75 @@ const LeadsPage = () => {
           controlsSlot={gridControlsSlot}
         />
       </ListPageTemplate>
+
+      <Modal
+        open={openDropdown === 'views'}
+        onClose={() => setOpenDropdown(null)}
+        title="Saved views"
+        size="md"
+        data-testid="saved-views-modal"
+      >
+        <div className="flex flex-col gap-nb-2">
+          {savedViews.length === 0 && <p className="text-nb-body text-fg-muted">No saved views yet</p>}
+          {savedViews.map((view) => (
+            <div key={view.id} className="flex items-center gap-nb-2" data-testid={`saved-view-${view.id}`}>
+              {renamingViewId === view.id ? (
+                <>
+                  <TextField
+                    autoFocus
+                    name="rename-view"
+                    aria-label="Rename view"
+                    value={renameValue}
+                    onChange={(e) => setRenameValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') { handleRenameView(view.id, renameValue); setRenamingViewId(null); }
+                      if (e.key === 'Escape') setRenamingViewId(null);
+                    }}
+                    className="flex-1"
+                  />
+                  <Button variant="secondary" onClick={() => { handleRenameView(view.id, renameValue); setRenamingViewId(null); }}>Save</Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="secondary"
+                    className={`min-w-0 flex-1 justify-start ${activeViewId === view.id ? 'text-primary' : ''}`}
+                    onClick={() => { handleApplyView(view); setOpenDropdown(null); }}
+                  >
+                    {view.is_default && <Star size={12} className="shrink-0 fill-warning text-warning" aria-hidden="true" />}
+                    <span className="truncate">{view.name}</span>
+                    {view.is_shared && <Share2 size={12} className="shrink-0 text-fg-muted" aria-label="Shared with your team" />}
+                  </Button>
+                  <IconButton label="Rename view" icon={<Pencil size={14} />} onClick={() => { setRenamingViewId(view.id); setRenameValue(view.name); }} />
+                  <IconButton label="Duplicate view" icon={<Copy size={14} />} onClick={() => handleDuplicateView(view.id)} />
+                  <IconButton label={view.is_default ? 'Default view' : 'Set as default'} icon={<Star size={14} className={view.is_default ? 'fill-warning text-warning' : ''} />} onClick={() => handleSetDefaultView(view.id)} />
+                  <IconButton label={view.is_shared ? 'Unshare view' : 'Share view'} icon={<Share2 size={14} className={view.is_shared ? 'text-primary' : ''} />} onClick={() => handleToggleShareView(view.id)} />
+                  <IconButton label="Delete view" variant="danger" icon={<X size={14} />} onClick={() => handleDeleteView(view.id)} />
+                </>
+              )}
+            </div>
+          ))}
+          {showSaveViewInput ? (
+            <div className="flex items-center gap-nb-2">
+              <TextField
+                autoFocus
+                name="save-view-name"
+                placeholder="View name…"
+                value={saveViewName}
+                onChange={(e) => setSaveViewName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSaveView(); if (e.key === 'Escape') setShowSaveViewInput(false); }}
+                className="flex-1"
+              />
+              <Button variant="secondary" onClick={handleSaveView}>Save</Button>
+            </div>
+          ) : (
+            <Button variant="secondary" className="justify-start" onClick={() => setShowSaveViewInput(true)}>
+              <BookmarkPlus size={14} aria-hidden="true" />
+              Save current view
+            </Button>
+          )}
+        </div>
+      </Modal>
 
       <CreateLeadModal
         isOpen={isModalOpen}

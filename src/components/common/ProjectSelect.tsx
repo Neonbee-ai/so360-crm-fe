@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useId, useMemo } from 'react';
 import { Search, X, ChevronDown, Loader2 } from 'lucide-react';
-import { TextField } from '@so360/design-system';
+import { TextField, Button, IconButton } from '@so360/design-system';
 import { crmService } from '../../services/crmService';
 
 // Projects that can no longer take work. Hidden from the picker, but a task
@@ -65,7 +65,6 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
     // the loaded page, or a closed project). Keyed by id so a stale name never shows.
     const [resolved, setResolved] = useState<{ id: string; label: string } | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
-    const triggerRef = useRef<HTMLButtonElement>(null);
     // Set when the picker closes from the keyboard or a selection, so focus goes
     // back to the trigger (but not when the user clicks or tabs elsewhere).
     const restoreFocus = useRef(false);
@@ -154,7 +153,7 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
     useEffect(() => {
         if (!isOpen && restoreFocus.current) {
             restoreFocus.current = false;
-            triggerRef.current?.focus();
+            containerRef.current?.querySelector<HTMLButtonElement>('button[role="combobox"]')?.focus();
         }
     }, [isOpen]);
 
@@ -262,8 +261,7 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
                 </div>
             ) : (
                 <>
-                    <button
-                        ref={triggerRef}
+                    <Button variant="secondary" size="sm" className={`w-full justify-start ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${inputClassName}`}
                         type="button"
                         role="combobox"
                         aria-label="Project"
@@ -274,9 +272,6 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
                         disabled={disabled}
                         onClick={() => { if (!disabled) setIsOpen(true); }}
                         onKeyDown={handleTriggerKeyDown}
-                        className={`flex items-center gap-2 w-full text-left bg-bg border rounded-xl px-4 py-3 cursor-pointer transition-all border-line hover:border-line focus-visible:outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20
-                            ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
-                            ${inputClassName}`}
                     >
                         <Search size={14} className="text-fg-muted shrink-0" />
                         <span className={`flex-1 font-bold truncate ${value ? 'text-fg' : 'text-fg-subtle'}`}>
@@ -286,17 +281,16 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
                         {value
                             ? <span className="w-3.5 shrink-0" aria-hidden="true" />
                             : <ChevronDown size={14} className="text-fg-muted shrink-0" />}
-                    </button>
+                    </Button>
                     {value && (
-                        <button
-                            type="button"
-                            onClick={() => onChange('')}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-fg-muted hover:text-fg-subtle transition-colors"
-                            aria-label="Clear project"
+                        <IconButton
+                            label="Clear project"
+                            size="sm"
+                            className="absolute right-4 top-1/2 -translate-y-1/2"
                             data-testid="project-select-clear"
-                        >
-                            <X size={14} />
-                        </button>
+                            icon={<X size={14} aria-hidden="true" />}
+                            onClick={() => onChange('')}
+                        />
                     )}
                 </>
             )}
@@ -311,20 +305,19 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
                 >
                     <div className="max-h-56 overflow-y-auto">
                         {/* Options are driven by aria-activedescendant, so they stay out of the Tab order. */}
-                        <button
+                        <Button variant="secondary" size="sm" className="w-full justify-start border-0"
                             type="button"
                             role="option"
                             tabIndex={-1}
                             id={optionId(0)}
                             aria-selected={!value}
                             onClick={() => select('')}
-                            className={`w-full text-left px-3 py-2 text-sm italic transition-colors ${activeIndex === 0 ? 'bg-surface-raised' : 'hover:bg-surface-raised'} text-fg-subtle`}
                             data-testid="project-option-none"
                         >
                             {noneLabel}
-                        </button>
+                        </Button>
                         {options.map((p, i) => (
-                            <button
+                            <Button variant="secondary" size="sm" className="w-full justify-between border-0"
                                 key={p.id}
                                 type="button"
                                 role="option"
@@ -332,14 +325,11 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
                                 id={optionId(i + 1)}
                                 aria-selected={p.id === value}
                                 onClick={() => select(p.id)}
-                                className={`w-full text-left px-3 py-2 text-sm transition-colors flex items-center justify-between
-                                    ${p.id === value ? 'bg-primary/10 text-primary' : 'text-fg'}
-                                    ${activeIndex === i + 1 ? 'bg-surface-raised' : 'hover:bg-surface-raised'}`}
                                 data-testid={`project-option-${p.id}`}
                             >
                                 <span className="font-medium truncate">{labelOf(p)}</span>
                                 {codeOf(p) && <span className="text-fg-subtle text-xs ml-2 shrink-0">{codeOf(p)}</span>}
-                            </button>
+                            </Button>
                         ))}
                         {isLoading && (
                             <div className="px-3 py-3 flex items-center justify-center gap-2 text-sm text-fg-muted" data-testid="project-select-loading">
@@ -349,9 +339,9 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
                         {error && (
                             <div className="px-3 py-3 text-sm text-center text-danger" role="alert" data-testid="project-select-error">
                                 Couldn't load projects.{' '}
-                                <button type="button" onClick={() => load(term, 1)} className="underline font-bold" data-testid="project-select-retry">
+                                <Button variant="secondary" size="sm" type="button" onClick={() => load(term, 1)}  data-testid="project-select-retry">
                                     Retry
-                                </button>
+                                </Button>
                             </div>
                         )}
                         {showEmpty && (
@@ -360,14 +350,13 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
                             </div>
                         )}
                         {hasMore && !isLoading && !error && (
-                            <button
+                            <Button variant="secondary" size="sm" className="w-full"
                                 type="button"
                                 onClick={() => load(term, page + 1)}
-                                className="w-full px-3 py-2 text-xs font-bold text-primary hover:bg-surface-raised transition-colors"
                                 data-testid="project-select-more"
                             >
                                 Load more
-                            </button>
+                            </Button>
                         )}
                     </div>
                 </div>
