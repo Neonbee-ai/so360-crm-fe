@@ -796,7 +796,7 @@ describe('LeadDetailPage', () => {
       const user = userEvent.setup();
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
-      const additionalTab = screen.getByText('Additional Info');
+      const additionalTab = screen.getByRole('tab', { name: 'Additional Info' });
       await user.click(additionalTab);
       await waitFor(() => {
         expect(screen.getByText('Priority Level')).toBeInTheDocument();

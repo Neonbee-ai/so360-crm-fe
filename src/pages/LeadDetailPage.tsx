@@ -20,7 +20,7 @@ import { validatePhone } from '../utils/phoneValidation';
 import { validateFirstNameRequired, validateLastName } from '../utils/leadFieldValidation';
 import { describeApiError } from '../utils/apiErrorMessage';
 import { Lead, Deal, Task, Activity, ActivityType, CustomFieldDefinition, LeadScoringRule, User, Attachment, Note, SourceTypeOption } from '../types/crm';
-import { toast, useConfirm, DetailPageTemplate, Button, IconButton, TextField, Select, Checkbox, Badge, Card, ConfirmDialog, EmptyState, Grid, GridItem } from '@so360/design-system';
+import { toast, useConfirm, DetailPageTemplate, Button, IconButton, Tabs, TextField, Select, Checkbox, Badge, Card, ConfirmDialog, EmptyState, Grid, GridItem } from '@so360/design-system';
 import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import { Trophy, Zap, Info, TrendingUp, RefreshCw } from 'lucide-react';
 import CreateDealModal from './components/CreateDealModal';
@@ -1035,28 +1035,17 @@ const LeadDetailPage = () => {
             />
                     {/* Lead Information Tabs Card */}
                     <Card padding="none" className="overflow-hidden">
-                        <div className="flex border-b border-line bg-surface">
-                            <Button variant={infoTab === 'profile' ? 'primary' : 'secondary'} size="sm"
-                                onClick={() => setInfoTab('profile')}
-                               
-                            >
-                                <Users size={14} /> Full Profile
-                            </Button>
-                            {customFieldDefs.length > 0 && (
-                                <Button variant={infoTab === 'additional' ? 'primary' : 'secondary'} size="sm"
-                                    onClick={() => setInfoTab('additional')}
-                                   
-                                >
-                                    <Info size={14} /> Additional Info
-                                </Button>
-                            )}
-                            <Button variant={infoTab === 'business' ? 'primary' : 'secondary'} size="sm"
-                                onClick={() => setInfoTab('business')}
-                               
-                            >
-                                <Building2 size={14} /> Business Profile
-                            </Button>
-                            <div className="ml-auto flex items-center px-4">
+                        <Tabs
+                            name="Lead information"
+                            value={infoTab}
+                            onChange={(id) => setInfoTab(id as typeof infoTab)}
+                            items={[
+                                { id: 'profile', label: 'Full Profile', icon: <Users size={14} /> },
+                                ...(customFieldDefs.length > 0 ? [{ id: 'additional', label: 'Additional Info', icon: <Info size={14} /> }] : []),
+                                { id: 'business', label: 'Business Profile', icon: <Building2 size={14} /> },
+                            ]}
+                            end={(
+                                <div className="px-4">
                                 <IconButton
                                     label={isSavingInfo ? 'Saving…' : isEditingInfo ? "Save Changes" : "Edit Intelligence"}
                                     variant={isEditingInfo ? 'solid' : 'ghost'}
@@ -1118,8 +1107,9 @@ const LeadDetailPage = () => {
                                         setIsEditingInfo(!isEditingInfo);
                                     }}
                                 />
-                            </div>
-                        </div>
+                                </div>
+                            )}
+                        />
 
                         <div className="p-4">
                             {infoTab === 'profile' && (

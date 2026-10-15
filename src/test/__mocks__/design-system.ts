@@ -225,9 +225,11 @@ export const EmptyState = ({ title, description, action }: any) =>
 export const ConfirmDialog = ({ open, title, message, confirmLabel = 'Confirm', cancelLabel = 'Cancel', onConfirm, onCancel }: any) =>
   open ? React.createElement('div', { role: 'dialog' }, React.createElement('h2', null, title), React.createElement('p', null, message),
     React.createElement('button', { onClick: onCancel }, cancelLabel), React.createElement('button', { onClick: onConfirm }, confirmLabel)) : null;
-export const Tabs = ({ items = [], value, onChange }: any) =>
-  React.createElement('div', { role: 'tablist' }, items.map((t: any) =>
-    React.createElement('button', { key: t.id, role: 'tab', 'aria-selected': t.id === value, onClick: () => onChange?.(t.id) }, t.label)));
+export const Tabs = ({ items = [], value, onChange, end }: any) =>
+  React.createElement('div', { role: 'tablist' },
+    items.map((t: any) =>
+      React.createElement('button', { key: t.id, role: 'tab', 'aria-selected': t.id === value, onClick: () => onChange?.(t.id) }, t.icon, t.label)),
+    end ? React.createElement('div', { 'data-slot': 'tabs-end' }, end) : null);
 export const Skeleton = () => React.createElement('div', { 'data-testid': 'skeleton' });
 export const DashboardPageTemplate = (p: any) =>
   React.createElement('div', { 'data-template': 'dashboard' },
