@@ -211,7 +211,7 @@ export default function TargetTemplatesPage() {
         )}
       >
         <Stack>
-          <FormField label="Person">
+          <FormField label="Person" name="template_person">
             <PersonPicker value={ownerId} onChange={setOwnerId} />
           </FormField>
           <DatePicker
