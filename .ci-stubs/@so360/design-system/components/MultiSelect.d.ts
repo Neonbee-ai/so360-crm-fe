@@ -21,6 +21,9 @@ export interface MultiSelectProps {
     /** Maximum number of selections; further options become unselectable. */
     max?: number;
     emptyText?: string;
+    id?: string;
+    onBlur?: () => void;
+    autoFocus?: boolean;
     'aria-label'?: string;
     'data-testid'?: string;
 }

@@ -236,6 +236,7 @@ const MarketingCouponsPage: React.FC = () => {
 
   return (
     <ListPageTemplate
+      trail={[{ label: 'Marketing', to: '/crm/marketing/overview' }]}
       title="Discount Coupons"
       description="Manage promotional codes and offers"
       count={filtered.length}

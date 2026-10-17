@@ -26,6 +26,10 @@ export interface DateRangePickerProps {
     required?: boolean;
     disabled?: boolean;
     placeholder?: string;
+    id?: string;
+    onBlur?: () => void;
+    autoFocus?: boolean;
+    'aria-label'?: string;
     size?: FormFieldSize;
     weekStartsOn?: 0 | 1;
     /** Override "today" (tests / SSR). */

@@ -24,6 +24,20 @@ export interface ComboboxProps {
     /** Show a clear (x) button when a value is selected. */
     clearable?: boolean;
     emptyText?: string;
+    /** Custom match predicate (replaces label fuzzy match) — e.g. search description/email too. */
+    filter?: (option: ComboboxOption, query: string) => boolean;
+    /** Async options, called (debounced) with the typed query; replaces local filtering of `options`. */
+    loadOptions?: (query: string) => Promise<ComboboxOption[]>;
+    debounceMs?: number;
+    /**
+     * Offer a "Create “query”" row when the query has no exact match. Return the created option to select it
+     * (sync or async); return nothing to leave selection to the caller.
+     */
+    onCreate?: (text: string) => ComboboxOption | void | Promise<ComboboxOption | void>;
+    createLabel?: (text: string) => string;
+    id?: string;
+    onBlur?: () => void;
+    autoFocus?: boolean;
     'aria-label'?: string;
     'data-testid'?: string;
 }

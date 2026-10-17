@@ -434,6 +434,7 @@ export default function TargetPlansPage() {
 
   return (
     <ListPageTemplate
+      trail={[{ label: 'Targets', to: '/crm/targets' }]}
       title="Target Plans"
       count={plans.length}
       search={<SearchInput value={search} onChange={setSearch} placeholder="Search plans…" />}

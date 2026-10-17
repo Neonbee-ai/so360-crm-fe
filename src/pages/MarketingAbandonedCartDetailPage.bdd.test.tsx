@@ -75,12 +75,12 @@ describe('MarketingAbandonedCartDetailPage', () => {
 
     it('When rendered / Then shows back button', async () => {
       render(<MarketingAbandonedCartDetailPage />);
-      expect(screen.getAllByLabelText('Back')[0]).toBeInTheDocument();
+      expect(screen.getAllByLabelText('Back to Abandoned carts')[0]).toBeInTheDocument();
     });
 
     it('When back button clicked / Then navigates to list', async () => {
       render(<MarketingAbandonedCartDetailPage />);
-      fireEvent.click(screen.getAllByLabelText('Back')[0]);
+      fireEvent.click(screen.getAllByLabelText('Back to Abandoned carts')[0]);
       expect(mockNavigate).toHaveBeenCalledWith('/crm/marketing/abandoned-carts');
     });
 

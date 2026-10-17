@@ -1,5 +1,7 @@
 import React from 'react';
 export interface PaginationProps {
+    /** Stable id for Comb automation (data-comb-id). */
+    name?: string;
     currentPage: number;
     totalPages: number;
     totalItems: number;

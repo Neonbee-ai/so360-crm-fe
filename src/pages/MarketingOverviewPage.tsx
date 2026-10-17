@@ -95,6 +95,7 @@ const MarketingOverviewPage: React.FC = () => {
 
   return (
     <DashboardPageTemplate
+      trail={[]}
       title="CRM Marketing Overview"
       description="DailyStore marketing and customer intelligence in CRM."
       toolbarEnd={<MarketingStorePicker storeId={storeId} onChange={applyStore} />}

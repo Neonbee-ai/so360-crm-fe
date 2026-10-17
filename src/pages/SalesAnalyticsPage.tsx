@@ -237,6 +237,7 @@ const SalesAnalyticsPage: React.FC = () => {
 
     return (
         <DashboardPageTemplate
+            trail={[{ label: 'Sales', to: '/crm/sales' }]}
             title="Sales reports"
             description="Bookings, lead sources, lost reasons, reservations and agent performance."
             filters={(

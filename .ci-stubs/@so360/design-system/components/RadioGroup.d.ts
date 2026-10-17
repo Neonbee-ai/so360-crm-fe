@@ -14,6 +14,9 @@ export interface RadioGroupProps {
     value: string;
     onChange: (value: string) => void;
     error?: string;
+    hint?: string;
+    required?: boolean;
+    id?: string;
     disabled?: boolean;
     orientation?: 'vertical' | 'horizontal';
     className?: string;

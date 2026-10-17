@@ -5,6 +5,8 @@ export interface AlertAction {
     onClick: () => void;
 }
 export interface AlertProps {
+    /** Stable id for Comb automation; defaults to the title or variant. */
+    name?: string;
     variant?: AlertVariant;
     /** Short uppercase eyebrow above the body. Omit for a single-line alert. */
     title?: string;

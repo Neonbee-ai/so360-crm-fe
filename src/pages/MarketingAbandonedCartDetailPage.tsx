@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { DetailPageTemplate, Button, Card, DataTable, EmptyState, StatusBadge } from '@so360/design-system';
 import { crmService } from '../services/crmService';
 import { formatDateTime, formatMoney } from './marketing/marketingMappers';
 import { useBusinessSettings } from '@so360/shell-context';
-import { goBackFrom } from '../components/common/DetailBackLink';
 
 const STORE_KEY = 'crm_marketing_store_id';
 
@@ -13,7 +12,6 @@ const MarketingAbandonedCartDetailPage: React.FC = () => {
   const currencyCode = settings?.base_currency;
   const locale = settings?.document_language || 'en-US';
   const { cartId } = useParams<{ cartId: string }>();
-  const navigate = useNavigate();
   const [storeId] = useState<string>(localStorage.getItem(STORE_KEY) || '');
   const [cart, setCart] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -50,7 +48,7 @@ const MarketingAbandonedCartDetailPage: React.FC = () => {
 
   return (
     <DetailPageTemplate
-      onBack={() => goBackFrom(navigate, '/crm/marketing/abandoned-carts')}
+      trail={[{ label: 'Marketing', to: '/crm/marketing/overview' }, { label: 'Abandoned carts', to: '/crm/marketing/abandoned-carts' }]}
       title="Abandoned Cart Detail"
       status={cart?.recovery_status ? <StatusBadge status={cart.recovery_status} size="sm" /> : undefined}
       sidePanel={cart ? (

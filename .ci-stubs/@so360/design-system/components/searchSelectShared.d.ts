@@ -52,4 +52,4 @@ export interface OptionListProps<T> {
     onActive?: (id: string) => void;
     className?: string;
 }
-export declare function OptionList<T>({ rows, activeId, listboxId, label, multiselectable, onPick, onActive, className, }: OptionListProps<T>): React.JSX.Element;
+export declare function OptionList<T>({ rows, activeId, listboxId, label, multiselectable, onPick, onActive, className, }: OptionListProps<T>): import("react/jsx-runtime").JSX.Element;

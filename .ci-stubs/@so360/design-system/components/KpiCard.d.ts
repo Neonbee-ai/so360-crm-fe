@@ -1,8 +1,12 @@
 import React from 'react';
 export interface KpiCardProps {
+    /** Stable id for Comb automation; defaults to the label. */
+    name?: string;
     label: string;
     value: React.ReactNode;
     /** Signed change; positive = increase, negative = decrease, 0 = no sign announcement. */
+    /** Secondary text under the value. */
+    hint?: React.ReactNode;
     delta?: number;
     deltaLabel?: string;
     icon?: React.ComponentType<{

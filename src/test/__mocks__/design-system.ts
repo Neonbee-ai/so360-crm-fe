@@ -1,5 +1,6 @@
 // Stub for @so360/design-system — vi.mock() in each test overrides these
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 export const Button = ({ children, onClick, type, disabled, leftIcon: _l, rightIcon: _r, variant: _v, size: _s, loading: _ld, fullWidth: _f, ...rest }: any) =>
   React.createElement('button', { onClick, type, disabled, ...rest }, children);
 export const Input = (props: any) => props;
@@ -186,12 +187,28 @@ export const ListFilters = ({ fields = [], values = {}, onChange, onClear }: any
 export const SearchInput = ({ value, onChange, onSearch, onClear: _oc, debounceMs: _d, loading: _l, shortcutHint: _s, size: _sz, placeholder, 'data-testid': testId, ...rest }: any) =>
   React.createElement('input', { type: 'search', placeholder, 'aria-label': rest['aria-label'] ?? placeholder, 'data-testid': testId, value: value ?? '', onChange: (e: any) => { onChange?.(e.target.value); onSearch?.(e.target.value); } });
 
+// Comb trail (mirrors DS PageTrail): scope root auto-prepended, `←` goes to the last trail item via scope.navigate.
+const CombScopeCtx = React.createContext<{ root?: { label: string; to: string }; navigate?: (to: string) => void }>({});
+export const CombScope = ({ root, navigate, children }: any) => React.createElement(CombScopeCtx.Provider, { value: { root, navigate } }, children);
+export const Trail = ({ trail, onBack, backLabel }: any) => {
+  const scope = React.useContext(CombScopeCtx);
+  // Specs that mock react-router's useNavigate observe the scope navigate through it (the real app wires scope.navigate = useNavigate()).
+  let routerNav: any; try { routerNav = useNavigate(); } catch { routerNav = undefined; }
+  if (!trail && !onBack) return null;
+  let items: any[] = trail ?? [];
+  if (scope.root && !(items[0] && items[0].to === scope.root.to)) items = [{ label: scope.root.label, to: scope.root.to }, ...items];
+  const last = items[items.length - 1];
+  const go = (i: any) => (i.onClick ? i.onClick() : (scope.navigate ?? routerNav)?.(i.to));
+  return React.createElement(React.Fragment, null,
+    onBack ? React.createElement('button', { 'aria-label': backLabel ?? 'Back', onClick: onBack }) : last ? React.createElement('button', { 'aria-label': `Back to ${last.label}`, 'data-comb-id': 'back', onClick: () => go(last) }) : null,
+    items.length ? React.createElement('nav', { 'data-comb-id': 'breadcrumb', 'aria-label': 'Breadcrumb' }, items.map((i: any) => React.createElement('a', { key: i.label, 'data-comb': 'navitem', 'data-comb-to': i.to, href: i.to, onClick: (e: any) => { e.preventDefault(); go(i); } }, i.label))) : null);
+};
 // Comb page templates — slots render in template order with data-slot markers so specs can assert layout contract.
 const slot = (name: string, node: any) => (node ? React.createElement('div', { 'data-slot': name }, node) : null);
 export const ListPageTemplate = (p: any) =>
   React.createElement('div', { 'data-template': 'list' },
     React.createElement('header', { 'data-slot': 'header' },
-      React.createElement('h1', null, p.title), p.count != null ? React.createElement('span', { 'data-slot': 'count' }, p.count) : null,
+      React.createElement(Trail, p), React.createElement('h1', null, p.title), p.count != null ? React.createElement('span', { 'data-slot': 'count' }, p.count) : null,
       slot('primary', p.primaryAction), slot('secondary', p.headerSecondaryActions), slot('overflow', Array.isArray(p.overflowActions) ? p.overflowActions.map((a: any) => React.createElement('button', { key: a.label, onClick: a.onSelect }, a.label)) : p.overflowActions)),
     slot('kpis', p.kpis),
     React.createElement('div', { 'data-slot': 'toolbar' }, p.views ? React.createElement('div', { 'data-slot': 'views' }, p.views) : null, p.search, p.filterConfig ? React.createElement(ListFilters, p.filterConfig) : null, p.filters, p.toolbar, p.toolbarEnd),
@@ -203,7 +220,7 @@ export const ListPageTemplate = (p: any) =>
 export const DetailPageTemplate = (p: any) =>
   React.createElement('div', { 'data-template': 'detail' },
     React.createElement('header', { 'data-slot': 'header' },
-      p.onBack ? React.createElement('button', { 'aria-label': p.backLabel ?? 'Back', onClick: p.onBack }) : null,
+      React.createElement(Trail, p),
       React.createElement('h1', null, p.title), slot('status', p.status), slot('meta', p.meta),
       slot('secondary', p.secondaryActions && React.createElement(React.Fragment, null, ...p.secondaryActions)),
       slot('primary', p.primaryAction),
@@ -216,7 +233,7 @@ export const DetailPageTemplate = (p: any) =>
     slot('rail', p.sidePanel));
 export const FormPageTemplate = (p: any) =>
   React.createElement('div', { 'data-template': 'form' },
-    React.createElement('header', { 'data-slot': 'header' }, React.createElement('h1', null, p.title)),
+    React.createElement('header', { 'data-slot': 'header' }, React.createElement(Trail, p), React.createElement('h1', null, p.title)),
     (p.sections ?? []).map((sec: any) => React.createElement('section', { key: sec.id, 'data-slot': 'section' }, React.createElement('h2', null, sec.title), sec.content)),
     p.children,
     React.createElement('footer', { 'data-slot': 'footer' }, p.destructiveAction,
@@ -236,13 +253,13 @@ export const Skeleton = () => React.createElement('div', { 'data-testid': 'skele
 export const DashboardPageTemplate = (p: any) =>
   React.createElement('div', { 'data-template': 'dashboard' },
     React.createElement('header', { 'data-slot': 'header' },
-      React.createElement('h1', null, p.title), p.description ? React.createElement('p', null, p.description) : null,
+      React.createElement(Trail, p), React.createElement('h1', null, p.title), p.description ? React.createElement('p', null, p.description) : null,
       slot('meta', p.meta), slot('secondary-actions', p.secondaryActions), slot('primary-action', p.primaryAction)),
     slot('filters', p.filters), slot('toolbar-end', p.toolbarEnd),
     slot('kpis', p.kpis), slot('primary', p.primary), slot('secondary', p.secondary), slot('bottom', p.bottom), p.children);
 export const SettingsPageTemplate = (p: any) =>
   React.createElement('div', { 'data-template': 'settings' },
-    React.createElement('header', { 'data-slot': 'header' }, React.createElement('h1', null, p.title),
+    React.createElement('header', { 'data-slot': 'header' }, React.createElement(Trail, p), React.createElement('h1', null, p.title),
       p.description ? React.createElement('p', null, p.description) : null, slot('primary-action', p.primaryAction)),
     React.createElement('nav', { 'data-slot': 'sections', role: 'tablist' }, (p.sections ?? []).map((s: any) =>
       React.createElement('button', { key: s.id, role: 'tab', 'aria-selected': s.id === p.activeSection, onClick: () => p.onSectionChange?.(s.id) }, s.label))),

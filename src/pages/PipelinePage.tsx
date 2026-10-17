@@ -145,6 +145,7 @@ const PipelinePage = () => {
 
     return (
         <ListPageTemplate
+            trail={[]}
             title="Deals Pipeline"
             description="Visualize deal movement and sales progress"
             primaryAction={canCreateDeal ? (

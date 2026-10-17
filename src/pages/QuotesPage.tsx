@@ -841,6 +841,7 @@ const QuotesPage = () => {
 
     return (
         <ListPageTemplate
+            trail={[]}
             title="Quotes"
             description="Manage sales quotes and proposals"
             headerSecondaryActions={[

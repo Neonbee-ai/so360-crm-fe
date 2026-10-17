@@ -7,6 +7,7 @@ import {
 } from '../services/icpService';
 
 const LIST = '/crm/settings/icps';
+const ICP_TRAIL = [{ label: 'Settings', to: '/crm/settings' }, { label: 'Ideal customer profiles', to: LIST }];
 
 const parseTags = (t: string): string[] => t.split(',').map((x) => x.trim()).filter(Boolean);
 
@@ -98,7 +99,7 @@ const IcpFormPage: React.FC = () => {
     if (loading) return <div className="flex justify-center py-nb-6 text-fg-muted"><Spinner /><span className="sr-only" data-testid="spinner">Loading…</span></div>;
     if (loadError) {
         return (
-            <FormPageTemplate title="Ideal customer profile" onBack={back} backLabel="Back">
+            <FormPageTemplate title="Ideal customer profile" trail={ICP_TRAIL}>
                 <Card><p role="alert" className="text-sm text-fg-muted">{loadError}</p></Card>
             </FormPageTemplate>
         );
@@ -106,9 +107,8 @@ const IcpFormPage: React.FC = () => {
 
     return (
         <FormPageTemplate
+            trail={ICP_TRAIL}
             title={isEdit ? 'Edit ideal customer profile' : 'New ideal customer profile'}
-            onBack={back}
-            backLabel="Back"
             secondaryAction={<Button type="button" variant="secondary" onClick={back} data-testid="icp-cancel">Cancel</Button>}
             primaryAction={<Button type="button" disabled={saving} onClick={() => void onSave()} data-testid="icp-save">{saving ? 'Saving…' : 'Save'}</Button>}
         >

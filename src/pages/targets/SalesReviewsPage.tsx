@@ -215,6 +215,7 @@ export default function SalesReviewsPage() {
   return (
     <>
     <ListPageTemplate
+      trail={[{ label: 'Targets', to: '/crm/targets' }]}
       title="Reviews"
       count={reviews.length}
       primaryAction={(

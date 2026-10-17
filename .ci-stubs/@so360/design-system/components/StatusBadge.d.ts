@@ -1,11 +1,14 @@
 import React from 'react';
-import { BadgeSize, BadgeTone } from './Badge';
+import { BadgeShape, BadgeSize, BadgeTone, BadgeVariant } from './Badge';
 export declare const DEFAULT_STATUS_MAP: Record<string, BadgeTone>;
 export interface StatusBadgeProps {
     status: string;
     /** Overrides/extends the default map. Keys are matched case-insensitively. */
     map?: Record<string, BadgeTone>;
     size?: BadgeSize;
+    /** Badge emphasis; `muted` suits dense tables (neutral text, coloured dot). */
+    variant?: BadgeVariant;
+    shape?: BadgeShape;
     className?: string;
     'data-testid'?: string;
 }

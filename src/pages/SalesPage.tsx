@@ -127,6 +127,7 @@ const SalesPage: React.FC = () => {
 
     return (
         <ListPageTemplate
+            trail={[]}
             title="Sales"
             description="Every unit sale with its payment progress and commission."
             headerSecondaryActions={canExport ? [

@@ -747,6 +747,7 @@ const LeadsPage = () => {
   return (
     <div ref={listAnchorRef}>
       <ListPageTemplate
+        trail={[]}
         title="Leads & Accounts"
         count={leads.length}
         primaryAction={

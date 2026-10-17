@@ -139,6 +139,7 @@ const CommissionReportPage: React.FC = () => {
 
     return (
         <DashboardPageTemplate
+            trail={[{ label: 'Sales', to: '/crm/sales' }]}
             title="Commission report"
             description="Commission earned across projects, agents and months."
             /* The report carries no developer list, so the developer filter is not offered here. */

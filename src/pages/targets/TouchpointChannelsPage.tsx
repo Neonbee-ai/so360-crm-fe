@@ -186,6 +186,7 @@ export default function TouchpointChannelsPage() {
   return (
     <>
     <ListPageTemplate
+      trail={[{ label: 'Targets', to: '/crm/targets' }]}
       title="Touchpoint Channels"
       count={channels.length}
       headerSecondaryActions={[

@@ -138,14 +138,14 @@ describe('Given PartnerDetailPage — overview tab', () => {
   test('Given partner loaded / When rendered / Then shows the universal Back link', async () => {
     render(<PartnerDetailPage />);
     await waitFor(() => {
-      expect(screen.getAllByLabelText('Back')[0]).toBeInTheDocument();
+      expect(screen.getAllByLabelText('Back to Partners')[0]).toBeInTheDocument();
     });
   });
 
   test('Given partner loaded / When Back is clicked / Then it navigates to /crm/partners, not the dashboard', async () => {
     render(<PartnerDetailPage />);
-    await waitFor(() => expect(screen.getAllByLabelText('Back')[0]).toBeInTheDocument());
-    fireEvent.click(screen.getAllByLabelText('Back')[0]);
+    await waitFor(() => expect(screen.getAllByLabelText('Back to Partners')[0]).toBeInTheDocument());
+    fireEvent.click(screen.getAllByLabelText('Back to Partners')[0]);
     expect(mockNavigate).toHaveBeenCalledWith('/crm/partners');
   });
 

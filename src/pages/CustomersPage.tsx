@@ -325,6 +325,7 @@ const CustomersPage = () => {
 
     return (
         <ListPageTemplate
+            trail={[]}
             title="Customers"
             description="Customers from Storefront, POS, guest checkout, and promoted leads"
             search={

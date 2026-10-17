@@ -1,4 +1,5 @@
 import React from 'react';
+import { type TreeMove } from '../utils/treeDnd';
 export interface TreeNode {
     id: string;
     label: React.ReactNode;
@@ -24,5 +25,16 @@ export interface TreeProps extends Omit<React.HTMLAttributes<HTMLUListElement>, 
     checked?: string[];
     defaultChecked?: string[];
     onCheckedChange?: (ids: string[]) => void;
+    /**
+     * Drag to reorder/reparent (mouse/pen; drop on a row's top/bottom edge = before/after, middle = inside).
+     * Keyboard: Alt+Up/Down reorder, Alt+Right nests under the previous sibling, Alt+Left moves out. Esc cancels a drag.
+     * The tree does not own `nodes` — apply the move in `onMove` (see `moveTreeNode`).
+     */
+    reorderable?: boolean;
+    onMove?: (move: TreeMove) => void;
+    /** Veto a candidate move (e.g. leaves cannot take children). */
+    canDrop?: (move: TreeMove) => boolean;
+    /** Allow dropping into a node to nest it (default true). */
+    allowNesting?: boolean;
 }
 export declare const Tree: React.FC<TreeProps>;

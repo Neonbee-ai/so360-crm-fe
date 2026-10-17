@@ -13,7 +13,6 @@ import { RescheduleModal } from './components/RescheduleModal';
 import { ShellContext, useActivity, useShellBridge } from '@so360/shell-context';
 import { toast, getErrorMessage, CrossLinkChip, DetailPageTemplate, Button, Card, Badge, StatusBadge, EmptyState, Alert, IconButton, Textarea, RadioGroup } from '@so360/design-system';
 import { CrmScope } from '../utils/crmScope';
-import { goBackFrom } from '../components/common/DetailBackLink';
 import { useCRMFormatters } from '../utils/formatters';
 import { isTaskLocked, canRescheduleTask, canEditTask, isTaskOverdue, TASK_LOCKED_HINT } from '../utils/taskUtils';
 import { dueDateCalendarDay, hasTimeComponent } from '../utils/datetime';
@@ -205,8 +204,7 @@ const TaskDetailPage = () => {
 
     return (
         <DetailPageTemplate
-            onBack={() => goBackFrom(navigate, '/crm/tasks')}
-            backLabel="Back"
+            trail={[{ label: 'Tasks', to: '/crm/tasks' }]}
             title={task.title}
             status={
                 <span className="flex items-center gap-nb-2">

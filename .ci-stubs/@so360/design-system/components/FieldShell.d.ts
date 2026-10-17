@@ -1,5 +1,5 @@
 import React from 'react';
-import { type FormFieldContextValue } from './FormField';
+import { type CombFieldReg, type FormFieldContextValue } from './FormField';
 export interface FieldShellProps {
     label?: string;
     name: string;
@@ -7,6 +7,8 @@ export interface FieldShellProps {
     error?: string;
     required?: boolean;
     className?: string;
+    /** Comb contract: control type of the wrapped input (see utils/comb.ts). */
+    comb?: CombFieldReg;
     'data-testid'?: string;
     /** Receives FormField wiring when a label is given, otherwise null. */
     children: (ctx: FormFieldContextValue | null) => React.ReactNode;

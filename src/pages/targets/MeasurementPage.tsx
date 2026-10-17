@@ -67,7 +67,7 @@ export default function MeasurementPage() {
 
   if (loading) {
     return (
-      <DashboardPageTemplate title="Measurement" filters={header}>
+      <DashboardPageTemplate title="Measurement" filters={header} trail={[{ label: 'Targets', to: '/crm/targets' }]}>
       <div className="space-y-4">
         <LoadingState />
       </div>
@@ -76,7 +76,7 @@ export default function MeasurementPage() {
   }
   if (error) {
     return (
-      <DashboardPageTemplate title="Measurement" filters={header}>
+      <DashboardPageTemplate title="Measurement" filters={header} trail={[{ label: 'Targets', to: '/crm/targets' }]}>
       <div className="space-y-4">
         <ErrorState error={error} onRetry={load} />
       </div>
@@ -85,7 +85,7 @@ export default function MeasurementPage() {
   }
   if (!data) {
     return (
-      <DashboardPageTemplate title="Measurement" filters={header}>
+      <DashboardPageTemplate title="Measurement" filters={header} trail={[{ label: 'Targets', to: '/crm/targets' }]}>
       <div className="space-y-4">
         <EmptyState title="No measurement data" description="There is nothing to measure in the selected period." />
       </div>
@@ -98,7 +98,7 @@ export default function MeasurementPage() {
     !pipeline?.applicable && !mix?.applicable && !winLoss?.won_count && !winLoss?.lost_count;
 
   return (
-    <DashboardPageTemplate title="Measurement" filters={header}>
+    <DashboardPageTemplate title="Measurement" filters={header} trail={[{ label: 'Targets', to: '/crm/targets' }]}>
     <Grid>
       <GridItem span={12}>
         <div className="text-xs text-fg-subtle">

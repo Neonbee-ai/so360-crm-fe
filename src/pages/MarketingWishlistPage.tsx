@@ -85,6 +85,7 @@ const MarketingWishlistPage: React.FC = () => {
 
   return (
     <ListPageTemplate
+      trail={[{ label: 'Marketing', to: '/crm/marketing/overview' }]}
       title="Customer Wishlists"
       description="Track high-intent items across storefront customers"
       count={filtered.length}

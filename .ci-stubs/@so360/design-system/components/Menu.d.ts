@@ -12,6 +12,8 @@ export interface MenuProps {
     items: MenuItem[];
     placement?: PopoverPlacement;
     name?: string;
+    /** Portal the menu out of clipping ancestors (default true, see Popover). */
+    portal?: boolean;
     'data-testid'?: string;
 }
 /** Action menu (Popover + roving focus). */

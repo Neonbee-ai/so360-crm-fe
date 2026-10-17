@@ -123,6 +123,7 @@ const IcpListPage: React.FC = () => {
     return (
         <>
             <ListPageTemplate
+                trail={[{ label: 'Settings', to: '/crm/settings' }]}
                 title="Ideal customer profiles"
                 description={!loading ? `${icps.length} profile${icps.length === 1 ? '' : 's'}` : undefined}
                 primaryAction={canCreate ? newBtn : undefined}

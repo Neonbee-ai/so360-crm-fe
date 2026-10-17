@@ -305,6 +305,7 @@ const MarketingSegmentsPage: React.FC = () => {
 
   return (
     <ListPageTemplate
+      trail={[{ label: 'Marketing', to: '/crm/marketing/overview' }]}
       title="Customer Segments"
       description="Create CRM segments for leads/customers. Storefront segments are read-only."
       primaryAction={canCreateMarketing ? (

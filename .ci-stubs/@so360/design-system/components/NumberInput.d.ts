@@ -18,9 +18,22 @@ export interface NumberInputProps {
     placeholder?: string;
     size?: FormFieldSize;
     id?: string;
+    onBlur?: () => void;
+    autoFocus?: boolean;
+    /** Show the −/+ stepper buttons (default true). Off → a plain right-aligned amount field. */
+    stepper?: boolean;
+    /** Leading adornment, e.g. a currency symbol ("₹", "$"). */
+    prefix?: React.ReactNode;
+    /** Trailing adornment, e.g. a unit ("kg", "hrs", "%") or currency code. */
+    suffix?: React.ReactNode;
+    /** Text alignment; defaults to `center` with the stepper, `end` without (amounts). */
+    align?: 'start' | 'center' | 'end';
     'aria-label'?: string;
     'data-testid'?: string;
 }
 export declare function clampNumber(n: number, min?: number, max?: number): number;
-/** Numeric spinbutton with +/- stepper, min/max/step and arrow-key support. */
+/**
+ * Numeric spinbutton: no native spinner, optional −/+ stepper, prefix/suffix adornments, negatives allowed
+ * (unless `min` ≥ 0), min/max/step and ArrowUp/ArrowDown. Same height, radius, border and focus ring as Input.
+ */
 export declare const NumberInput: React.ForwardRefExoticComponent<NumberInputProps & React.RefAttributes<HTMLInputElement>>;

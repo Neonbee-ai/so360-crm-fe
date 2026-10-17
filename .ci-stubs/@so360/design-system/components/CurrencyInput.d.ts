@@ -23,6 +23,8 @@ export interface CurrencyInputProps {
     placeholder?: string;
     size?: FormFieldSize;
     id?: string;
+    onBlur?: () => void;
+    autoFocus?: boolean;
     'aria-label'?: string;
     'data-testid'?: string;
 }

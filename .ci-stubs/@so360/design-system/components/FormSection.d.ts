@@ -1,11 +1,16 @@
 import React from 'react';
+import { type FieldGridColumns } from './FieldGrid';
 /** Miller's law: keep a chunk to ≤ 7 fields; split into more sections beyond this. */
 export declare const FORM_SECTION_MAX_FIELDS = 7;
 export interface FormSectionProps {
     title: string;
     description?: string;
-    /** 1 (default) or 2 columns from wc-medium up. */
-    columns?: 1 | 2;
+    /** 1 (default) – 4 columns; collapses responsively (see FieldGrid). */
+    columns?: FieldGridColumns;
+    /** `card` (default): bordered surface for a page form. `plain`: no border/padding, for use inside a Card or Drawer. */
+    variant?: 'card' | 'plain';
+    /** Optional FormActions row rendered after the fields. */
+    actions?: React.ReactNode;
     /** Override the child count used for the ≤7 guidance. */
     fieldCount?: number;
     children: React.ReactNode;

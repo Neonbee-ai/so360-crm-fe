@@ -865,16 +865,16 @@ describe('LeadDetailPage', () => {
     it('When the header Back is clicked from /crm/leads/:id / Then it navigates to /crm/leads, not the dashboard', async () => {
       mockPathname = '/crm/leads/lead-1';
       render(<LeadDetailPage />);
-      await waitFor(() => expect(screen.getAllByLabelText('Back')[0]).toBeInTheDocument());
-      fireEvent.click(screen.getAllByLabelText('Back')[0]);
+      await waitFor(() => expect(screen.getAllByLabelText('Back to Leads')[0]).toBeInTheDocument());
+      fireEvent.click(screen.getAllByLabelText('Back to Leads')[0]);
       expect(mockNavigate).toHaveBeenCalledWith('/crm/leads');
     });
 
     it('When the header Back is clicked from /crm/customers/:id / Then it navigates to /crm/customers, not the dashboard', async () => {
       mockPathname = '/crm/customers/lead-1';
       render(<LeadDetailPage />);
-      await waitFor(() => expect(screen.getAllByLabelText('Back')[0]).toBeInTheDocument());
-      fireEvent.click(screen.getAllByLabelText('Back')[0]);
+      await waitFor(() => expect(screen.getAllByLabelText('Back to Customers')[0]).toBeInTheDocument());
+      fireEvent.click(screen.getAllByLabelText('Back to Customers')[0]);
       expect(mockNavigate).toHaveBeenCalledWith('/crm/customers');
     });
   });

@@ -62,7 +62,7 @@ export default function TargetsOverviewPage() {
 
   if (loading || error || !data || !data.plans?.length) {
     return (
-      <DashboardPageTemplate title="Overview">
+      <DashboardPageTemplate title="Overview" trail={[]}>
         {loading ? (
           <LoadingState />
         ) : error ? (
@@ -82,6 +82,7 @@ export default function TargetsOverviewPage() {
 
   return (
     <DashboardPageTemplate
+      trail={[]}
       title="Overview"
       meta={(
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-fg-subtle">

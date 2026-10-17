@@ -100,6 +100,7 @@ const MarketingReviewsPage: React.FC = () => {
 
   return (
     <ListPageTemplate
+      trail={[{ label: 'Marketing', to: '/crm/marketing/overview' }]}
       title="Customer Reviews"
       description="Monitor and moderate storefront product feedback"
       count={filtered.length}

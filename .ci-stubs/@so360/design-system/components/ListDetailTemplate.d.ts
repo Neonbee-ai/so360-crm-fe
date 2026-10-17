@@ -1,10 +1,17 @@
 import React from 'react';
-export interface ListDetailTemplateProps {
+import { type CombPageProps } from './usePageComb';
+import { type TrailItem } from './PageTrail';
+export interface ListDetailTemplateProps extends CombPageProps {
     list: React.ReactNode;
     detail: React.ReactNode;
     /** True when an item is selected. On compact/medium windows this switches the single visible pane to the detail. */
     hasSelection: boolean;
-    /** Called by the back button on small windows. */
+    /**
+     * Ancestors of the selected record (nearest last). Shown above the detail pane; on compact/medium windows the
+     * `←` goes to the last item (e.g. the list route).
+     */
+    trail?: TrailItem[];
+    /** Back on small windows (e.g. clear the selection). Takes precedence over the trail's back target. */
     onBack?: () => void;
     backLabel?: string;
     /** Shown in the detail pane when nothing is selected (two-pane layout only). */

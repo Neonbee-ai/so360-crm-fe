@@ -1,6 +1,8 @@
 import React from 'react';
 import { SparklineType } from './Sparkline';
 export interface StatCardProps {
+    /** Stable id for Comb automation; defaults to the label. */
+    name?: string;
     label: string;
     value: React.ReactNode;
     /** Percentage change vs the previous period (e.g. 12.5 = +12.5%). */

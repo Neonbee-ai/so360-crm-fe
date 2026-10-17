@@ -11,7 +11,6 @@ import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import { useBusinessSettings, useShell } from '@so360/shell-context';
 import NeuraAiSummaryCard from './components/NeuraAiSummaryCard';
 import { useFormatters } from '@so360/formatters';
-import { goBackFrom } from '../components/common/DetailBackLink';
 import { DetailPageTemplate, Card, Badge, Button, KpiCard, EmptyState, DataTable, TextField, NumberInput, Select } from '@so360/design-system';
 import { Modal } from '../components/common/Modal';
 
@@ -277,8 +276,7 @@ const PartnerDetailPage = () => {
 
     return (
         <DetailPageTemplate
-            onBack={() => goBackFrom(navigate, '/crm/partners')}
-            backLabel="Back"
+            trail={[{ label: 'Partners', to: '/crm/partners' }]}
             title={partnerName}
             status={
                 <>

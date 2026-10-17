@@ -490,6 +490,7 @@ const PartnersPage = () => {
 
     return (
         <ListPageTemplate
+            trail={[]}
             title="Partners"
             description="Referral agents, resellers, and dealers who bring in deals"
             primaryAction={

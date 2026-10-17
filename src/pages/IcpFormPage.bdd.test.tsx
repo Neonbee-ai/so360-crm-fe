@@ -254,7 +254,7 @@ describe('Given the page titles and navigation', () => {
   describe('When Back is clicked', () => {
     it('Then it navigates to the list', () => {
       render(<IcpFormPage />);
-      fireEvent.click(screen.getByText('Back'));
+      fireEvent.click(screen.getByLabelText('Back to Ideal customer profiles'));
       expect(nav).toHaveBeenCalledWith('/crm/settings/icps');
     });
   });
@@ -494,7 +494,7 @@ describe('Given the edit form load and save states', () => {
       svc.list.mockRejectedValue(new Error('load boom'));
       render(<IcpFormPage />);
       expect((await screen.findByRole('alert')).textContent).toBe('load boom');
-      fireEvent.click(screen.getByText('Back'));
+      fireEvent.click(screen.getByLabelText('Back to Ideal customer profiles'));
       expect(nav).toHaveBeenCalledWith('/crm/settings/icps');
     });
   });

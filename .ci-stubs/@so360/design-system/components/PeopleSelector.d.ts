@@ -27,9 +27,12 @@ export interface Person {
     type: string;
 }
 export interface PeopleSelectorProps {
+    /** Stable field name for Comb automation (data-comb-id). */
+    name?: string;
     value?: string | string[];
     onChange: (personId: string | string[] | null, person?: Person | Person[]) => void;
-    orgId: string;
+    /** Required for the People Connect API source; unused with `loadOptions` / `options`. */
+    orgId?: string;
     tenantId?: string;
     filters?: {
         department_id?: string;
@@ -43,5 +46,16 @@ export interface PeopleSelectorProps {
     className?: string;
     error?: string;
     required?: boolean;
+    /**
+     * Custom data source (replaces the People Connect `/people` call). Loaded once on mount and
+     * filtered client-side. Use for broker routes, e.g. `() => crmService.getSalesReps()`.
+     */
+    loadOptions?: () => Promise<Person[]>;
+    /** Static data source; same client-side filtering as `loadOptions`. */
+    options?: Person[];
+    /** Single-select only: shows a ✕ to clear the selection (onChange(null)). */
+    clearable?: boolean;
 }
+/** Multi-field match used for custom sources: name, email, title, department. */
+export declare function matchPerson(p: Person, query: string): boolean;
 export declare const PeopleSelector: React.FC<PeopleSelectorProps>;

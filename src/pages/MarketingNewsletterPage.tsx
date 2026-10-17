@@ -124,6 +124,7 @@ const MarketingNewsletterPage: React.FC = () => {
 
   return (
     <ListPageTemplate
+      trail={[{ label: 'Marketing', to: '/crm/marketing/overview' }]}
       title="Newsletter Subscribers"
       description="Manage storefront newsletter audience"
       count={filtered.length}

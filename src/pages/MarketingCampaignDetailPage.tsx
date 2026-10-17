@@ -1,18 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { DetailPageTemplate, Card, Badge, Button, KpiCard, EmptyState, DataTable, TextField, DateTimePicker, Grid, GridItem } from '@so360/design-system';
 import { crmService } from '../services/crmService';
 import { useCRMFormatters } from '../utils/formatters';
 import { formatDateTime } from './marketing/marketingMappers';
 import { useActivity } from '@so360/shell-context';
-import { goBackFrom } from '../components/common/DetailBackLink';
 
 const STORE_KEY = 'crm_marketing_store_id';
 
 const MarketingCampaignDetailPage: React.FC = () => {
   const formatters = useCRMFormatters();
   const { campaignId } = useParams<{ campaignId: string }>();
-  const navigate = useNavigate();
   const [storeId] = useState<string>(localStorage.getItem(STORE_KEY) || '');
   const { recordActivity } = useActivity();
   const [campaign, setCampaign] = useState<any>(null);
@@ -50,7 +48,7 @@ const MarketingCampaignDetailPage: React.FC = () => {
 
   return (
     <DetailPageTemplate
-      onBack={() => goBackFrom(navigate, '/crm/marketing/campaigns')}
+      trail={[{ label: 'Marketing', to: '/crm/marketing/overview' }, { label: 'Campaigns', to: '/crm/marketing/campaigns' }]}
       title={campaign ? campaign.name : 'Campaign'}
       status={campaign ? (
         <span className="flex items-center gap-nb-2">

@@ -129,7 +129,7 @@ describe('TaskDetailPage', () => {
     it('When the header Back is clicked / Then it navigates to /crm/tasks, not the dashboard', async () => {
       render(<TaskDetailPage />);
       await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
-      fireEvent.click(screen.getAllByLabelText('Back')[0]);
+      fireEvent.click(screen.getAllByLabelText('Back to Tasks')[0]);
       expect(mockNavigate).toHaveBeenCalledWith('/crm/tasks');
     });
 

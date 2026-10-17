@@ -18,6 +18,8 @@ export interface DateInputProps {
     placeholder?: string;
     size?: FormFieldSize;
     id?: string;
+    onBlur?: () => void;
+    autoFocus?: boolean;
     className?: string;
     /** Slot rendered inside the right edge of the control (e.g. calendar button). */
     trailing?: React.ReactNode;

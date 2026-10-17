@@ -156,6 +156,7 @@ export default function TargetTemplatesPage() {
   return (
     <>
       <ListPageTemplate
+        trail={[{ label: 'Targets', to: '/crm/targets' }]}
         title="Target Templates"
         count={templates.length}
         search={<SearchInput value={search} onChange={setSearch} placeholder="Search templates…" />}

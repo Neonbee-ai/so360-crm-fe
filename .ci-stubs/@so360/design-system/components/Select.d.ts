@@ -16,6 +16,10 @@ export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectE
     error?: string;
     required?: boolean;
     size?: FormFieldSize;
+    /** 'inline' = borderless, quiet until hover/focus (M3 in-row edit). Default 'outlined'. */
+    variant?: 'outlined' | 'inline';
+    /** Convenience alongside the native onChange: receives the selected value. */
+    onValueChange?: (value: string) => void;
     'data-testid'?: string;
 }
 export declare const Select: React.ForwardRefExoticComponent<SelectProps & React.RefAttributes<HTMLSelectElement>>;

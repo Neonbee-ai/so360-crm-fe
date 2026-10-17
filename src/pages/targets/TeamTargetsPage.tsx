@@ -129,7 +129,7 @@ export default function TeamTargetsPage() {
 
   if (loading) {
     return (
-      <DashboardPageTemplate title="Team Targets" filters={header}>
+      <DashboardPageTemplate title="Team Targets" filters={header} trail={[{ label: 'Targets', to: '/crm/targets' }]}>
       <div className="space-y-4">
         <LoadingState />
       </div>
@@ -138,7 +138,7 @@ export default function TeamTargetsPage() {
   }
   if (error) {
     return (
-      <DashboardPageTemplate title="Team Targets" filters={header}>
+      <DashboardPageTemplate title="Team Targets" filters={header} trail={[{ label: 'Targets', to: '/crm/targets' }]}>
       <div className="space-y-4">
         <ErrorState error={error} onRetry={load} />
       </div>
@@ -147,7 +147,7 @@ export default function TeamTargetsPage() {
   }
   if (!rows.length) {
     return (
-      <DashboardPageTemplate title="Team Targets" filters={header}>
+      <DashboardPageTemplate title="Team Targets" filters={header} trail={[{ label: 'Targets', to: '/crm/targets' }]}>
       <div className="space-y-4">
         <EmptyState title="No team targets" description="There are no active individual target plans in this period." />
       </div>
@@ -156,7 +156,7 @@ export default function TeamTargetsPage() {
   }
 
   return (
-    <DashboardPageTemplate title="Team Targets" filters={header}>
+    <DashboardPageTemplate title="Team Targets" filters={header} trail={[{ label: 'Targets', to: '/crm/targets' }]}>
     <Grid>
       {totals && (
         <GridItem span={6}>

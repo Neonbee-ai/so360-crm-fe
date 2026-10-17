@@ -11,6 +11,8 @@ export interface SplitButtonProps {
     disabled?: boolean;
     /** Accessible name for the dropdown toggle. */
     menuLabel?: string;
+    /** Automation id for the primary action (data-comb-id). */
+    name?: string;
     className?: string;
 }
 export declare const SplitButton: React.FC<SplitButtonProps>;

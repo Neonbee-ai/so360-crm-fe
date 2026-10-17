@@ -107,6 +107,7 @@ const MarketingCampaignsPage: React.FC = () => {
 
   return (
     <ListPageTemplate
+      trail={[{ label: 'Marketing', to: '/crm/marketing/overview' }]}
       title="Campaigns"
       description="Create, send, and manage marketing campaigns from CRM."
       primaryAction={canCreateMarketing ? (

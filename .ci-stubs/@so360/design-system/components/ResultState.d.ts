@@ -3,6 +3,8 @@ import { LucideIcon } from 'lucide-react';
 export type ResultStatus = 'success' | 'error' | 'info';
 export interface ResultStateProps {
     status: ResultStatus;
+    /** Stable id for Comb automation; defaults to the title. */
+    name?: string;
     title: string;
     description?: string;
     /** Peak-end: always offer the obvious next step. */

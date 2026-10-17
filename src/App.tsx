@@ -1,7 +1,7 @@
 import React, { Suspense, lazy, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useShellBridge } from '@so360/shell-context';
-import { FeatureRoute, PortalProvider } from '@so360/design-system';
+import { CombScope, FeatureRoute, PortalProvider } from '@so360/design-system';
 import { CrossLinkProvider } from '@so360/cross-link';
 import { crmService } from './services/crmService';
 import { salesTargetService } from './services/salesTargetService';
@@ -206,8 +206,10 @@ const CommissionReportPage = lazy(() => import('./pages/CommissionReportPage'));
 const SalesAnalyticsPage = lazy(() => import('./pages/SalesAnalyticsPage'));
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
+    const navigate = useNavigate();
     return (
         <CrmScope>
+            <CombScope module="crm" root={{ label: 'CRM', to: '/crm/dashboard' }} navigate={(to) => navigate(to)}>
             {/* DS overlays (Modal/Drawer/Toast/dialogs) portal into the scoped root so they get CRM's utilities */}
             <PortalProvider container={crmPortalRoot()}>
                 <div className="min-h-full bg-bg text-fg">
@@ -218,6 +220,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                     </main>
                 </div>
             </PortalProvider>
+            </CombScope>
         </CrmScope>
     );
 };

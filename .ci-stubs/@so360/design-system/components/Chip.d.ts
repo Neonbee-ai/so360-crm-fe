@@ -24,4 +24,10 @@ export interface ChipProps {
     name?: string;
     'data-testid'?: string;
 }
+/**
+ * Chip surface classes shared by Chip and ChipGroup. Selected = tonal tint + primary text (+ check),
+ * same height, radius and border width as unselected — a chip never turns into a filled button and has no shadow.
+ */
+export declare function chipToneClass(selected: boolean): string;
+export declare function chipSizeClass(size: 'sm' | 'md'): string;
 export declare const Chip: React.FC<ChipProps>;

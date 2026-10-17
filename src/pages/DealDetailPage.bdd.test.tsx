@@ -495,7 +495,7 @@ describe('DealDetailPage', () => {
       const user = userEvent.setup();
       render(<DealDetailPage />);
       await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
-      await user.click(screen.getAllByLabelText('Back')[0]);
+      await user.click(screen.getAllByLabelText('Back to Pipeline')[0]);
       expect(mockNavigate).toHaveBeenCalledWith('/crm/pipeline');
     });
   });
@@ -987,11 +987,10 @@ describe('DealDetailPage — header and card presentation', () => {
       expect(del).toHaveAttribute('data-danger', 'true');
     });
 
-    it('When the back control renders / Then it uses the same neutral wording as every other module', async () => {
+    it('When the back control renders / Then it is the Comb trail back to the parent', async () => {
       render(<DealDetailPage />);
       await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
-      expect(screen.getAllByLabelText('Back').length).toBeGreaterThan(0);
-      expect(screen.queryByRole('button', { name: 'Back to Pipeline' })).toBeNull();
+      expect(screen.getAllByLabelText('Back to Pipeline').length).toBeGreaterThan(0);
     });
   });
 

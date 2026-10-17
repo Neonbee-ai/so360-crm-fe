@@ -2,7 +2,8 @@ import React from 'react';
 export type SparklineType = 'line' | 'area' | 'bar';
 export type SparklineTone = 'primary' | 'success' | 'danger' | 'warning' | 'info' | 'neutral';
 export interface SparklineProps {
-    data: number[];
+    /** `null` / non-finite points render as gaps, not zero. */
+    data: (number | null | undefined)[];
     type?: SparklineType;
     tone?: SparklineTone;
     width?: number;
@@ -12,6 +13,11 @@ export interface SparklineProps {
     label?: string;
     /** Marks the last data point with a dot (line/area). */
     showLastPoint?: boolean;
+    /** Vertical ticks at data indexes (e.g. plan changes). */
+    markers?: {
+        index: number;
+        label?: string;
+    }[];
     className?: string;
     'data-testid'?: string;
 }

@@ -351,6 +351,7 @@ const TasksPage = () => {
 
     return (
         <ListPageTemplate
+            trail={[]}
             title="Tasks & Follow-ups"
             description="Personal execution discipline and daily tasks"
             primaryAction={canCreateTask ? (

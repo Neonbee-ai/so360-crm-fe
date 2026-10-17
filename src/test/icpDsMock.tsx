@@ -1,5 +1,6 @@
 import React from 'react';
 import { vi } from 'vitest';
+import { Trail } from './__mocks__/design-system';
 
 /** Shared Comb stub + ICP-specific stand-ins (form controls, flat row menu, toast spies, confirm dialog). */
 export * from './__mocks__/design-system';
@@ -29,7 +30,7 @@ export const ListPageTemplate = (p: any) => (
 export const FormPageTemplate = (p: any) => (
   <div data-template="form">
     <header data-slot="header">
-      {p.onBack ? <button type="button" onClick={p.onBack}>{p.backLabel ?? 'Back'}</button> : null}
+      <Trail {...p} />
       <h1>{p.title}</h1>
     </header>
     {p.children}

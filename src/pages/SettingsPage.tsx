@@ -495,6 +495,7 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
 
     return (
         <SettingsPageTemplate
+            trail={[]}
             title="CRM Settings"
             description="Configure your workspace and custom data points"
             primaryAction={(canWriteSettings || (icpEnabled && onOpenIcps)) ? (

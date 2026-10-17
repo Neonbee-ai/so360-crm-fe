@@ -4,7 +4,7 @@ import { publishLeadsChanged } from '../utils/leadEvents';
 import { useShell, useActivity, useShellBridge, useCurrentEntity } from '@so360/shell-context';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import {
-    ChevronLeft, Mail, Phone, Building2,
+    Mail, Phone, Building2,
     Calendar, Tag, Clock, Plus,
     LayoutDashboard, Briefcase, CheckCircle2,
     Loader2, ExternalLink, MessageSquare, Users, FileText,
@@ -29,7 +29,6 @@ import CustomerDetailsPanel from '../components/CustomerDetailsPanel';
 import { LeadJourneyStepper } from '../components/LeadJourneyStepper';
 import LeadProductsTab from './components/LeadProductsTab';
 import ActivityHistoryDrawer from './components/ActivityHistoryDrawer';
-import { goBackFrom } from '../components/common/DetailBackLink';
 import NeuraAiSummaryCard from './components/NeuraAiSummaryCard';
 import CustomerFeedbackTab from './components/CustomerFeedbackTab';
 import CallsTab, { LogCallModal } from './components/CallsTab';
@@ -182,6 +181,7 @@ const LeadDetailPage = () => {
     const isDailyStoreEnabled = isModuleEnabled('dailystore');
     const isInboxEnabled = isModuleEnabled('inbox');
     const isCustomerDetailRoute = location.pathname.includes('/customers/');
+    const detailTrail = [{ label: isCustomerDetailRoute ? 'Customers' : 'Leads', to: isCustomerDetailRoute ? '/crm/customers' : '/crm/leads' }];
     const backLabel = isCustomerDetailRoute ? 'Back to Customers' : 'Back to Leads';
     const backRoute = isCustomerDetailRoute ? '/crm/customers' : '/crm/leads';
     const [lead, setLead] = useState<Lead | null>(null);
@@ -401,7 +401,7 @@ const LeadDetailPage = () => {
 
     if (isLoading) {
         return (
-            <DetailPageTemplate title="Loading lead workspace..." loading />
+            <DetailPageTemplate title="Loading lead workspace..." loading trail={detailTrail} />
         );
     }
 
@@ -575,6 +575,7 @@ const LeadDetailPage = () => {
         <>
             {confirmDialog}
             <DetailPageTemplate
+                trail={detailTrail}
                 title={getLeadDisplayName(lead)}
                 meta={
                     <span className="flex items-center gap-2 text-fg-subtle">
@@ -583,8 +584,6 @@ const LeadDetailPage = () => {
                     </span>
                 }
                 status={statusNode}
-                onBack={() => goBackFrom(navigate, backRoute)}
-                backLabel="Back"
                 primaryAction={canCreateDeal ? (
                     <Button onClick={() => setIsCreatingDeal(true)}><Plus size={16} />
                         Create Deal

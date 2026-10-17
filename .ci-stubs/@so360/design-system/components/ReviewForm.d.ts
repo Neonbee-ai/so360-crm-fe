@@ -16,6 +16,8 @@ export interface ReviewTemplate {
     rating_labels?: Record<number, string>;
 }
 export interface ReviewFormProps {
+    /** Stable id for Comb automation (data-comb-id). */
+    name?: string;
     template: ReviewTemplate;
     initialData?: Record<string, any>;
     onChange: (data: Record<string, any>) => void;

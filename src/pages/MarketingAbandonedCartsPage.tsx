@@ -92,6 +92,7 @@ const MarketingAbandonedCartsPage: React.FC = () => {
 
   return (
     <ListPageTemplate
+      trail={[{ label: 'Marketing', to: '/crm/marketing/overview' }]}
       title="Abandoned Carts"
       description="Managed from CRM, sourced from Storefront."
       count={visibleRows.length}

@@ -85,7 +85,7 @@ export default function MyTargetsPage() {
 
   if (loading) {
     return (
-      <DashboardPageTemplate title="My Targets" filters={header}>
+      <DashboardPageTemplate title="My Targets" filters={header} trail={[{ label: 'Targets', to: '/crm/targets' }]}>
       <div className="space-y-4">
         <LoadingState />
       </div>
@@ -94,7 +94,7 @@ export default function MyTargetsPage() {
   }
   if (error) {
     return (
-      <DashboardPageTemplate title="My Targets" filters={header}>
+      <DashboardPageTemplate title="My Targets" filters={header} trail={[{ label: 'Targets', to: '/crm/targets' }]}>
       <div className="space-y-4">
         <ErrorState error={error} onRetry={load} />
       </div>
@@ -103,7 +103,7 @@ export default function MyTargetsPage() {
   }
   if (!grouped.length) {
     return (
-      <DashboardPageTemplate title="My Targets" filters={header}>
+      <DashboardPageTemplate title="My Targets" filters={header} trail={[{ label: 'Targets', to: '/crm/targets' }]}>
       <div className="space-y-4">
         <EmptyState title="No targets for this period" description="Nothing is assigned to you in the selected period. Pick another date or ask an admin." />
       </div>
@@ -115,7 +115,7 @@ export default function MyTargetsPage() {
   const anyMetric = data?.metrics?.[0];
 
   return (
-    <DashboardPageTemplate title="My Targets" filters={header}>
+    <DashboardPageTemplate title="My Targets" filters={header} trail={[{ label: 'Targets', to: '/crm/targets' }]}>
     <Grid>
       <GridItem span={12}>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-fg-subtle">

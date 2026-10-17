@@ -163,6 +163,7 @@ export default function CompensationPage() {
 
   return (
     <DashboardPageTemplate
+      trail={[{ label: 'Targets', to: '/crm/targets' }]}
       title="Compensation"
       meta={<span className="text-xs text-warning">⚠ For manager review only. No payroll or payment action is taken.</span>}
       primaryAction={(

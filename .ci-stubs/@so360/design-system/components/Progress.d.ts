@@ -1,5 +1,5 @@
 import React from 'react';
-export type ProgressTone = 'brand' | 'success' | 'warning' | 'danger';
+export type ProgressTone = 'brand' | 'success' | 'warning' | 'danger' | 'exceeded';
 export type ProgressSize = 'sm' | 'md' | 'lg';
 export interface ProgressProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {
     /** Current value; omit for indeterminate. */

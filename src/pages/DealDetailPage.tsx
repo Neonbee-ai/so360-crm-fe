@@ -25,7 +25,6 @@ import TaskModal from './components/TaskModal';
 import { Modal } from '../components/common/Modal';
 import { FEATURES } from '../config/features';
 import { DealLifecycleStepper } from '../components/DealLifecycleStepper';
-import { goBackFrom } from '../components/common/DetailBackLink';
 import { ProjectSelect } from '../components/common/ProjectSelect';
 import ActivityHistoryDrawer from './components/ActivityHistoryDrawer';
 
@@ -594,9 +593,8 @@ const DealDetailPage = () => {
 
     return (
         <DetailPageTemplate
+            trail={[{ label: 'Pipeline', to: '/crm/pipeline' }]}
             title={deal.name}
-            onBack={() => goBackFrom(navigate, '/crm/pipeline')}
-            backLabel="Back"
             status={(
                             <div className="relative" ref={stageDropdownRef}>
                                 <Button

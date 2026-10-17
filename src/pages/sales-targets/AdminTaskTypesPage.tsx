@@ -138,6 +138,7 @@ export default function AdminTaskTypesPage() {
 
   return (
     <ListPageTemplate
+      trail={[{ label: 'Settings', to: '/crm/settings' }]}
       title="Sales Activity Types"
       description="Define what activities reps track — auto-counted or manual"
       count={taskTypes.length}

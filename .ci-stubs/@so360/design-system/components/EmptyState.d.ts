@@ -1,5 +1,5 @@
 import React from 'react';
-export interface EmptyStateProps {
+export interface EmptyStateProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'title' | 'className'> {
     icon?: React.ComponentType<{
         className?: string;
     }>;
@@ -8,6 +8,7 @@ export interface EmptyStateProps {
     action?: {
         label: string;
         onClick: () => void;
+        'data-testid'?: string;
     };
     /** Used for the testid instead of the title. */
     name?: string;

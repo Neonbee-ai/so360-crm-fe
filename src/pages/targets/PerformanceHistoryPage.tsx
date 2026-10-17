@@ -94,6 +94,7 @@ export default function PerformanceHistoryPage() {
 
   return (
     <ListPageTemplate
+      trail={[{ label: 'Targets', to: '/crm/targets' }]}
       title="Performance History"
       description={summary}
       count={periods.length || undefined}

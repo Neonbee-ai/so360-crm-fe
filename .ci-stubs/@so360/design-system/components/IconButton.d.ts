@@ -13,5 +13,9 @@ export interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonEl
     tooltipSide?: TooltipSide;
     /** Suppress the tooltip while still keeping the aria-label (rare — e.g. inside another tooltip-bearing region). */
     hideTooltip?: boolean;
+    /** Toggle state (M3 selected icon button): sets aria-pressed and a tinted container. */
+    selected?: boolean;
+    /** Shows a spinner in place of the icon, sets aria-busy and disables the button (size stays fixed). */
+    loading?: boolean;
 }
-export declare const IconButton: React.FC<IconButtonProps>;
+export declare const IconButton: React.ForwardRefExoticComponent<IconButtonProps & React.RefAttributes<HTMLButtonElement>>;

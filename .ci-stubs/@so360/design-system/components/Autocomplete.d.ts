@@ -30,6 +30,10 @@ export interface AutocompleteProps {
     disabled?: boolean;
     size?: FormFieldSize;
     emptyText?: string;
+    /** Offer a "Create “text”" row when the typed text has no exact match; called with the trimmed text. */
+    onCreate?: (text: string) => void;
+    /** Label for the create row (default `Create “text”`). */
+    createLabel?: (text: string) => string;
     'aria-label'?: string;
     'data-testid'?: string;
 }

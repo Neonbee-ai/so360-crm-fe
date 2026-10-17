@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Save, Send, CheckCircle, XCircle, FileText, Plus, Trash2, Edit2, Package, Printer, RotateCcw, Clock, Users, ShieldAlert } from 'lucide-react';
-import { goBackFrom } from '../components/common/DetailBackLink';
 import { Modal } from '../components/common/Modal';
 import { crmService } from '../services/crmService';
 import { toast, getErrorMessage, useConfirm, DetailPageTemplate, Button, Card, Badge, Alert, TextField, Textarea, Select, DataTable, IconButton, type DataTableColumn, type BadgeTone, Grid, GridItem } from '@so360/design-system';
@@ -493,8 +492,7 @@ const QuoteDetailPage = () => {
 
     return (
         <DetailPageTemplate
-            onBack={() => goBackFrom(navigate, '/crm/quotes')}
-            backLabel="Back"
+            trail={[{ label: 'Quotes', to: '/crm/quotes' }]}
             title={quote.quote_number || `Quote #${quote.id.slice(0, 8)}`}
             status={
                 <Badge size="sm" tone={status.tone}>{status.label}</Badge>
