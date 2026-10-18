@@ -179,6 +179,8 @@ export interface Task {
     assigned_to: User;
     created_at: string;
     reminder_minutes_before?: number;
+    reminder_at?: string | null;
+    reminder_offset_minutes?: number | null;
     // Project sync — populated once the connect-project migration lands on the
     // backend. Absent/undefined on a task means "no project connection", which
     // is the current unaffected behavior — every consumer must treat it that way.

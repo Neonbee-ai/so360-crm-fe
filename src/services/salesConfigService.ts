@@ -111,3 +111,52 @@ export function ratingForScore(bands: RatingCategory[], score: number | null | u
         .sort((a, b) => b.min_score - a.min_score);
     return hit[0] ?? null;
 }
+
+export type QuoteApprovalTrigger = 'submit' | 'send' | 'both';
+
+export interface QuoteApprovalSettings {
+    enabled: boolean;
+    discount_percent_above: number | null;
+    total_above: number | null;
+    margin_percent_below: number | null;
+    approver_role: string | null;
+    approver_user_ids: string[];
+    apply_on: QuoteApprovalTrigger;
+}
+
+export interface QuoteApprovalReason {
+    rule: 'discount' | 'total' | 'margin';
+    actual: number;
+    threshold: number;
+}
+
+export const DEFAULT_QUOTE_APPROVAL: QuoteApprovalSettings = {
+    enabled: false,
+    discount_percent_above: null,
+    total_above: null,
+    margin_percent_below: null,
+    approver_role: null,
+    approver_user_ids: [],
+    apply_on: 'both',
+};
+
+/** GET/PUT /settings/quote-approval; GET /quotes/:id/approval-check?trigger= */
+export const quoteApprovalService = {
+    get: async (): Promise<QuoteApprovalSettings> => ({ ...DEFAULT_QUOTE_APPROVAL, ...((await crmApiClient.get('/settings/quote-approval')) as Partial<QuoteApprovalSettings> | null) }),
+    put: (body: QuoteApprovalSettings) => crmApiClient.put<QuoteApprovalSettings>('/settings/quote-approval', body),
+    check: (quoteId: string, trigger: 'submit' | 'send') =>
+        crmApiClient.get<{ required: boolean; reasons: QuoteApprovalReason[] }>(`/quotes/${quoteId}/approval-check?trigger=${trigger}`),
+};
+
+export interface TaskReminderSettings { enabled: boolean; default_offset_minutes: number }
+
+/** GET/PUT /settings/task-reminders */
+export const taskReminderService = {
+    get: async (): Promise<TaskReminderSettings> => ({ enabled: true, default_offset_minutes: 30, ...((await crmApiClient.get('/settings/task-reminders')) as Partial<TaskReminderSettings> | null) }),
+    put: (body: TaskReminderSettings) => crmApiClient.put<TaskReminderSettings>('/settings/task-reminders', body),
+};
+
+export const describeReason = (r: QuoteApprovalReason): string =>
+    r.rule === 'discount' ? `Discount ${r.actual}% exceeds ${r.threshold}%`
+        : r.rule === 'total' ? `Total ${r.actual} exceeds ${r.threshold}`
+            : `Margin ${r.actual}% is below ${r.threshold}%`;

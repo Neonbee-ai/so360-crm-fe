@@ -2540,8 +2540,8 @@ export const crmService = {
     async sendQuote(
         quoteId: string,
         payload: { to?: string; message?: string } = {},
-    ): Promise<{ sent: boolean; to?: string; reason?: string }> {
-        return apiClient.post<{ sent: boolean; to?: string; reason?: string }>(
+    ): Promise<{ sent: boolean; to?: string; reason?: string; pending_approval?: boolean; approval_reasons?: Array<{ rule: 'discount' | 'total' | 'margin'; actual: number; threshold: number }> }> {
+        return apiClient.post<{ sent: boolean; to?: string; reason?: string; pending_approval?: boolean; approval_reasons?: Array<{ rule: 'discount' | 'total' | 'margin'; actual: number; threshold: number }> }>(
             `/quotes/${quoteId}/send`,
             payload,
         );

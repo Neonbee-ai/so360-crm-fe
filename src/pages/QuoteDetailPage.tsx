@@ -11,6 +11,7 @@ import { useFormatters } from '@so360/formatters';
 import { ProductPickerModal } from '../components/ProductPickerModal';
 import { quoteToDocumentData } from '../utils/quoteToDocumentData';
 import { quoteLinePreTaxAmount, quoteTotals } from '../utils/quoteLineAmounts';
+import { describeReason } from '../services/salesConfigService';
 import { QuoteApprovalModal } from '../components/quotes/QuoteApprovalModal';
 import { QuoteApprovalHistory, ApprovalRequestRecord } from '../components/quotes/QuoteApprovalHistory';
 
@@ -128,6 +129,11 @@ const QuoteDetailPage = () => {
             });
             if (result.sent) {
                 toast.success(`Quotation emailed to ${result.to}`);
+                setShowSendModal(false);
+            } else if (result.pending_approval) {
+                // A configured approval threshold was crossed: tell the user why.
+                const why = (result.approval_reasons ?? []).map(describeReason).join('; ');
+                toast.error(`Approval required before sending${why ? `: ${why}` : ''}`);
                 setShowSendModal(false);
             } else {
                 // The backend refuses rather than sending to nobody — surface its

@@ -10,10 +10,12 @@ import AssignmentRulesSettingsTab from './components/settings/AssignmentRulesSet
 import LossReasonsSettingsTab from './components/settings/LossReasonsSettingsTab';
 import LeadRatingSettingsTab from './components/settings/LeadRatingSettingsTab';
 import DuplicateRulesSettingsTab from './components/settings/DuplicateRulesSettingsTab';
+import QuoteApprovalSettingsTab from './components/settings/QuoteApprovalSettingsTab';
+import TaskReminderSettingsTab from './components/settings/TaskReminderSettingsTab';
 import SalesCommissionSettingsTab from './components/settings/SalesCommissionSettingsTab';
 import { useCrmFeatureFlag, RE_FLAGS } from '../hooks/useCrmFeatureFlag';
 
-type SettingsTab = 'pipeline' | 'lead-stages' | 'custom-fields' | 'sources' | 'scoring' | 'deal-naming' | 'assignment' | 'sales-commission' | 'loss-reasons' | 'lead-rating' | 'duplicate-rules';
+type SettingsTab = 'pipeline' | 'lead-stages' | 'custom-fields' | 'sources' | 'scoring' | 'deal-naming' | 'assignment' | 'sales-commission' | 'loss-reasons' | 'lead-rating' | 'duplicate-rules' | 'quote-approvals' | 'task-reminders';
 
 // Activity types available for scoring rules
 const SCOREABLE_ACTIVITY_TYPES = [
@@ -93,6 +95,8 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
     const lossReasonsEnabled = useCrmFeatureFlag('submodule:crm:loss_reasons');
     const leadRatingEnabled = useCrmFeatureFlag('submodule:crm:lead_rating');
     const duplicateRulesEnabled = useCrmFeatureFlag('submodule:crm:duplicate_rules');
+    const quoteApprovalsEnabled = useCrmFeatureFlag('submodule:crm:quote_approvals');
+    const taskRemindersEnabled = useCrmFeatureFlag('submodule:crm:task_reminders');
     const commissionsEnabled = useCrmFeatureFlag(RE_FLAGS.COMMISSIONS);
     const unitAllocationEnabled = useCrmFeatureFlag(RE_FLAGS.UNIT_ALLOCATION);
     const salesSettingsEnabled = commissionsEnabled || unitAllocationEnabled;
@@ -536,6 +540,8 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
                 ...(lossReasonsEnabled ? [{ id: 'loss-reasons', label: 'Loss reasons' }] : []),
                 ...(leadRatingEnabled ? [{ id: 'lead-rating', label: 'Lead rating' }] : []),
                 ...(duplicateRulesEnabled ? [{ id: 'duplicate-rules', label: 'Duplicate rules' }] : []),
+                ...(quoteApprovalsEnabled ? [{ id: 'quote-approvals', label: 'Quote approvals' }] : []),
+                ...(taskRemindersEnabled ? [{ id: 'task-reminders', label: 'Task reminders' }] : []),
                 ...(salesSettingsEnabled ? [{ id: 'sales-commission', label: 'Sales & commission' }] : []),
             ]}
             activeSection={activeTab}
@@ -1101,6 +1107,8 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
                 {activeTab === 'loss-reasons' && lossReasonsEnabled && <LossReasonsSettingsTab canWrite={canWriteSettings} />}
                 {activeTab === 'lead-rating' && leadRatingEnabled && <LeadRatingSettingsTab canWrite={canWriteSettings} />}
                 {activeTab === 'duplicate-rules' && duplicateRulesEnabled && <DuplicateRulesSettingsTab canWrite={canWriteSettings} />}
+                {activeTab === 'quote-approvals' && quoteApprovalsEnabled && <QuoteApprovalSettingsTab canWrite={canWriteSettings} />}
+                {activeTab === 'task-reminders' && taskRemindersEnabled && <TaskReminderSettingsTab canWrite={canWriteSettings} />}
                 {activeTab === 'sales-commission' && salesSettingsEnabled && (
                     <SalesCommissionSettingsTab canWrite={canWriteSettings} />
                 )}

@@ -6,7 +6,7 @@ import { composeDueDate, dueDateCalendarDay, inputValueToApiValue, splitStoredDu
 import { Task, TaskType, TaskPriority, TASK_PRIORITY_OPTIONS, User, Lead, Deal } from '../../types/crm';
 import { toast, Button, TextField, Textarea, Select, DatePicker, TimePicker, Grid, GridItem } from '@so360/design-system';
 import { Modal } from '../../components/common/Modal';
-import { useShell, useActivity } from '@so360/shell-context';
+import { useShell, useShellBridge, useActivity } from '@so360/shell-context';
 
 interface TaskModalProps {
     task?: Task | null; // If null, creating new task
@@ -49,6 +49,10 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
     const originalAssigneeId = task?.assigned_to?.id || '';
     const [assignedToId, setAssignedToId] = useState(originalAssigneeId);
     const [reminderMinutes, setReminderMinutes] = useState(task?.reminder_minutes_before?.toString() || '');
+    // Per-task override of the org default reminder (Sales-to-Service); blank = use org default.
+    const flagBridge = useShellBridge();
+    const remindersEnabled = flagBridge?.isFeatureEnabled?.('submodule:crm:task_reminders') ?? false;
+    const [reminderOffset, setReminderOffset] = useState(task?.reminder_offset_minutes?.toString() || '');
     const [users, setUsers] = useState<User[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const showAssociatePicker = !leadId && !dealId && !isEditing;
@@ -170,6 +174,10 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
             data.due_date = composeDueDate(dueDate, dueTime);
             if (type === 'REMINDER' && reminderMinutes) {
                 data.reminder_minutes_before = parseInt(reminderMinutes);
+            }
+
+            if (remindersEnabled && type !== 'REMINDER' && reminderOffset.trim() !== '') {
+                data.reminder_offset_minutes = parseInt(reminderOffset, 10);
             }
 
             if (leadId) data.lead_id = leadId;
@@ -348,6 +356,17 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                     { value: '60', label: '1 hour before' },
                                     { value: '1440', label: '1 day before' },
                                 ]}
+                            />
+                        )}
+
+                        {remindersEnabled && type !== 'REMINDER' && (
+                            <TextField
+                                name="task-reminder-offset"
+                                type="number"
+                                label="Reminder (minutes before due)"
+                                placeholder="Org default"
+                                value={reminderOffset}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setReminderOffset(e.target.value)}
                             />
                         )}
 
