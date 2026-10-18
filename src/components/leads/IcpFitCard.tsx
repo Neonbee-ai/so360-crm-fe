@@ -1,17 +1,18 @@
 import React from 'react';
+import { Card, Badge, type BadgeTone } from '@so360/design-system';
 import { useCrmFeatureFlag } from '../../hooks/useCrmFeatureFlag';
 import { fitBand, FIT_BAND_LABELS, parseIcpCriteria, type FitBand } from '../../utils/icpFit';
 
 export const ICP_FLAG = 'submodule:crm:icp_manager';
 
-const BAND_STYLE: Record<FitBand, string> = {
-  excellent: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  good: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-  fair: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-  not_a_fit: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
+const BAND_TONE: Record<FitBand, BadgeTone> = {
+  excellent: 'success',
+  good: 'info',
+  fair: 'warning',
+  not_a_fit: 'neutral',
 };
 const ICON = { met: '✓', missed: '✗', unknown: '?' } as const;
-const ICON_STYLE = { met: 'text-emerald-400', missed: 'text-rose-400', unknown: 'text-slate-400' } as const;
+const ICON_STYLE = { met: 'text-success', missed: 'text-danger', unknown: 'text-fg-muted' } as const;
 
 function formatDate(iso: unknown): string | null {
   if (typeof iso !== 'string' || !iso) return null;
@@ -34,26 +35,22 @@ export default function IcpFitCard({ meta }: { meta?: Record<string, any> | null
   const date = formatDate(meta?.last_synced_at) ?? formatDate(meta?.synced_at);
 
   return (
-    <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm" data-testid="icp-fit-card">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-black text-slate-300">ICP fit</h3>
-        <span className={`px-2 py-0.5 rounded-full border text-xs font-bold ${BAND_STYLE[band]}`} data-testid="icp-fit-band">
-          {FIT_BAND_LABELS[band]}
-        </span>
-      </div>
-      <p className="text-3xl font-black text-slate-50" data-testid="icp-fit-score">{`${score} / 100`}</p>
-      {meta?.icp_name && <p className="mt-1 text-xs font-medium text-slate-400" data-testid="icp-fit-name">{String(meta.icp_name)}</p>}
-      {criteria.length > 0 && (
-        <ul className="mt-4 space-y-2 border-t border-slate-800/50 pt-4" data-testid="icp-fit-criteria">
-          {criteria.map((c) => (
-            <li key={c.key} className="flex items-start gap-2 text-xs text-slate-300" data-testid={`icp-criterion-${c.state}`}>
-              <span aria-label={c.state} className={`font-black ${ICON_STYLE[c.state]}`}>{ICON[c.state]}</span>
-              <span>{c.label}{c.found ? <span className="text-slate-400">{` — ${c.found}`}</span> : null}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-      {date && <p className="mt-4 text-xs text-slate-400" data-testid="icp-fit-source">{`Source: LinkedIn · ${date}`}</p>}
-    </section>
+    <div data-testid="icp-fit-card">
+      <Card title="ICP fit" actions={<span data-testid="icp-fit-band"><Badge tone={BAND_TONE[band]}>{FIT_BAND_LABELS[band]}</Badge></span>}>
+        <p className="text-3xl font-black text-fg" data-testid="icp-fit-score">{`${score} / 100`}</p>
+        {meta?.icp_name && <p className="mt-1 text-xs font-medium text-fg-muted" data-testid="icp-fit-name">{String(meta.icp_name)}</p>}
+        {criteria.length > 0 && (
+          <ul className="mt-nb-4 space-y-2 border-t border-line pt-nb-4" data-testid="icp-fit-criteria">
+            {criteria.map((c) => (
+              <li key={c.key} className="flex items-start gap-2 text-xs text-fg" data-testid={`icp-criterion-${c.state}`}>
+                <span aria-label={c.state} className={`font-black ${ICON_STYLE[c.state]}`}>{ICON[c.state]}</span>
+                <span>{c.label}{c.found ? <span className="text-fg-muted">{` — ${c.found}`}</span> : null}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        {date && <p className="mt-nb-4 text-xs text-fg-muted" data-testid="icp-fit-source">{`Source: LinkedIn · ${date}`}</p>}
+      </Card>
+    </div>
   );
 }
