@@ -276,6 +276,9 @@ const LeadDetailPage = () => {
     // Task 4 (Customer Timeline): unified server-side timeline, shared between
     // the inline preview below and ActivityHistoryDrawer.tsx.
     const entityTimeline = useEntityTimeline({ entityType: 'lead', entityId: id, pageSize: 7 });
+    // Item 18: Inbox conversations (by reference) are hidden when the org's flag is off.
+    const showInboxTimeline = (shell?.effectiveFlagsLoaded === false) || (shell?.isFeatureEnabled?.('submodule:crm:inbox_timeline') ?? true);
+    const timelineEvents = showInboxTimeline ? entityTimeline.events : entityTimeline.events.filter((e) => e.module !== 'inbox');
 
     // Task 3 — communication-wide search: client-side merge across data
     // already loaded at page level (notes/tasks/deals). Per-lead volumes are
@@ -587,7 +590,7 @@ const LeadDetailPage = () => {
         ...(layoutPrefs.visibleSections.some((section) => section.key === 'activity') ? [{ id: 'activity', label: 'Activity' }] : []),
     ];
 
-    const recentActivity = entityTimeline.events.slice(0, 3);
+    const recentActivity = timelineEvents.slice(0, 3);
 
     return (
         <>
@@ -1442,10 +1445,10 @@ const LeadDetailPage = () => {
                                             <div className="flex items-center justify-center py-8 text-fg-muted">
                                                 <Loader2 size={18} className="animate-spin" />
                                             </div>
-                                        ) : entityTimeline.events.length === 0 ? (
+                                        ) : timelineEvents.length === 0 ? (
                                             <EmptyState title="No activities logged yet" description="Activities appear here automatically when users interact with this record." />
                                         ) : (
-                                            entityTimeline.events.map((event) => (
+                                            timelineEvents.map((event) => (
                                                 <TimelineEventCard
                                                     key={event.id}
                                                     event={event}

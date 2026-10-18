@@ -654,7 +654,8 @@ const LeadsPage = () => {
     onOpen: (lead) => navigate(`${lead.id}`),
     formatDate: formatters.formatDate,
     onInlineEdit: handleInlineEdit,
-  }), [users, leadStages, canUpdateLead, canDeleteLead, handleOwnerChange, handleStatusChange, navigate, formatters, handleInlineEdit]);
+    ratings: ratingEnabled ? ratings : undefined,
+  }), [users, leadStages, canUpdateLead, canDeleteLead, handleOwnerChange, handleStatusChange, navigate, formatters, handleInlineEdit, ratingEnabled, ratings]);
 
   const bulkActions = useMemo(() => [
     {

@@ -34,7 +34,7 @@ import {
   TrendingUp,
   Layers,
 } from 'lucide-react';
-import { Button, IconButton, Select, TextField } from '@so360/design-system';
+import { Badge, Button, IconButton, Select, TextField } from '@so360/design-system';
 import { Modal } from '../common/Modal';
 import { Lead, User } from '../../types/crm';
 import {
@@ -65,6 +65,8 @@ export interface GridContext {
   formatDate: (d: string) => string;
   /** Commit an inline cell edit. Optional so existing callers keep working. */
   onInlineEdit?: (lead: Lead, field: string, value: string) => void;
+  /** Active rating categories; present only when submodule:crm:lead_rating is enabled. Adds the Rating column. */
+  ratings?: { id: string; label: string; color_token?: string | null }[];
 }
 
 /**
@@ -926,8 +928,24 @@ export function LeadsDataGrid({
           );
         },
       }));
-    return [...COL_DEFS, ...extras];
-  }, [customFields]);
+    const ratings = context.ratings ?? [];
+    const ratingCol: ColDef[] = ratings.length > 0 ? [{
+      key: 'rating',
+      label: 'Rating',
+      defaultWidth: 110,
+      minWidth: 80,
+      sortKey: 'rating',
+      render: (lead: Lead) => {
+        const r = ratings.find((x) => x.id === lead.rating_category_id);
+        return r ? (
+          <Badge size="sm" tone={(r.color_token as any) || 'neutral'}>{r.label}</Badge>
+        ) : (
+          <span className="text-fg-muted text-sm">—</span>
+        );
+      },
+    }] : [];
+    return [...COL_DEFS, ...ratingCol, ...extras];
+  }, [customFields, context.ratings]);
 
   const colDefMap = useMemo(
     () => new Map(allColDefs.map((c) => [c.key, c])),
@@ -952,6 +970,7 @@ export function LeadsDataGrid({
           case 'created_at': av = new Date(a.created_at).getTime(); bv = new Date(b.created_at).getTime(); break;
           case 'updated_at': av = new Date(a.updated_at ?? 0).getTime(); bv = new Date(b.updated_at ?? 0).getTime(); break;
           case 'lead_score': av = a.auto_score ?? 0; bv = b.auto_score ?? 0; break;
+          case 'rating': av = context.ratings?.find((r) => r.id === a.rating_category_id)?.label ?? ''; bv = context.ratings?.find((r) => r.id === b.rating_category_id)?.label ?? ''; break;
           default: return 0;
         }
         const cmp =
