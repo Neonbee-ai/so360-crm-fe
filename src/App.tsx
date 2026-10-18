@@ -1,7 +1,7 @@
 import React, { Suspense, lazy, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useShellBridge } from '@so360/shell-context';
-import { CombScope, FeatureRoute, PortalProvider } from '@so360/design-system';
+import { CombScope, FeatureRoute, PortalProvider, Button } from '@so360/design-system';
 import { CrossLinkProvider } from '@so360/cross-link';
 import { crmService } from './services/crmService';
 import { salesTargetService } from './services/salesTargetService';
@@ -80,13 +80,9 @@ const UpgradeLocked = () => {
                 <h2 className="text-lg font-semibold text-fg">This feature is part of a higher plan</h2>
                 <p className="text-sm text-fg-subtle mt-1">Upgrade your plan to unlock it.</p>
             </div>
-            <button
-                type="button"
-                onClick={() => navigate('/org/billing')}
-                className="px-4 py-2 rounded bg-primary hover:bg-primary/90 text-primary-fg text-sm font-medium transition-colors"
-            >
+            <Button type="button" onClick={() => navigate('/org/billing')}>
                 Upgrade plan
-            </button>
+            </Button>
         </div>
     );
 };

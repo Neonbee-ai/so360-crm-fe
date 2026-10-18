@@ -272,17 +272,16 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
                   filteredCandidates.map((cand) => {
                     const isSelf = currentUserId && cand.user_id === currentUserId;
                     return (
-                      <button
+                      <Button
                         key={cand.user_id}
                         type="button"
+                        variant="ghost"
                         onClick={() => {
                           handleSelect(cand);
                           if (!isSelf) setDropdownOpen(false);
                         }}
-                        className={`w-full text-left px-3 py-2.5 flex items-center gap-3 transition-colors ${
-                          isSelf
-                            ? 'opacity-60 bg-surface-sunken cursor-pointer'
-                            : 'hover:bg-surface-high cursor-pointer'
+                        className={`!h-auto w-full !justify-start !whitespace-normal gap-3 py-2.5 text-left ${
+                          isSelf ? 'opacity-60 !bg-surface-sunken' : ''
                         }`}
                       >
                         <div className="w-7 h-7 rounded-full bg-surface-raised border border-line flex items-center justify-center text-fg-subtle font-semibold text-xs flex-shrink-0">
@@ -303,7 +302,7 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
                             {cand.job_title || cand.department_name || cand.email || ''}
                           </p>
                         </div>
-                      </button>
+                      </Button>
                     );
                   })
                 )}

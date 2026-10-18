@@ -1,3 +1,4 @@
+import { IconButton } from '@so360/design-system';
 import React from 'react';
 import { Phone } from 'lucide-react';
 import { eventBus } from '@so360/event-bus';
@@ -71,15 +72,15 @@ export const ClickToCallButton: React.FC<ClickToCallButtonProps> = ({
     };
 
     return (
-        <button
+        <IconButton
             type="button"
             onClick={handleClick}
-            aria-label={`Call ${trimmedNumber}`}
+            label={`Call ${trimmedNumber}`}
             title={`Call ${trimmedNumber}`}
-            className={`inline-flex items-center justify-center w-7 h-7 rounded-lg bg-surface-raised text-success hover:text-success hover:bg-line border border-line transition-colors ${className}`}
-        >
-            <Phone size={size} />
-        </button>
+            icon={<Phone size={size} />}
+            size="sm"
+            className={`text-success hover:text-success ${className}`}
+        />
     );
 };
 

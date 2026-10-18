@@ -1448,12 +1448,14 @@ export function LeadsDataGrid({
                   }}
                 >
                   {sortKey ? (
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="sm"
                       onClick={() => toggleSort(sortKey)}
                       aria-sort={sortState ? (sortState.direction === 'asc' ? 'ascending' : 'descending') : 'none'}
                       data-testid={`sort-${sortKey}`}
-                      className={`group/sort -mx-nb-2 inline-flex items-center gap-nb-1 rounded-nb px-nb-2 py-nb-1 text-nb-title-sm transition-colors hover:bg-fg/state-hover hover:text-fg active:bg-fg/state-pressed focus:outline-none focus-visible:bg-fg/state-focus focus-visible:ring-2 focus-visible:ring-focus ${sortState ? 'text-fg' : ''}`}
+                      className={`group/sort -mx-nb-2 !gap-nb-1 !px-nb-2 !text-nb-title-sm hover:bg-fg/state-hover ${sortState ? '!text-fg' : ''}`}
                     >
                       {def?.label ?? col.key}
                       {sortState ? (
@@ -1461,7 +1463,7 @@ export function LeadsDataGrid({
                       ) : (
                         <ChevronsUpDown size={14} className="opacity-0 group-hover/sort:opacity-100 group-focus-visible/sort:opacity-100" />
                       )}
-                    </button>
+                    </Button>
                   ) : (
                     <span>{def?.label ?? col.key}</span>
                   )}

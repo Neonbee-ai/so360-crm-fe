@@ -28,7 +28,7 @@ const STEPS: Array<{ key: Step; label: string }> = [
     { key: 'done', label: 'Import' },
 ];
 
-const OPTION_BTN = 'w-full flex items-center gap-3 text-left bg-bg border border-line hover:border-primary rounded-xl px-4 py-3';
+const OPTION_BTN = '!h-auto w-full !justify-start gap-3 !whitespace-normal py-3 text-left';
 
 /** What the Review step shows, and how to send it. */
 interface ImportPlan {
@@ -368,14 +368,14 @@ export const ImportHub: React.FC<Props> = ({ isOpen, onClose, onImported }) => {
                 <div className="space-y-2" data-testid="import-hub">
                     <p className="text-sm text-fg-subtle mb-3">What are you importing?</p>
                     {options.filter((o) => o.show).map((o) => (
-                        <button key={o.key} type="button" className={OPTION_BTN} onClick={() => pick(o.key)}>
+                        <Button key={o.key} type="button" variant="secondary" className={OPTION_BTN} onClick={() => pick(o.key)}>
                             <span className="text-primary">{o.icon}</span>
                             <span className="flex-1 min-w-0">
                                 <span className="block text-sm font-semibold text-fg">{o.label}</span>
                                 <span className="block text-xs text-fg-muted">{o.hint}</span>
                             </span>
                             {o.key === 'agents' ? <ExternalLink size={16} className="text-fg-muted" /> : <ChevronRight size={16} className="text-fg-muted" />}
-                        </button>
+                        </Button>
                     ))}
                 </div>
             )}

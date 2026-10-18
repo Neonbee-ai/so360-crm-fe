@@ -330,7 +330,7 @@ export const Switch = ({ label, name, checked, onCheckedChange, disabled, 'data-
 export const RadioGroup = ({ name, label, options = [], value, onChange, disabled, 'data-testid': testId }: any) =>
   React.createElement('div', { role: 'radiogroup', 'aria-label': label, 'data-testid': testId ?? `radio-${name}` },
     options.map((o: any) => React.createElement('label', { key: o.value }, React.createElement('input', { type: 'radio', name, value: o.value, checked: value === o.value, disabled: disabled || o.disabled, 'data-testid': `radio-${name}-${o.value}`, onChange: () => onChange?.(o.value) }), o.label)));
-export const IconButton = ({ label, icon, variant: _v, size: _s, tooltipSide: _t, hideTooltip: _h, ...rest }: any) =>
+export const IconButton = ({ label, icon, variant: _v, size: _s, tooltipSide: _t, hideTooltip: _h, selected: _sel, loading: _ld, ...rest }: any) =>
   React.createElement('button', { type: 'button', 'aria-label': label, title: label, ...rest }, icon);
 export const ColumnsMenu = ({ label = 'Columns' }: any) => React.createElement('button', { type: 'button', 'aria-label': label }, label);
 export const DataTable = ({ columns = [], rows = [], rowKey, loading, emptyState, onRowClick, rowActions, getRowProps, hiddenColumns, sortKey, sortDir, onSortChange, footer, selectedKeys, onSelectionChange, 'data-testid': testId }: any) => {
@@ -395,3 +395,10 @@ export { TrendIndicator } from '@ds-real/components/TrendIndicator';
 export { StatusLegend } from '@ds-real/components/StatusLegend';
 export const FileUpload = ({ name, 'aria-label': ariaLabel, accept, disabled, multiple, onChange, 'data-testid': testId }: any) =>
   React.createElement('input', { type: 'file', name, 'aria-label': ariaLabel, accept, disabled, multiple, 'data-testid': testId, onChange: (e: any) => onChange?.(Array.from(e.target.files ?? [])) });
+
+export const ChipGroup = ({ name, label, options = [], value = [], onChange, 'data-testid': testId }: any) =>
+  React.createElement('div', { role: 'group', 'aria-label': label ?? name, 'data-testid': testId },
+    options.map((o: any) => React.createElement('button', {
+      key: o.value, type: 'button', role: 'checkbox', 'aria-checked': value.includes(o.value),
+      onClick: () => onChange(value.includes(o.value) ? value.filter((v: string) => v !== o.value) : [...value, o.value]),
+    }, o.label)));

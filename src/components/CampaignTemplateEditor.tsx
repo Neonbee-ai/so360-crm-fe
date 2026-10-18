@@ -17,6 +17,7 @@ const BLOCK_TYPES = [
   { type: 'columns', label: '2 Columns', icon: '▥' },
 ] as const;
 
+// comb-exempt: default block colours are persisted into email HTML (no Comb token equivalent in mail clients).
 const DEFAULT_CONTENT: Record<string, Record<string, any>> = {
   header: { text: 'Your Heading', level: 'h2', align: 'center' },
   text: { text: 'Write your content here. Use {{customer_name}} for personalization.', align: 'left' },
@@ -31,6 +32,7 @@ function generateId() {
   return Math.random().toString(36).slice(2, 10);
 }
 
+// comb-exempt: email HTML is rendered in third-party mail clients that cannot resolve Comb tokens, so literal colours/inline <table> are required.
 function blockToHtml(block: Block): string {
   const c = block.content;
   switch (block.type) {

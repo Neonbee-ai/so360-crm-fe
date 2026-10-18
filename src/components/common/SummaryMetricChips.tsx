@@ -1,3 +1,4 @@
+import { Button } from '@so360/design-system';
 import React from 'react';
 
 export interface SummaryMetricChip {
@@ -22,20 +23,18 @@ export const SummaryMetricChips: React.FC<SummaryMetricChipsProps> = ({ chips, c
     return (
         <div className={`flex flex-wrap items-center gap-1.5 ${className}`} data-testid="summary-metric-chips">
             {chips.map((chip) => (
-                <button
+                <Button
                     key={chip.key}
                     type="button"
+                    size="sm"
+                    variant={chip.active ? 'tonal' : 'secondary'}
+                    aria-pressed={chip.active ? true : undefined}
                     onClick={chip.onClick}
                     disabled={!chip.onClick}
-                    className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
-                        chip.active
-                            ? 'bg-primary/10 text-primary border-primary/40'
-                            : 'bg-surface-sunken text-fg-subtle border-line hover:text-fg'
-                    } ${!chip.onClick ? 'cursor-default' : ''}`}
                     data-testid={`summary-metric-chip-${chip.key}`}
                 >
                     {chip.count} {chip.label}
-                </button>
+                </Button>
             ))}
         </div>
     );

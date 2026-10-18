@@ -765,7 +765,7 @@ export default function TargetPlansPage() {
                       <span className="flex items-center gap-nb-2">
                         <span
                           className="w-2 h-2 rounded-full"
-                          style={{ backgroundColor: stage.color || '#64748B' }}
+                          style={{ backgroundColor: stage.color || 'rgb(var(--nb-fg-muted))' }}
                         />
                         {stage.name}
                       </span>

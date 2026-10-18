@@ -623,8 +623,9 @@ const LeadDetailPage = () => {
                                     {allUsers.map(user => {
                                         const selected = !!lead.owner && user.id === lead.owner.id;
                                         return (
-                                            <button
+                                            <Button
                                                 type="button"
+                                                variant="ghost"
                                                 role="option"
                                                 aria-selected={selected}
                                                 key={user.id}
@@ -643,7 +644,7 @@ const LeadDetailPage = () => {
                                                         toast.error('Failed to update owner.');
                                                     }
                                                 }}
-                                                className={`flex w-full items-center gap-nb-3 rounded-nb px-nb-2 py-nb-2 text-left text-fg focus:outline-none focus-visible:ring-2 focus-visible:ring-focus ${selected ? 'bg-primary/10' : 'hover:bg-surface-high'}`}
+                                                className={`!h-auto w-full !justify-start gap-nb-3 py-nb-2 text-left !text-fg ${selected ? '!bg-primary/10' : ''}`}
                                             >
                                                 <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-high text-xs font-medium uppercase text-fg">
                                                     {user.avatar_url ? (
@@ -657,7 +658,7 @@ const LeadDetailPage = () => {
                                                     <span className="block truncate text-xs text-fg-muted">{user.email}</span>
                                                 </span>
                                                 {selected && <Check size={14} className="flex-shrink-0 text-primary" aria-hidden="true" />}
-                                            </button>
+                                            </Button>
                                         );
                                     })}
                                 </div>

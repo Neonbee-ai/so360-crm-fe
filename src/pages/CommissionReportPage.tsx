@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
-import { DashboardPageTemplate, Card, ListFilters, DataTable, Grid } from '@so360/design-system';
+import { DashboardPageTemplate, Card, ListFilters, DataTable, Grid, Button } from '@so360/design-system';
 import { useSalesFilterConfig } from './components/SalesFiltersBar';
 import {
     salesReportService,
@@ -108,9 +108,9 @@ const CommissionReportPage: React.FC = () => {
         body = (
             <div role="alert" className="p-6 bg-danger/10 border border-danger/30 rounded-nb-lg flex items-center justify-between gap-3">
                 <span className="text-sm font-bold text-danger">{error}</span>
-                <button type="button" onClick={() => setReloadKey((k) => k + 1)} className="flex items-center gap-1 px-3 py-2 rounded-nb text-xs font-semibold text-fg bg-surface-raised hover:bg-line">
+                <Button type="button" size="sm" variant="secondary" onClick={() => setReloadKey((k) => k + 1)}>
                     <RefreshCw size={12} /> Retry
-                </button>
+                </Button>
             </div>
         );
     } else if (report && isEmptyReport(report)) {

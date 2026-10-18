@@ -1,3 +1,4 @@
+import { IconButton } from '@so360/design-system';
 /**
  * NoteEditor.tsx — rich-text editor for CRM notes (Tiptap-based).
  *
@@ -35,18 +36,16 @@ function ToolbarButton({
   children: ReactNode;
 }) {
   return (
-    <button
+    <IconButton
       type="button"
-      aria-label={label}
+      label={label}
       aria-pressed={active}
+      selected={active}
+      size="sm"
       onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
-      className={`p-1.5 rounded transition-colors ${
- active ? 'bg-primary text-primary-fg' : 'text-fg-subtle hover:text-fg hover:bg-surface-raised'
- }`}
-    >
-      {children}
-    </button>
+      icon={children}
+    />
   );
 }
 

@@ -146,7 +146,7 @@ export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: Kanba
                         : d.stage === stage.name
                 );
                 const isOver = dragOverStage === stage.id;
-                const accentColor = stage.color || '#94A3B8';
+                const accentColor = stage.color || 'rgb(var(--nb-fg-muted))';
 
                 return (
                     <div

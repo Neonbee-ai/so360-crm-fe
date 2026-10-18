@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { partnersApi, settingsApi, crmService } from '../services/crmService';
-import { ListPageTemplate, Pagination, Button, DataTable, SearchInput, TextField, Select, type DataTableColumn, type FilterValues, type ListFilterConfig, Grid, GridItem } from '@so360/design-system';
+import { ListPageTemplate, Pagination, Button, DataTable, SearchInput, TextField, Select, type DataTableColumn, type FilterValues, type ListFilterConfig, Grid, GridItem, ChipGroup } from '@so360/design-system';
 import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
 import { validatePhone } from '../utils/phoneValidation';
 import {
@@ -207,33 +207,13 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                         </Grid>
 
                         {/* Area Served */}
-                        <div>
-                            <label className={labelCls}>Area Served</label>
-                            <div className="flex flex-wrap gap-2">
-                                {AREA_OPTIONS.map(area => {
-                                    const selected = form.area_served.includes(area);
-                                    return (
-                                        <button
-                                            key={area}
-                                            type="button"
-                                            onClick={() => setForm(f => ({
-                                                ...f,
-                                                area_served: selected
-                                                    ? f.area_served.filter(a => a !== area)
-                                                    : [...f.area_served, area],
-                                            }))}
-                                            className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
-                                                selected
-                                                    ? 'bg-primary/10 text-primary border-primary/40'
-                                                    : 'bg-surface-raised text-fg-subtle border-line hover:border-line'
-                                            }`}
-                                        >
-                                            {area}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
+                        <ChipGroup
+                            name="area_served"
+                            label="Area Served"
+                            options={AREA_OPTIONS.map(area => ({ value: area, label: area }))}
+                            value={form.area_served}
+                            onChange={(area_served) => setForm(f => ({ ...f, area_served }))}
+                        />
 
                         {/* Email + Phone */}
                         <Grid gap="md">

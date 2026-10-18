@@ -6,7 +6,7 @@ import {
     Calendar, User as UserIcon, Loader2, ShoppingBag, Package, LayoutDashboard
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { CrossLinkChip, DashboardPageTemplate, KpiCard, Card, SegmentedControl, Grid, GridItem } from '@so360/design-system';
+import { CrossLinkChip, DashboardPageTemplate, KpiCard, Card, SegmentedControl, Grid, GridItem, Button } from '@so360/design-system';
 import { useBusinessSettings, useShell } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import REWidgets from '../components/dashboard/REWidgets';
@@ -615,14 +615,14 @@ const DashboardPage = () => {
             filters={
                 <>
                     {customizeEnabled && (
-                        <button
+                        <Button
                             type="button"
+                            variant="secondary"
                             onClick={() => setShowCustomize(true)}
                             aria-label="Customize dashboard"
-                            className="flex items-center gap-1.5 h-nb-control-md px-3 bg-surface border border-line rounded-nb text-xs font-semibold text-fg-subtle hover:text-fg transition-all"
                         >
                             <LayoutDashboard size={14} /> Customize
-                        </button>
+                        </Button>
                     )}
                 <SegmentedControl
                     aria-label="Dashboard period"

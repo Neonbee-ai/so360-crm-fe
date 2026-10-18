@@ -89,7 +89,7 @@ const PipelinePage = () => {
             setStages(fetchedStages.map(s => ({
                 id: s.id,
                 name: s.name,
-                color: s.color || '#94A3B8',
+                color: s.color || 'rgb(var(--nb-fg-muted))',
                 is_terminal: s.is_terminal ?? false,
             })));
 
