@@ -1687,6 +1687,9 @@ export const crmService = {
             owner_id: lead.owner_id || USER_ID,
             referred_by: (lead as any).referred_by,
             meta_data: lead.custom_fields,
+            // Resend after the user accepts a "warn" duplicate; rating set by hand.
+            ...((lead as any).confirm_duplicates && { confirm_duplicates: true }),
+            ...((lead as any).rating_category_id && { rating_category_id: (lead as any).rating_category_id }),
         });
     },
 
@@ -1714,6 +1717,7 @@ export const crmService = {
         if (updates.contact_email !== undefined) data.email = updates.contact_email;
         if (updates.phone !== undefined) data.phone = updates.phone;
         if (updates.source !== undefined) data.source = updates.source;
+        if ((updates as any).rating_category_id !== undefined) data.rating_category_id = (updates as any).rating_category_id;
         if (updates.status !== undefined) {
             // Check if it's FE name or BE name
             data.status = STATUS_MAP_FE_TO_BE[updates.status] || updates.status;

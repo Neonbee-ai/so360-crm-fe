@@ -7,10 +7,13 @@ import { StageStatusSelect } from '../components/common/StageStatusSelect';
 import { useShellBridge } from '@so360/shell-context';
 import DealNamingSettingsTab from './components/settings/DealNamingSettingsTab';
 import AssignmentRulesSettingsTab from './components/settings/AssignmentRulesSettingsTab';
+import LossReasonsSettingsTab from './components/settings/LossReasonsSettingsTab';
+import LeadRatingSettingsTab from './components/settings/LeadRatingSettingsTab';
+import DuplicateRulesSettingsTab from './components/settings/DuplicateRulesSettingsTab';
 import SalesCommissionSettingsTab from './components/settings/SalesCommissionSettingsTab';
 import { useCrmFeatureFlag, RE_FLAGS } from '../hooks/useCrmFeatureFlag';
 
-type SettingsTab = 'pipeline' | 'lead-stages' | 'custom-fields' | 'sources' | 'scoring' | 'deal-naming' | 'assignment' | 'sales-commission';
+type SettingsTab = 'pipeline' | 'lead-stages' | 'custom-fields' | 'sources' | 'scoring' | 'deal-naming' | 'assignment' | 'sales-commission' | 'loss-reasons' | 'lead-rating' | 'duplicate-rules';
 
 // Activity types available for scoring rules
 const SCOREABLE_ACTIVITY_TYPES = [
@@ -87,6 +90,9 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
     const icpEnabled = useCrmFeatureFlag('submodule:crm:icp_manager');
     const canWriteSettings = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('submodule:crm:settings') ?? true);
     const assignmentEnabled = useCrmFeatureFlag(RE_FLAGS.LEAD_ASSIGNMENT);
+    const lossReasonsEnabled = useCrmFeatureFlag('submodule:crm:loss_reasons');
+    const leadRatingEnabled = useCrmFeatureFlag('submodule:crm:lead_rating');
+    const duplicateRulesEnabled = useCrmFeatureFlag('submodule:crm:duplicate_rules');
     const commissionsEnabled = useCrmFeatureFlag(RE_FLAGS.COMMISSIONS);
     const unitAllocationEnabled = useCrmFeatureFlag(RE_FLAGS.UNIT_ALLOCATION);
     const salesSettingsEnabled = commissionsEnabled || unitAllocationEnabled;
@@ -527,6 +533,9 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
                 { id: 'scoring', label: 'Lead Scoring' },
                 { id: 'deal-naming', label: 'Deal Naming' },
                 ...(assignmentEnabled ? [{ id: 'assignment', label: 'Assignment' }] : []),
+                ...(lossReasonsEnabled ? [{ id: 'loss-reasons', label: 'Loss reasons' }] : []),
+                ...(leadRatingEnabled ? [{ id: 'lead-rating', label: 'Lead rating' }] : []),
+                ...(duplicateRulesEnabled ? [{ id: 'duplicate-rules', label: 'Duplicate rules' }] : []),
                 ...(salesSettingsEnabled ? [{ id: 'sales-commission', label: 'Sales & commission' }] : []),
             ]}
             activeSection={activeTab}
@@ -1089,6 +1098,9 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
                 {activeTab === 'assignment' && assignmentEnabled && (
                     <AssignmentRulesSettingsTab canWrite={canWriteSettings} />
                 )}
+                {activeTab === 'loss-reasons' && lossReasonsEnabled && <LossReasonsSettingsTab canWrite={canWriteSettings} />}
+                {activeTab === 'lead-rating' && leadRatingEnabled && <LeadRatingSettingsTab canWrite={canWriteSettings} />}
+                {activeTab === 'duplicate-rules' && duplicateRulesEnabled && <DuplicateRulesSettingsTab canWrite={canWriteSettings} />}
                 {activeTab === 'sales-commission' && salesSettingsEnabled && (
                     <SalesCommissionSettingsTab canWrite={canWriteSettings} />
                 )}

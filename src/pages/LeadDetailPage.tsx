@@ -20,6 +20,7 @@ import { validatePhone } from '../utils/phoneValidation';
 import { validateFirstNameRequired, validateLastName } from '../utils/leadFieldValidation';
 import { describeApiError } from '../utils/apiErrorMessage';
 import { Lead, Deal, Task, Activity, ActivityType, CustomFieldDefinition, LeadScoringRule, User, Attachment, Note, SourceTypeOption } from '../types/crm';
+import { useCrmFeatureFlag } from '../hooks/useCrmFeatureFlag';
 import { toast, useConfirm, DetailPageTemplate, Button, IconButton, Tabs, TextField, Select, Checkbox, Badge, Card, ConfirmDialog, EmptyState, FileUpload, Grid, GridItem } from '@so360/design-system';
 import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import { Trophy, Zap, Info, TrendingUp, RefreshCw, Check } from 'lucide-react';
@@ -192,6 +193,7 @@ const LeadDetailPage = () => {
     const [associatedTasks, setAssociatedTasks] = useState<Task[]>([]);
     const [customFieldDefs, setCustomFieldDefs] = useState<CustomFieldDefinition[]>([]);
     const [scoringRules, setScoringRules] = useState<LeadScoringRule[]>([]);
+    const ratingEnabled = useCrmFeatureFlag('submodule:crm:lead_rating');
     const [scoreCategories, setScoreCategories] = useState<import('../types/crm').ScoreCategory[]>([]);
     const [isRecalculatingScore, setIsRecalculatingScore] = useState(false);
     const [activeTab, setActiveTab] = useState<TabType>('overview');
@@ -446,11 +448,26 @@ const LeadDetailPage = () => {
             { label: 'Qualified', min_score: 101, max_score: null, color: undefined, tone: 'text-success bg-success/10', bar: 'bg-success' },
         ] as Array<{ label: string; min_score: number; max_score: number | null; color?: string; tone?: string; bar?: string }>;
         const cats: Array<{ label: string; min_score: number; max_score: number | null; color?: string; tone?: string; bar?: string }> = scoreCategories.length > 0 ? scoreCategories : defaultCategories;
-        return cats.find(c => score >= c.min_score && (c.max_score === null || score <= c.max_score))
+        // A rating set by hand wins over the score band.
+        const manual = lead.rating_is_manual && lead.rating_category_id
+            ? cats.find((c: any) => c.id === lead.rating_category_id)
+            : undefined;
+        return manual
+            || cats.find(c => score >= c.min_score && (c.max_score === null || score <= c.max_score))
             || cats[0];
     };
 
     const scoreCategory = getScoreCategory();
+
+    // null hands the rating back to the score bands.
+    const handleRatingChange = async (ratingId: string | null) => {
+        try {
+            await crmService.updateLead(lead.id, { rating_category_id: ratingId } as any);
+            await fetchLeadData();
+        } catch (err) {
+            toast.error('Could not change the rating');
+        }
+    };
 
     // Task 4 (Customer Timeline): the old client-side getAggregatedTimeline()
     // (5-source merge, duplicated again in ActivityHistoryDrawer.tsx) has been
@@ -874,13 +891,30 @@ const LeadDetailPage = () => {
                                     <div className="flex items-baseline gap-nb-2">
                                         <span className="text-3xl font-semibold text-fg">{score}</span>
                                         <span className="text-xs text-fg-muted">Score</span>
+                                        {(scoreCategory as any).color_token ? (
+                                            <span className="ml-auto" data-testid="lead-rating-badge">
+                                                <Badge tone={(scoreCategory as any).color_token}>{scoreCategory.label}</Badge>
+                                            </span>
+                                        ) : (
                                         <span
                                             className={`ml-auto rounded-nb px-2 py-0.5 text-xs font-medium ${scoreCategory.tone ?? ''}`}
                                             style={scoreCategory.color ? { color: scoreCategory.color, backgroundColor: `${scoreCategory.color}20` } : undefined}
                                         >
                                             {scoreCategory.label}
                                         </span>
+                                        )}
                                     </div>
+                                    {ratingEnabled && scoreCategories.length > 0 && (
+                                        <div className="mt-nb-3" data-testid="lead-rating-setter">
+                                            <Select
+                                                name="lead-rating"
+                                                label="Rating"
+                                                value={lead.rating_is_manual && lead.rating_category_id ? lead.rating_category_id : ''}
+                                                options={[{ value: '', label: 'Automatic (by score)' }, ...scoreCategories.filter((c) => c.is_active !== false).map((c) => ({ value: c.id, label: c.label }))]}
+                                                onChange={(e) => handleRatingChange(e.target.value || null)}
+                                            />
+                                        </div>
+                                    )}
                                     <div className="mt-nb-3 h-1.5 w-full overflow-hidden rounded-full bg-surface-raised">
                                         <div
                                             className={`h-full transition-all ${scoreCategory.bar ?? ''}`}
