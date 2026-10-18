@@ -67,6 +67,9 @@ export interface Lead {
     channel?: string;
     auto_score?: number;
     score_breakdown?: ScoreBreakdownItem[];
+    /** Per-org rating (score band, or set by hand when rating_is_manual). */
+    rating_category_id?: string | null;
+    rating_is_manual?: boolean;
 }
 
 export type DealStage = 'Lead' | 'Qualified' | 'Proposal' | 'Negotiation' | 'Won' | 'Lost';
@@ -76,6 +79,8 @@ export interface FlowState {
     name: string;         // display name, e.g. 'Qualified'
     color: string;
     is_terminal: boolean;
+    /** Optional stage type from settings; the name is the fallback. */
+    type?: 'OPEN' | 'WON' | 'LOST';
     deals?: Deal[];
 }
 
@@ -205,6 +210,9 @@ export interface ScoreCategory {
     min_score: number;
     max_score: number | null;
     color: string;
+    /** Semantic colour token (Badge tone); wins over the legacy hex colour. */
+    color_token?: 'neutral' | 'info' | 'success' | 'warning' | 'danger' | 'primary' | null;
+    is_active?: boolean;
     sort_order: number;
 }
 

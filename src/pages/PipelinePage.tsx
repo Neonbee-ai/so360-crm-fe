@@ -6,6 +6,8 @@ import { usePersistedState } from '../hooks/useListViewState';
 import { Deal, FlowState } from '../types/crm';
 import { Loader2, Plus } from 'lucide-react';
 import { StageTransitionModal } from '../components/kanban/StageTransitionModal';
+import { DealCloseModal } from '../components/kanban/DealCloseModal';
+import { dealCloseService, stageKind, LoseDealBody, WinDealBody } from '../services/salesConfigService';
 import { toast, ListPageTemplate, Button, SearchInput } from '@so360/design-system';
 import CreateDealModal from '../pages/components/CreateDealModal';
 
@@ -52,6 +54,10 @@ const PipelinePage = () => {
         newStage: '',
         newStageId: null
     });
+
+    // Won / lost stages run the real win / lose flow instead of a bare stage move.
+    const [closeModal, setCloseModal] = useState<{ deal: Deal; stage: FlowState; kind: 'won' | 'lost' } | null>(null);
+    const [closing, setClosing] = useState(false);
 
     // Debounce filter changes for text inputs; also re-runs on pollTick for auto-refresh
     useEffect(() => {
@@ -107,6 +113,12 @@ const PipelinePage = () => {
         const stage = stages.find(s => s.id === newStageId);
         if (!stage) return;
 
+        const kind = stageKind(stage as { name?: string; type?: string });
+        if (kind !== 'open') {
+            setCloseModal({ deal, stage, kind });
+            return;
+        }
+
         setTransitionModal({
             isOpen: true,
             deal,
@@ -133,6 +145,27 @@ const PipelinePage = () => {
             toast.error('Failed to update stage');
         }
     };
+
+    const finishClose = async (call: () => Promise<unknown>) => {
+        if (!closeModal) return;
+        const { deal, stage, kind } = closeModal;
+        setClosing(true);
+        try {
+            await call();
+            recordActivity({ eventType: kind === 'won' ? 'deal.won' : 'deal.lost', eventCategory: 'crm', description: `Deal "${deal.name}" moved to ${stage.name}`, resourceType: 'deal', resourceId: deal.id }).catch(() => {});
+            emitNotification({ event: kind === 'won' ? 'CRM_DEAL_WON' : 'CRM_DEAL_LOST', userIds: deal.owner_id ? [deal.owner_id] : [], variables: { dealName: deal.name, stageName: stage.name }, relatedResource: { type: 'deal', id: deal.id } }).catch(() => {});
+            setDeals(prev => prev.map(d => d.id === deal.id ? { ...d, current_flow_state: stage.id } : d));
+            setCloseModal(null);
+            fetchData();
+        } catch (error: any) {
+            toast.error(error?.message || `Could not mark the deal as ${kind}`);
+        } finally {
+            setClosing(false);
+        }
+    };
+
+    const confirmWin = (body: WinDealBody) => finishClose(() => dealCloseService.win(closeModal!.deal.id, body));
+    const confirmLose = (body: LoseDealBody) => finishClose(() => dealCloseService.lose(closeModal!.deal.id, body));
 
     if (isInitialLoading) {
         return (
@@ -191,6 +224,17 @@ const PipelinePage = () => {
                 onConfirm={confirmStageChange}
                 deal={transitionModal.deal}
                 newStage={transitionModal.newStage}
+            />
+
+            <DealCloseModal
+                isOpen={!!closeModal}
+                kind={closeModal?.kind ?? 'won'}
+                deal={closeModal?.deal ?? null}
+                stageName={closeModal?.stage.name ?? ''}
+                busy={closing}
+                onClose={() => setCloseModal(null)}
+                onWin={confirmWin}
+                onLose={confirmLose}
             />
 
             {isCreateDealOpen && (
