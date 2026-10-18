@@ -21,6 +21,8 @@ import { validateFirstNameRequired, validateLastName } from '../utils/leadFieldV
 import { describeApiError } from '../utils/apiErrorMessage';
 import { Lead, Deal, Task, Activity, ActivityType, CustomFieldDefinition, LeadScoringRule, User, Attachment, Note, SourceTypeOption } from '../types/crm';
 import { useCrmFeatureFlag } from '../hooks/useCrmFeatureFlag';
+import { ContactFeedPanel } from '../components/ContactFeedPanel';
+import { S2S_FLAGS } from '../services/coreS2sService';
 import { toast, useConfirm, DetailPageTemplate, Button, IconButton, Tabs, TextField, Select, Checkbox, Badge, Card, ConfirmDialog, EmptyState, FileUpload, Grid, GridItem } from '@so360/design-system';
 import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import { Trophy, Zap, Info, TrendingUp, RefreshCw, Check } from 'lucide-react';
@@ -194,6 +196,7 @@ const LeadDetailPage = () => {
     const [customFieldDefs, setCustomFieldDefs] = useState<CustomFieldDefinition[]>([]);
     const [scoringRules, setScoringRules] = useState<LeadScoringRule[]>([]);
     const ratingEnabled = useCrmFeatureFlag('submodule:crm:lead_rating');
+    const contactFeedEnabled = useCrmFeatureFlag(S2S_FLAGS.CONTACT_FEED);
     const [scoreCategories, setScoreCategories] = useState<import('../types/crm').ScoreCategory[]>([]);
     const [isRecalculatingScore, setIsRecalculatingScore] = useState(false);
     const [activeTab, setActiveTab] = useState<TabType>('overview');
@@ -961,6 +964,8 @@ const LeadDetailPage = () => {
                         </Card>
 
                         {!isCustomerDetailRoute && <IcpFitCard meta={lead.custom_fields} />}
+
+                        {isCustomerDetailRoute && contactFeedEnabled && <ContactFeedPanel entityType="lead" entityId={lead.id} />}
 
                         {/* Deals */}
                         <Card title={`Deals (${associatedDeals.length})`}>

@@ -4,6 +4,8 @@ import { Button, IconButton, TextField, NumberInput, Select, Checkbox } from '@s
 import { Modal } from '../../components/common/Modal';
 import { Package, Plus, Trash2, Loader2, Search, Copy } from 'lucide-react';
 import { crmService } from '../../services/crmService';
+import { S2S_FLAGS, priceLists } from '../../services/coreS2sService';
+import { PriceListSelect } from '../../components/PriceListSelect';
 import { DealProduct, LeadProduct, ProductInterestStatus, InventoryItem } from '../../types/crm';
 import { useCRMFormatters } from '../../utils/formatters';
 import { useCrmFeatureFlag, RE_FLAGS } from '../../hooks/useCrmFeatureFlag';
@@ -231,6 +233,8 @@ export default function DealProductsTab({ dealId, leadId }: Props) {
     const formatters = useCRMFormatters();
     const unitBooking = useCrmFeatureFlag(RE_FLAGS.UNIT_BOOKING);
     const propertyMatching = useCrmFeatureFlag(RE_FLAGS.PROPERTY_MATCHING);
+    const priceListsOn = useCrmFeatureFlag(S2S_FLAGS.PRICE_LISTS);
+    const [priceListId, setPriceListId] = useState('');
     const [products, setProducts] = useState<DealProduct[]>([]);
     const [loading, setLoading] = useState(true);
     const [showAddModal, setShowAddModal] = useState(false);
@@ -255,12 +259,21 @@ export default function DealProductsTab({ dealId, leadId }: Props) {
         setShowAddModal(false);
         setAddError(null);
         try {
+            let unitPrice = item.price ?? 0;
+            if (priceListsOn) {
+                const hit = await priceLists.resolveOne(item.id, {
+                    ...(priceListId ? { price_list_id: priceListId } : {}),
+                    ...(leadId ? { customer_id: leadId } : {}),
+                    qty,
+                });
+                if (hit?.price != null) unitPrice = hit.price;
+            }
             await crmService.addDealProduct(dealId, {
                 item_id: item.id,
                 item_name: item.name,
                 item_sku: item.sku,
                 quantity: qty,
-                unit_price: item.price ?? 0,
+                unit_price: unitPrice,
                 ...(holdHours != null ? { hold_hours: holdHours } : {}),
             });
             load();
@@ -350,9 +363,12 @@ export default function DealProductsTab({ dealId, leadId }: Props) {
                         </p>
                     )}
                 </div>
-                <Button variant="primary" size="sm" type="button" onClick={() => setShowAddModal(true)}>
-                    <Plus size={12} /> Add Product
-                </Button>
+                <div className="flex items-center gap-nb-2">
+                    {priceListsOn && <PriceListSelect value={priceListId} onChange={setPriceListId} customerId={leadId} />}
+                    <Button variant="primary" size="sm" type="button" onClick={() => setShowAddModal(true)}>
+                        <Plus size={12} /> Add Product
+                    </Button>
+                </div>
             </div>
 
             {addError && (
