@@ -1,8 +1,8 @@
 // Stub for @so360/design-system — vi.mock() in each test overrides these
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-export const Button = ({ children, onClick, type, disabled, leftIcon: _l, rightIcon: _r, variant: _v, size: _s, loading: _ld, fullWidth: _f, ...rest }: any) =>
-  React.createElement('button', { onClick, type, disabled, ...rest }, children);
+export const Button = ({ children, onClick, type, disabled, leftIcon: _l, rightIcon: _r, variant, size, loading, fullWidth: _f, ...rest }: any) =>
+  React.createElement('button', { onClick, type, disabled, 'data-comb': 'button', 'data-variant': variant, 'data-size': size, 'data-loading': loading ? 'true' : undefined, ...rest }, children);
 export const Input = (props: any) => props;
 // ---- Form primitives: render native elements carrying label, testid, value/onChange ----
 const FieldWrap = ({ id, label, hint, error, children }: any) =>
@@ -29,17 +29,24 @@ export const Select = ({ value, onChange, options = [], placeholder, label, hint
     options.map((o: any) => React.createElement('option', { key: String(o.value), value: o.value, disabled: o.disabled }, o.label)));
   return label || error ? React.createElement('div', null, label ? React.createElement('label', { htmlFor: el?.props?.id ?? `f-${name}` }, label) : null, el, error ? React.createElement('p', { role: 'alert' }, error) : null) : el;
 };
-export const Modal = ({ open, onClose, title, description, footer, children, dismissible = true, 'data-testid': testId }: any) =>
-  open
+export const Modal = ({ open, onClose, title, description, footer, children, dismissible = true, 'data-testid': testId }: any) => {
+  React.useEffect(() => {
+    if (!open || !dismissible) return;
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose?.(); };
+    document.addEventListener('keydown', h);
+    return () => document.removeEventListener('keydown', h);
+  }, [open, dismissible, onClose]);
+  return open
     ? React.createElement(React.Fragment, null,
       React.createElement('div', { 'data-testid': 'modal-overlay', className: 'fixed inset-0 bg-overlay/70', onClick: dismissible ? onClose : undefined }),
-      React.createElement('div', { role: 'dialog', 'aria-modal': 'true', 'data-testid': testId, className: 'relative flex max-h-[90vh] flex-col' },
+      React.createElement('div', { role: 'dialog', 'aria-modal': 'true', 'aria-label': typeof title === 'string' ? title : undefined, 'data-testid': testId, className: 'relative flex max-h-[90vh] flex-col' },
         React.createElement('h2', null, title),
         description ? React.createElement('div', null, description) : null,
         React.createElement('button', { type: 'button', 'aria-label': 'Close', disabled: !dismissible, onClick: dismissible ? onClose : undefined }, 'x'),
         React.createElement('div', null, children),
         footer ? React.createElement('div', null, footer) : null))
     : null;
+};
 export const Drawer = ({ isOpen, onClose, title, subtitle, footer, toolbar, children, name, 'data-testid': testId }: any) => {
   React.useEffect(() => {
     if (!isOpen) return;
@@ -330,8 +337,8 @@ export const Switch = ({ label, name, checked, onCheckedChange, disabled, 'data-
 export const RadioGroup = ({ name, label, options = [], value, onChange, disabled, 'data-testid': testId }: any) =>
   React.createElement('div', { role: 'radiogroup', 'aria-label': label, 'data-testid': testId ?? `radio-${name}` },
     options.map((o: any) => React.createElement('label', { key: o.value }, React.createElement('input', { type: 'radio', name, value: o.value, checked: value === o.value, disabled: disabled || o.disabled, 'data-testid': `radio-${name}-${o.value}`, onChange: () => onChange?.(o.value) }), o.label)));
-export const IconButton = ({ label, icon, variant: _v, size: _s, tooltipSide: _t, hideTooltip: _h, selected: _sel, loading: _ld, ...rest }: any) =>
-  React.createElement('button', { type: 'button', 'aria-label': label, title: label, ...rest }, icon);
+export const IconButton = ({ label, icon, variant, size, tooltipSide: _t, hideTooltip: _h, selected, loading, ...rest }: any) =>
+  React.createElement('button', { type: 'button', 'aria-label': label, title: label, 'data-comb': 'icon-button', 'data-variant': variant, 'data-size': size, 'data-selected': selected ? 'true' : undefined, 'data-loading': loading ? 'true' : undefined, ...rest }, icon);
 export const ColumnsMenu = ({ label = 'Columns' }: any) => React.createElement('button', { type: 'button', 'aria-label': label }, label);
 export const DataTable = ({ columns = [], rows = [], rowKey, loading, emptyState, onRowClick, rowActions, getRowProps, hiddenColumns, sortKey, sortDir, onSortChange, footer, selectedKeys, onSelectionChange, 'data-testid': testId }: any) => {
   const [open, setOpen] = React.useState<string | null>(null);
