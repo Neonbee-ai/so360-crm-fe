@@ -44,9 +44,17 @@ function relatedLink(event: EntityTimelineEvent): string | null {
     return null;
 }
 
+/** Inbox threads are shown by reference; open them in Inbox, a different app from CRM. */
+export function inboxThreadHref(event: EntityTimelineEvent): string | null {
+    return event.module === 'inbox' && event.related_type === 'conversation' && event.related_id
+        ? `/inbox/conversations/${event.related_id}`
+        : null;
+}
+
 const TimelineEventCard: React.FC<Props> = ({ event, isPinned, onTogglePin, onEdit, onDelete }) => {
     const formatters = useCRMFormatters();
     const link = relatedLink(event);
+    const inboxHref = inboxThreadHref(event);
     const canManage = event.related_type === 'activity' && (onEdit || onDelete);
 
     const body = (
@@ -78,7 +86,14 @@ const TimelineEventCard: React.FC<Props> = ({ event, isPinned, onTogglePin, onEd
                 {getEventIcon(event)}
             </div>
             <div className="bg-surface border border-line p-3 rounded-nb hover:border-line transition-colors">
-                {link ? <Link to={link} className="block">{body}</Link> : body}
+                {link ? <Link to={link} className="block">{body}</Link> : inboxHref ? (
+                    <a
+                        href={inboxHref}
+                        className="block"
+                        data-testid="timeline-inbox-link"
+                        onClick={(e) => { e.preventDefault(); window.location.href = inboxHref; }}
+                    >{body}</a>
+                ) : body}
                 {(onTogglePin || canManage) && (
                     <div className="mt-2 pt-2 border-t border-line flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         {onTogglePin && (
