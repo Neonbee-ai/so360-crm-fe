@@ -34,7 +34,10 @@ import {
   TrendingUp,
   Layers,
 } from 'lucide-react';
-import { Badge, Button, IconButton, Menu, Select, TextField } from '@so360/design-system';
+import { Badge, Button, IconButton, Menu, Select, TextField, type BadgeTone } from '@so360/design-system';
+import { useCrmFeatureFlag } from '../../hooks/useCrmFeatureFlag';
+import { ICP_FLAG } from './IcpFitCard';
+import { fitBand, FIT_BAND_LABELS, leadIcpScore, type FitBand } from '../../utils/icpFit';
 import { Modal } from '../common/Modal';
 import { Lead, User } from '../../types/crm';
 import {
@@ -146,6 +149,37 @@ function scoreBg(score: number) {
 }
 
 // ─── Column definitions ───────────────────────────────────────────────────────
+
+const FIT_TONE: Record<FitBand, BadgeTone> = {
+  excellent: 'success',
+  good: 'info',
+  fair: 'warning',
+  not_a_fit: 'neutral',
+};
+
+/** "Fit" column: ICP score + band chip, ICP name as secondary text. Only offered when the ICP flag is on. */
+const ICP_FIT_COL: ColDef = {
+  key: 'icp_fit',
+  label: 'Fit',
+  defaultWidth: 150,
+  minWidth: 110,
+  sortKey: 'icp_fit',
+  render: (lead) => {
+    const score = leadIcpScore(lead);
+    if (score === null) return <span className="text-fg-muted text-sm">—</span>;
+    const band = fitBand(score);
+    const name = lead.custom_fields?.icp_name;
+    return (
+      <div className="flex flex-col gap-0.5 min-w-0" data-testid="icp-fit-cell" title={name ? String(name) : undefined}>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-fg w-6 text-right" data-testid="icp-fit-cell-score">{score}</span>
+          <span data-testid="icp-fit-cell-band"><Badge size="sm" tone={FIT_TONE[band]}>{FIT_BAND_LABELS[band]}</Badge></span>
+        </div>
+        {name && <span className="text-xs text-fg-muted truncate" data-testid="icp-fit-cell-name">{String(name)}</span>}
+      </div>
+    );
+  },
+};
 
 interface ColDef {
   key: string;
@@ -624,7 +658,7 @@ function ColumnManager({ columns, onToggle, onPin, onReset, onClose, onReorder }
     >
         <div className="space-y-1">
           {manageable.map((col) => {
-            const def = COL_DEF_MAP.get(col.key);
+            const def = COL_DEF_MAP.get(col.key) ?? (col.key === 'icp_fit' ? ICP_FIT_COL : undefined);
             return (
               <div
                 key={col.key}
@@ -882,6 +916,7 @@ export function LeadsDataGrid({
 }: LeadsDataGridProps) {
   const formatters = useCRMFormatters();
   const fmt = formatters.formatDate;
+  const icpEnabled = useCrmFeatureFlag(ICP_FLAG);
   const {
     columns,
     visibleColumns,
@@ -949,8 +984,8 @@ export function LeadsDataGrid({
         );
       },
     }] : [];
-    return [...COL_DEFS, ...ratingCol, ...extras];
-  }, [customFields, context.ratings]);
+    return [...COL_DEFS, ...(icpEnabled ? [ICP_FIT_COL] : []), ...ratingCol, ...extras];
+  }, [customFields, context.ratings, icpEnabled]);
 
   const colDefMap = useMemo(
     () => new Map(allColDefs.map((c) => [c.key, c])),
@@ -975,6 +1010,7 @@ export function LeadsDataGrid({
           case 'created_at': av = new Date(a.created_at).getTime(); bv = new Date(b.created_at).getTime(); break;
           case 'updated_at': av = new Date(a.updated_at ?? 0).getTime(); bv = new Date(b.updated_at ?? 0).getTime(); break;
           case 'lead_score': av = a.auto_score ?? 0; bv = b.auto_score ?? 0; break;
+          case 'icp_fit': av = leadIcpScore(a) ?? -1; bv = leadIcpScore(b) ?? -1; break;
           case 'rating': av = context.ratings?.find((r) => r.id === a.rating_category_id)?.label ?? ''; bv = context.ratings?.find((r) => r.id === b.rating_category_id)?.label ?? ''; break;
           default: return 0;
         }
@@ -1055,8 +1091,10 @@ export function LeadsDataGrid({
   }, [showDensityMenu]);
 
   // Compute sticky left offsets
-  const pinnedCols = visibleColumns.filter((c) => c.pinned);
-  const unpinnedCols = visibleColumns.filter((c) => !c.pinned);
+  // The Fit column only exists while the ICP flag is on.
+  const shownColumns = visibleColumns.filter((c) => c.key !== 'icp_fit' || colDefMap.has('icp_fit'));
+  const pinnedCols = shownColumns.filter((c) => c.pinned);
+  const unpinnedCols = shownColumns.filter((c) => !c.pinned);
   const orderedCols = [...pinnedCols, ...unpinnedCols];
 
   const colLeftOffsets = useMemo(() => {
@@ -1570,7 +1608,7 @@ export function LeadsDataGrid({
       {/* Column manager modal */}
       {showColumnManager && (
         <ColumnManager
-          columns={columns}
+          columns={icpEnabled ? columns : columns.filter((c) => c.key !== 'icp_fit')}
           onToggle={(key, visible) => updateColumn(key, { visible })}
           onPin={(key, pinned) => updateColumn(key, { pinned })}
           onReset={resetToDefaults}

@@ -66,6 +66,8 @@ export interface Lead {
     first_order_at?: string;
     channel?: string;
     auto_score?: number;
+    /** ICP best-match score (0-100). */
+    score?: number | null;
     score_breakdown?: ScoreBreakdownItem[];
     /** Per-org rating (score band, or set by hand when rating_is_manual). */
     rating_category_id?: string | null;
