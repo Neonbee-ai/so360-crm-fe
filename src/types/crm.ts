@@ -261,7 +261,7 @@ export const DEFAULT_DEAL_NAMING_CONFIG: DealNamingConfig = {
 };
 
 export interface CRMSettings {
-    deal_stages: { id: string; name: string; type: 'OPEN' | 'WON' | 'LOST' }[];
+    deal_stages: { id: string; name: string; type: 'OPEN' | 'WON' | 'LOST'; /** Win probability 0-100, null = not set. */ probability?: number | null }[];
     lead_stages: { id: string; name: string }[];
     default_owner_id: string;
     lead_sources: { id: string; name: string; archived: boolean }[];
@@ -395,6 +395,11 @@ export interface Quote {
     /** Buyer's own RFQ/PO number. */
     customer_reference?: string;
     valid_until?: string;
+    /** Server-derived: validity has lapsed on an open quote. */
+    is_expired?: boolean;
+    /** Server-derived status; 'expired' once an open quote lapses. */
+    effective_status?: QuoteStatus;
+    validity_days?: number;
     submitted_by?: string;
     current_approval_request_id?: string | null;
     current_approval_request?: {

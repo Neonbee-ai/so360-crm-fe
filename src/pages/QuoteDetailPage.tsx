@@ -432,7 +432,7 @@ const QuoteDetailPage = () => {
         );
     }
 
-    const status = statusConfig[quote.status];
+    const status = statusConfig[quote.effective_status ?? quote.status];
     const totals = quoteTotals(lines);
 
     const currentUserId = shell?.user?.id;

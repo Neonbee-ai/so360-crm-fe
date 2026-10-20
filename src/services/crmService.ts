@@ -550,6 +550,7 @@ interface PipelineStage {
     name: string;
     order: number;
     color?: string;
+    probability?: number | null;
 }
 
 // Redundant local CustomFieldDefinition removed to fix lint conflict with imported type
@@ -1210,6 +1211,7 @@ export const settingsApi = {
             order: number;
             color?: string;
             type?: 'OPEN' | 'WON' | 'LOST';
+            probability?: number | null;
         }): Promise<PipelineStage> => {
             return apiClient.post<PipelineStage>('/settings/pipeline-stages', data);
         },
@@ -1224,6 +1226,7 @@ export const settingsApi = {
                 order?: number;
                 color?: string;
                 type?: 'OPEN' | 'WON' | 'LOST';
+                probability?: number | null;
             }
         ): Promise<PipelineStage> => {
             return apiClient.patch<PipelineStage>(
@@ -1945,6 +1948,7 @@ export const crmService = {
                 deal_stages: stages.map(s => ({
                     id: s.id,
                     name: s.name,
+                    probability: s.probability ?? null,
                     type: s.type || (['Won', 'Closed Won'].includes(s.name) ? 'WON' : ['Lost', 'Closed Lost'].includes(s.name) ? 'LOST' : 'OPEN')
                 })),
                 lead_stages: leadStages.map(s => ({ id: s.id, name: s.name })),
@@ -2015,12 +2019,14 @@ export const crmService = {
                     name: s.name,
                     order: newStages.indexOf(s) + 1,
                     color: '#3b82f6',
-                    type: s.type
+                    type: s.type,
+                    probability: s.probability ?? null
                 })),
                 ...stagesToUpdate.map(s => apiClient.patch(`/settings/pipeline-stages/${s.id}`, {
                     name: s.name,
                     order: newStages.indexOf(s) + 1,
-                    type: s.type
+                    type: s.type,
+                    probability: s.probability ?? null
                 })),
                 ...stagesToDelete.map(s => apiClient.delete(`/settings/pipeline-stages/${s.id}`))
             ]);

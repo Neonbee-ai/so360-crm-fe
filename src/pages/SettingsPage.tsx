@@ -393,6 +393,15 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
         });
     };
 
+    /** Blank clears to null; otherwise clamp to 0-100. */
+    const updateStageProbability = (idx: number, raw: string) => {
+        if (!settings) return;
+        const n = raw.trim() === '' ? null : Number(raw);
+        const probability = n === null || Number.isNaN(n) ? null : Math.min(100, Math.max(0, n));
+        const newStages = settings.deal_stages.map((s, i) => (i === idx ? { ...s, probability } : s));
+        setSettings({ ...settings, deal_stages: newStages });
+    };
+
     const removeStage = (id: string) => {
         if (!settings) return;
         if (settings.deal_stages.length <= 1) {
@@ -569,6 +578,19 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
                                                 onKeyDown={(e) => handleStageNameKeyDown(e, idx)}
                                                 onBlur={() => handleStageNameBlur(idx)}
                                                 placeholder="Stage Name"
+                                            />
+                                        </div>
+                                        <div className="w-28">
+                                            <TextField
+                                                name={`stage-probability-${stage.id}`}
+                                                type="number"
+                                                min={0}
+                                                max={100}
+                                                step={0.01}
+                                                aria-label="Win probability (%)"
+                                                placeholder="Prob. %"
+                                                value={stage.probability ?? ''}
+                                                onChange={(e) => updateStageProbability(idx, e.target.value)}
                                             />
                                         </div>
                                         <StageStatusSelect

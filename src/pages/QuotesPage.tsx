@@ -43,8 +43,9 @@ interface QuoteStatusCellProps {
 }
 
 export const QuoteStatusCell: React.FC<QuoteStatusCellProps> = ({ quote, isActionLoading, onAction }) => {
-    const transitions = STATUS_TRANSITIONS[quote.status] ?? [];
-    const status = statusColors[quote.status] || statusColors.draft;
+    const shownStatus: QuoteStatus = quote.effective_status ?? quote.status;
+    const transitions = STATUS_TRANSITIONS[shownStatus] ?? [];
+    const status = statusColors[shownStatus] || statusColors.draft;
 
     const badge = (
         <Button
@@ -53,7 +54,7 @@ export const QuoteStatusCell: React.FC<QuoteStatusCellProps> = ({ quote, isActio
             disabled={isActionLoading}
             title={transitions.length > 0 ? 'Click to update status' : status.label}
         >
-            <span className={`w-1.5 h-1.5 rounded-full ${quote.status === 'approved' ? 'bg-success' : quote.status === 'pending_approval' ? 'bg-warning' : quote.status === 'rejected' ? 'bg-danger' : quote.status === 'converted' ? 'bg-primary' : 'bg-fg-subtle'}`} />
+            <span className={`w-1.5 h-1.5 rounded-full ${shownStatus === 'approved' ? 'bg-success' : shownStatus === 'pending_approval' ? 'bg-warning' : shownStatus === 'rejected' ? 'bg-danger' : shownStatus === 'converted' ? 'bg-primary' : 'bg-fg-subtle'}`} />
             <span>{status.label}</span>
             {transitions.length > 0 && <ChevronDown className="w-3 h-3 opacity-60 ml-0.5" aria-hidden="true" />}
         </Button>
@@ -249,7 +250,7 @@ const QuotesPage = () => {
                 deal?.name.toLowerCase().includes(lowerSearch) ||
                 quote.customer_reference?.toLowerCase().includes(lowerSearch);
 
-            const matchesStatus = statusFilter === 'All' || quote.status === statusFilter;
+            const matchesStatus = statusFilter === 'All' || (quote.effective_status ?? quote.status) === statusFilter;
             const matchesDeal = dealFilter === 'All' || quote.deal_id === dealFilter;
 
             let matchesValidity = true;
