@@ -589,7 +589,34 @@ const LeadDetailPage = () => {
                         Create Deal
                     </Button>
                 ) : undefined}
-                secondaryActions={canMergeLead && !isCustomerDetailRoute ? [
+                secondaryActions={[
+                    <QuickActionBar
+                    key="log-activity"
+                onAddNote={() => {
+                    openWorkspaceTab('notes');
+                    // The composer is the point of "Add Note" — put the caret in it.
+                    window.setTimeout(() => {
+                        noteComposerRef.current?.querySelector<HTMLElement>('[contenteditable="true"]')?.focus();
+                    }, 350);
+                }}
+                onSendEmail={() => openWorkspaceTab('emails')}
+                onLogCall={() => setIsLoggingCall(true)}
+                onScheduleMeeting={() => setIsSchedulingMeeting(true)}
+                onCreateTask={() => setIsCreatingTask(true)}
+                onUploadDocument={() => {
+                    openWorkspaceTab('documents');
+                    // Open the OS file dialog directly rather than only revealing
+                    // the tab that contains the (hidden) file input.
+                    window.setTimeout(() => documentInputRef.current?.querySelector<HTMLElement>('[role="button"]')?.click(), 350);
+                }}
+                canAddNote={canAddNote}
+                canSendEmail={canSendEmail}
+                canLogCall={canLogCall}
+                canScheduleMeeting={canScheduleMeeting}
+                canCreateTask={canCreateTask}
+                canUploadDocument={canUploadDocument}
+            />,
+                    ...(canMergeLead && !isCustomerDetailRoute ? [
                     <Button
                         key="merge"
                         variant="secondary"
@@ -599,7 +626,8 @@ const LeadDetailPage = () => {
                     ><GitMerge size={16} />
                         Merge
                     </Button>,
-                ] : undefined}
+                    ] : []),
+                ]}
                 overflowActions={[
                     { label: 'Layout settings', onSelect: () => setShowLayoutSettings(true) },
                     ...(canDeleteLead ? [{ label: 'Delete', danger: true, onSelect: () => setShowDeleteConfirm(true) }] : []),
@@ -743,11 +771,6 @@ const LeadDetailPage = () => {
                                     </Badge>
                                 </div>
                             )}
-                            <div className="mt-nb-3 border-t border-line pt-nb-3">
-                                <Button variant="secondary" onClick={() => setIsCreatingTask(true)}>
-                                    <Clock size={14} /> Schedule follow-up
-                                </Button>
-                            </div>
                         </Card>
 
                         {/* 3. Value / revenue */}
@@ -1008,31 +1031,6 @@ const LeadDetailPage = () => {
                     <LeadJourneyStepper currentState={(lead as any).current_flow_state || lead.status} />
                 </Card>
             )}
-            <QuickActionBar
-                onAddNote={() => {
-                    openWorkspaceTab('notes');
-                    // The composer is the point of "Add Note" — put the caret in it.
-                    window.setTimeout(() => {
-                        noteComposerRef.current?.querySelector<HTMLElement>('[contenteditable="true"]')?.focus();
-                    }, 350);
-                }}
-                onSendEmail={() => openWorkspaceTab('emails')}
-                onLogCall={() => setIsLoggingCall(true)}
-                onScheduleMeeting={() => setIsSchedulingMeeting(true)}
-                onCreateTask={() => setIsCreatingTask(true)}
-                onUploadDocument={() => {
-                    openWorkspaceTab('documents');
-                    // Open the OS file dialog directly rather than only revealing
-                    // the tab that contains the (hidden) file input.
-                    window.setTimeout(() => documentInputRef.current?.querySelector<HTMLElement>('[role="button"]')?.click(), 350);
-                }}
-                canAddNote={canAddNote}
-                canSendEmail={canSendEmail}
-                canLogCall={canLogCall}
-                canScheduleMeeting={canScheduleMeeting}
-                canCreateTask={canCreateTask}
-                canUploadDocument={canUploadDocument}
-            />
             {/* Executive Summary Dashboard */}
             <ExecutiveSummaryPanel
                 lead={lead}

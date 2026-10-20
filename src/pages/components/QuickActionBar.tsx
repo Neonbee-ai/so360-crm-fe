@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
-import { FileEdit, Mail, Phone, CalendarPlus, CheckSquare, UploadCloud } from 'lucide-react';
-import { Button } from '@so360/design-system';
+import { FileEdit, Mail, Phone, CalendarPlus, CheckSquare, UploadCloud, ChevronDown } from 'lucide-react';
+import { Button, Menu } from '@so360/design-system';
 
 interface Props {
     onAddNote: () => void;
@@ -26,7 +26,7 @@ interface Props {
 export const DOUBLE_CLICK_GUARD_MS = 400;
 
 /**
- * Communication quick actions.
+ * Communication actions, shown as a single header menu.
  *
  * Each one opens its creation surface *in place* — a modal, or the composer
  * already on the page. None of them changes the route or switches the workspace
@@ -61,14 +61,18 @@ const QuickActionBar: React.FC<Props> = ({
 
     if (actions.length === 0) return null;
 
+    // One "Log activity" menu in the page header (Comb: page actions live in the header, never a body row).
     return (
-        <div className="flex flex-wrap items-center gap-2 mb-6">
-            {actions.map((a) => (
-                <Button variant="secondary" size="sm" key={a.label} type="button" onClick={guard(a.label, a.onClick)}>
-                    {a.icon} {a.label}
+        <Menu
+            name="Log activity"
+            placement="bottom-end"
+            trigger={
+                <Button variant="secondary" type="button">
+                    Log activity <ChevronDown size={14} />
                 </Button>
-            ))}
-        </div>
+            }
+            items={actions.map((a) => ({ label: a.label, icon: a.icon, onSelect: guard(a.label, a.onClick) }))}
+        />
     );
 };
 
