@@ -1012,7 +1012,7 @@ const DealDetailPage = () => {
                                                     {ev.type === 'DOCUMENT' && <UploadCloud size={14} className="text-info" />}
                                                     {['STATUS_CHANGE', 'STAGE_CHANGE', 'OWNER_CHANGE', 'PROFILE_UPDATE'].includes(ev.type) && <Zap size={14} className="text-warning" />}
                                                 </div>
-                                                <div className="bg-surface-sunken border border-line p-4 rounded-nb-lg group hover:border-line transition-all">
+                                                <div className="py-2 group">
                                                     <div className="flex items-center justify-between mb-2">
                                                         <span className="font-semibold text-fg text-xs">
                                                             {ev.title}
@@ -1085,7 +1085,7 @@ const DealDetailPage = () => {
                                             </div>
                                         ))}
                                     </div>
-                                    <div className="bg-bg border border-line rounded-nb-lg p-4">
+                                    <div className="pt-2">
                                         <Textarea
                                             name="deal-new-note"
                                             placeholder="Capture commercial context..."
@@ -1178,7 +1178,7 @@ const DealDetailPage = () => {
                                     </div>
                                     <Grid gap="md">
                                         {(deal.documents || []).map(doc => (
-                                            <GridItem key={doc.id} span={{ md: 4, lg: 6 }}>                                            <div className="flex items-center justify-between p-4 bg-bg border border-line rounded-nb-lg group hover:border-line">
+                                            <GridItem key={doc.id} span={{ md: 4, lg: 6 }}>                                            <div className="flex items-center justify-between py-3 border-b border-line group">
                                                 <div className="flex items-center gap-3">
                                                     <div className="bg-surface-raised p-2 rounded-lg text-info"><FileIcon size={20} /></div>
                                                     <div>

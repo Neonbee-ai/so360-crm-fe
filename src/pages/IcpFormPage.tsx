@@ -117,7 +117,14 @@ const IcpFormPage: React.FC = () => {
                 onSubmit={(e: React.FormEvent<HTMLFormElement>) => { e.preventDefault(); void onSave(); }}
                 noValidate
             >
-                <Card title="Neura">
+                <Card
+                    title="Neura"
+                    actions={
+                        <Button type="button" size="sm" variant="secondary" onClick={() => void onDraft()} disabled={drafting || !brief.trim()} data-testid="icp-draft-btn">
+                            {drafting ? 'Drafting…' : 'Draft'}
+                        </Button>
+                    }
+                >
                     <div className="flex flex-col gap-nb-3">
                         <Textarea
                             label="Describe your ideal customer" name="icp-brief" rows={5} value={brief} data-testid="icp-brief"
@@ -125,11 +132,6 @@ const IcpFormPage: React.FC = () => {
                         />
                         <p className="text-xs text-fg-muted">Neura drafts the criteria. You review and edit before saving.</p>
                         {draftError && <p role="alert" className="text-sm text-danger" data-testid="icp-draft-error">{draftError}</p>}
-                        <div>
-                            <Button type="button" variant="secondary" onClick={() => void onDraft()} disabled={drafting || !brief.trim()} data-testid="icp-draft-btn">
-                                {drafting ? 'Drafting…' : 'Draft'}
-                            </Button>
-                        </div>
                     </div>
                 </Card>
 

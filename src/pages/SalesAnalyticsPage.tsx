@@ -244,7 +244,6 @@ const SalesAnalyticsPage: React.FC = () => {
                 <div className="space-y-4">
             <Select
                 name="sales-report-period"
-                label="Period"
                 aria-label="Report period"
                 value={period}
                 onValueChange={(v) => setPeriod(v as ReportPeriod)}

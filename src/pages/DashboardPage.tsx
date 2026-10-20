@@ -3,10 +3,10 @@ import { crmService } from '../services/crmService';
 import {
     DollarSign, TrendingUp, Users, CheckCircle2,
     BarChart3, ArrowUpRight, ArrowDownRight, Briefcase,
-    Calendar, User as UserIcon, Loader2, ShoppingBag, Package, LayoutDashboard
+    Calendar, Loader2, ShoppingBag, Package, LayoutDashboard
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { CrossLinkChip, DashboardPageTemplate, KpiCard, Card, SegmentedControl, Grid, GridItem, Button } from '@so360/design-system';
+import { CrossLinkChip, DashboardPageTemplate, KpiCard, Card, SegmentedControl, Grid, GridItem, Button, EmptyState } from '@so360/design-system';
 import { useBusinessSettings, useShell } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import REWidgets from '../components/dashboard/REWidgets';
@@ -468,19 +468,21 @@ const DashboardPage = () => {
 
                 {/* Team Leaderboard */}
                 {showLeads && <GridItem span={{ lg: 4 }}><Card title="Top Performers" className="min-w-0 overflow-hidden flex flex-col">
-                    <p className="text-xs text-fg-muted font-bold mb-4">Revenue Leaders</p>
+                    <p className="text-xs text-fg-muted font-bold mb-4">Revenue leaders</p>
 
-                    <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar flex-1">
+                    <div className="divide-y divide-line overflow-y-auto pr-2 custom-scrollbar flex-1">
                         {teamStats.length === 0 && (
-                            <div className="h-full min-h-[140px] flex flex-col items-center justify-center gap-2 text-center px-4 bg-surface-sunken border border-line rounded-xl">
-                                <UserIcon size={18} className="text-fg-muted" />
-                                <p className="text-xs font-bold text-fg-subtle">No revenue attributed yet</p>
-                                <p className="text-xs text-fg-muted leading-relaxed">Close a deal with an owner assigned and reps will rank here.</p>
-                                <Link to="../pipeline" className="mt-1 text-xs font-semibold text-primary hover:text-primary transition-colors">Open pipeline</Link>
+                            <div className="flex flex-col items-center">
+                                <EmptyState
+                                    className="!py-4"
+                                    title="No revenue attributed yet"
+                                    description="Close a deal with an owner assigned and reps will rank here."
+                                />
+                                <Link to="../pipeline" className="text-xs font-semibold text-primary transition-colors">Open pipeline</Link>
                             </div>
                         )}
                         {teamStats.map((stat: any, index: number) => (
-                            <div key={stat.user.id} className="flex items-center gap-4 p-3 rounded-nb bg-surface-sunken hover:bg-surface-raised transition-all group">
+                            <div key={stat.user.id} className="flex items-center gap-4 py-3 group">
                                 <div className={`w-8 h-8 flex items-center justify-center rounded-lg font-semibold text-xs ${index === 0 ? 'bg-warning text-primary-fg shadow-lg shadow-warning/20' :
                                     index === 1 ? 'bg-fg-muted/40 text-fg-subtle' :
                                         index === 2 ? 'bg-fg-muted/25 text-fg-subtle' :
