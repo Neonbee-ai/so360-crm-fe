@@ -6,7 +6,7 @@ import {
     Calendar, Loader2, ShoppingBag, Package, LayoutDashboard
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { CrossLinkChip, DashboardPageTemplate, KpiCard, Card, SegmentedControl, Grid, GridItem, Button, EmptyState } from '@so360/design-system';
+import { CrossLinkChip, DashboardPageTemplate, KpiCard, Card, SegmentedControl, Grid, GridItem, Button, EmptyState, Progress } from '@so360/design-system';
 import { useBusinessSettings, useShell } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import REWidgets from '../components/dashboard/REWidgets';
@@ -551,12 +551,7 @@ const DashboardPage = () => {
                                             <span className="text-fg-muted">Activity Level</span>
                                             <span className="text-primary">{stat.activityCount} pts</span>
                                         </div>
-                                        <div className="h-1.5 bg-fg-muted/25 rounded-full overflow-hidden">
-                                            <div
-                                                className="h-full bg-gradient-to-r from-primary to-primary rounded-full transition-all duration-1000"
-                                                style={{ width: `${(stat.activityCount / maxActivity) * 100}%` }}
-                                            />
-                                        </div>
+                                        <Progress size="sm" tone="brand" value={maxActivity ? (stat.activityCount / maxActivity) * 100 : 0} aria-label="Activity level" />
                                     </div>
 
                                     <div>
@@ -564,12 +559,7 @@ const DashboardPage = () => {
                                             <span className="text-fg-muted">Conversion Rate</span>
                                             <span className="text-success">{stat.conversionRate.toFixed(1)}%</span>
                                         </div>
-                                        <div className="h-1.5 bg-fg-muted/25 rounded-full overflow-hidden">
-                                            <div
-                                                className="h-full bg-gradient-to-r from-success to-success rounded-full transition-all duration-1000"
-                                                style={{ width: `${Math.min(stat.conversionRate * 2, 100)}%` }} // Scaling for visual impact
-                                            />
-                                        </div>
+                                        <Progress size="sm" tone="success" value={Math.min(stat.conversionRate * 2, 100)} aria-label="Conversion rate" />
                                     </div>
                                 </div>
 

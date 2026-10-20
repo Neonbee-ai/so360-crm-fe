@@ -1027,7 +1027,7 @@ const DealDetailPage = () => {
                                                                                 fetchData();
                                                                             }
                                                                         }} />
-                                                                    <IconButton label="Delete activity" variant="danger" icon={<Trash2 size={12} />} onClick={async () => {
+                                                                    <IconButton label="Delete activity" variant="ghost" icon={<Trash2 size={12} />} onClick={async () => {
                                                                             if (await confirm({ title: 'Delete?', message: 'Delete this activity?', intent: 'danger', confirmLabel: 'Delete' })) {
                                                                                 await activitiesApi.delete(ev.id);
                                                                                 fetchData();
@@ -1070,7 +1070,7 @@ const DealDetailPage = () => {
                                                                 fetchData();
                                                             }
                                                         }} />
-                                                    <IconButton label="Delete note" variant="danger" icon={<Trash2 size={12} />} onClick={async () => {
+                                                    <IconButton label="Delete note" variant="ghost" icon={<Trash2 size={12} />} onClick={async () => {
                                                             if (await confirm({ title: 'Delete?', message: 'Delete note?', intent: 'danger', confirmLabel: 'Delete' })) {
                                                                 await crmService.deleteNote(note.id);
                                                                 fetchData();
@@ -1138,7 +1138,7 @@ const DealDetailPage = () => {
                                                     </div>
                                                     <div className="absolute right-3 top-3 opacity-0 group-hover:opacity-100 transition-all flex gap-1">
                                                         <IconButton label="Edit task" variant="ghost" icon={<Edit2 size={14} />} onClick={() => setEditingTask(task)} />
-                                                        <IconButton label="Delete task" variant="danger" icon={<Trash2 size={14} />} onClick={async () => {
+                                                        <IconButton label="Delete task" variant="ghost" icon={<Trash2 size={14} />} onClick={async () => {
                                                                 if (await confirm({ title: 'Delete?', message: 'Delete task?', intent: 'danger', confirmLabel: 'Delete' })) {
                                                                     await tasksApi.delete(task.id);
                                                                     fetchData();
@@ -1192,7 +1192,7 @@ const DealDetailPage = () => {
                                                     ) : (
                                                         <a href={doc.url} download title="Download" className="p-2 text-fg-muted hover:text-fg transition-colors"><Download size={16} /></a>
                                                     )}
-                                                    <IconButton label="Delete file" variant="danger" icon={<Trash2 size={16} />} onClick={async () => {
+                                                    <IconButton label="Delete file" variant="ghost" icon={<Trash2 size={16} />} onClick={async () => {
                                                             if (await confirm({ title: 'Delete?', message: 'Delete file?', intent: 'danger', confirmLabel: 'Delete' })) {
                                                                 await crmService.deleteDocument(id, doc.id);
                                                                 publishDealDocumentsChanged(id);
@@ -1288,7 +1288,7 @@ const DealDetailPage = () => {
                                         Open the Projects module with deal info pre-filled to create and configure a new project.
                                     </p>
                                 </div>
-                                <Button type="button" variant="primary" size="sm">
+                                <Button type="button" variant="secondary" size="sm">
                                     Open <ExternalLink size={10} />
                                 </Button>
                             </div>
