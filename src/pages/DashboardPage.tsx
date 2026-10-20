@@ -3,10 +3,10 @@ import { crmService } from '../services/crmService';
 import {
     DollarSign, TrendingUp, Users, CheckCircle2,
     BarChart3, ArrowUpRight, ArrowDownRight, Briefcase,
-    Calendar, User as UserIcon, Loader2, ShoppingBag, Package, LayoutDashboard
+    Calendar, Loader2, ShoppingBag, Package, LayoutDashboard
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { CrossLinkChip, DashboardPageTemplate, KpiCard, Card, SegmentedControl, Grid, GridItem, Button } from '@so360/design-system';
+import { CrossLinkChip, DashboardPageTemplate, KpiCard, Card, SegmentedControl, Grid, GridItem, Button, EmptyState, Progress } from '@so360/design-system';
 import { useBusinessSettings, useShell } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import REWidgets from '../components/dashboard/REWidgets';
@@ -172,10 +172,10 @@ const DashboardPage = () => {
         kpis: (
             <>
             {/* KPI Row */}
-            <Grid gap="md">
+            <Grid columns={4} gap="md">
                 {/* Deal Revenue — gated: deals are a B2B/Both concept */}
                 {showPipeline && (
-                    <GridItem span={3}><KpiCard
+                    <KpiCard
                         label="Deal Revenue"
                         icon={DollarSign}
                         value={<>{formatCurrency(financials.totalRevenue)}
@@ -184,34 +184,34 @@ const DashboardPage = () => {
                             ) : (
                                 <span className="block mt-1 text-xs font-normal text-fg-muted">From won deals</span>
                             )}</>}
-                    /></GridItem>
+                    />
                 )}
 
                 {showPipeline && (
-                    <GridItem span={3}><KpiCard
+                    <KpiCard
                         label="Pipeline Value"
                         icon={TrendingUp}
                         value={<>{formatCurrency(financials.pipelineValue)}
                             <span className="block mt-1 text-xs font-normal text-fg-muted">{counts.deals} Active Deals · Projected revenue</span></>}
-                    /></GridItem>
+                    />
                 )}
 
                 {showPipeline && (
-                    <GridItem span={3}><KpiCard
+                    <KpiCard
                         label="Win Rate"
                         icon={BarChart3}
                         value={<>{financials.winRate.toFixed(1)}%
                             <span className="block mt-1 text-xs font-normal text-fg-muted">AVG Deal Closure</span></>}
-                    /></GridItem>
+                    />
                 )}
 
                 {showPipeline && (
-                    <GridItem span={3}><KpiCard
+                    <KpiCard
                         label="Avg Deal Size"
                         icon={Briefcase}
                         value={<>{formatCurrency(financials.avgDealSize)}
                             <span className="block mt-1 text-xs font-normal text-fg-muted">Per closed-won deal</span></>}
-                    /></GridItem>
+                    />
                 )}
             </Grid>
             </>
@@ -468,19 +468,21 @@ const DashboardPage = () => {
 
                 {/* Team Leaderboard */}
                 {showLeads && <GridItem span={{ lg: 4 }}><Card title="Top Performers" className="min-w-0 overflow-hidden flex flex-col">
-                    <p className="text-xs text-fg-muted font-bold mb-4">Revenue Leaders</p>
+                    <p className="text-xs text-fg-muted font-bold mb-4">Revenue leaders</p>
 
-                    <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar flex-1">
+                    <div className="divide-y divide-line overflow-y-auto pr-2 custom-scrollbar flex-1">
                         {teamStats.length === 0 && (
-                            <div className="h-full min-h-[140px] flex flex-col items-center justify-center gap-2 text-center px-4 bg-surface-sunken border border-line rounded-xl">
-                                <UserIcon size={18} className="text-fg-muted" />
-                                <p className="text-xs font-bold text-fg-subtle">No revenue attributed yet</p>
-                                <p className="text-xs text-fg-muted leading-relaxed">Close a deal with an owner assigned and reps will rank here.</p>
-                                <Link to="../pipeline" className="mt-1 text-xs font-semibold text-primary hover:text-primary transition-colors">Open pipeline</Link>
+                            <div className="flex flex-col items-center">
+                                <EmptyState
+                                    className="!py-4"
+                                    title="No revenue attributed yet"
+                                    description="Close a deal with an owner assigned and reps will rank here."
+                                />
+                                <Link to="../pipeline" className="text-xs font-semibold text-primary transition-colors">Open pipeline</Link>
                             </div>
                         )}
                         {teamStats.map((stat: any, index: number) => (
-                            <div key={stat.user.id} className="flex items-center gap-4 p-3 rounded-nb bg-surface-sunken hover:bg-surface-raised transition-all group">
+                            <div key={stat.user.id} className="flex items-center gap-4 py-3 group">
                                 <div className={`w-8 h-8 flex items-center justify-center rounded-lg font-semibold text-xs ${index === 0 ? 'bg-warning text-primary-fg shadow-lg shadow-warning/20' :
                                     index === 1 ? 'bg-fg-muted/40 text-fg-subtle' :
                                         index === 2 ? 'bg-fg-muted/25 text-fg-subtle' :
@@ -549,12 +551,7 @@ const DashboardPage = () => {
                                             <span className="text-fg-muted">Activity Level</span>
                                             <span className="text-primary">{stat.activityCount} pts</span>
                                         </div>
-                                        <div className="h-1.5 bg-fg-muted/25 rounded-full overflow-hidden">
-                                            <div
-                                                className="h-full bg-gradient-to-r from-primary to-primary rounded-full transition-all duration-1000"
-                                                style={{ width: `${(stat.activityCount / maxActivity) * 100}%` }}
-                                            />
-                                        </div>
+                                        <Progress size="sm" tone="brand" value={maxActivity ? (stat.activityCount / maxActivity) * 100 : 0} aria-label="Activity level" />
                                     </div>
 
                                     <div>
@@ -562,12 +559,7 @@ const DashboardPage = () => {
                                             <span className="text-fg-muted">Conversion Rate</span>
                                             <span className="text-success">{stat.conversionRate.toFixed(1)}%</span>
                                         </div>
-                                        <div className="h-1.5 bg-fg-muted/25 rounded-full overflow-hidden">
-                                            <div
-                                                className="h-full bg-gradient-to-r from-success to-success rounded-full transition-all duration-1000"
-                                                style={{ width: `${Math.min(stat.conversionRate * 2, 100)}%` }} // Scaling for visual impact
-                                            />
-                                        </div>
+                                        <Progress size="sm" tone="success" value={Math.min(stat.conversionRate * 2, 100)} aria-label="Conversion rate" />
                                     </div>
                                 </div>
 
@@ -591,6 +583,11 @@ const DashboardPage = () => {
         ),
     };
 
+    // KPIs are a dedicated row under the header (Comb KPI region), never a
+    // cell in the widget grid; the customize panel still toggles/moves them.
+    const kpisVisible = visibleWidgets(dashLayout.layout).includes('kpis');
+    const bodyWidgets = visibleWidgets(dashLayout.layout).filter((k) => k !== 'kpis');
+
     return (
         <DashboardPageTemplate
             title="Executive Overview"
@@ -612,18 +609,19 @@ const DashboardPage = () => {
                                             return `Week ${week} · ${fmt(wStart)} – ${fmt(wEnd)}`;
                                         })()
                                         : `${new Date(year, month - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`}`}
+            secondaryActions={customizeEnabled ? (
+                <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setShowCustomize(true)}
+                    aria-label="Customize dashboard"
+                >
+                    <LayoutDashboard size={14} /> Customize
+                </Button>
+            ) : undefined}
+            kpis={kpisVisible && showPipeline ? widgetNodes.kpis : undefined}
             filters={
                 <>
-                    {customizeEnabled && (
-                        <Button
-                            type="button"
-                            variant="secondary"
-                            onClick={() => setShowCustomize(true)}
-                            aria-label="Customize dashboard"
-                        >
-                            <LayoutDashboard size={14} /> Customize
-                        </Button>
-                    )}
                 <SegmentedControl
                     aria-label="Dashboard period"
                     size="sm"
@@ -641,7 +639,7 @@ const DashboardPage = () => {
             primary={
                 <>
             <Grid gap="md">
-            {visibleWidgets(dashLayout.layout).map((key) => (
+            {bodyWidgets.map((key) => (
                 <GridItem key={key} span="full"><div className="min-w-0 flex flex-col gap-nb-3">{widgetNodes[key]}</div></GridItem>
             ))}
             </Grid>

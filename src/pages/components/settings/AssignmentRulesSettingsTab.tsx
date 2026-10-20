@@ -238,7 +238,7 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                 )}
                 <div className="space-y-2">
                     {draft.conditions.map((c, i) => (
-                        <div key={i} className="grid grid-cols-[1fr_1fr_2fr_auto] gap-2 items-center" data-testid="assignment-condition-row">
+                        <Grid key={i} template="1fr 1fr 2fr auto" gap="sm" data-testid="assignment-condition-row">
                             <Select
                                 name={`assignment-condition-${i}-field`}
                                 aria-label={`Condition ${i + 1} field`}
@@ -266,7 +266,7 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                                 icon={<Trash2 size={14} />}
                                 onClick={() => setDraft((d) => ({ ...d, conditions: d.conditions.filter((_, idx) => idx !== i) }))}
                             />
-                        </div>
+                        </Grid>
                     ))}
                 </div>
                 {draft.conditions.length < 20 && (

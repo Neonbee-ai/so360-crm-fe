@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Save, Send, CheckCircle, XCircle, FileText, Plus, Trash2, Edit2, Package, Printer, RotateCcw, Clock, Users, ShieldAlert } from 'lucide-react';
 import { Modal } from '../components/common/Modal';
 import { crmService } from '../services/crmService';
-import { toast, getErrorMessage, useConfirm, DetailPageTemplate, Button, Card, Badge, Alert, TextField, Textarea, Select, DataTable, IconButton, type DataTableColumn, type BadgeTone, Grid, GridItem } from '@so360/design-system';
+import { toast, getErrorMessage, useConfirm, DetailPageTemplate, Button, Card, Badge, Alert, TextField, Textarea, Select, DataTable, IconButton, type DataTableColumn, type BadgeTone, Grid, GridItem, EmptyState } from '@so360/design-system';
 import { Quote, QuoteLine, QuoteStatus, ProductPickerSelection, Lead } from '../types/crm';
 import { INCOTERMS_2020, INCOTERM_LABELS } from '../utils/incoterms';
 import { useBusinessSettings, useActivity, useShellBridge, useOrganization } from '@so360/shell-context';
@@ -423,13 +423,11 @@ const QuoteDetailPage = () => {
     if (!quote) {
         return (
             <div>
-                <div className="text-center py-16">
-                    <FileText className="w-16 h-16 mx-auto text-fg-subtle mb-4" />
-                    <h2 className="text-xl font-semibold text-fg-subtle mb-2">Quote not found</h2>
-                    <Button variant="secondary" onClick={() => navigate('/crm/quotes')}>
-                        Back to Quotes
-                    </Button>
-                </div>
+                <EmptyState
+                    icon={FileText}
+                    title="Quote not found"
+                    action={{ label: 'Back to quotes', onClick: () => navigate('/crm/quotes') }}
+                />
             </div>
         );
     }

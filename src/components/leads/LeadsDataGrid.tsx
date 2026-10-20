@@ -34,7 +34,7 @@ import {
   TrendingUp,
   Layers,
 } from 'lucide-react';
-import { Badge, Button, IconButton, Select, TextField } from '@so360/design-system';
+import { Badge, Button, IconButton, Menu, Select, TextField } from '@so360/design-system';
 import { Modal } from '../common/Modal';
 import { Lead, User } from '../../types/crm';
 import {
@@ -704,49 +704,54 @@ function InlineCellEditor({ initial, type, onCommit, onCancel }: InlineCellEdito
 }
 
 function BulkActionsBar({ count, actions, selectedIds, onClear }: BulkActionsBarProps) {
-  const [openMenu, setOpenMenu] = useState<string | null>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!openMenu) return;
-    const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpenMenu(null);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [openMenu]);
+  // Max 3 visible actions; extra plain actions and every destructive action live in the ⋯ menu.
+  const safe = actions.filter((a) => a.variant !== 'danger');
+  const visible = safe.slice(0, 3);
+  const overflow = [
+    ...safe.slice(3).flatMap((a) =>
+      a.options?.length
+        ? a.options.map((o) => ({ label: `${a.label}: ${o.label}`, onSelect: () => a.onSelect?.(selectedIds, o.value) }))
+        : [{ label: a.label, onSelect: () => a.onClick?.(selectedIds) }],
+    ),
+    ...actions
+      .filter((a) => a.variant === 'danger')
+      .map((a) => ({ label: a.label, danger: true, onSelect: () => a.onClick?.(selectedIds) })),
+  ];
 
   return (
     <div data-testid="bulk-actions-bar" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-menu flex items-center gap-3 px-5 py-3 bg-surface-raised border border-line rounded-2xl shadow-2xl shadow-black/40">
       <span className="text-sm text-fg font-semibold">{count} selected</span>
       <div className="w-px h-5 bg-surface-high" />
-      {actions.map((action) => {
-        const hasMenu = !!action.options?.length;
-        return (
-          <div key={action.label} className="relative" ref={openMenu === action.label ? menuRef : undefined}>
-            <Button variant={action.variant === 'danger' ? 'danger' : 'secondary'} size="sm" onClick={() => {
-                if (hasMenu) setOpenMenu((m) => (m === action.label ? null : action.label));
-                else action.onClick?.(selectedIds);
-              }}>
-              {action.icon}
-              {action.label}
-              {hasMenu && <ChevronDown size={13} className="opacity-60" />}
-            </Button>
-            {hasMenu && openMenu === action.label && (
-              <div
-                data-testid={`bulk-menu-${action.label}`}
-                className="absolute bottom-full mb-2 left-0 z-menu bg-surface border border-line rounded-xl shadow-xl py-1 min-w-44 max-h-64 overflow-y-auto"
-              >
-                {action.options!.map((opt) => (
-                  <Button variant="secondary" size="sm" className="w-full text-left justify-start" key={opt.value} onClick={() => { action.onSelect?.(selectedIds, opt.value); setOpenMenu(null); }}>
-                    {opt.label}
-                  </Button>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })}
+      {visible.map((action) =>
+        action.options?.length ? (
+          <Menu
+            key={action.label}
+            data-testid={`bulk-menu-${action.label}`}
+            placement="top-start"
+            trigger={
+              <Button variant="secondary" size="sm">
+                {action.icon}
+                {action.label}
+                <ChevronDown size={13} className="opacity-60" />
+              </Button>
+            }
+            items={action.options.map((opt) => ({ label: opt.label, onSelect: () => action.onSelect?.(selectedIds, opt.value) }))}
+          />
+        ) : (
+          <Button key={action.label} variant="secondary" size="sm" onClick={() => action.onClick?.(selectedIds)}>
+            {action.icon}
+            {action.label}
+          </Button>
+        ),
+      )}
+      {overflow.length > 0 && (
+        <Menu
+          data-testid="bulk-menu-more"
+          placement="top-start"
+          trigger={<IconButton label="More bulk actions" icon={<MoreHorizontal size={16} />} />}
+          items={overflow}
+        />
+      )}
       <div className="w-px h-5 bg-surface-high" />
       <IconButton label="Clear selection" icon={<X size={14} />} onClick={onClear} />
     </div>

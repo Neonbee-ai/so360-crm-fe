@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-    Plus, FileText, Search, CheckCircle, XCircle, Clock, ChevronDown, Eye, User, Check, X,
-    Download, Copy, RotateCcw, AlertCircle, RefreshCw,
+    Plus, FileText, Search, CheckCircle, XCircle, Clock, ChevronDown, User, Check, X,
+    Download, Copy, RotateCcw,
     Building2, CheckSquare, Square
 } from 'lucide-react';
 import { crmService } from '../services/crmService';
@@ -10,7 +10,7 @@ import { usePersistedState, useListScrollRestore } from '../hooks/useListViewSta
 import { Quote, QuoteStatus, Deal } from '../types/crm';
 import { useBusinessSettings, useActivity, useShellBridge, useQuota, useSandboxLimit } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
-import { QuotaGate, CrossLinkChip, SegmentedControl, toast, ListPageTemplate, Button, IconButton, Pagination, DataTable, SearchInput, Menu, TextField, Textarea, type DataTableColumn, type FilterValues, type ListFilterConfig } from '@so360/design-system';
+import { QuotaGate, CrossLinkChip, SegmentedControl, toast, ListPageTemplate, Button, Pagination, DataTable, SearchInput, Menu, Alert, EmptyState, TextField, Textarea, type DataTableColumn, type FilterValues, type ListFilterConfig } from '@so360/design-system';
 import { quotesToCsv, downloadCsv } from '../components/quotes/quotesCsv';
 import { quoteToDocumentData } from '../utils/quoteToDocumentData';
 import ExportMenu from '../components/ExportMenu';
@@ -625,6 +625,14 @@ const QuotesPage = () => {
         });
     }, [approvals, approvalsStatusFilter, approvalsSearchTerm]);
 
+    const approvalRowActions = (item: any) => [
+        { label: 'View details', onSelect: () => openQuote(item.quote_id) },
+        ...(item.approver_status === 'pending' ? [
+            { label: 'Approve', disabled: actionLoading === item.quote_id + 'approve', onSelect: () => handleQuickApprove(item.quote_id) },
+            { label: 'Reject', danger: true, onSelect: () => handleQuickReject(item.quote_id) },
+        ] : []),
+    ];
+
     const approvalColumns: DataTableColumn<any>[] = [
         {
             key: 'quote_number',
@@ -731,39 +739,6 @@ const QuotesPage = () => {
                     </span>
                 );
             },
-        },
-        {
-            key: 'actions',
-            header: 'Actions',
-            render: (item: any) => (
-                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                    {item.approver_status === 'pending' && (
-                        <>
-                            <Button
-                                variant="secondary"
-                                size="sm"
-                                onClick={() => handleQuickApprove(item.quote_id)}
-                                disabled={actionLoading === item.quote_id + 'approve'}
-                            >
-                                Approve
-                            </Button>
-                            <Button
-                                variant="danger"
-                                size="sm"
-                                onClick={() => handleQuickReject(item.quote_id)}
-                            >
-                                Reject
-                            </Button>
-                        </>
-                    )}
-                    <IconButton
-                        label="View details"
-                        size="sm"
-                        icon={<Eye className="w-4 h-4" aria-hidden="true" />}
-                        onClick={() => openQuote(item.quote_id)}
-                    />
-                </div>
-            ),
         },
     ];
 
@@ -891,50 +866,32 @@ const QuotesPage = () => {
             <div ref={listAnchorRef}>
             {/* Error Notification */}
             {error && (
-                <div className="mb-5 p-3.5 bg-danger/10 border border-danger/30 rounded-lg text-danger text-sm flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4 shrink-0 text-danger" />
-                        <span>{error}</span>
-                    </div>
-                    <Button variant="secondary" size="sm" onClick={fetchData}>
-                        <RefreshCw className="w-3 h-3" aria-hidden="true" />
-                        Retry
-                    </Button>
+                <div className="mb-5">
+                    <Alert variant="error" action={{ label: 'Retry', onClick: fetchData }}>{error}</Alert>
                 </div>
             )}
             {activeTab === 'all' && (
                 <>
                     {/* Sandbox limit notice */}
                     {isSandboxMode && isLimited(filteredQuotes.length) && (
-                        <div className="mb-4 px-4 py-2.5 bg-warning/10 border border-warning/30 rounded-lg text-warning text-sm flex items-center gap-2">
-                            <span className="font-semibold">Sandbox mode:</span>
-                            showing {sandboxEntryLimit} of {filteredQuotes.length} quotes — full list visible in production.
+                        <div className="mb-4">
+                            <Alert variant="warning">
+                                <span className="font-semibold">Sandbox mode:</span>{' '}
+                                showing {sandboxEntryLimit} of {filteredQuotes.length} quotes — full list visible in production.
+                            </Alert>
                         </div>
                     )}
 
                     {/* Table View */}
                     {paginatedQuotes.length === 0 ? (
-                        <div className="text-center py-16 bg-surface border border-line rounded-lg">
-                            <FileText className="w-12 h-12 mx-auto text-fg-muted mb-4" />
-                            <h3 className="text-lg font-medium text-fg-subtle mb-2">No quotes found</h3>
-                            <p className="text-fg-subtle mb-4 text-sm">
-                                {hasActiveFilters
-                                    ? 'Try adjusting your filters'
-                                    : 'Create your first quote to get started'}
-                            </p>
-                            {hasActiveFilters ? (
-                                <Button variant="secondary" onClick={resetFilters}>
-                                    Clear filters
-                                </Button>
-                            ) : (
-                                canCreateQuote && (
-                                    <Button variant="primary" onClick={() => setIsCreateModalOpen(true)}>
-                                        <Plus className="w-4 h-4" aria-hidden="true" />
-                                        Create quote
-                                    </Button>
-                                )
-                            )}
-                        </div>
+                        <EmptyState
+                            icon={FileText}
+                            title="No quotes found"
+                            description={hasActiveFilters ? 'Try adjusting your filters' : 'Create your first quote to get started'}
+                            action={hasActiveFilters
+                                ? { label: 'Clear filters', onClick: resetFilters }
+                                : canCreateQuote ? { label: 'Create quote', onClick: () => setIsCreateModalOpen(true) } : undefined}
+                        />
                     ) : (
                         <div className="space-y-4">
                             <DataTable
@@ -962,20 +919,19 @@ const QuotesPage = () => {
                 <div className="space-y-4">
                     {/* Approvals Table */}
                     {filteredApprovals.length === 0 ? (
-                        <div className="text-center py-16 bg-surface border border-line rounded-lg">
-                            <CheckCircle className="w-12 h-12 mx-auto text-fg-muted mb-4" />
-                            <h3 className="text-lg font-medium text-fg-subtle mb-2">No approval requests found</h3>
-                            <p className="text-fg-subtle text-sm">
-                                {approvalsStatusFilter === 'pending'
-                                    ? "You're all caught up! There are no quotes awaiting your approval."
-                                    : 'No quotes match the selected filter.'}
-                            </p>
-                        </div>
+                        <EmptyState
+                            icon={CheckCircle}
+                            title="No approval requests found"
+                            description={approvalsStatusFilter === 'pending'
+                                ? "You're all caught up! There are no quotes awaiting your approval."
+                                : 'No quotes match the selected filter.'}
+                        />
                     ) : (
                         <DataTable
                             name="quote-approvals"
                             rows={filteredApprovals}
                             columns={approvalColumns}
+                            rowActions={approvalRowActions}
                             rowKey={(item: any) => String(item.id ?? item.quote_id)}
                             onRowClick={(item: any) => openQuote(item.quote_id)}
                         />
