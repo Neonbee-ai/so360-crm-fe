@@ -194,9 +194,9 @@ function AddProductModal({ dealId, leadId, onClose, onAdd, onImportFromLead, uni
                                 )}
                                 <div className="space-y-2 max-h-64 overflow-y-auto">
                                     {visibleItems.map(item => (
-                                        <Button variant="secondary" size="sm" className="w-full text-left h-auto justify-start" key={item.id} onClick={() => setSelected(item)}>
-                                            <div className="flex items-center justify-between">
-                                                <div>
+                                        <Button variant="secondary" size="sm" className="w-full min-w-0 text-left h-auto justify-start" key={item.id} onClick={() => setSelected(item)}>
+                                            <div className="flex w-full min-w-0 items-center justify-between gap-3">
+                                                <div className="min-w-0 flex-1">
                                                     <p className="text-xs font-bold text-fg group-hover:text-info transition-colors">{item.name}</p>
                                                     {item.sku && <p className="text-xs text-fg-muted font-bold mt-0.5">SKU: {item.sku}</p>}
                                                 </div>

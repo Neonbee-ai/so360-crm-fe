@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronUp, ChevronDown, Edit2, Trash2, Plus, Loader2, ToggleLeft, ToggleRight, X } from 'lucide-react';
 import { toast, DepartmentSelector, UserSelector, useConfirm, Card, Button, IconButton, TextField, NumberInput, Select, Checkbox, Grid, GridItem } from '@so360/design-system';
 import { useShellBridge } from '@so360/shell-context';
@@ -90,11 +90,15 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
     const [testResult, setTestResult] = useState<AssignmentTestResult | null>(null);
     const [assigneeName, setAssigneeName] = useState<string | null>(null);
 
+    // Spinner only for the first load; later refetches (after save) keep the
+    // list on screen instead of swapping it for a spinner (flicker).
+    const hasLoaded = useRef(false);
     const load = useCallback(async () => {
-        setLoading(true);
+        if (!hasLoaded.current) setLoading(true);
         try {
             setRules(await assignmentRulesService.list());
             setLoadError(null);
+            hasLoaded.current = true;
         } catch (err) {
             setLoadError(describeApiError(err, 'Could not load assignment rules.'));
         } finally {
