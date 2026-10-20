@@ -187,7 +187,7 @@ function AddProductModal({ onClose, onAdd, existingItemIds, unitBooking = false 
                                 const alreadyAdded = existingItemIds.has(item.id);
                                 const stock = item.available_stock;
                                 return (
-                                    <Button variant="secondary" size="sm" className="w-full text-left h-auto justify-start" key={item.id} onClick={() => !alreadyAdded && setSelected(item)} disabled={alreadyAdded} title={alreadyAdded ? 'Already added to this record' : undefined}>
+                                    <Button variant="secondary" size="sm" className="w-full !text-left !h-auto !justify-start" key={item.id} onClick={() => !alreadyAdded && setSelected(item)} disabled={alreadyAdded} title={alreadyAdded ? 'Already added to this record' : undefined}>
                                         <div className="flex items-center justify-between gap-3">
                                             <div className="min-w-0">
                                                 <p className="text-xs font-medium text-fg group-hover:text-primary transition-colors truncate">{item.name}</p>

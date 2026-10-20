@@ -90,3 +90,25 @@ describe('Given the default (all flags on) shell in this spec', () => {
         expect(screen.queryByTestId('matching-units-panel')).not.toBeInTheDocument();
     });
 });
+
+describe('Given DealProductsTab AddProductModal source switch (SegmentedControl)', () => {
+    it('When opened for a deal with a lead / Then From Lead is selected and Search Inventory switches the source', async () => {
+        render(<DealProductsTab dealId="deal-1" leadId="lead-1" />);
+        await waitFor(() => screen.getByRole('button', { name: /Add Product/i }));
+        fireEvent.click(screen.getByRole('button', { name: /Add Product/i }));
+        const group = await screen.findByRole('radiogroup', { name: 'Product source' });
+        expect(group).toHaveAttribute('data-testid', 'deal-products-source');
+        expect(screen.getByRole('radio', { name: /From Lead/i })).toHaveAttribute('aria-checked', 'true');
+        fireEvent.click(screen.getByRole('radio', { name: /Search Inventory/i }));
+        expect(screen.getByRole('radio', { name: /Search Inventory/i })).toHaveAttribute('aria-checked', 'true');
+        expect(screen.getByRole('radio', { name: /From Lead/i })).toHaveAttribute('aria-checked', 'false');
+    });
+
+    it('When opened for a deal without a lead / Then no source switch is shown', async () => {
+        render(<DealProductsTab dealId="deal-1" />);
+        await waitFor(() => screen.getByRole('button', { name: /Add Product/i }));
+        fireEvent.click(screen.getByRole('button', { name: /Add Product/i }));
+        await screen.findByText(/Add Product to Deal/i);
+        expect(screen.queryByRole('radiogroup', { name: 'Product source' })).toBeNull();
+    });
+});

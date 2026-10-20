@@ -1,6 +1,6 @@
 import { EmptyState } from '@so360/design-system';
 import React, { useState, useEffect, useCallback } from 'react';
-import { Button, IconButton, TextField, NumberInput, Select, Checkbox } from '@so360/design-system';
+import { Button, IconButton, TextField, NumberInput, SegmentedControl, Select, Checkbox } from '@so360/design-system';
 import { Modal } from '../../components/common/Modal';
 import { Package, Plus, Trash2, Loader2, Search, Copy } from 'lucide-react';
 import { crmService } from '../../services/crmService';
@@ -117,13 +117,19 @@ function AddProductModal({ dealId, leadId, onClose, onAdd, onImportFromLead, uni
         >
                 {/* Tabs */}
                 {leadId && (
-                    <div className="flex gap-1 mb-4 bg-surface-high rounded-nb-lg p-1">
-                        <Button variant={tab === 'from-lead' ? 'primary' : 'secondary'} size="sm" className="flex-1" onClick={() => setTab('from-lead')}>
-                            <Copy size={10} className="inline mr-1" />From Lead
-                        </Button>
-                        <Button variant={tab === 'search' ? 'primary' : 'secondary'} size="sm" className="flex-1" onClick={() => setTab('search')}>
-                            <Search size={10} className="inline mr-1" />Search Inventory
-                        </Button>
+                    <div className="mb-4">
+                        <SegmentedControl
+                            size="sm"
+                            fullWidth
+                            aria-label="Product source"
+                            data-testid="deal-products-source"
+                            value={tab}
+                            onChange={(v) => setTab(v as typeof tab)}
+                            options={[
+                                { value: 'from-lead', label: 'From Lead', icon: Copy },
+                                { value: 'search', label: 'Search Inventory', icon: Search },
+                            ]}
+                        />
                     </div>
                 )}
 
@@ -192,7 +198,7 @@ function AddProductModal({ dealId, leadId, onClose, onAdd, onImportFromLead, uni
                                 )}
                                 <div className="space-y-2 max-h-64 overflow-y-auto">
                                     {visibleItems.map(item => (
-                                        <Button variant="secondary" size="sm" className="w-full text-left h-auto justify-start" key={item.id} onClick={() => setSelected(item)}>
+                                        <Button variant="secondary" size="sm" className="w-full !text-left !h-auto !justify-start" key={item.id} onClick={() => setSelected(item)}>
                                             <div className="flex items-center justify-between">
                                                 <div>
                                                     <p className="text-xs font-bold text-fg group-hover:text-info transition-colors">{item.name}</p>

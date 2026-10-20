@@ -66,7 +66,7 @@ const ActionButton: React.FC<{ icon: React.ReactNode; label: string; disabled?: 
     if (href && !disabled) {
         return <a href={href} className={className}>{icon}{label}</a>;
     }
-    return <Button variant="secondary" size="sm" className="w-full justify-start" onClick={onClick} disabled={disabled}>{icon}{label}</Button>;
+    return <Button variant="secondary" size="sm" className="w-full !justify-start" onClick={onClick} disabled={disabled}>{icon}{label}</Button>;
 };
 
 export default StakeholderQuickActions;

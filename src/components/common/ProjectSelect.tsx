@@ -261,7 +261,7 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
                 </div>
             ) : (
                 <>
-                    <Button variant="secondary" size="sm" className={`w-full justify-start ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${inputClassName}`}
+                    <Button variant="secondary" size="sm" className={`w-full !justify-start ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${inputClassName}`}
                         type="button"
                         role="combobox"
                         aria-label="Project"
@@ -305,7 +305,7 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
                 >
                     <div className="max-h-56 overflow-y-auto">
                         {/* Options are driven by aria-activedescendant, so they stay out of the Tab order. */}
-                        <Button variant="secondary" size="sm" className="w-full justify-start border-0"
+                        <Button variant="secondary" size="sm" className="w-full !justify-start border-0"
                             type="button"
                             role="option"
                             tabIndex={-1}
@@ -317,7 +317,7 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
                             {noneLabel}
                         </Button>
                         {options.map((p, i) => (
-                            <Button variant="secondary" size="sm" className="w-full justify-between border-0"
+                            <Button variant="secondary" size="sm" className="w-full !justify-between border-0"
                                 key={p.id}
                                 type="button"
                                 role="option"

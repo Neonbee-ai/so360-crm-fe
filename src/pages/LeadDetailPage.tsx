@@ -1381,7 +1381,7 @@ const LeadDetailPage = () => {
                                                     <Button variant="secondary"
                                                         key={r.id}
                                                         onClick={() => { setActiveTab(r.tab); setCommSearchQuery(''); }}
-                                                        className="w-full justify-start text-left"
+                                                        className="w-full !justify-start !text-left"
                                                     >
                                                         <div className="flex items-center justify-between">
                                                             <span className="text-xs font-medium text-fg-muted">{r.kind}</span>
@@ -1628,7 +1628,7 @@ const LeadDetailPage = () => {
                                                                 type="button"
                                                                 onClick={() => focusTaskInList(task.id)}
                                                                 data-testid={`task-reminder-${task.id}`}
-                                                                className="w-full justify-start text-left"
+                                                                className="w-full !justify-start !text-left"
                                                             >
                                                                 <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${reminderOverdue ? 'bg-danger animate-pulse' : 'bg-warning'}`} />
                                                                 <span className="text-xs font-semibold text-fg-subtle truncate">{task.title}</span>

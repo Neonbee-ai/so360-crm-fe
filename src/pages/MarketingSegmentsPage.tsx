@@ -5,7 +5,7 @@ import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
 import { formatDateTime, formatMoney } from './marketing/marketingMappers';
 import { useBusinessSettings, useShell, useShellBridge } from '@so360/shell-context';
-import { Button, DataTable, EmptyState, ListPageTemplate, SearchInput, Select, Tabs, TextField, Grid, GridItem } from '@so360/design-system';
+import { Button, DataTable, EmptyState, ListPageTemplate, SearchInput, SegmentedControl, Select, Tabs, TextField, Grid, GridItem } from '@so360/design-system';
 import type { DataTableColumn, FilterValues } from '@so360/design-system';
 
 const STORE_KEY = 'crm_marketing_store_id';
@@ -454,12 +454,14 @@ const MarketingSegmentsPage: React.FC = () => {
             </div>
 
             <div className="flex flex-wrap items-center gap-nb-3 mb-nb-4">
-              <Button variant={memberType === 'customer' ? 'primary' : 'secondary'} size="sm" onClick={() => setMemberType('customer')}>
-                Customers
-              </Button>
-              <Button variant={memberType === 'lead' ? 'primary' : 'secondary'} size="sm" onClick={() => setMemberType('lead')}>
-                Leads
-              </Button>
+              <SegmentedControl
+                size="sm"
+                aria-label="Member type"
+                data-testid="segment-member-type"
+                value={memberType}
+                onChange={(v) => setMemberType(v as typeof memberType)}
+                options={[{ value: 'customer', label: 'Customers' }, { value: 'lead', label: 'Leads' }]}
+              />
               <div className="ml-auto w-full md:w-72">
                 <SearchInput value={memberSearch} onChange={setMemberSearch} placeholder={`Search ${memberType}s...`} />
               </div>
@@ -529,7 +531,7 @@ const MarketingSegmentsPage: React.FC = () => {
                   <Button
                     key={entry.key}
                     variant="secondary"
-                    className="w-full justify-between"
+                    className="w-full !justify-between"
                     onClick={() => entry.rule && navigateToCustomers({
                       channel: (entry.rule as any).channel,
                       category: (entry.rule as any).category,

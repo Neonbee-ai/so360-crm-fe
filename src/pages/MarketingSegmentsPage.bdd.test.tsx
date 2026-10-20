@@ -431,3 +431,31 @@ describe('MarketingSegmentsPage', () => {
     });
   });
 });
+
+describe('MarketingSegmentsPage member type switch (SegmentedControl)', () => {
+  it('Given the member panel is open / When rendered / Then Customers|Leads is a labelled radiogroup with Customers selected', async () => {
+    const user = userEvent.setup();
+    render(<MarketingSegmentsPage />);
+    await waitFor(() => expect(screen.getByText('VIP Customers')).toBeInTheDocument());
+    await user.click(screen.getAllByRole('button', { name: 'Row actions' })[0]);
+    await user.click(screen.getByRole('menuitem', { name: 'Manage Members' }));
+    const group = await screen.findByRole('radiogroup', { name: 'Member type' });
+    expect(group).toHaveAttribute('data-testid', 'segment-member-type');
+    expect(screen.getByRole('radio', { name: /customers/i })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('radio', { name: /leads/i })).toHaveAttribute('aria-checked', 'false');
+  });
+
+  it('Given the member panel is open / When Leads is chosen / Then Leads becomes selected and members reload', async () => {
+    const user = userEvent.setup();
+    render(<MarketingSegmentsPage />);
+    await waitFor(() => expect(screen.getByText('VIP Customers')).toBeInTheDocument());
+    await user.click(screen.getAllByRole('button', { name: 'Row actions' })[0]);
+    await user.click(screen.getByRole('menuitem', { name: 'Manage Members' }));
+    await screen.findByRole('radiogroup', { name: 'Member type' });
+    mockGetCustomerSegmentMembers.mockClear();
+    await user.click(screen.getByRole('radio', { name: /leads/i }));
+    expect(screen.getByRole('radio', { name: /leads/i })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('radio', { name: /customers/i })).toHaveAttribute('aria-checked', 'false');
+    await waitFor(() => expect(mockGetCustomerSegmentMembers).toHaveBeenCalled());
+  });
+});

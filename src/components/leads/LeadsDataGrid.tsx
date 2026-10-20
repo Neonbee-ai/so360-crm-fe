@@ -799,7 +799,7 @@ function ContextMenu({ lead, x, y, canDelete, onOpen, onDelete, onClose, onNavig
       style={{ left: Math.min(x, window.innerWidth - 200), top: Math.min(y, window.innerHeight - 300) }}
     >
       {menuItems.map((item) => (
-        <Button variant={'danger' in item && item.danger ? 'danger' : 'secondary'} size="sm" className="w-full justify-start" key={item.label} onClick={item.onClick}>
+        <Button variant={'danger' in item && item.danger ? 'danger' : 'secondary'} size="sm" className="w-full !justify-start" key={item.label} onClick={item.onClick}>
           {item.icon}
           {item.label}
         </Button>
@@ -1283,7 +1283,7 @@ export function LeadsDataGrid({
                 className="absolute right-0 top-full mt-1.5 z-menu bg-surface border border-line rounded-xl shadow-xl py-1 min-w-40"
               >
                 {GROUP_BY_OPTIONS.map((o) => (
-                  <Button variant={groupBy === o.key ? 'primary' : 'secondary'} size="sm" className="w-full justify-start" key={o.key} onClick={() => { setGroupBy(o.key); setCollapsedGroups(new Set()); setShowGroupMenu(false); }}>
+                  <Button variant={groupBy === o.key ? 'primary' : 'secondary'} size="sm" className="w-full !justify-start" key={o.key} onClick={() => { setGroupBy(o.key); setCollapsedGroups(new Set()); setShowGroupMenu(false); }}>
                     {groupBy === o.key && <Check size={12} />}
                     <span className={groupBy === o.key ? '' : 'ml-4'}>{o.label}</span>
                   </Button>
@@ -1301,7 +1301,7 @@ export function LeadsDataGrid({
             {showDensityMenu && (
               <div className="absolute right-0 top-full mt-1.5 z-menu bg-surface border border-line rounded-xl shadow-xl py-1 min-w-36">
                 {(['compact', 'comfortable', 'spacious'] as GridDensity[]).map((d) => (
-                  <Button variant={density === d ? 'primary' : 'secondary'} size="sm" className="w-full justify-start" key={d} onClick={() => { setDensity(d); setShowDensityMenu(false); }}>
+                  <Button variant={density === d ? 'primary' : 'secondary'} size="sm" className="w-full !justify-start" key={d} onClick={() => { setDensity(d); setShowDensityMenu(false); }}>
                     {density === d && <Check size={12} />}
                     <span className={density === d ? '' : 'ml-4'}>{d}</span>
                   </Button>
@@ -1340,7 +1340,7 @@ export function LeadsDataGrid({
                 className="absolute right-0 top-full mt-1.5 z-menu bg-surface border border-line rounded-xl shadow-xl py-1 min-w-40"
               >
                 {GROUP_BY_OPTIONS.map((o) => (
-                  <Button variant={groupBy === o.key ? 'primary' : 'secondary'} size="sm" className="w-full justify-start" key={o.key} onClick={() => { setGroupBy(o.key); setCollapsedGroups(new Set()); setShowGroupMenu(false); }}>
+                  <Button variant={groupBy === o.key ? 'primary' : 'secondary'} size="sm" className="w-full !justify-start" key={o.key} onClick={() => { setGroupBy(o.key); setCollapsedGroups(new Set()); setShowGroupMenu(false); }}>
                     {groupBy === o.key && <Check size={12} />}
                     <span className={groupBy === o.key ? '' : 'ml-4'}>{o.label}</span>
                   </Button>
@@ -1358,7 +1358,7 @@ export function LeadsDataGrid({
             {showDensityMenu && (
               <div className="absolute right-0 top-full mt-1.5 z-menu bg-surface border border-line rounded-xl shadow-xl py-1 min-w-36">
                 {(['compact', 'comfortable', 'spacious'] as GridDensity[]).map((d) => (
-                  <Button variant={density === d ? 'primary' : 'secondary'} size="sm" className="w-full justify-start" key={d} onClick={() => { setDensity(d); setShowDensityMenu(false); }}>
+                  <Button variant={density === d ? 'primary' : 'secondary'} size="sm" className="w-full !justify-start" key={d} onClick={() => { setDensity(d); setShowDensityMenu(false); }}>
                     {density === d && <Check size={12} />}
                     <span className={density === d ? '' : 'ml-4'}>{d}</span>
                   </Button>

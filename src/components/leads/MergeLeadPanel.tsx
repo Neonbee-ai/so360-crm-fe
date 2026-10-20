@@ -122,7 +122,7 @@ export const MergeLeadPanel: React.FC<Props> = ({ keepLead, onClose, onMerged })
                         <ul className="divide-y divide-line" role="listbox" aria-label="Matching leads">
                             {results.map(l => (
                                 <li key={l.id}>
-                                    <Button variant="secondary" size="sm" className="w-full text-left justify-start" type="button" role="option" aria-selected={false} onClick={() => pick(l)}>
+                                    <Button variant="secondary" size="sm" className="w-full !text-left !justify-start" type="button" role="option" aria-selected={false} onClick={() => pick(l)}>
                                         <span className="block text-sm text-fg">{leadDisplayName(l)}</span>
                                         <span className="block text-xs text-fg-muted">{l.contact_email || l.phone || ''}</span>
                                     </Button>

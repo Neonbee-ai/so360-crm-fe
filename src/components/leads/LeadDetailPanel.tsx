@@ -470,7 +470,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                         <div className="min-w-0">
                           <p className="text-xs text-fg-muted">Merged Into</p>
                           {mergedIntoLead ? (
-                            <Button variant="secondary" size="sm" className="text-left" type="button" onClick={() => onNavigate(mergedIntoLead)}>
+                            <Button variant="secondary" size="sm" className="!text-left" type="button" onClick={() => onNavigate(mergedIntoLead)}>
                               {mergedIntoName}
                             </Button>
                           ) : (
@@ -573,7 +573,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                   ) : (
                     <div className="divide-y divide-line">
                       {deals.map((deal) => (
-                        <Button variant="secondary" size="sm" className="w-full text-left h-auto justify-start" key={deal.id} onClick={() => onNavigateDeal(deal)}>
+                        <Button variant="secondary" size="sm" className="w-full !text-left !h-auto !justify-start" key={deal.id} onClick={() => onNavigateDeal(deal)}>
                           <div className="flex items-center justify-between gap-2">
                             <span className="text-sm font-semibold text-fg truncate">{deal.name}</span>
                             <span className="text-sm font-bold text-success shrink-0">

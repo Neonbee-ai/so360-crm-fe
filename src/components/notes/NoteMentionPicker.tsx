@@ -57,7 +57,7 @@ const NoteMentionPicker: React.FC<Props> = ({ query, people, onPick, onClose }) 
                     aria-selected={i === highlight}
                     onClick={() => onPick(p.id, p.full_name || p.email)}
                     onMouseEnter={() => setHighlight(i)}
-                    className={`w-full !justify-start text-left ${i === highlight ? '!bg-primary/15 !text-primary' : '!text-fg'}`}
+                    className={`w-full !justify-start !text-left ${i === highlight ? '!bg-primary/15 !text-primary' : '!text-fg'}`}
                 >
                     <span className="w-6 h-6 rounded-full bg-line flex items-center justify-center text-xs font-semibold flex-shrink-0">
                         {(p.full_name || p.email || '?').charAt(0).toUpperCase()}

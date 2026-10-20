@@ -885,7 +885,7 @@ const LeadsPage = () => {
                 <>
                   <Button
                     variant="secondary"
-                    className={`min-w-0 flex-1 justify-start ${activeViewId === view.id ? 'text-primary' : ''}`}
+                    className={`min-w-0 flex-1 !justify-start ${activeViewId === view.id ? 'text-primary' : ''}`}
                     onClick={() => { handleApplyView(view); setOpenDropdown(null); }}
                   >
                     {view.is_default && <Star size={12} className="shrink-0 fill-warning text-warning" aria-hidden="true" />}
@@ -915,7 +915,7 @@ const LeadsPage = () => {
               <Button variant="secondary" onClick={handleSaveView}>Save</Button>
             </div>
           ) : (
-            <Button variant="secondary" className="justify-start" onClick={() => setShowSaveViewInput(true)}>
+            <Button variant="secondary" className="!justify-start" onClick={() => setShowSaveViewInput(true)}>
               <BookmarkPlus size={14} aria-hidden="true" />
               Save current view
             </Button>

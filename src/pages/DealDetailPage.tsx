@@ -631,7 +631,7 @@ const DealDetailPage = () => {
                                                     role="option"
                                                     aria-selected={isCurrent}
                                                     onClick={() => handleSelectStage(s.id)}
-                                                    className="w-full justify-between text-left"
+                                                    className="w-full !justify-between !text-left"
                                                     data-testid={`deal-stage-option-${s.id}`}
                                                 >
                                                     {s.name}

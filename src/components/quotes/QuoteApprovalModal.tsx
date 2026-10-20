@@ -280,7 +280,7 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
                           handleSelect(cand);
                           if (!isSelf) setDropdownOpen(false);
                         }}
-                        className={`!h-auto w-full !justify-start !whitespace-normal gap-3 py-2.5 text-left ${
+                        className={`!h-auto w-full !justify-start !whitespace-normal gap-3 py-2.5 !text-left ${
                           isSelf ? 'opacity-60 !bg-surface-sunken' : ''
                         }`}
                       >

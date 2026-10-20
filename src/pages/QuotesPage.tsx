@@ -989,7 +989,7 @@ const QuotesPage = () => {
                                         <Button
                                             type="button"
                                             variant="secondary"
-                                            className="w-full justify-between"
+                                            className="w-full !justify-between"
                                             onClick={() => { setDealDropdownOpen(o => !o); setDealSearchTerm(''); }}
                                         >
                                             {selectedDealId ? (() => {
@@ -1034,7 +1034,7 @@ const QuotesPage = () => {
                                                                 <Button
                                                                     type="button"
                                                                     variant="secondary"
-                                                                    className={`w-full flex-col items-start justify-start border-0 ${selectedDealId === deal.id ? 'bg-primary/20' : ''}`}
+                                                                    className={`w-full !flex-col !items-start !justify-start border-0 ${selectedDealId === deal.id ? 'bg-primary/20' : ''}`}
                                                                     onClick={() => { setSelectedDealId(deal.id); setDealDropdownOpen(false); }}
                                                                 >
                                                                     <span className={`text-sm font-medium truncate w-full ${selectedDealId === deal.id ? 'text-primary' : 'text-fg'}`}>{deal.name}</span>

@@ -128,7 +128,7 @@ export const PartnerSearchDropdown: React.FC<PartnerSearchDropdownProps> = ({
                     data-testid="partner-dropdown-list"
                 >
                     <div className="max-h-48 overflow-y-auto">
-                        <Button variant="secondary" size="sm" className="w-full justify-start border-0"
+                        <Button variant="secondary" size="sm" className="w-full !justify-start border-0"
                             type="button"
                             role="option"
                             aria-selected={!value}
@@ -142,7 +142,7 @@ export const PartnerSearchDropdown: React.FC<PartnerSearchDropdownProps> = ({
                             </div>
                         ) : (
                             filtered.map(p => (
-                                <Button variant="secondary" size="sm" className="w-full justify-between border-0"
+                                <Button variant="secondary" size="sm" className="w-full !justify-between border-0"
                                     key={p.id}
                                     type="button"
                                     role="option"

@@ -361,7 +361,7 @@ const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
                     {showSortDropdown && (
                         <div className="absolute top-full left-0 mt-1 bg-surface border border-line rounded-nb z-menu min-w-max">
                             {(['newest', 'oldest'] as const).map((order) => (
-                                <Button variant={sortOrder === order ? 'primary' : 'secondary'} size="sm" className="w-full text-left justify-start" key={order} onClick={() => {
+                                <Button variant={sortOrder === order ? 'primary' : 'secondary'} size="sm" className="w-full !text-left !justify-start" key={order} onClick={() => {
                                         setSortOrder(order);
                                         setShowSortDropdown(false);
                                     }}>

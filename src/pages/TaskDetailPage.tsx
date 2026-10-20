@@ -388,7 +388,7 @@ const TaskDetailPage = () => {
                                 type="button"
                                 onClick={() => setIsAddingNote(true)}
                                 data-testid="note-composer-trigger"
-                                className="w-full justify-start text-left"
+                                className="w-full !justify-start !text-left"
                             >
                                 Add a note or comment...
                             </Button>

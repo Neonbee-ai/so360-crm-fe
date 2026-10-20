@@ -532,7 +532,7 @@ const QuoteDetailPage = () => {
                                 <Button
                                     variant="secondary"
                                     onClick={() => navigate(`/crm/customers/${customer.id}`)}
-                                    className="w-full justify-start text-left"
+                                    className="w-full !justify-start !text-left"
                                 >
                                     <p className="font-medium text-fg">
                                         {customer.company_name || customer.contact_name || '—'}
@@ -569,7 +569,7 @@ const QuoteDetailPage = () => {
                                 <Button
                                     variant="secondary"
                                     onClick={() => navigate(`/crm/deal/${quote.deal_id}`)}
-                                    className="w-full text-left justify-start"
+                                    className="w-full !text-left !justify-start"
                                 >
                                     <p className="font-medium text-fg">{quote.deal.name}</p>
                                     <p className="text-sm text-fg-subtle">{quote.deal.company_name}</p>
@@ -688,7 +688,7 @@ const QuoteDetailPage = () => {
                                                 type="button"
                                                 variant="secondary"
                                                 onClick={() => setPickerLineIndex(index)}
-                                                className="w-full justify-start text-left"
+                                                className="w-full !justify-start !text-left"
                                             >
                                                 {line.item_image_url ? (
                                                     <img src={line.item_image_url} alt="" className="w-6 h-6 rounded object-cover flex-shrink-0" />
