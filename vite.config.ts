@@ -56,7 +56,6 @@ export default defineConfig(({ mode, command }) => {
                 'react-dom': { singleton: true, requiredVersion: '^19.2.0' },
                 'react-router-dom': { singleton: true, requiredVersion: '^7.12.0' },
                 'framer-motion': { singleton: true },
-                'lucide-react': { singleton: true },
                 '@so360/shell-context': { singleton: true },
                 '@so360/cross-link': { singleton: true },
                 '@so360/design-system': { singleton: true },
