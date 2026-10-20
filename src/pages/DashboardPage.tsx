@@ -172,10 +172,10 @@ const DashboardPage = () => {
         kpis: (
             <>
             {/* KPI Row */}
-            <Grid gap="md">
+            <Grid columns={4} gap="md">
                 {/* Deal Revenue — gated: deals are a B2B/Both concept */}
                 {showPipeline && (
-                    <GridItem span={3}><KpiCard
+                    <KpiCard
                         label="Deal Revenue"
                         icon={DollarSign}
                         value={<>{formatCurrency(financials.totalRevenue)}
@@ -184,34 +184,34 @@ const DashboardPage = () => {
                             ) : (
                                 <span className="block mt-1 text-xs font-normal text-fg-muted">From won deals</span>
                             )}</>}
-                    /></GridItem>
+                    />
                 )}
 
                 {showPipeline && (
-                    <GridItem span={3}><KpiCard
+                    <KpiCard
                         label="Pipeline Value"
                         icon={TrendingUp}
                         value={<>{formatCurrency(financials.pipelineValue)}
                             <span className="block mt-1 text-xs font-normal text-fg-muted">{counts.deals} Active Deals · Projected revenue</span></>}
-                    /></GridItem>
+                    />
                 )}
 
                 {showPipeline && (
-                    <GridItem span={3}><KpiCard
+                    <KpiCard
                         label="Win Rate"
                         icon={BarChart3}
                         value={<>{financials.winRate.toFixed(1)}%
                             <span className="block mt-1 text-xs font-normal text-fg-muted">AVG Deal Closure</span></>}
-                    /></GridItem>
+                    />
                 )}
 
                 {showPipeline && (
-                    <GridItem span={3}><KpiCard
+                    <KpiCard
                         label="Avg Deal Size"
                         icon={Briefcase}
                         value={<>{formatCurrency(financials.avgDealSize)}
                             <span className="block mt-1 text-xs font-normal text-fg-muted">Per closed-won deal</span></>}
-                    /></GridItem>
+                    />
                 )}
             </Grid>
             </>
@@ -593,6 +593,11 @@ const DashboardPage = () => {
         ),
     };
 
+    // KPIs are a dedicated row under the header (Comb KPI region), never a
+    // cell in the widget grid; the customize panel still toggles/moves them.
+    const kpisVisible = visibleWidgets(dashLayout.layout).includes('kpis');
+    const bodyWidgets = visibleWidgets(dashLayout.layout).filter((k) => k !== 'kpis');
+
     return (
         <DashboardPageTemplate
             title="Executive Overview"
@@ -614,18 +619,19 @@ const DashboardPage = () => {
                                             return `Week ${week} · ${fmt(wStart)} – ${fmt(wEnd)}`;
                                         })()
                                         : `${new Date(year, month - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`}`}
+            secondaryActions={customizeEnabled ? (
+                <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setShowCustomize(true)}
+                    aria-label="Customize dashboard"
+                >
+                    <LayoutDashboard size={14} /> Customize
+                </Button>
+            ) : undefined}
+            kpis={kpisVisible && showPipeline ? widgetNodes.kpis : undefined}
             filters={
                 <>
-                    {customizeEnabled && (
-                        <Button
-                            type="button"
-                            variant="secondary"
-                            onClick={() => setShowCustomize(true)}
-                            aria-label="Customize dashboard"
-                        >
-                            <LayoutDashboard size={14} /> Customize
-                        </Button>
-                    )}
                 <SegmentedControl
                     aria-label="Dashboard period"
                     size="sm"
@@ -643,7 +649,7 @@ const DashboardPage = () => {
             primary={
                 <>
             <Grid gap="md">
-            {visibleWidgets(dashLayout.layout).map((key) => (
+            {bodyWidgets.map((key) => (
                 <GridItem key={key} span="full"><div className="min-w-0 flex flex-col gap-nb-3">{widgetNodes[key]}</div></GridItem>
             ))}
             </Grid>
