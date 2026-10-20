@@ -72,6 +72,16 @@ export const lossReasonsService = {
     remove: (id: string) => crmApiClient.delete<unknown>(`/settings/loss-reasons/${id}`),
 };
 
+export type RatingMode = 'score' | 'milestone';
+export type RatingMilestone = 'quote_sent' | 'customer_replied' | 'meeting_held' | 'stage_reached';
+export interface RatingMilestoneRule { milestone: RatingMilestone; stage_key: string; rating_category_id: string; is_active: boolean }
+export interface RatingSettings { mode: RatingMode; rules: RatingMilestoneRule[] }
+export interface RatingHistoryEntry {
+    id: string; lead_id: string; from_category_id: string | null; to_category_id: string | null;
+    source: 'manual' | 'cleared' | 'score' | 'milestone'; milestone: RatingMilestone | null;
+    actor_user_id: string | null; note: string | null; created_at: string;
+}
+
 export const ratingService = {
     list: async (): Promise<RatingCategory[]> => list<RatingCategory>(await crmApiClient.get('/settings/score-categories')),
     create: (body: { label: string; min_score: number; max_score: number | null; color_token: ColorToken }) =>
@@ -79,6 +89,9 @@ export const ratingService = {
     update: (id: string, body: Partial<Omit<RatingCategory, 'id'>>) =>
         crmApiClient.patch<RatingCategory>(`/settings/score-categories/${id}`, body),
     remove: (id: string) => crmApiClient.delete<unknown>(`/settings/score-categories/${id}`),
+    getSettings: (): Promise<RatingSettings> => crmApiClient.get<RatingSettings>('/settings/lead-rating'),
+    putSettings: (body: RatingSettings): Promise<RatingSettings> => crmApiClient.put<RatingSettings>('/settings/lead-rating', body),
+    history: async (leadId: string): Promise<RatingHistoryEntry[]> => list<RatingHistoryEntry>(await crmApiClient.get(`/leads/${leadId}/rating-history`)),
 };
 
 export const duplicateRulesService = {

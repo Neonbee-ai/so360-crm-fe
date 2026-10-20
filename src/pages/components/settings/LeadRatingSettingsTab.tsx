@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { toast, useConfirm, Card, Badge, Button, IconButton, TextField, NumberInput, Select, Checkbox } from '@so360/design-system';
 import { ratingService, RatingCategory, COLOR_TOKENS, ColorToken } from '../../../services/salesConfigService';
+import RatingMilestonesCard from './RatingMilestonesCard';
 import { describeApiError } from '../../../utils/apiErrorMessage';
 
 interface Props { canWrite: boolean }
@@ -90,6 +91,7 @@ const LeadRatingSettingsTab: React.FC<Props> = ({ canWrite }) => {
                     </ul>
                 )}
             </Card>
+            <RatingMilestonesCard canWrite={canWrite} categories={rows} />
         </div>
     );
 };

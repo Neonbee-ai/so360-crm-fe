@@ -48,6 +48,7 @@ import { useEntityTimeline } from './components/timeline/useEntityTimeline';
 import TimelineEventCard from './components/timeline/TimelineEventCard';
 import TimelineSummaryBanner from './components/timeline/TimelineSummaryBanner';
 import NoteEditor from '../components/notes/NoteEditor';
+import LeadRatingHistory from '../components/leads/LeadRatingHistory';
 import NoteContent from '../components/notes/NoteContent';
 import NoteReplyComposer from '../components/notes/NoteReplyComposer';
 import { ExecutiveSummaryPanel } from '../components/ExecutiveSummaryPanel';
@@ -1394,6 +1395,9 @@ const LeadDetailPage = () => {
                 {activeTab !== 'overview' && (
                     <div ref={workspaceRef} className="space-y-4 scroll-mt-6" data-testid="detail-workspace">
                         <div className="flex flex-col gap-nb-3">
+                            {activeTab === 'activity' && ratingEnabled && id && (
+                                <LeadRatingHistory leadId={id} categories={scoreCategories} ratingId={lead.rating_category_id} />
+                            )}
                             {activeTab === 'activity' && (
                                 <Card
                                     title="Customer timeline"

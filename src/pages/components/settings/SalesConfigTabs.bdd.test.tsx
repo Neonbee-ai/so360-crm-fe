@@ -4,7 +4,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
 const svc = vi.hoisted(() => ({
     loss: { list: vi.fn(), create: vi.fn(), update: vi.fn(), remove: vi.fn() },
-    rating: { list: vi.fn(), create: vi.fn(), update: vi.fn(), remove: vi.fn() },
+    rating: { list: vi.fn(), create: vi.fn(), update: vi.fn(), remove: vi.fn(), getSettings: vi.fn(), putSettings: vi.fn() },
     dup: { get: vi.fn(), put: vi.fn() },
 }));
 vi.mock('../../../services/salesConfigService', async (importActual) => {
@@ -22,6 +22,7 @@ beforeEach(() => {
     [svc.loss, svc.rating, svc.dup].forEach((s) => Object.values(s).forEach((f) => f.mockReset()));
     svc.loss.list.mockResolvedValue([]);
     svc.rating.list.mockResolvedValue([]);
+    svc.rating.getSettings.mockResolvedValue({ mode: 'score', rules: [] });
     svc.dup.get.mockResolvedValue([]);
 });
 
