@@ -19,7 +19,6 @@ const FILES = [
   'pages/DealDetailPage.tsx',
   'pages/LeadDetailPage.tsx',
   'pages/LeadsPage.tsx',
-  'pages/MarketingSegmentsPage.tsx',
   'pages/QuoteDetailPage.tsx',
   'pages/QuotesPage.tsx',
   'pages/TaskDetailPage.tsx',

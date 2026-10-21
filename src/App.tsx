@@ -170,16 +170,6 @@ const SettingsRoute = () => {
     const navigate = useNavigate();
     return <SettingsPage onOpenIcps={() => navigate('/crm/settings/icps')} />;
 };
-const MarketingOverviewPage = lazy(() => import('./pages/MarketingOverviewPage'));
-const MarketingAbandonedCartsPage = lazy(() => import('./pages/MarketingAbandonedCartsPage'));
-const MarketingCampaignsPage = lazy(() => import('./pages/MarketingCampaignsPage'));
-const MarketingSegmentsPage = lazy(() => import('./pages/MarketingSegmentsPage'));
-const MarketingCampaignDetailPage = lazy(() => import('./pages/MarketingCampaignDetailPage'));
-const MarketingAbandonedCartDetailPage = lazy(() => import('./pages/MarketingAbandonedCartDetailPage'));
-const MarketingNewsletterPage = lazy(() => import('./pages/MarketingNewsletterPage'));
-const MarketingCouponsPage = lazy(() => import('./pages/MarketingCouponsPage'));
-const MarketingReviewsPage = lazy(() => import('./pages/MarketingReviewsPage'));
-const MarketingWishlistPage = lazy(() => import('./pages/MarketingWishlistPage'));
 const PartnersPage = lazy(() => import('./pages/PartnersPage'));
 const PartnerDetailPage = lazy(() => import('./pages/PartnerDetailPage'));
 // Kept from the original Sales Target Engine: this is the only UI that can
@@ -265,16 +255,6 @@ const App = () => {
                     <Route path="targets/reviews" element={<PermissionGuard permission='sales_targets.read'><FlagGuard flagKey="submodule:crm:sales_reviews"><SalesReviewsPage /></FlagGuard></PermissionGuard>} />
                     <Route path="targets/templates" element={<PermissionGuard permission={['sales_targets.create','sales_targets.assign']}><FlagGuard flagKey="action:crm:targets:manage"><TargetTemplatesPage /></FlagGuard></PermissionGuard>} />
                     <Route path="targets/compensation" element={<PermissionGuard permission={['sales_targets.create','sales_targets.view_team']}><FlagGuard flagKey="action:crm:targets:compensation"><CompensationPage /></FlagGuard></PermissionGuard>} />
-                    <Route path="marketing/overview" element={<PermissionGuard permission='marketing.read'><ModuleGuard moduleId="dailystore"><MarketingOverviewPage /></ModuleGuard></PermissionGuard>} />
-                    <Route path="marketing/abandoned-carts" element={<PermissionGuard permission='marketing.read'><ModuleGuard moduleId="dailystore"><MarketingAbandonedCartsPage /></ModuleGuard></PermissionGuard>} />
-                    <Route path="marketing/abandoned-carts/:cartId" element={<PermissionGuard permission='marketing.read'><ModuleGuard moduleId="dailystore"><MarketingAbandonedCartDetailPage /></ModuleGuard></PermissionGuard>} />
-                    <Route path="marketing/campaigns" element={<PermissionGuard permission='marketing.read'><ModuleGuard moduleId="dailystore"><MarketingCampaignsPage /></ModuleGuard></PermissionGuard>} />
-                    <Route path="marketing/campaigns/:campaignId" element={<PermissionGuard permission='marketing.read'><ModuleGuard moduleId="dailystore"><MarketingCampaignDetailPage /></ModuleGuard></PermissionGuard>} />
-                    <Route path="marketing/segments" element={<PermissionGuard permission='marketing.read'><ModuleGuard moduleId="dailystore"><MarketingSegmentsPage /></ModuleGuard></PermissionGuard>} />
-                    <Route path="marketing/newsletter" element={<PermissionGuard permission='marketing.read'><ModuleGuard moduleId="dailystore"><MarketingNewsletterPage /></ModuleGuard></PermissionGuard>} />
-                    <Route path="marketing/coupons" element={<PermissionGuard permission='marketing.read'><ModuleGuard moduleId="dailystore"><MarketingCouponsPage /></ModuleGuard></PermissionGuard>} />
-                    <Route path="marketing/reviews" element={<PermissionGuard permission='marketing.read'><ModuleGuard moduleId="dailystore"><MarketingReviewsPage /></ModuleGuard></PermissionGuard>} />
-                    <Route path="marketing/wishlist" element={<PermissionGuard permission='marketing.read'><ModuleGuard moduleId="dailystore"><MarketingWishlistPage /></ModuleGuard></PermissionGuard>} />
                 </Routes>
                 </CrossLinkBridge>
             </CrmShellInitializer>

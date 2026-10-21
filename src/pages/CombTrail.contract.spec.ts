@@ -30,8 +30,6 @@ const DETAIL_TRAILS: Record<string, string[]> = {
     'TaskDetailPage.tsx': ["label: 'Tasks', to: '/crm/tasks'"],
     'QuoteDetailPage.tsx': ["label: 'Quotes', to: '/crm/quotes'"],
     'LeadDetailPage.tsx': ["'Customers' : 'Leads'", "'/crm/customers' : '/crm/leads'"],
-    'MarketingCampaignDetailPage.tsx': ["label: 'Marketing', to: '/crm/marketing/overview'", "label: 'Campaigns', to: '/crm/marketing/campaigns'"],
-    'MarketingAbandonedCartDetailPage.tsx': ["label: 'Marketing', to: '/crm/marketing/overview'", "label: 'Abandoned carts', to: '/crm/marketing/abandoned-carts'"],
 };
 
 describe('CRM page trail contract', () => {
