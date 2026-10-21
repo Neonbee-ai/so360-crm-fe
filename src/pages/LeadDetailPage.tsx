@@ -30,6 +30,7 @@ import { LeadJourneyStepper } from '../components/LeadJourneyStepper';
 import LeadProductsTab from './components/LeadProductsTab';
 import ActivityHistoryDrawer from './components/ActivityHistoryDrawer';
 import NeuraAiSummaryCard from './components/NeuraAiSummaryCard';
+import IcpFitCard from '../components/leads/IcpFitCard';
 import CustomerFeedbackTab from './components/CustomerFeedbackTab';
 import CallsTab, { LogCallModal } from './components/CallsTab';
 import AuditHistoryTab from './components/AuditHistoryTab';
@@ -827,6 +828,8 @@ const LeadDetailPage = () => {
                                 isInboxEnabled={isInboxEnabled}
                             />
                         )}
+
+                        {!isCustomerDetailRoute && <IcpFitCard meta={lead.custom_fields} />}
 
                         {/* Potential score */}
                         <Card
