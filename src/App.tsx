@@ -140,18 +140,6 @@ const PermissionGuard = ({ permission, children }: { permission: string | string
     );
 };
 
-// Guards a route behind a module enablement check — redirects to dashboard when disabled
-const ModuleGuard = ({ moduleId, children }: { moduleId: string; children: React.ReactNode }) => {
-    const shell = useShellBridge();
-    const navigate = useNavigate();
-    const enabled = shell?.isModuleEnabled ? shell.isModuleEnabled(moduleId) : true;
-    useEffect(() => {
-        if (shell && !enabled) navigate('/crm/dashboard', { replace: true });
-    }, [enabled, shell, navigate]);
-    if (!shell || !enabled) return null;
-    return <>{children}</>;
-};
-
 // Lazy load pages for performance
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const LeadsPage = lazy(() => import('./pages/LeadsPage'));
