@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Button, DataTable, EmptyState } from '@so360/design-system';
 import {
+    PRIORITY_LABEL,
     maintenanceTabService,
     type MaintenancePlanRow,
     type MaintenanceRequestRow,
@@ -15,17 +16,17 @@ interface Props {
 
 const PLAN_COLUMNS = [
     { key: 'name', header: 'Plan', render: (r: MaintenancePlanRow) => r.name ?? '—' },
-    { key: 'status', header: 'Status', render: (r: MaintenancePlanRow) => r.status ?? '—' },
-    { key: 'interval_days', header: 'Interval (days)', render: (r: MaintenancePlanRow) => r.interval_days ?? '—' },
+    { key: 'active', header: 'Status', render: (r: MaintenancePlanRow) => (r.active === false ? 'Paused' : 'Active') },
+    { key: 'interval', header: 'Interval', render: (r: MaintenancePlanRow) => (r.interval_value && r.interval_unit ? `Every ${r.interval_value} ${r.interval_unit}` : '—') },
     { key: 'next_due_at', header: 'Next due', render: (r: MaintenancePlanRow) => r.next_due_at ? r.next_due_at.slice(0, 10) : '—' },
 ];
 
 const REQUEST_COLUMNS = [
-    { key: 'request_number', header: 'Request', render: (r: MaintenanceRequestRow) => r.request_number ?? r.id },
+    { key: 'number', header: 'Request', render: (r: MaintenanceRequestRow) => r.number ?? r.id },
     { key: 'title', header: 'Title', render: (r: MaintenanceRequestRow) => r.title ?? '—' },
-    { key: 'status', header: 'Status', render: (r: MaintenanceRequestRow) => r.status ?? '—' },
-    { key: 'priority', header: 'Priority', render: (r: MaintenanceRequestRow) => r.priority ?? '—' },
-    { key: 'due_date', header: 'Due', render: (r: MaintenanceRequestRow) => r.due_date ? r.due_date.slice(0, 10) : '—' },
+    { key: 'stage', header: 'Stage', render: (r: MaintenanceRequestRow) => r.stage?.name ?? '—' },
+    { key: 'priority', header: 'Priority', render: (r: MaintenanceRequestRow) => (r.priority == null ? '—' : PRIORITY_LABEL[r.priority] ?? String(r.priority)) },
+    { key: 'scheduled_start', header: 'Scheduled', render: (r: MaintenanceRequestRow) => r.scheduled_start ? r.scheduled_start.slice(0, 10) : '—' },
 ];
 
 /**

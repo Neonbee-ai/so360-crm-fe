@@ -7,19 +7,27 @@ export const MAINTENANCE_TAB_FLAG = 'submodule:crm:maintenance-tab';
 export interface MaintenancePlanRow {
     id: string;
     name?: string | null;
-    status?: string | null;
-    interval_days?: number | null;
+    active?: boolean | null;
+    interval_unit?: 'days' | 'months' | null;
+    interval_value?: number | null;
     next_due_at?: string | null;
 }
 
 export interface MaintenanceRequestRow {
     id: string;
-    request_number?: string | null;
+    number?: string | null;
     title?: string | null;
-    status?: string | null;
-    priority?: string | null;
-    due_date?: string | null;
+    /** 0 Low, 1 Normal, 2 High, 3 Critical. */
+    priority?: number | null;
+    scheduled_start?: string | null;
+    is_scrap?: boolean | null;
+    stage?: { name?: string | null; request_done?: boolean | null; is_scrap?: boolean | null } | null;
 }
+
+export const PRIORITY_LABEL: Record<number, string> = { 0: 'Low', 1: 'Normal', 2: 'High', 3: 'Critical' };
+
+/** A request is open until its stage is a done/scrap stage. */
+export const isOpenRequest = (r: MaintenanceRequestRow): boolean => !(r.stage?.request_done || r.stage?.is_scrap || r.is_scrap);
 
 export interface MaintenanceScope {
     customerPartnerId?: string | null;
@@ -53,7 +61,7 @@ export const maintenanceTabService = {
         const rows = unwrapList<MaintenanceRequestRow>(
             await crmMaintenanceClient.get<unknown>('/v1/maintenance/requests', { ...scopeParams(scope), archived: false }),
         );
-        return rows.filter((r) => !['completed', 'closed', 'cancelled'].includes(String(r.status ?? '').toLowerCase()));
+        return rows.filter(isOpenRequest);
     },
 };
 

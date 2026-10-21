@@ -18,7 +18,7 @@ vi.mock('../../services/maintenanceTabService', async (importActual) => {
 });
 
 import MaintenanceTab from './MaintenanceTab';
-import { withMaintenanceTab, unwrapList } from '../../services/maintenanceTabService';
+import { withMaintenanceTab, unwrapList, isOpenRequest } from '../../services/maintenanceTabService';
 
 beforeEach(() => {
     svc.listPlans.mockReset();
@@ -60,8 +60,8 @@ describe('Feature: Maintenance tab rendering', () => {
     });
 
     it('Given plans and open requests / When loaded / Then both tables list them', async () => {
-        svc.listPlans.mockResolvedValue([{ id: 'pl1', name: 'Quarterly AC', status: 'active', interval_days: 90, next_due_at: '2026-11-01T00:00:00Z' }]);
-        svc.listOpenRequests.mockResolvedValue([{ id: 'r1', request_number: 'MR-1', title: 'Leak', status: 'open', priority: 'high' }]);
+        svc.listPlans.mockResolvedValue([{ id: 'pl1', name: 'Quarterly AC', active: true, interval_unit: 'days', interval_value: 90, next_due_at: '2026-11-01T00:00:00Z' }]);
+        svc.listOpenRequests.mockResolvedValue([{ id: 'r1', number: 'MR-1', title: 'Leak', stage: { name: 'In progress' }, priority: 2 }]);
         render(<MaintenanceTab dealId="d1" />);
         await waitFor(() => expect(screen.getByText('Quarterly AC')).toBeTruthy());
         expect(screen.getByText('2026-11-01')).toBeTruthy();
@@ -83,5 +83,14 @@ describe('Feature: Maintenance tab rendering', () => {
         svc.listOpenRequests.mockReturnValue(new Promise(() => {}));
         render(<MaintenanceTab dealId="d1" />);
         expect(screen.getByRole('status')).toBeTruthy();
+    });
+});
+
+describe('isOpenRequest', () => {
+    it('Given done, scrap and active stages / When filtered / Then only active stays open', () => {
+        expect(isOpenRequest({ id: '1', stage: { request_done: true } })).toBe(false);
+        expect(isOpenRequest({ id: '2', stage: { is_scrap: true } })).toBe(false);
+        expect(isOpenRequest({ id: '3', is_scrap: true })).toBe(false);
+        expect(isOpenRequest({ id: '4', stage: { name: 'New' } })).toBe(true);
     });
 });
