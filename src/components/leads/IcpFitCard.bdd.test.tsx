@@ -211,10 +211,10 @@ describe('Feature: band rendering at every edge', () => {
   });
 
   it.each([
-    [90, 'emerald'], [70, 'blue'], [50, 'amber'], [10, 'slate'],
-  ])('Given score %i When rendered Then badge uses the %s colour family', (s, colour) => {
+    [90, 'success'], [70, 'info'], [50, 'warning'], [10, 'neutral'],
+  ])('Given score %i When rendered Then badge uses the %s tone', (s, colour) => {
     render(<IcpFitCard meta={{ icp_score: s }} />);
-    expect(screen.getByTestId('icp-fit-band').className).toContain(`text-${colour}-400`);
+    expect(screen.getByTestId('icp-fit-band').getAttribute('data-tone')).toBe(colour);
   });
 });
 
