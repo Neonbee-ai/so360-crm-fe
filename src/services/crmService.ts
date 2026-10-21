@@ -91,6 +91,12 @@ const PROJECTS_API_ORIGIN = String(
     'http://localhost:3010'
 ).replace(/\/$/, '');
 
+const MAINTENANCE_API_ORIGIN = String(
+    win.VITE_SO360_MAINTENANCE_API ||
+    import.meta.env.VITE_SO360_MAINTENANCE_API ||
+    'http://localhost:3058'
+).replace(/\/$/, '');
+
 const API_BASE_URL = CRM_API_ORIGIN;
 let TENANT_ID = 'default-tenant';
 let ORG_ID = 'default-org';
@@ -517,6 +523,9 @@ const neuraClient = new ApiClient(NEURA_API_ORIGIN, TENANT_ID);
 // selector both need this. Projects BE sets no global route prefix (bare
 // /projects, matching the neuraClient comment above's pattern).
 const projectsClient = new ApiClient(PROJECTS_API_ORIGIN, TENANT_ID);
+// Maintenance module's own backend (/v1/maintenance/*) — read-only lists for the
+// customer / deal "Maintenance" tab. Called directly, no CRM BE proxy.
+const maintenanceClient = new ApiClient(MAINTENANCE_API_ORIGIN, TENANT_ID);
 /**
  * Core and Inventory clients for the record importers (existing clients →
  * Core channel import; projects/towers/units → Inventory), sharing the
@@ -525,6 +534,7 @@ const projectsClient = new ApiClient(PROJECTS_API_ORIGIN, TENANT_ID);
 export { coreClient as crmCoreClient, inventoryClient as crmInventoryClient };
 /** Neura AI client (bare routes, no CRM BE involved) — ICP drafting. */
 export { neuraClient as crmNeuraClient };
+export { maintenanceClient as crmMaintenanceClient };
 
 // Type Definitions for API Responses
 interface LeadStatsResponse {
@@ -2982,6 +2992,7 @@ export const crmService = {
         neuraClient.setTenantId(id);
         inboxClient.setTenantId(id);
         projectsClient.setTenantId(id);
+        maintenanceClient.setTenantId(id);
     },
     setOrgId: (id: string) => {
         if (id !== ORG_ID) {
@@ -3006,6 +3017,7 @@ export const crmService = {
         neuraClient.setOrgId(id);
         inboxClient.setOrgId(id);
         projectsClient.setOrgId(id);
+        maintenanceClient.setOrgId(id);
     },
     setUser: (user: User) => {
         CURRENT_USER = user;
@@ -3026,6 +3038,7 @@ export const crmService = {
         neuraClient.setAccessToken(token);
         inboxClient.setAccessToken(token);
         projectsClient.setAccessToken(token);
+        maintenanceClient.setAccessToken(token);
     },
 };
 

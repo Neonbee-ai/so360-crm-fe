@@ -23,6 +23,8 @@ import { Lead, Deal, Task, Activity, ActivityType, CustomFieldDefinition, LeadSc
 import { useCrmFeatureFlag } from '../hooks/useCrmFeatureFlag';
 import { ContactFeedPanel } from '../components/ContactFeedPanel';
 import { S2S_FLAGS } from '../services/coreS2sService';
+import MaintenanceTab from './components/MaintenanceTab';
+import { MAINTENANCE_TAB_FLAG, withMaintenanceTab } from '../services/maintenanceTabService';
 import { toast, useConfirm, DetailPageTemplate, Button, IconButton, Tabs, TextField, Select, Checkbox, Badge, Card, ConfirmDialog, EmptyState, FileUpload, Grid, GridItem } from '@so360/design-system';
 import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import { Trophy, Zap, Info, TrendingUp, RefreshCw, Check } from 'lucide-react';
@@ -56,7 +58,7 @@ import { MergeLeadPanel } from '../components/leads/MergeLeadPanel';
 import { DuplicateLeadWarning } from '../components/leads/DuplicateLeadWarning';
 import { parseDuplicateLead, type DuplicateLeadInfo } from '../services/leadDedupService';
 
-type TabType = 'overview' | 'activity' | 'notes' | 'tasks' | 'documents' | 'products' | 'feedback' | 'calls' | 'audit' | 'stakeholders' | 'emails' | 'meetings';
+type TabType = 'overview' | 'activity' | 'notes' | 'tasks' | 'documents' | 'products' | 'feedback' | 'calls' | 'audit' | 'stakeholders' | 'emails' | 'meetings' | 'maintenance';
 
 interface TabCounts {
     tasks: number;
@@ -198,6 +200,7 @@ const LeadDetailPage = () => {
     const [scoringRules, setScoringRules] = useState<LeadScoringRule[]>([]);
     const ratingEnabled = useCrmFeatureFlag('submodule:crm:lead_rating');
     const contactFeedEnabled = useCrmFeatureFlag(S2S_FLAGS.CONTACT_FEED);
+    const maintenanceTabOn = useCrmFeatureFlag(MAINTENANCE_TAB_FLAG);
     const [scoreCategories, setScoreCategories] = useState<import('../types/crm').ScoreCategory[]>([]);
     const [isRecalculatingScore, setIsRecalculatingScore] = useState(false);
     const [activeTab, setActiveTab] = useState<TabType>('overview');
@@ -586,13 +589,13 @@ const LeadDetailPage = () => {
 
     // Overview first, Activity last (Comb DetailPageTemplate tab order); the
     // middle tabs keep the user's saved layout order/visibility.
-    const detailTabs = [
+    const detailTabs = withMaintenanceTab([
         { id: 'overview', label: 'Overview' },
         ...layoutPrefs.visibleSections
             .filter((section) => section.key !== 'activity' && TAB_CONFIG[section.key])
             .map((section) => ({ id: section.key, label: String(TAB_CONFIG[section.key].label(tabCounts)).trim() })),
         ...(layoutPrefs.visibleSections.some((section) => section.key === 'activity') ? [{ id: 'activity', label: 'Activity' }] : []),
-    ];
+    ], maintenanceTabOn && isCustomerDetailRoute);
 
     const recentActivity = timelineEvents.slice(0, 3);
 
@@ -1938,6 +1941,12 @@ const LeadDetailPage = () => {
                             {activeTab === 'calls' && lead && (
                                 <Card title="Calls">
                                     <CallsTab key={callsRefreshKey} leadId={lead.id} />
+                                </Card>
+                            )}
+
+                            {activeTab === 'maintenance' && lead && maintenanceTabOn && isCustomerDetailRoute && (
+                                <Card title="Maintenance">
+                                    <MaintenanceTab customerPartnerId={lead.core_partner_id} />
                                 </Card>
                             )}
 
