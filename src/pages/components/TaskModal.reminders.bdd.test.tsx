@@ -22,7 +22,7 @@ vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useShell: () => ({ user: { id: 'u1', full_name: 'Test User', email: 't@t.com' } }),
   useNotify: () => ({ emitNotification: vi.fn() }),
-  useActivity: () => ({ recordActivity: vi.fn() }),
+  useActivity: () => ({ recordActivity: vi.fn().mockResolvedValue(undefined) }),
   useShellBridge: () => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => flagOn, isFeatureHidden: () => false }),
   useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),
 }));
@@ -68,7 +68,7 @@ describe('Given the task_reminders flag', () => {
   it('When the type is REMINDER Then the per-task offset field is hidden', async () => {
     render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
     await waitFor(() => screen.getByPlaceholderText(/follow up/i));
-    fireEvent.change(document.querySelectorAll('select')[0], { target: { value: 'REMINDER' } });
+    fireEvent.change(document.querySelector('select[name="task-type"]')!, { target: { value: 'REMINDER' } });
     expect(document.querySelector('input[name="task-reminder-offset"]')).toBeNull();
   });
 });

@@ -627,6 +627,9 @@ const COL_DEF_MAP = new Map(COL_DEFS.map((c) => [c.key, c]));
 
 // ─── Column Manager ────────────────────────────────────────────────────────────
 
+/** Columns offered only while their feature is on (ICP flag, lead rating). */
+const CONDITIONAL_COLS = new Set(['icp_fit', 'rating']);
+
 interface ColumnManagerProps {
   columns: ColumnPreference[];
   onToggle: (key: string, visible: boolean) => void;
@@ -634,9 +637,11 @@ interface ColumnManagerProps {
   onReset: () => void;
   onClose: () => void;
   onReorder: (fromKey: string, toKey: string) => void;
+  /** Labels for columns that only exist conditionally (Fit, Rating, custom fields). */
+  labelOf: (key: string) => string | undefined;
 }
 
-function ColumnManager({ columns, onToggle, onPin, onReset, onClose, onReorder }: ColumnManagerProps) {
+function ColumnManager({ columns, onToggle, onPin, onReset, onClose, onReorder, labelOf }: ColumnManagerProps) {
   const dragging = useRef<string | null>(null);
 
   const manageable = [...columns]
@@ -658,7 +663,7 @@ function ColumnManager({ columns, onToggle, onPin, onReset, onClose, onReorder }
     >
         <div className="space-y-1">
           {manageable.map((col) => {
-            const def = COL_DEF_MAP.get(col.key) ?? (col.key === 'icp_fit' ? ICP_FIT_COL : undefined);
+            const label = labelOf(col.key);
             return (
               <div
                 key={col.key}
@@ -669,9 +674,9 @@ function ColumnManager({ columns, onToggle, onPin, onReset, onClose, onReorder }
                 onDrop={() => { if (dragging.current && dragging.current !== col.key) onReorder(dragging.current, col.key); dragging.current = null; }}
               >
                 <GripVertical size={14} className="text-fg-muted group-hover:text-fg-subtle cursor-grab" />
-                <IconButton label={`Toggle ${def?.label ?? col.key}`} icon={<Check size={10} className={col.visible ? 'text-primary' : 'opacity-0'} />} onClick={() => onToggle(col.key, !col.visible)} />
+                <IconButton label={`Toggle ${label ?? col.key}`} icon={<Check size={10} className={col.visible ? 'text-primary' : 'opacity-0'} />} onClick={() => onToggle(col.key, !col.visible)} />
                 <span className="text-sm text-fg-subtle flex-1 select-none">
-                  {def?.label ?? col.key}
+                  {label ?? col.key}
                 </span>
                 <Button variant={col.pinned ? 'primary' : 'secondary'} size="sm" onClick={() => onPin(col.key, !col.pinned)} title={col.pinned ? 'Unpin column' : 'Pin column to left'}>
                   {col.pinned ? 'Pinned' : 'Pin'}
@@ -1092,7 +1097,7 @@ export function LeadsDataGrid({
 
   // Compute sticky left offsets
   // The Fit column only exists while the ICP flag is on.
-  const shownColumns = visibleColumns.filter((c) => c.key !== 'icp_fit' || colDefMap.has('icp_fit'));
+  const shownColumns = visibleColumns.filter((c) => !CONDITIONAL_COLS.has(c.key) || colDefMap.has(c.key));
   const pinnedCols = shownColumns.filter((c) => c.pinned);
   const unpinnedCols = shownColumns.filter((c) => !c.pinned);
   const orderedCols = [...pinnedCols, ...unpinnedCols];
@@ -1608,7 +1613,8 @@ export function LeadsDataGrid({
       {/* Column manager modal */}
       {showColumnManager && (
         <ColumnManager
-          columns={icpEnabled ? columns : columns.filter((c) => c.key !== 'icp_fit')}
+          columns={columns.filter((c) => !CONDITIONAL_COLS.has(c.key) || colDefMap.has(c.key))}
+          labelOf={(key) => colDefMap.get(key)?.label}
           onToggle={(key, visible) => updateColumn(key, { visible })}
           onPin={(key, pinned) => updateColumn(key, { pinned })}
           onReset={resetToDefaults}

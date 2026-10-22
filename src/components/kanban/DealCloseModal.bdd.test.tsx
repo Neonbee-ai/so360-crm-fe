@@ -52,8 +52,8 @@ describe('Given a deal dropped on a lost stage with configured reasons', () => {
     describe('When a competitor-requiring reason is picked without a competitor', () => {
         it('Then it asks for the competitor, then submits with it', async () => {
             const p = setup('lost');
-            const select = await screen.findByLabelText(/lost reason/i);
             await waitFor(() => expect(screen.getByText('Went elsewhere')).toBeInTheDocument());
+            const select = screen.getByLabelText(/lost reason/i);
             expect(screen.queryByText('Retired')).toBeNull();
             fireEvent.change(select, { target: { value: 'r2' } });
             submit();
@@ -67,8 +67,8 @@ describe('Given a deal dropped on a lost stage with configured reasons', () => {
     describe('When a plain reason is picked', () => {
         it('Then it submits only the reason id', async () => {
             const p = setup('lost');
-            const select = await screen.findByLabelText(/lost reason/i);
             await waitFor(() => expect(screen.getByText('Price')).toBeInTheDocument());
+            const select = screen.getByLabelText(/lost reason/i);
             fireEvent.change(select, { target: { value: 'r1' } });
             submit();
             expect(p.onLose).toHaveBeenCalledWith({ lost_reason_id: 'r1' });

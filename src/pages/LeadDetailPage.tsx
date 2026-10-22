@@ -856,8 +856,6 @@ const LeadDetailPage = () => {
                             />
                         )}
 
-                        {!isCustomerDetailRoute && <IcpFitCard meta={lead.custom_fields} />}
-
                         {/* Potential score */}
                         <Card
                             title={isCustomerDetailRoute ? 'Customer potential' : 'Lead potential'}

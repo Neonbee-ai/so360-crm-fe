@@ -13,7 +13,7 @@ import LeadRatingHistory, { describeRatingChange } from './LeadRatingHistory';
 
 const cats = [{ id: 'hot', label: 'Hot' }, { id: 'warm', label: 'Warm' }];
 const base = { lead_id: 'l1', from_category_id: null, actor_user_id: null, note: null, created_at: '2026-10-01', milestone: null };
-beforeEach(() => svc.history.mockReset());
+beforeEach(() => { svc.history.mockReset(); });
 
 describe('Given the rating history card', () => {
     it('When there is no history Then nothing renders', async () => {

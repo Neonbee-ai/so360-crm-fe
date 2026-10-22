@@ -316,6 +316,18 @@ describe('PipelinePage', () => {
     });
 
     it('When Won is confirmed / Then the deal moves optimistically to the Won column', async () => {
+      // The page refetches after the win; the server now reports the deal as won.
+      mockWin.mockImplementation(async () => {
+        mockGetPipeline.mockResolvedValue({
+          stages: threeStages.stages.map((st: any) => ({
+            ...st,
+            deals: st.id === 'won'
+              ? [{ id: 'd1', name: 'Acme Corp', value: 5000, current_flow_state: 'won', owner_id: 'u1' }]
+              : (st.deals || []).filter((d: any) => d.id !== 'd1'),
+          })),
+        });
+        return {};
+      });
       const user = userEvent.setup();
       render(<PipelinePage />);
       await waitFor(() => expect(screen.getByTestId('kanban')).toBeInTheDocument());
