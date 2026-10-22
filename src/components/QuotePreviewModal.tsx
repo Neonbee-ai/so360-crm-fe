@@ -12,6 +12,9 @@ interface Props {
 }
 
 /** Quote preview rendered by Core with the org default layout, in a sandboxed iframe. */
+// An iframe has no intrinsic height, so the preview frame needs an explicit viewport-relative one.
+const PREVIEW_FRAME_CLASS = 'w-full h-[70vh] border border-line rounded-nb-md bg-surface'; // comb-exception: iframe has no intrinsic height
+
 export const QuotePreviewModal = ({ isOpen, onClose, document }: Props) => {
     const [html, setHtml] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
@@ -37,7 +40,7 @@ export const QuotePreviewModal = ({ isOpen, onClose, document }: Props) => {
             {loading ? (
                 <p className="text-sm text-fg-muted">Rendering…</p>
             ) : html ? (
-                <iframe title="Quote preview" sandbox="" srcDoc={html} className="w-full h-[70vh] border border-line rounded-nb-md bg-surface" />
+                <iframe title="Quote preview" sandbox="" srcDoc={html} className={PREVIEW_FRAME_CLASS} />
             ) : (
                 <EmptyState icon={FileText} title="Preview unavailable" />
             )}
