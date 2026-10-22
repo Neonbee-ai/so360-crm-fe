@@ -23,5 +23,6 @@ jobs:
         VITE_BASE_URL=https://cdn.neonbee.app/crm/
         VITE_SO360_CORE_API=https://api.neonbee.app/core
         VITE_SO360_CRM_API=https://api.neonbee.app/crm
+        VITE_SO360_MAINTENANCE_API=https://api.neonbee.app/maintenance
         VITE_ENVIRONMENT=cloud
     secrets: inherit

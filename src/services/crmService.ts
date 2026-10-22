@@ -91,6 +91,12 @@ const PROJECTS_API_ORIGIN = String(
     'http://localhost:3010'
 ).replace(/\/$/, '');
 
+const MAINTENANCE_API_ORIGIN = String(
+    win.VITE_SO360_MAINTENANCE_API ||
+    import.meta.env.VITE_SO360_MAINTENANCE_API ||
+    'http://localhost:3058'
+).replace(/\/$/, '');
+
 const API_BASE_URL = CRM_API_ORIGIN;
 let TENANT_ID = 'default-tenant';
 let ORG_ID = 'default-org';
@@ -517,6 +523,9 @@ const neuraClient = new ApiClient(NEURA_API_ORIGIN, TENANT_ID);
 // selector both need this. Projects BE sets no global route prefix (bare
 // /projects, matching the neuraClient comment above's pattern).
 const projectsClient = new ApiClient(PROJECTS_API_ORIGIN, TENANT_ID);
+// Maintenance module's own backend (/v1/maintenance/*) — read-only lists for the
+// customer / deal "Maintenance" tab. Called directly, no CRM BE proxy.
+const maintenanceClient = new ApiClient(MAINTENANCE_API_ORIGIN, TENANT_ID);
 /**
  * Core and Inventory clients for the record importers (existing clients →
  * Core channel import; projects/towers/units → Inventory), sharing the
@@ -525,6 +534,7 @@ const projectsClient = new ApiClient(PROJECTS_API_ORIGIN, TENANT_ID);
 export { coreClient as crmCoreClient, inventoryClient as crmInventoryClient };
 /** Neura AI client (bare routes, no CRM BE involved) — ICP drafting. */
 export { neuraClient as crmNeuraClient };
+export { maintenanceClient as crmMaintenanceClient };
 
 // Type Definitions for API Responses
 interface LeadStatsResponse {
@@ -550,6 +560,7 @@ interface PipelineStage {
     name: string;
     order: number;
     color?: string;
+    probability?: number | null;
 }
 
 // Redundant local CustomFieldDefinition removed to fix lint conflict with imported type
@@ -1210,6 +1221,7 @@ export const settingsApi = {
             order: number;
             color?: string;
             type?: 'OPEN' | 'WON' | 'LOST';
+            probability?: number | null;
         }): Promise<PipelineStage> => {
             return apiClient.post<PipelineStage>('/settings/pipeline-stages', data);
         },
@@ -1224,6 +1236,7 @@ export const settingsApi = {
                 order?: number;
                 color?: string;
                 type?: 'OPEN' | 'WON' | 'LOST';
+                probability?: number | null;
             }
         ): Promise<PipelineStage> => {
             return apiClient.patch<PipelineStage>(
@@ -1687,6 +1700,9 @@ export const crmService = {
             owner_id: lead.owner_id || USER_ID,
             referred_by: (lead as any).referred_by,
             meta_data: lead.custom_fields,
+            // Resend after the user accepts a "warn" duplicate; rating set by hand.
+            ...((lead as any).confirm_duplicates && { confirm_duplicates: true }),
+            ...((lead as any).rating_category_id && { rating_category_id: (lead as any).rating_category_id }),
         });
     },
 
@@ -1714,6 +1730,7 @@ export const crmService = {
         if (updates.contact_email !== undefined) data.email = updates.contact_email;
         if (updates.phone !== undefined) data.phone = updates.phone;
         if (updates.source !== undefined) data.source = updates.source;
+        if ((updates as any).rating_category_id !== undefined) data.rating_category_id = (updates as any).rating_category_id;
         if (updates.status !== undefined) {
             // Check if it's FE name or BE name
             data.status = STATUS_MAP_FE_TO_BE[updates.status] || updates.status;
@@ -1941,6 +1958,7 @@ export const crmService = {
                 deal_stages: stages.map(s => ({
                     id: s.id,
                     name: s.name,
+                    probability: s.probability ?? null,
                     type: s.type || (['Won', 'Closed Won'].includes(s.name) ? 'WON' : ['Lost', 'Closed Lost'].includes(s.name) ? 'LOST' : 'OPEN')
                 })),
                 lead_stages: leadStages.map(s => ({ id: s.id, name: s.name })),
@@ -2011,12 +2029,14 @@ export const crmService = {
                     name: s.name,
                     order: newStages.indexOf(s) + 1,
                     color: '#3b82f6',
-                    type: s.type
+                    type: s.type,
+                    probability: s.probability ?? null
                 })),
                 ...stagesToUpdate.map(s => apiClient.patch(`/settings/pipeline-stages/${s.id}`, {
                     name: s.name,
                     order: newStages.indexOf(s) + 1,
-                    type: s.type
+                    type: s.type,
+                    probability: s.probability ?? null
                 })),
                 ...stagesToDelete.map(s => apiClient.delete(`/settings/pipeline-stages/${s.id}`))
             ]);
@@ -2536,8 +2556,8 @@ export const crmService = {
     async sendQuote(
         quoteId: string,
         payload: { to?: string; message?: string } = {},
-    ): Promise<{ sent: boolean; to?: string; reason?: string }> {
-        return apiClient.post<{ sent: boolean; to?: string; reason?: string }>(
+    ): Promise<{ sent: boolean; to?: string; reason?: string; pending_approval?: boolean; approval_reasons?: Array<{ rule: 'discount' | 'total' | 'margin'; actual: number; threshold: number }> }> {
+        return apiClient.post<{ sent: boolean; to?: string; reason?: string; pending_approval?: boolean; approval_reasons?: Array<{ rule: 'discount' | 'total' | 'margin'; actual: number; threshold: number }> }>(
             `/quotes/${quoteId}/send`,
             payload,
         );
@@ -2863,6 +2883,7 @@ export const crmService = {
         neuraClient.setTenantId(id);
         inboxClient.setTenantId(id);
         projectsClient.setTenantId(id);
+        maintenanceClient.setTenantId(id);
     },
     setOrgId: (id: string) => {
         if (id !== ORG_ID) {
@@ -2887,6 +2908,7 @@ export const crmService = {
         neuraClient.setOrgId(id);
         inboxClient.setOrgId(id);
         projectsClient.setOrgId(id);
+        maintenanceClient.setOrgId(id);
     },
     setUser: (user: User) => {
         CURRENT_USER = user;
@@ -2907,6 +2929,7 @@ export const crmService = {
         neuraClient.setAccessToken(token);
         inboxClient.setAccessToken(token);
         projectsClient.setAccessToken(token);
+        maintenanceClient.setAccessToken(token);
     },
 };
 

@@ -18,6 +18,7 @@ import {
   UploadCloud,
 } from 'lucide-react';
 import { crmService } from '../services/crmService';
+import { ratingService, type RatingCategory } from '../services/salesConfigService';
 import { Lead, User } from '../types/crm';
 import { CreateLeadModal } from '../components/leads/CreateLeadModal';
 import { ImportHub } from '../components/import/ImportHub';
@@ -44,6 +45,7 @@ interface FilterState {
   status: string;
   owner: string;
   creator: string;
+  rating: string;
   dateRange: string;
   customDateStart: string;
   customDateEnd: string;
@@ -57,6 +59,7 @@ const DEFAULT_FILTERS: FilterState = {
   status: 'All',
   owner: 'All',
   creator: 'All',
+  rating: 'All',
   dateRange: 'All',
   customDateStart: '',
   customDateEnd: '',
@@ -180,6 +183,12 @@ const LeadsPage = () => {
   const [leadStages, setLeadStages] = useState<{ id: string; name: string }[]>([]);
   const [leadSources, setLeadSources] = useState<string[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const ratingEnabled = useCrmFeatureFlag('submodule:crm:lead_rating');
+  const [ratings, setRatings] = useState<RatingCategory[]>([]);
+  useEffect(() => {
+    if (!ratingEnabled) { setRatings([]); return; }
+    ratingService.list().then((rows) => setRatings(rows.filter((r) => r.is_active !== false))).catch(() => setRatings([]));
+  }, [ratingEnabled]);
   const [customFields, setCustomFields] = useState<{ id: string; label: string }[]>([]);
   const [gridControlsSlot, setGridControlsSlot] = useState<HTMLElement | null>(null);
   const [activeSegmentName, setActiveSegmentName] = useState<string | null>(null);
@@ -337,6 +346,7 @@ const LeadsPage = () => {
       if (filters.owner === UNASSIGNED_OWNER) { if (lead.owner?.id) return false; }
       else if (filters.owner !== 'All' && lead.owner?.id !== filters.owner) return false;
       if (filters.creator !== 'All' && lead.creator?.id !== filters.creator) return false;
+      if (filters.rating !== 'All' && lead.rating_category_id !== filters.rating) return false;
       if (!isDateInRange(lead.created_at, filters.dateRange, filters.customDateStart, filters.customDateEnd)) return false;
       return true;
     });
@@ -644,7 +654,8 @@ const LeadsPage = () => {
     onOpen: (lead) => navigate(`${lead.id}`),
     formatDate: formatters.formatDate,
     onInlineEdit: handleInlineEdit,
-  }), [users, leadStages, canUpdateLead, canDeleteLead, handleOwnerChange, handleStatusChange, navigate, formatters, handleInlineEdit]);
+    ratings: ratingEnabled ? ratings : undefined,
+  }), [users, leadStages, canUpdateLead, canDeleteLead, handleOwnerChange, handleStatusChange, navigate, formatters, handleInlineEdit, ratingEnabled, ratings]);
 
   const bulkActions = useMemo(() => [
     {
@@ -704,6 +715,7 @@ const LeadsPage = () => {
       },
       { key: 'customDates', label: 'Custom dates', type: 'daterange' },
       { key: 'creator', label: 'Created by', type: 'select', options: users.map((u) => ({ value: u.id, label: u.full_name })) },
+      ...(ratingEnabled && ratings.length > 0 ? [{ key: 'rating', label: 'Rating', type: 'select' as const, options: ratings.map((r) => ({ value: r.id, label: r.label })) }] : []),
       {
         key: 'advanced', label: 'Advanced', type: 'custom',
         formatValue: () => `Advanced (${advancedFilter ? countActiveRules(advancedFilter) : 0})`,
@@ -718,6 +730,7 @@ const LeadsPage = () => {
       ...(filters.dateRange !== 'All' ? { dateRange: filters.dateRange } : {}),
       ...(filters.customDateStart || filters.customDateEnd ? { customDates: { start: filters.customDateStart, end: filters.customDateEnd } } : {}),
       ...(filters.creator !== 'All' ? { creator: filters.creator } : {}),
+      ...(filters.rating !== 'All' ? { rating: filters.rating } : {}),
       ...(activeSegmentName ? { segment: activeSegmentName } : {}),
       ...(advancedFilter ? { advanced: 'on' } : {}),
     } as FilterValues,
@@ -730,6 +743,7 @@ const LeadsPage = () => {
         status: (next.status as string) || 'All',
         owner: (next.owner as string) || 'All',
         creator: (next.creator as string) || 'All',
+        rating: (next.rating as string) || 'All',
         customDateStart: cd?.start ?? '',
         customDateEnd: cd?.end ?? '',
         dateRange: cd && (cd.start || cd.end) ? 'Custom' : ((next.dateRange as string) || 'All'),

@@ -30,7 +30,7 @@ import {
 } from '../../utils/postalCodeRules';
 import { describeApiError } from '../../utils/apiErrorMessage';
 import { isWonLeadStage } from '../../utils/leadStages';
-import { parseDuplicateLead, type DuplicateLeadInfo } from '../../services/leadDedupService';
+import { parseDuplicateLead, parseRuleDuplicate, type DuplicateLeadInfo, type RuleDuplicateInfo } from '../../services/leadDedupService';
 import { DuplicateLeadWarning } from './DuplicateLeadWarning';
 
 /**
@@ -149,6 +149,8 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
     /** A 409 from the backend: the address already belongs to this record. */
     const [existingRecord, setExistingRecord] = useState<{ id: string; type: string | null } | null>(null);
     const [duplicateLead, setDuplicateLead] = useState<DuplicateLeadInfo | null>(null);
+    /** Phone / company-name rule hit (org's duplicate rules). */
+    const [ruleDuplicate, setRuleDuplicate] = useState<RuleDuplicateInfo | null>(null);
     const [errors, setErrors] = useState<FieldErrors>({});
     const fieldRefs = useRef<Record<string, HTMLElement | null>>({});
 
@@ -195,10 +197,11 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
         name => name && (name as string).toLowerCase() === (formData.company_name || '').toLowerCase() && (formData.company_name || '').length > 0
     );
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent, confirmDuplicates = false) => {
         e.preventDefault();
         setError(null);
         setDuplicateLead(null);
+        setRuleDuplicate(null);
 
         // Format errors are caught here too, not only on blur: a value pasted
         // and submitted without ever leaving the field must still be checked.
@@ -226,6 +229,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                 notes: [],
                 owner_id: formData.owner_id,
                 referred_by: formData.referred_by || undefined,
+                ...(confirmDuplicates && { confirm_duplicates: true }),
             } as any);
             // Fire-and-forget notification + activity
             recordActivity({ eventType: 'lead.created', eventCategory: 'crm', description: `Created lead "${formData.company_name}"`, resourceType: 'lead', resourceId: newLead?.id }).catch(() => {});
@@ -238,6 +242,12 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
             if (dup) {
                 setExistingRecord(null);
                 setDuplicateLead(dup);
+                return;
+            }
+            const ruleDup = parseRuleDuplicate(err);
+            if (ruleDup) {
+                setExistingRecord(null);
+                setRuleDuplicate(ruleDup);
                 return;
             }
             const body = (err as { body?: { code?: string; existing_id?: string; existing_type?: string | null } })?.body;
@@ -305,6 +315,14 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                                                     </div>
                                                 )}
 
+                                                {ruleDuplicate && (
+                                                    <DuplicateLeadWarning
+                                                        duplicate={ruleDuplicate}
+                                                        matchedOn={ruleDuplicate.matchedOn}
+                                                        onCancel={onClose}
+                                                        onCreateAnyway={ruleDuplicate.canOverride ? () => handleSubmit({ preventDefault: () => {} } as React.FormEvent, true) : undefined}
+                                                    />
+                                                )}
                                                 {duplicateLead && (
                                                     <DuplicateLeadWarning duplicate={duplicateLead} onCancel={onClose} />
                                                 )}

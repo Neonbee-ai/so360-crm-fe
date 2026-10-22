@@ -4,6 +4,8 @@ import { Button, IconButton, TextField, NumberInput, SegmentedControl, Select, C
 import { Modal } from '../../components/common/Modal';
 import { Package, Plus, Trash2, Loader2, Search, Copy } from 'lucide-react';
 import { crmService } from '../../services/crmService';
+import { S2S_FLAGS, priceLists } from '../../services/coreS2sService';
+import { PriceListSelect } from '../../components/PriceListSelect';
 import { DealProduct, LeadProduct, ProductInterestStatus, InventoryItem } from '../../types/crm';
 import { useCRMFormatters } from '../../utils/formatters';
 import { useCrmFeatureFlag, RE_FLAGS } from '../../hooks/useCrmFeatureFlag';
@@ -198,9 +200,9 @@ function AddProductModal({ dealId, leadId, onClose, onAdd, onImportFromLead, uni
                                 )}
                                 <div className="space-y-2 max-h-64 overflow-y-auto">
                                     {visibleItems.map(item => (
-                                        <Button variant="secondary" size="sm" className="w-full !text-left !h-auto !justify-start" key={item.id} onClick={() => setSelected(item)}>
-                                            <div className="flex items-center justify-between">
-                                                <div>
+                                        <Button variant="secondary" size="sm" className="w-full min-w-0 !text-left !h-auto !justify-start" key={item.id} onClick={() => setSelected(item)}>
+                                            <div className="flex w-full min-w-0 items-center justify-between gap-3">
+                                                <div className="min-w-0 flex-1">
                                                     <p className="text-xs font-bold text-fg group-hover:text-info transition-colors">{item.name}</p>
                                                     {item.sku && <p className="text-xs text-fg-muted font-bold mt-0.5">SKU: {item.sku}</p>}
                                                 </div>
@@ -237,6 +239,8 @@ export default function DealProductsTab({ dealId, leadId }: Props) {
     const formatters = useCRMFormatters();
     const unitBooking = useCrmFeatureFlag(RE_FLAGS.UNIT_BOOKING);
     const propertyMatching = useCrmFeatureFlag(RE_FLAGS.PROPERTY_MATCHING);
+    const priceListsOn = useCrmFeatureFlag(S2S_FLAGS.PRICE_LISTS);
+    const [priceListId, setPriceListId] = useState('');
     const [products, setProducts] = useState<DealProduct[]>([]);
     const [loading, setLoading] = useState(true);
     const [showAddModal, setShowAddModal] = useState(false);
@@ -261,12 +265,21 @@ export default function DealProductsTab({ dealId, leadId }: Props) {
         setShowAddModal(false);
         setAddError(null);
         try {
+            let unitPrice = item.price ?? 0;
+            if (priceListsOn) {
+                const hit = await priceLists.resolveOne(item.id, {
+                    ...(priceListId ? { price_list_id: priceListId } : {}),
+                    ...(leadId ? { customer_id: leadId } : {}),
+                    qty,
+                });
+                if (hit?.price != null) unitPrice = hit.price;
+            }
             await crmService.addDealProduct(dealId, {
                 item_id: item.id,
                 item_name: item.name,
                 item_sku: item.sku,
                 quantity: qty,
-                unit_price: item.price ?? 0,
+                unit_price: unitPrice,
                 ...(holdHours != null ? { hold_hours: holdHours } : {}),
             });
             load();
@@ -356,9 +369,12 @@ export default function DealProductsTab({ dealId, leadId }: Props) {
                         </p>
                     )}
                 </div>
-                <Button variant="primary" size="sm" type="button" onClick={() => setShowAddModal(true)}>
-                    <Plus size={12} /> Add Product
-                </Button>
+                <div className="flex items-center gap-nb-2">
+                    {priceListsOn && <PriceListSelect value={priceListId} onChange={setPriceListId} customerId={leadId} />}
+                    <Button variant="primary" size="sm" type="button" onClick={() => setShowAddModal(true)}>
+                        <Plus size={12} /> Add Product
+                    </Button>
+                </div>
             </div>
 
             {addError && (

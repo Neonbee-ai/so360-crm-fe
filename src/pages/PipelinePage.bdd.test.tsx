@@ -73,6 +73,26 @@ vi.mock('../components/kanban/StageTransitionModal', () => ({
   },
 }));
 
+const mockWin = vi.fn();
+const mockLose = vi.fn();
+vi.mock('../services/salesConfigService', async (importActual) => ({
+  ...(await importActual<typeof import('../services/salesConfigService')>()),
+  dealCloseService: { win: (...a: any[]) => mockWin(...a), lose: (...a: any[]) => mockLose(...a) },
+}));
+
+vi.mock('../components/kanban/DealCloseModal', () => ({
+  DealCloseModal: (props: any) => {
+    if (!props.isOpen) return null;
+    return (
+      <div data-testid="close-modal">
+        <span>Moving {props.deal?.name} to {props.stageName}</span>
+        <button onClick={() => (props.kind === 'won' ? props.onWin({}) : props.onLose({}))}>Confirm</button>
+        <button onClick={props.onClose}>Cancel</button>
+      </div>
+    );
+  },
+}));
+
 vi.mock('./components/DealFilters', () => ({
   useDealFilterConfig: (_filters: any, onChange: (f: any) => void) => ({
     fields: [{
@@ -121,6 +141,8 @@ beforeEach(() => {
   transitionModalProps = {};
   mockGetPipeline.mockResolvedValue(threeStages);
   mockExportDeals.mockResolvedValue(undefined);
+  mockWin.mockResolvedValue({});
+  mockLose.mockResolvedValue({});
   mockUpdateDealStage.mockResolvedValue({});
   mockEmitNotification.mockResolvedValue(undefined);
   mockRecordActivity.mockResolvedValue(undefined);
@@ -238,7 +260,7 @@ describe('PipelinePage', () => {
       const deal = { id: 'd1', name: 'Acme Corp', value: 5000, current_flow_state: 'new', owner_id: 'u1' };
       kanbanProps.onStageChange(deal, 'won');
       await waitFor(() => {
-        expect(screen.getByTestId('transition-modal')).toBeInTheDocument();
+        expect(screen.getByTestId('close-modal')).toBeInTheDocument();
         expect(screen.getByText('Moving Acme Corp to Won')).toBeInTheDocument();
       });
     });
@@ -250,7 +272,7 @@ describe('PipelinePage', () => {
       const deal = { id: 'd1', name: 'Acme Corp', value: 5000, current_flow_state: 'new', owner_id: 'u1' };
       kanbanProps.onStageChange(deal, 'lost');
       await waitFor(() => {
-        expect(screen.getByTestId('transition-modal')).toBeInTheDocument();
+        expect(screen.getByTestId('close-modal')).toBeInTheDocument();
         expect(screen.getByText('Moving Acme Corp to Lost')).toBeInTheDocument();
       });
     });
@@ -264,7 +286,7 @@ describe('PipelinePage', () => {
       await waitFor(() => expect(screen.getByText('Confirm')).toBeInTheDocument());
       await user.click(screen.getByText('Confirm'));
       await waitFor(() => {
-        expect(mockUpdateDealStage).toHaveBeenCalledWith('d1', 'won', 'reason text');
+        expect(mockWin).toHaveBeenCalledWith('d1', {});
       });
     });
 
@@ -278,7 +300,7 @@ describe('PipelinePage', () => {
       await waitFor(() => expect(screen.getByText('Confirm')).toBeInTheDocument());
       await user.click(screen.getByText('Confirm'));
       await waitFor(() => {
-        expect(mockUpdateDealStage).toHaveBeenCalledWith('d1', 'lost', 'reason text');
+        expect(mockLose).toHaveBeenCalledWith('d1', {});
       });
     });
 
@@ -351,7 +373,7 @@ describe('PipelinePage', () => {
     });
 
     it('When updateDealStage throws / Then showError is invoked and emitNotification is NOT called', async () => {
-      mockUpdateDealStage.mockRejectedValue(new Error('network error'));
+      mockWin.mockRejectedValue(new Error('network error'));
       const user = userEvent.setup();
       render(<PipelinePage />);
       await waitFor(() => expect(screen.getByTestId('kanban')).toBeInTheDocument());
@@ -359,7 +381,7 @@ describe('PipelinePage', () => {
       kanbanProps.onStageChange(deal, 'won');
       await waitFor(() => expect(screen.getByText('Confirm')).toBeInTheDocument());
       await user.click(screen.getByText('Confirm'));
-      await waitFor(() => expect(mockUpdateDealStage).toHaveBeenCalled());
+      await waitFor(() => expect(mockWin).toHaveBeenCalled());
       expect(mockEmitNotification).not.toHaveBeenCalled();
     });
   });

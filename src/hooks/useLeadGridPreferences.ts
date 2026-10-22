@@ -58,6 +58,7 @@ export const DEFAULT_COLUMNS: ColumnPreference[] = [
   { key: 'lead_health',    visible: true,  width: 110, pinned: false, order: 19 },
   { key: 'next_follow_up', visible: true,  width: 150, pinned: false, order: 20 },
   { key: 'last_activity',  visible: false, width: 140, pinned: false, order: 21 },
+  { key: 'icp_fit',        visible: true,  width: 150, pinned: false, order: 22 },
   { key: 'actions',        visible: true,  width: 56,  pinned: false, order: 99 },
 ];
 

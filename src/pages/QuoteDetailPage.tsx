@@ -10,7 +10,12 @@ import { useBusinessSettings, useActivity, useShellBridge, useOrganization } fro
 import { useFormatters } from '@so360/formatters';
 import { ProductPickerModal } from '../components/ProductPickerModal';
 import { quoteToDocumentData } from '../utils/quoteToDocumentData';
+import { useCrmFeatureFlag } from '../hooks/useCrmFeatureFlag';
+import { S2S_FLAGS, priceLists } from '../services/coreS2sService';
+import { PriceListSelect } from '../components/PriceListSelect';
+import { QuotePreviewModal } from '../components/QuotePreviewModal';
 import { quoteLinePreTaxAmount, quoteTotals } from '../utils/quoteLineAmounts';
+import { describeReason } from '../services/salesConfigService';
 import { QuoteApprovalModal } from '../components/quotes/QuoteApprovalModal';
 import { QuoteApprovalHistory, ApprovalRequestRecord } from '../components/quotes/QuoteApprovalHistory';
 
@@ -59,6 +64,10 @@ const QuoteDetailPage = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isEditing, setIsEditing] = useState(false);
+    const priceListsOn = useCrmFeatureFlag(S2S_FLAGS.PRICE_LISTS);
+    const layoutsOn = useCrmFeatureFlag(S2S_FLAGS.DOCUMENT_LAYOUTS);
+    const [priceListId, setPriceListId] = useState('');
+    const [showPreview, setShowPreview] = useState(false);
 
     // Editable fields
     const [title, setTitle] = useState('');
@@ -128,6 +137,11 @@ const QuoteDetailPage = () => {
             });
             if (result.sent) {
                 toast.success(`Quotation emailed to ${result.to}`);
+                setShowSendModal(false);
+            } else if (result.pending_approval) {
+                // A configured approval threshold was crossed: tell the user why.
+                const why = (result.approval_reasons ?? []).map(describeReason).join('; ');
+                toast.error(`Approval required before sending${why ? `: ${why}` : ''}`);
                 setShowSendModal(false);
             } else {
                 // The backend refuses rather than sending to nobody — surface its
@@ -311,24 +325,36 @@ const QuoteDetailPage = () => {
         }
     };
 
-    const handleProductSelect = (selection: ProductPickerSelection) => {
+    const handleProductSelect = async (selection: ProductPickerSelection) => {
         if (pickerLineIndex < 0) return;
+        const idx = pickerLineIndex;
+        // Price lists: the resolved price replaces the catalogue price, but the
+        // field stays editable. Falls back to the catalogue price when nothing resolves.
+        let unitPrice = selection.unit_price;
+        if (priceListsOn && selection.item_id) {
+            const hit = await priceLists.resolveOne(selection.item_id, {
+                ...(priceListId ? { price_list_id: priceListId } : {}),
+                ...(quote?.customer_id ? { customer_id: quote.customer_id } : {}),
+                qty: lines[idx]?.quantity || 1,
+            });
+            if (hit?.price != null) unitPrice = hit.price;
+        }
         const newLines = [...lines];
-        newLines[pickerLineIndex] = {
-            ...newLines[pickerLineIndex],
+        newLines[idx] = {
+            ...newLines[idx],
             item_id: selection.item_id,
             variant_id: selection.variant_id,
             item_name: selection.name,
             sku: selection.sku,
             sub_sku: selection.sub_sku,
             item_image_url: selection.image_url,
-            unit_price: selection.unit_price,
-            description: newLines[pickerLineIndex].description || selection.name,
+            unit_price: unitPrice,
+            description: newLines[idx].description || selection.name,
         };
         setLines(newLines);
         setDraftValues(prev => {
             const next = { ...prev };
-            delete next[`${pickerLineIndex}_unit_price`];
+            delete next[`${idx}_unit_price`];
             return next;
         });
         setPickerLineIndex(-1);
@@ -406,7 +432,7 @@ const QuoteDetailPage = () => {
         );
     }
 
-    const status = statusConfig[quote.status];
+    const status = statusConfig[quote.effective_status ?? quote.status];
     const totals = quoteTotals(lines);
 
     const currentUserId = shell?.user?.id;
@@ -429,7 +455,7 @@ const QuoteDetailPage = () => {
     const canSubmit = (quote.status === 'draft' || quote.status === 'rejected') && lines.length > 0;
     const canConvert = quote.status === 'approved';
 
-    const handlePrint = () => shell?.printDocument?.('sales_quote', quoteToDocumentData(quote, {
+    const buildDocData = () => quoteToDocumentData(quote, {
         currency: settings?.base_currency || 'XXX',
         seller: {
             name: currentOrg?.name || '',
@@ -448,7 +474,8 @@ const QuoteDetailPage = () => {
         // whether the supply is intra- or inter-state.
         sellerState: (currentOrg as any)?.billing_address?.state,
         sellerCountry: (currentOrg as any)?.billing_address?.country,
-    }));
+    });
+    const handlePrint = () => shell?.printDocument?.('sales_quote', buildDocData());
 
     // Header actions: one primary (first available by priority), at most 2
     // secondaries, everything else (print, reject) in the overflow menu.
@@ -485,6 +512,7 @@ const QuoteDetailPage = () => {
     const overflowActions = [
         ...secondaryCandidates.slice(2).map(c => ({ label: c.label, onSelect: c.onSelect })),
         ...(canApproveQuote && canApprove ? [{ label: 'Reject', danger: true, onSelect: () => setShowRejectModal(true) }] : []),
+        ...(!isEditing && layoutsOn ? [{ label: 'Preview Quote', onSelect: () => setShowPreview(true) }] : []),
         ...(!isEditing ? [{ label: 'Print Quote', onSelect: handlePrint }] : []),
     ];
 
@@ -670,7 +698,12 @@ const QuoteDetailPage = () => {
                     </Card>
 
                     {/* Line Items */}
-                    <Card title="Line Items" actions={canCreateQuote && isEditing ? (<Button variant="secondary" onClick={addLine}><Plus className="w-4 h-4" />Add Line</Button>) : undefined}>
+                    <Card title="Line Items" actions={canCreateQuote && isEditing ? (
+                        <div className="flex items-center gap-nb-2">
+                            {priceListsOn && <PriceListSelect value={priceListId} onChange={setPriceListId} customerId={quote.customer_id} />}
+                            <Button variant="secondary" onClick={addLine}><Plus className="w-4 h-4" />Add Line</Button>
+                        </div>
+                    ) : undefined}>
                         <DataTable<QuoteLineRow>
                             name="quote-lines"
                             data-testid="quote-lines"
@@ -977,6 +1010,10 @@ const QuoteDetailPage = () => {
                     />
                 </div>
             </div>
+
+            {layoutsOn && (
+                <QuotePreviewModal isOpen={showPreview} onClose={() => setShowPreview(false)} document={showPreview ? (buildDocData() as any) : {}} />
+            )}
 
             {/* Product Picker Modal */}
             <ProductPickerModal

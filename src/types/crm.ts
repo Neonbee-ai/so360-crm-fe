@@ -37,6 +37,7 @@ export interface Attachment {
 
 export interface Lead {
     id: string;
+    core_partner_id?: string | null;
     company_name: string;
     first_name?: string;
     last_name?: string;
@@ -66,7 +67,12 @@ export interface Lead {
     first_order_at?: string;
     channel?: string;
     auto_score?: number;
+    /** ICP best-match score (0-100). */
+    score?: number | null;
     score_breakdown?: ScoreBreakdownItem[];
+    /** Per-org rating (score band, or set by hand when rating_is_manual). */
+    rating_category_id?: string | null;
+    rating_is_manual?: boolean;
 }
 
 export type DealStage = 'Lead' | 'Qualified' | 'Proposal' | 'Negotiation' | 'Won' | 'Lost';
@@ -76,6 +82,8 @@ export interface FlowState {
     name: string;         // display name, e.g. 'Qualified'
     color: string;
     is_terminal: boolean;
+    /** Optional stage type from settings; the name is the fallback. */
+    type?: 'OPEN' | 'WON' | 'LOST';
     deals?: Deal[];
 }
 
@@ -174,6 +182,8 @@ export interface Task {
     assigned_to: User;
     created_at: string;
     reminder_minutes_before?: number;
+    reminder_at?: string | null;
+    reminder_offset_minutes?: number | null;
     // Project sync — populated once the connect-project migration lands on the
     // backend. Absent/undefined on a task means "no project connection", which
     // is the current unaffected behavior — every consumer must treat it that way.
@@ -205,6 +215,9 @@ export interface ScoreCategory {
     min_score: number;
     max_score: number | null;
     color: string;
+    /** Semantic colour token (Badge tone); wins over the legacy hex colour. */
+    color_token?: 'neutral' | 'info' | 'success' | 'warning' | 'danger' | 'primary' | null;
+    is_active?: boolean;
     sort_order: number;
 }
 
@@ -251,7 +264,7 @@ export const DEFAULT_DEAL_NAMING_CONFIG: DealNamingConfig = {
 };
 
 export interface CRMSettings {
-    deal_stages: { id: string; name: string; type: 'OPEN' | 'WON' | 'LOST' }[];
+    deal_stages: { id: string; name: string; type: 'OPEN' | 'WON' | 'LOST'; /** Win probability 0-100, null = not set. */ probability?: number | null }[];
     lead_stages: { id: string; name: string }[];
     default_owner_id: string;
     lead_sources: { id: string; name: string; archived: boolean }[];
@@ -385,6 +398,11 @@ export interface Quote {
     /** Buyer's own RFQ/PO number. */
     customer_reference?: string;
     valid_until?: string;
+    /** Server-derived: validity has lapsed on an open quote. */
+    is_expired?: boolean;
+    /** Server-derived status; 'expired' once an open quote lapses. */
+    effective_status?: QuoteStatus;
+    validity_days?: number;
     submitted_by?: string;
     current_approval_request_id?: string | null;
     current_approval_request?: {

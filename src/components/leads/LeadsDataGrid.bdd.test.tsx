@@ -610,3 +610,19 @@ describe('LeadsDataGrid — header and inline editors (Comb M3)', () => {
     expect(screen.getByTestId('sort-company_name')).toHaveAttribute('aria-sort', 'ascending');
   });
 });
+
+describe('Given lead rating is enabled (ratings in context)', () => {
+  const ratings = [{ id: 'r1', label: 'Hot', color_token: 'danger' }];
+
+  it('When the column manager opens Then a Rating column is offered', () => {
+    render(<LeadsDataGrid leads={[makeLead({ rating_category_id: 'r1' })]} context={buildContext({ ratings })} onRowClick={vi.fn()} />);
+    fireEvent.click(screen.getByText('Columns'));
+    expect(screen.getAllByText('Rating').length).toBeGreaterThan(0);
+  });
+
+  it('When ratings are absent Then no Rating column is offered', () => {
+    render(<LeadsDataGrid leads={[makeLead()]} context={buildContext()} onRowClick={vi.fn()} />);
+    fireEvent.click(screen.getByText('Columns'));
+    expect(screen.queryByText('Rating')).toBeNull();
+  });
+});

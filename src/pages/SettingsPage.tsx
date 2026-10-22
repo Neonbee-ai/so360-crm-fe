@@ -7,10 +7,15 @@ import { StageStatusSelect } from '../components/common/StageStatusSelect';
 import { useShellBridge } from '@so360/shell-context';
 import DealNamingSettingsTab from './components/settings/DealNamingSettingsTab';
 import AssignmentRulesSettingsTab from './components/settings/AssignmentRulesSettingsTab';
+import LossReasonsSettingsTab from './components/settings/LossReasonsSettingsTab';
+import LeadRatingSettingsTab from './components/settings/LeadRatingSettingsTab';
+import DuplicateRulesSettingsTab from './components/settings/DuplicateRulesSettingsTab';
+import QuoteApprovalSettingsTab from './components/settings/QuoteApprovalSettingsTab';
+import TaskReminderSettingsTab from './components/settings/TaskReminderSettingsTab';
 import SalesCommissionSettingsTab from './components/settings/SalesCommissionSettingsTab';
 import { useCrmFeatureFlag, RE_FLAGS } from '../hooks/useCrmFeatureFlag';
 
-type SettingsTab = 'pipeline' | 'lead-stages' | 'custom-fields' | 'sources' | 'scoring' | 'deal-naming' | 'assignment' | 'sales-commission';
+type SettingsTab = 'pipeline' | 'lead-stages' | 'custom-fields' | 'sources' | 'scoring' | 'deal-naming' | 'assignment' | 'sales-commission' | 'loss-reasons' | 'lead-rating' | 'duplicate-rules' | 'quote-approvals' | 'task-reminders';
 
 // Activity types available for scoring rules
 const SCOREABLE_ACTIVITY_TYPES = [
@@ -87,6 +92,11 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
     const icpEnabled = useCrmFeatureFlag('submodule:crm:icp_manager');
     const canWriteSettings = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('submodule:crm:settings') ?? true);
     const assignmentEnabled = useCrmFeatureFlag(RE_FLAGS.LEAD_ASSIGNMENT);
+    const lossReasonsEnabled = useCrmFeatureFlag('submodule:crm:loss_reasons');
+    const leadRatingEnabled = useCrmFeatureFlag('submodule:crm:lead_rating');
+    const duplicateRulesEnabled = useCrmFeatureFlag('submodule:crm:duplicate_rules');
+    const quoteApprovalsEnabled = useCrmFeatureFlag('submodule:crm:quote_approvals');
+    const taskRemindersEnabled = useCrmFeatureFlag('submodule:crm:task_reminders');
     const commissionsEnabled = useCrmFeatureFlag(RE_FLAGS.COMMISSIONS);
     const unitAllocationEnabled = useCrmFeatureFlag(RE_FLAGS.UNIT_ALLOCATION);
     const salesSettingsEnabled = commissionsEnabled || unitAllocationEnabled;
@@ -383,6 +393,15 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
         });
     };
 
+    /** Blank clears to null; otherwise clamp to 0-100. */
+    const updateStageProbability = (idx: number, raw: string) => {
+        if (!settings) return;
+        const n = raw.trim() === '' ? null : Number(raw);
+        const probability = n === null || Number.isNaN(n) ? null : Math.min(100, Math.max(0, n));
+        const newStages = settings.deal_stages.map((s, i) => (i === idx ? { ...s, probability } : s));
+        setSettings({ ...settings, deal_stages: newStages });
+    };
+
     const removeStage = (id: string) => {
         if (!settings) return;
         if (settings.deal_stages.length <= 1) {
@@ -527,6 +546,11 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
                 { id: 'scoring', label: 'Lead Scoring' },
                 { id: 'deal-naming', label: 'Deal Naming' },
                 ...(assignmentEnabled ? [{ id: 'assignment', label: 'Assignment' }] : []),
+                ...(lossReasonsEnabled ? [{ id: 'loss-reasons', label: 'Loss reasons' }] : []),
+                ...(leadRatingEnabled ? [{ id: 'lead-rating', label: 'Lead rating' }] : []),
+                ...(duplicateRulesEnabled ? [{ id: 'duplicate-rules', label: 'Duplicate rules' }] : []),
+                ...(quoteApprovalsEnabled ? [{ id: 'quote-approvals', label: 'Quote approvals' }] : []),
+                ...(taskRemindersEnabled ? [{ id: 'task-reminders', label: 'Task reminders' }] : []),
                 ...(salesSettingsEnabled ? [{ id: 'sales-commission', label: 'Sales & commission' }] : []),
             ]}
             activeSection={activeTab}
@@ -554,6 +578,19 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
                                                 onKeyDown={(e) => handleStageNameKeyDown(e, idx)}
                                                 onBlur={() => handleStageNameBlur(idx)}
                                                 placeholder="Stage Name"
+                                            />
+                                        </div>
+                                        <div className="w-28">
+                                            <TextField
+                                                name={`stage-probability-${stage.id}`}
+                                                type="number"
+                                                min={0}
+                                                max={100}
+                                                step={0.01}
+                                                aria-label="Win probability (%)"
+                                                placeholder="Prob. %"
+                                                value={stage.probability ?? ''}
+                                                onChange={(e) => updateStageProbability(idx, e.target.value)}
                                             />
                                         </div>
                                         <StageStatusSelect
@@ -1089,6 +1126,11 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
                 {activeTab === 'assignment' && assignmentEnabled && (
                     <AssignmentRulesSettingsTab canWrite={canWriteSettings} />
                 )}
+                {activeTab === 'loss-reasons' && lossReasonsEnabled && <LossReasonsSettingsTab canWrite={canWriteSettings} />}
+                {activeTab === 'lead-rating' && leadRatingEnabled && <LeadRatingSettingsTab canWrite={canWriteSettings} />}
+                {activeTab === 'duplicate-rules' && duplicateRulesEnabled && <DuplicateRulesSettingsTab canWrite={canWriteSettings} />}
+                {activeTab === 'quote-approvals' && quoteApprovalsEnabled && <QuoteApprovalSettingsTab canWrite={canWriteSettings} />}
+                {activeTab === 'task-reminders' && taskRemindersEnabled && <TaskReminderSettingsTab canWrite={canWriteSettings} />}
                 {activeTab === 'sales-commission' && salesSettingsEnabled && (
                     <SalesCommissionSettingsTab canWrite={canWriteSettings} />
                 )}

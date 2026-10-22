@@ -27,8 +27,10 @@ import { FEATURES } from '../config/features';
 import { DealLifecycleStepper } from '../components/DealLifecycleStepper';
 import { ProjectSelect } from '../components/common/ProjectSelect';
 import ActivityHistoryDrawer from './components/ActivityHistoryDrawer';
+import MaintenanceTab from './components/MaintenanceTab';
+import { MAINTENANCE_TAB_FLAG, withMaintenanceTab } from '../services/maintenanceTabService';
 
-type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'custom' | 'products' | 'calls' | 'payment-plan' | 'commission';
+type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'custom' | 'products' | 'calls' | 'payment-plan' | 'commission' | 'maintenance';
 
 // Notify other MFEs (e.g. the Documents module) that a CRM deal document changed
 // so they can refresh linked-document views. Uses the shared event bus with a
@@ -73,6 +75,7 @@ const DealDetailPage = () => {
     // RE Phase C: payment plan + commission tabs, each behind its own flag.
     const paymentPlansOn = useCrmFeatureFlag(RE_FLAGS.PAYMENT_PLANS);
     const commissionsOn = useCrmFeatureFlag(RE_FLAGS.COMMISSIONS);
+    const maintenanceTabOn = useCrmFeatureFlag(MAINTENANCE_TAB_FLAG);
 
     const [deal, setDeal] = useState<Deal | null>(null);
     const [associatedLead, setAssociatedLead] = useState<any>(null);
@@ -579,7 +582,7 @@ const DealDetailPage = () => {
         );
     }
 
-    const dealTabs = [
+    const dealTabs = withMaintenanceTab([
         { id: 'activity', label: 'Activity' },
         { id: 'notes', label: 'Notes' },
         { id: 'tasks', label: `Tasks (${tasks.length})` },
@@ -589,7 +592,7 @@ const DealDetailPage = () => {
         { id: 'calls', label: 'Calls' },
         ...(paymentPlansOn ? [{ id: 'payment-plan', label: 'Payment plan' }] : []),
         ...(commissionsOn ? [{ id: 'commission', label: 'Commission' }] : []),
-    ];
+    ], maintenanceTabOn);
 
     return (
         <DetailPageTemplate
@@ -1237,6 +1240,10 @@ const DealDetailPage = () => {
 
                             {activeTab === 'calls' && (
                                 <CallsTab dealId={deal.id} />
+                            )}
+
+                            {activeTab === 'maintenance' && maintenanceTabOn && (
+                                <MaintenanceTab dealId={deal.id} customerPartnerId={deal.partner_id} />
                             )}
 
                             {activeTab === 'payment-plan' && paymentPlansOn && (
