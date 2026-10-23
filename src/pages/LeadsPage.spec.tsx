@@ -5,7 +5,6 @@ import LeadsPage from './LeadsPage';
 
 const mockCrmService = vi.hoisted(() => ({
   deleteLead: vi.fn(),
-  getCustomerSegmentLeads: vi.fn(),
   getLeads: vi.fn(),
   getSettings: vi.fn(),
   getUsers: vi.fn(),

@@ -13,7 +13,6 @@ import { MemoryRouter } from 'react-router-dom';
 // ── Infrastructure mocks (required by the real CustomersPage) ─────────────
 const mockCrmService = vi.hoisted(() => ({
   getCustomers: vi.fn(),
-  getCustomerSegmentCustomers: vi.fn(),
   getCustomerStats: vi.fn(),
 }));
 

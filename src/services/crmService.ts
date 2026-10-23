@@ -94,7 +94,7 @@ const PROJECTS_API_ORIGIN = String(
 const MARKETING_API_ORIGIN = String(
     win.VITE_SO360_MARKETING_API ||
     import.meta.env.VITE_SO360_MARKETING_API ||
-    'http://localhost:3053'
+    'http://localhost:3056'
 ).replace(/\/$/, '');
 
 const MAINTENANCE_API_ORIGIN = String(
@@ -2725,38 +2725,6 @@ export const crmService = {
 
     updateCustomerBusinessProfile: async (customerId: string, profile: Record<string, any>): Promise<any> => {
         return customersApi.updateBusinessProfile(customerId, profile);
-    },
-
-    // Customer Segments
-    getCustomerSegments: async (): Promise<any[]> => {
-        return apiClient.get<any[]>('/customer-segments');
-    },
-    getCustomerSegmentById: async (segmentId: string): Promise<any> => {
-        return apiClient.get<any>(`/customer-segments/${segmentId}`);
-    },
-    createCustomerSegment: async (data: any): Promise<any> => {
-        return apiClient.post<any>('/customer-segments', data);
-    },
-    updateCustomerSegment: async (segmentId: string, data: any): Promise<any> => {
-        return apiClient.patch<any>(`/customer-segments/${segmentId}`, data);
-    },
-    deleteCustomerSegment: async (segmentId: string): Promise<any> => {
-        return apiClient.delete<any>(`/customer-segments/${segmentId}`);
-    },
-    getCustomerSegmentCustomers: async (segmentId: string): Promise<any> => {
-        return apiClient.get<any>(`/customer-segments/${segmentId}/customers`);
-    },
-    getCustomerSegmentLeads: async (segmentId: string): Promise<any> => {
-        return apiClient.get<any>(`/customer-segments/${segmentId}/leads`);
-    },
-    getCustomerSegmentMembers: async (segmentId: string, params?: { type?: 'all' | 'lead' | 'customer'; q?: string; skip?: number; take?: number }): Promise<any> => {
-        return apiClient.get<any>(`/customer-segments/${segmentId}/members`, params);
-    },
-    addCustomerSegmentMembers: async (segmentId: string, members: Array<{ id: string; type: 'lead' | 'customer' }>): Promise<any> => {
-        return apiClient.post<any>(`/customer-segments/${segmentId}/members`, { members });
-    },
-    removeCustomerSegmentMembers: async (segmentId: string, members: Array<{ id: string; type: 'lead' | 'customer' }>): Promise<any> => {
-        return apiClient.delete<any>(`/customer-segments/${segmentId}/members`, { members });
     },
 
     // Storefront Activity Tracking (Proxied through CRM BE)

@@ -1519,67 +1519,6 @@ describe('Given crmService (legacy layer)', () => {
     expect(result.credit_limit).toBe(5000);
   });
 
-  // Customer Segments
-  it('When action / Then getCustomerSegments fetches segments', async () => {
-    mockFetchSuccess([{ id: 'seg1', name: 'VIP' }]);
-    const result = await crmService.getCustomerSegments();
-    expect(result).toHaveLength(1);
-  });
-
-  it('When action / Then getCustomerSegmentById fetches one segment', async () => {
-    mockFetchSuccess({ id: 'seg1', name: 'VIP' });
-    const result = await crmService.getCustomerSegmentById('seg1');
-    expect(result.name).toBe('VIP');
-  });
-
-  it('When action / Then createCustomerSegment sends POST', async () => {
-    mockFetchSuccess({ id: 'seg-new' });
-    const result = await crmService.createCustomerSegment({ name: 'New' });
-    expect(result.id).toBe('seg-new');
-  });
-
-  it('When action / Then updateCustomerSegment sends PATCH', async () => {
-    mockFetchSuccess({ id: 'seg1', name: 'Updated' });
-    const result = await crmService.updateCustomerSegment('seg1', { name: 'Updated' });
-    expect(result.name).toBe('Updated');
-  });
-
-  it('When action / Then deleteCustomerSegment sends DELETE', async () => {
-    mockFetchSuccess({ message: 'ok' });
-    await crmService.deleteCustomerSegment('seg1');
-    expect(fetchMock).toHaveBeenCalled();
-  });
-
-  it('When action / Then getCustomerSegmentCustomers fetches customers', async () => {
-    mockFetchSuccess([{ id: 'c1' }]);
-    const result = await crmService.getCustomerSegmentCustomers('seg1');
-    expect(result).toHaveLength(1);
-  });
-
-  it('When action / Then getCustomerSegmentLeads fetches leads', async () => {
-    mockFetchSuccess([{ id: 'l1' }]);
-    const result = await crmService.getCustomerSegmentLeads('seg1');
-    expect(result).toHaveLength(1);
-  });
-
-  it('When action / Then getCustomerSegmentMembers fetches with params', async () => {
-    mockFetchSuccess({ members: [{ id: 'c1' }] });
-    const result = await crmService.getCustomerSegmentMembers('seg1', { type: 'customer' });
-    expect(result.members).toHaveLength(1);
-  });
-
-  it('When action / Then addCustomerSegmentMembers sends POST', async () => {
-    mockFetchSuccess({ added: 2 });
-    const result = await crmService.addCustomerSegmentMembers('seg1', [{ id: 'c1', type: 'customer' }]);
-    expect(result.added).toBe(2);
-  });
-
-  it('When action / Then removeCustomerSegmentMembers sends DELETE', async () => {
-    mockFetchSuccess({ removed: 1 });
-    const result = await crmService.removeCustomerSegmentMembers('seg1', [{ id: 'c1', type: 'customer' }]);
-    expect(result.removed).toBe(1);
-  });
-
   it('When action / Then getStorefrontActivity fetches activities', async () => {
     mockFetchSuccess([{ id: 'a1' }]);
     const result = await crmService.getStorefrontActivity('l1');

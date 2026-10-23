@@ -37,7 +37,6 @@ const CustomersPage = () => {
     const [partners, setPartners] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [activeSegmentName, setActiveSegmentName] = useState<string | null>(null);
 
     // Search / channel / category already round-trip through the URL (see the
     // location.search effect below), so history restores them on its own —
@@ -62,7 +61,6 @@ const CustomersPage = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const segmentId = queryParams.get('segmentId');
             const q = queryParams.get('q') || undefined;
             const channel = queryParams.get('channel') || undefined;
             const category = queryParams.get('category') || undefined;
@@ -73,23 +71,12 @@ const CustomersPage = () => {
 
             let customersData: any[] = [];
 
-            if (segmentId) {
-                const resolved = await crmService.getCustomerSegmentCustomers(segmentId);
-                customersData = Array.isArray(resolved?.customers) ? resolved.customers : [];
-                setActiveSegmentName(
-                    queryParams.get('segmentName') ||
-                    resolved?.segment?.name ||
-                    'Segment',
-                );
-            } else {
-                customersData = await crmService.getCustomers({
-                    ...(q ? { q } : {}),
-                    ...(channel ? { channel } : {}),
-                    ...(category ? { category } : {}),
-                    ...(customerIds.length > 0 ? { customer_ids: customerIds } : {}),
-                });
-                setActiveSegmentName(null);
-            }
+            customersData = await crmService.getCustomers({
+                ...(q ? { q } : {}),
+                ...(channel ? { channel } : {}),
+                ...(category ? { category } : {}),
+                ...(customerIds.length > 0 ? { customer_ids: customerIds } : {}),
+            });
 
             setCustomers(customersData || []);
         } catch (err: any) {
@@ -303,15 +290,12 @@ const CustomersPage = () => {
                 { value: 'b2b', label: 'B2B', count: stats.b2b_count || 0 },
                 { value: 'b2c', label: 'B2C', count: stats.b2c_count || 0 },
             ] },
-            ...(activeSegmentName ? [{ key: 'segment', label: 'Segment', type: 'select' as const, options: [{ value: activeSegmentName, label: activeSegmentName }] }] : []),
         ],
         values: {
             ...(channelFilter !== 'All' ? { channel: channelFilter } : {}),
             ...(categoryFilter !== 'All' ? { category: categoryFilter } : {}),
-            ...(activeSegmentName ? { segment: activeSegmentName } : {}),
         } as FilterValues,
         onChange: (next: FilterValues) => {
-            if (activeSegmentName && !next.segment) navigate('/crm/customers');
             setChannelFilter((next.channel as string) || 'All');
             setCategoryFilter((next.category as string) || 'All');
         },

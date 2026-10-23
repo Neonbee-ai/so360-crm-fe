@@ -5,7 +5,6 @@ import React from 'react';
 
 const mockGetCustomers = vi.fn();
 const mockGetCustomerStats = vi.fn();
-const mockGetCustomerSegmentCustomers = vi.fn();
 const mockGetPartners = vi.fn();
 const mockNavigate = vi.fn();
 
@@ -13,7 +12,6 @@ vi.mock('../services/crmService', () => ({
   crmService: {
     getCustomers: (...args: any[]) => mockGetCustomers(...args),
     getCustomerStats: (...args: any[]) => mockGetCustomerStats(...args),
-    getCustomerSegmentCustomers: (...args: any[]) => mockGetCustomerSegmentCustomers(...args),
     getPartners: (...args: any[]) => mockGetPartners(...args),
   },
 }));
@@ -146,16 +144,6 @@ describe('CustomersPage', () => {
       await waitFor(() => expect(ch().querySelector('option[value="pos"]')).toHaveAttribute('data-count', '1'));
       expect(ch().querySelector('option[value="storefront_web"]')).toHaveAttribute('data-count', '1');
       expect(ch().querySelector('option[value="storefront_mobile"]')).toHaveAttribute('data-count', '0');
-    });
-
-    it('When opened from a segment link / Then the segment is a filter field and clearing it leaves the segment', async () => {
-      mockSearch = '?segmentId=s1&segmentName=VIPs';
-      mockGetCustomerSegmentCustomers.mockResolvedValue({ customers, segment: { name: 'VIPs' } });
-      render(<CustomersPage />);
-      await waitFor(() => expect(screen.getByTestId('filters-button')).toBeInTheDocument());
-      fireEvent.click(screen.getByTestId('filters-button'));
-      const seg = await screen.findByLabelText('Segment');
-      expect(seg.querySelector('option[value="VIPs"]')).not.toBeNull();
     });
   });
 

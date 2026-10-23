@@ -4,13 +4,11 @@ import React from 'react';
 
 const mockGetCustomers = vi.fn();
 const mockGetCustomerStats = vi.fn();
-const mockGetCustomerSegmentCustomers = vi.fn();
 
 vi.mock('../services/crmService', () => ({
   crmService: {
     getCustomers: (...args: any[]) => mockGetCustomers(...args),
     getCustomerStats: (...args: any[]) => mockGetCustomerStats(...args),
-    getCustomerSegmentCustomers: (...args: any[]) => mockGetCustomerSegmentCustomers(...args),
     getPartners: () => Promise.resolve([]),
   },
 }));

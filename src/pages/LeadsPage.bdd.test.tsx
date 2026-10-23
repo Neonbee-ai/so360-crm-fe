@@ -35,7 +35,6 @@ vi.mock('../services/crmService', () => ({
     getSettings: (...a: any[]) => mockGetSettings(...a),
     getUsers: (...a: any[]) => mockGetUsers(...a),
     getPartners: (...a: any[]) => mockGetPartners(...a),
-    getCustomerSegmentLeads: vi.fn().mockResolvedValue({ leads: [] }),
     updateLead: (...a: any[]) => mockUpdateLead(...a),
     logActivity: (...a: any[]) => mockLogActivity(...a),
     deleteLead: (...a: any[]) => mockDeleteLead(...a),

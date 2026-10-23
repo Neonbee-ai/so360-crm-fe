@@ -191,7 +191,6 @@ const LeadsPage = () => {
   }, [ratingEnabled]);
   const [customFields, setCustomFields] = useState<{ id: string; label: string }[]>([]);
   const [gridControlsSlot, setGridControlsSlot] = useState<HTMLElement | null>(null);
-  const [activeSegmentName, setActiveSegmentName] = useState<string | null>(null);
 
   // UI
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -250,14 +249,10 @@ const LeadsPage = () => {
     setError(null);
     try {
       const params = new URLSearchParams(location.search);
-      const segmentId = params.get('segmentId');
-      const segmentName = params.get('segmentName');
       const q = params.get('q') ?? undefined;
 
       const [leadsData, settingsData, usersData] = await Promise.all([
-        segmentId
-          ? crmService.getCustomerSegmentLeads(segmentId).then((res: any) => res?.leads ?? [])
-          : crmService.getLeads({ ...(q ? { q } : {}) }),
+        crmService.getLeads({ ...(q ? { q } : {}) }),
         crmService.getSettings(),
         crmService.getUsers(),
       ]);
@@ -277,7 +272,6 @@ const LeadsPage = () => {
         })),
       );
       setUsers(usersData);
-      setActiveSegmentName(segmentId ? (segmentName ?? 'Segment') : null);
       if (q) setFilter('search', q);
     } catch (err: any) {
       console.error('Failed to fetch initial data', err);
@@ -708,7 +702,6 @@ const LeadsPage = () => {
     fields: [
       { key: 'status', label: 'Status', type: 'select', quick: true, options: leadStages.map((st) => ({ value: st.name, label: st.name, count: statusCounts[st.name] ?? 0 })) },
       { key: 'owner', label: 'Owner', type: 'select', quick: true, options: [{ value: UNASSIGNED_OWNER, label: 'Unassigned' }, ...users.map((u) => ({ value: u.id, label: u.full_name }))] },
-      ...(activeSegmentName ? [{ key: 'segment', label: 'Segment', type: 'select' as const, options: [{ value: activeSegmentName, label: activeSegmentName }] }] : []),
       {
         key: 'dateRange', label: 'Date range', type: 'select', quick: true,
         options: ['Today', 'Yesterday', 'This Week', 'Last Week', 'This Month', 'Last Month', 'Custom'].map((v) => ({ value: v, label: v === 'Custom' ? 'Custom Range' : v })),
@@ -731,11 +724,9 @@ const LeadsPage = () => {
       ...(filters.customDateStart || filters.customDateEnd ? { customDates: { start: filters.customDateStart, end: filters.customDateEnd } } : {}),
       ...(filters.creator !== 'All' ? { creator: filters.creator } : {}),
       ...(filters.rating !== 'All' ? { rating: filters.rating } : {}),
-      ...(activeSegmentName ? { segment: activeSegmentName } : {}),
       ...(advancedFilter ? { advanced: 'on' } : {}),
     } as FilterValues,
     onChange: (next: FilterValues) => {
-      if (activeSegmentName && !next.segment) navigate({ search: '' }, { replace: true });
       if (advancedFilter && !next.advanced) setAdvancedFilter(null);
       const cd = next.customDates as { start?: string; end?: string } | null | undefined;
       setFilters((prev) => ({
