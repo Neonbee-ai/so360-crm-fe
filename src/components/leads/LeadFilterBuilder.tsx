@@ -11,10 +11,11 @@
  * fetches. This keeps it trivial to test and impossible for it to break the
  * existing (unfiltered) leads flow when closed.
  */
-import { useState } from 'react';
+import { createContext, useContext, useMemo, useState } from 'react';
 import { Plus, Trash2, X, FolderPlus, Filter as FilterIcon } from 'lucide-react';
 import {
   FILTERABLE_FIELDS,
+  filterableFields,
   getField,
   operatorsForType,
   operatorTakesNoValue,
@@ -31,13 +32,19 @@ import {
   setCombinator,
   type FilterGroup,
   type FilterRule,
+  type FilterableField,
 } from './leadFilterModel';
+
+/** Field catalogue for the open builder (attribution columns are flag-gated). */
+const FieldsContext = createContext<FilterableField[]>(FILTERABLE_FIELDS);
 
 interface LeadFilterBuilderProps {
   /** Current tree (controlled from the parent). Defaults to an empty AND root. */
   value?: FilterGroup | null;
   onApply: (serialized: FilterGroup | null) => void;
   onClose: () => void;
+  /** Offer the UTM / ad attribution columns (`action:crm:leads:utm_attribution`). */
+  includeAttribution?: boolean;
 }
 
 function RuleRow({
@@ -51,6 +58,7 @@ function RuleRow({
   onChange: (path: number[], patch: Partial<FilterRule>) => void;
   onRemove: (path: number[]) => void;
 }) {
+  const fields = useContext(FieldsContext);
   const field = getField(rule.field);
   const type = field?.type ?? 'text';
   const ops = operatorsForType(type);
@@ -64,7 +72,7 @@ function RuleRow({
         value={rule.field}
         onChange={(e) => onChange(path, { field: e.target.value })}
       >
-        {FILTERABLE_FIELDS.map((f) => (
+        {fields.map((f) => (
           <option key={f.key} value={f.key}>
             {f.label}
           </option>
@@ -265,12 +273,14 @@ function GroupBlock({
   );
 }
 
-export default function LeadFilterBuilder({ value, onApply, onClose }: LeadFilterBuilderProps) {
+export default function LeadFilterBuilder({ value, onApply, onClose, includeAttribution = false }: LeadFilterBuilderProps) {
+  const fields = useMemo(() => filterableFields(includeAttribution), [includeAttribution]);
   const [tree, setTree] = useState<FilterGroup>(value && isGroup(value) ? value : emptyFilter());
 
   const activeCount = countActiveRules(tree);
 
   return (
+    <FieldsContext.Provider value={fields}>
     <div className="w-full max-w-2xl bg-slate-900 border border-slate-700 rounded-lg shadow-2xl flex flex-col max-h-[80vh]">
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700">
         <div className="flex items-center gap-2 text-slate-100 font-semibold">
@@ -332,5 +342,6 @@ export default function LeadFilterBuilder({ value, onApply, onClose }: LeadFilte
         </div>
       </div>
     </div>
+    </FieldsContext.Provider>
   );
 }

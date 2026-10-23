@@ -44,6 +44,13 @@ vi.mock('./services/crmService', () => ({
   },
 }));
 
+// The campaign ROI page (lazy route) reads through crmCampaignService; stub the
+// report so the enabled-route test renders the page's empty state offline.
+vi.mock('./services/crmCampaignService', async (importActual) => ({
+  ...(await importActual<typeof import('./services/crmCampaignService')>()),
+  crmCampaignService: { roiReport: vi.fn().mockResolvedValue([]), campaignRoi: vi.fn() },
+}));
+
 import App from './App';
 
 beforeEach(() => {
@@ -203,4 +210,37 @@ describe('Given the RE Phase C sales + commission report routes', () => {
       expect(await screen.findByText(/don't have access to this page/i)).toBeTruthy();
     },
   );
+});
+
+describe('Given the RE Phase D campaign ROI route', () => {
+  it('When /reports/campaign-roi is opened with the campaign ROI feature locked / Then the upgrade prompt is shown for that flag', async () => {
+    const asked: string[] = [];
+    shellState.getFeatureState = (flag) => { asked.push(flag); return 'locked'; };
+    render(
+      <MemoryRouter initialEntries={['/reports/campaign-roi']}>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText(/upgrade plan/i)).toBeTruthy();
+    expect(asked).toContain('submodule:crm:campaign_roi');
+  });
+
+  it('When /reports/campaign-roi is opened by a user without leads.read / Then the page is withheld with a notice', async () => {
+    shellState.hasPermission = (c) => c !== 'leads.read';
+    render(
+      <MemoryRouter initialEntries={['/reports/campaign-roi']}>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText(/don't have access to this page/i)).toBeTruthy();
+  });
+
+  it('When /reports/campaign-roi is opened with the feature enabled and leads.read granted / Then the Campaign ROI page loads', async () => {
+    render(
+      <MemoryRouter initialEntries={['/reports/campaign-roi']}>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByTestId('campaign-roi-empty')).toBeTruthy();
+  });
 });
