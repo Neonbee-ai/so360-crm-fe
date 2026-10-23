@@ -24,9 +24,11 @@ jobs:
       vite_env_dev: |
         VITE_SO360_CORE_API=https://dev-api.skyoffice360.com/core
         VITE_SO360_CRM_API=https://dev-api.skyoffice360.com/crm
+        VITE_SO360_MARKETING_API=https://dev-api.skyoffice360.com/marketing
       vite_env_staging: |
         VITE_SO360_CORE_API=https://staging.api.skyoffice360.com/core
         VITE_SO360_CRM_API=https://staging.api.skyoffice360.com/crm
+        VITE_SO360_MARKETING_API=https://staging.api.skyoffice360.com/marketing
       needs_shell_packages: true
     secrets: inherit
 
@@ -43,6 +45,7 @@ jobs:
       vite_env: |
         VITE_SO360_CORE_API=https://dev-api.skyoffice360.com/core
         VITE_SO360_CRM_API=https://dev-api.skyoffice360.com/crm
+        VITE_SO360_MARKETING_API=https://dev-api.skyoffice360.com/marketing
     secrets: inherit
 
   preview-teardown:
