@@ -3,7 +3,7 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import React from 'react';
 
 const svc = vi.hoisted(() => ({
-  list: vi.fn(), segments: vi.fn(), create: vi.fn(), update: vi.fn(), draft: vi.fn(),
+  list: vi.fn(), audiences: vi.fn(), create: vi.fn(), update: vi.fn(), draft: vi.fn(),
 }));
 const nav = vi.hoisted(() => vi.fn());
 const params = vi.hoisted(() => ({ id: undefined as string | undefined }));
@@ -30,7 +30,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   params.id = undefined;
   svc.list.mockResolvedValue([]);
-  svc.segments.mockResolvedValue([{ id: 's1', name: 'Hot leads' }]);
+  svc.audiences.mockResolvedValue([{ id: 's1', name: 'Hot leads' }]);
   svc.create.mockResolvedValue({ id: 'new' });
   svc.update.mockResolvedValue({ id: 'i1' });
 });
@@ -85,7 +85,7 @@ describe('Given the ICP form (create)', () => {
       await waitFor(() => expect(svc.create).toHaveBeenCalledTimes(1));
       const v = svc.create.mock.calls[0][0];
       expect(v.name).toBe('Enterprise CTOs');
-      expect(v.auto_segment_id).toBeNull();
+      expect(v.auto_audience_id).toBeNull();
       expect(v.criteria[0]).toMatchObject({
         category: 'role', label: 'CTO', weight: 60, is_positive: true,
         match_config: { keywords: ['cto', 'vp engineering'] },
@@ -129,12 +129,12 @@ describe('Given the auto-add to list section', () => {
       render(<IcpFormPage />);
       await screen.findByText('Hot leads');
       fillValid();
-      type('icp-segment', 's1');
+      type('icp-audience', 's1');
       expect((screen.getByTestId('icp-min-score') as HTMLInputElement).value).toBe('70');
       type('icp-min-score', '85');
       fireEvent.click(screen.getByTestId('icp-save'));
       await waitFor(() => expect(svc.create).toHaveBeenCalled());
-      expect(svc.create.mock.calls[0][0]).toMatchObject({ auto_segment_id: 's1', auto_segment_min_score: 85 });
+      expect(svc.create.mock.calls[0][0]).toMatchObject({ auto_audience_id: 's1', auto_segment_min_score: 85 });
     });
   });
 });
@@ -142,7 +142,7 @@ describe('Given the auto-add to list section', () => {
 describe('Given the ICP form (edit)', () => {
   const saved = {
     id: 'i1', name: 'Founders', description: 'd', target_persona: 'Founder', is_default: true,
-    auto_segment_id: 's1', auto_segment_min_score: 90,
+    auto_audience_id: 's1', auto_segment_min_score: 90,
     icp_criteria: [{ id: 'c1', category: 'industry', label: 'SaaS', weight: 40, is_positive: false, match_config: { keywords: ['saas'] } }],
   };
 
@@ -229,7 +229,7 @@ const deferred = <T,>() => {
 const click = (testId: string) => fireEvent.click(screen.getByTestId(testId));
 const savedIcp = {
   id: 'i1', name: 'Founders', description: 'd', target_persona: 'Founder', is_default: false,
-  auto_segment_id: null, auto_segment_min_score: null,
+  auto_audience_id: null, auto_segment_min_score: null,
   icp_criteria: [{ id: 'c1', category: 'industry', label: 'SaaS', weight: 40, is_positive: true, match_config: { keywords: ['saas'] } }],
 };
 
@@ -239,7 +239,7 @@ describe('Given the page titles and navigation', () => {
       render(<IcpFormPage />);
       expect(screen.getByText('New ideal customer profile')).toBeTruthy();
       expect(screen.queryByText('Name is required')).toBeNull();
-      await waitFor(() => expect(svc.segments).toHaveBeenCalled());
+      await waitFor(() => expect(svc.audiences).toHaveBeenCalled());
       expect(svc.list).not.toHaveBeenCalled();
     });
   });
@@ -389,7 +389,7 @@ describe('Given the auto-add min score and segment clearing', () => {
       render(<IcpFormPage />);
       await screen.findByText('Hot leads');
       fillValid();
-      type('icp-segment', 's1');
+      type('icp-audience', 's1');
       type('icp-min-score', '0');
       expect((screen.getByTestId('icp-min-score') as HTMLInputElement).value).toBe('0');
       type('icp-min-score', '101');
@@ -402,7 +402,7 @@ describe('Given the auto-add min score and segment clearing', () => {
     it('Then the field falls back to showing 70', async () => {
       render(<IcpFormPage />);
       await screen.findByText('Hot leads');
-      type('icp-segment', 's1');
+      type('icp-audience', 's1');
       type('icp-min-score', '40');
       type('icp-min-score', '');
       expect((screen.getByTestId('icp-min-score') as HTMLInputElement).value).toBe('70');
@@ -413,21 +413,21 @@ describe('Given the auto-add min score and segment clearing', () => {
       render(<IcpFormPage />);
       await screen.findByText('Hot leads');
       fillValid();
-      type('icp-segment', 's1');
+      type('icp-audience', 's1');
       expect(screen.getByTestId('icp-min-score')).toBeTruthy();
-      type('icp-segment', '');
+      type('icp-audience', '');
       expect(screen.queryByTestId('icp-min-score')).toBeNull();
       click('icp-save');
       await waitFor(() => expect(svc.create).toHaveBeenCalled());
-      expect(svc.create.mock.calls[0][0].auto_segment_id).toBeNull();
+      expect(svc.create.mock.calls[0][0].auto_audience_id).toBeNull();
     });
   });
   describe('When the segment list fails to load', () => {
     it('Then the form still works with only the None option', async () => {
-      svc.segments.mockRejectedValue(new Error('segs'));
+      svc.audiences.mockRejectedValue(new Error('segs'));
       render(<IcpFormPage />);
-      await waitFor(() => expect(svc.segments).toHaveBeenCalled());
-      const sel = screen.getByTestId('icp-segment') as HTMLSelectElement;
+      await waitFor(() => expect(svc.audiences).toHaveBeenCalled());
+      const sel = screen.getByTestId('icp-audience') as HTMLSelectElement;
       expect(Array.from(sel.options).map((o) => o.value)).toEqual(['']);
     });
   });
@@ -544,14 +544,14 @@ describe('Given the edit form load and save states', () => {
   describe('When the auto segment of a saved profile is cleared', () => {
     it('Then update receives a null segment', async () => {
       params.id = 'i1';
-      svc.list.mockResolvedValue([{ ...savedIcp, auto_segment_id: 's1', auto_segment_min_score: 90 }]);
+      svc.list.mockResolvedValue([{ ...savedIcp, auto_audience_id: 's1', auto_segment_min_score: 90 }]);
       render(<IcpFormPage />);
       await screen.findByDisplayValue('Founders');
       await screen.findByText('Hot leads');
-      type('icp-segment', '');
+      type('icp-audience', '');
       click('icp-save');
       await waitFor(() => expect(svc.update).toHaveBeenCalled());
-      expect(svc.update.mock.calls[0][1].auto_segment_id).toBeNull();
+      expect(svc.update.mock.calls[0][1].auto_audience_id).toBeNull();
     });
   });
 });
@@ -561,7 +561,7 @@ describe('Given the page unmounts before requests settle', () => {
     it('Then nothing throws and no state is applied', async () => {
       params.id = 'i1';
       const seg = deferred<any[]>(); const lst = deferred<any[]>();
-      svc.segments.mockReturnValue(seg.promise); svc.list.mockReturnValue(lst.promise);
+      svc.audiences.mockReturnValue(seg.promise); svc.list.mockReturnValue(lst.promise);
       const { unmount } = render(<IcpFormPage />);
       unmount();
       seg.resolve([{ id: 's', name: 'S' }]); lst.resolve([savedIcp]);

@@ -15,7 +15,7 @@ const IcpListPage: React.FC = () => {
     const canDelete = shell?.hasPermission?.('linkedin_sync.delete') ?? true;
 
     const [icps, setIcps] = useState<Icp[]>([]);
-    const [segments, setSegments] = useState<{ id: string; name: string }[]>([]);
+    const [audiences, setAudiences] = useState<{ id: string; name: string }[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [archiveTarget, setArchiveTarget] = useState<Icp | null>(null);
@@ -27,10 +27,10 @@ const IcpListPage: React.FC = () => {
         try {
             const [list, segs] = await Promise.all([
                 icpService.list(),
-                icpService.segments().catch(() => []),
+                icpService.audiences().catch(() => []),
             ]);
             setIcps(list);
-            setSegments(segs);
+            setAudiences(segs);
         } catch (e: any) {
             setError(e?.message || 'Could not load ideal customer profiles');
         } finally {
@@ -40,10 +40,10 @@ const IcpListPage: React.FC = () => {
 
     useEffect(() => { void load(); }, [load]);
 
-    const segmentName = useMemo(() => {
-        const m = new Map(segments.map((s) => [s.id, s.name]));
+    const audienceName = useMemo(() => {
+        const m = new Map(audiences.map((s) => [s.id, s.name]));
         return (id?: string | null) => (id ? m.get(id) ?? 'Unknown list' : null);
-    }, [segments]);
+    }, [audiences]);
 
     const onSetDefault = async (icp: Icp) => {
         try {
@@ -94,7 +94,7 @@ const IcpListPage: React.FC = () => {
             key: 'auto',
             header: 'Auto-add to list',
             render: (icp) => {
-                const seg = segmentName(icp.auto_segment_id);
+                const seg = audienceName(icp.auto_audience_id);
                 return <span className="text-fg-muted">{seg ? `${seg} · score ≥ ${icp.auto_segment_min_score ?? 70}` : '—'}</span>;
             },
         },

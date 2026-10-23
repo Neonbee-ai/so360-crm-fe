@@ -3,7 +3,7 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import React from 'react';
 
 const svc = vi.hoisted(() => ({
-  list: vi.fn(), segments: vi.fn(), archive: vi.fn(), setDefault: vi.fn(),
+  list: vi.fn(), audiences: vi.fn(), archive: vi.fn(), setDefault: vi.fn(),
 }));
 const nav = vi.hoisted(() => vi.fn());
 
@@ -18,16 +18,16 @@ import IcpListPage from './IcpListPage';
 import { toast } from '../test/icpDsMock';
 
 const icps = [
-  { id: 'i1', name: 'Enterprise CTOs', is_default: true, auto_segment_id: 's1', auto_segment_min_score: 80,
+  { id: 'i1', name: 'Enterprise CTOs', is_default: true, auto_audience_id: 's1', auto_segment_min_score: 80,
     icp_criteria: [{ id: 'c1' }, { id: 'c2' }] },
-  { id: 'i2', name: 'Founders', is_default: false, auto_segment_id: null, auto_segment_min_score: null, icp_criteria: [{ id: 'c3' }] },
+  { id: 'i2', name: 'Founders', is_default: false, auto_audience_id: null, auto_segment_min_score: null, icp_criteria: [{ id: 'c3' }] },
 ];
 
 beforeEach(() => {
   vi.clearAllMocks();
   shell.value = { hasPermission: () => true };
   svc.list.mockResolvedValue(icps);
-  svc.segments.mockResolvedValue([{ id: 's1', name: 'Hot LinkedIn leads' }]);
+  svc.audiences.mockResolvedValue([{ id: 's1', name: 'Hot LinkedIn leads' }]);
   svc.archive.mockResolvedValue({});
   svc.setDefault.mockResolvedValue({});
 });
@@ -184,21 +184,21 @@ describe('Given row rendering edge cases', () => {
   });
   describe('When the auto segment is not among the loaded segments', () => {
     it('Then it shows "Unknown list" with the min score', async () => {
-      svc.list.mockResolvedValue([{ id: 'x', name: 'Orphan', is_default: false, auto_segment_id: 'gone', auto_segment_min_score: 55 }]);
+      svc.list.mockResolvedValue([{ id: 'x', name: 'Orphan', is_default: false, auto_audience_id: 'gone', auto_segment_min_score: 55 }]);
       render(<IcpListPage />);
       expect(await screen.findByText('Unknown list · score ≥ 55')).toBeTruthy();
     });
   });
   describe('When a segment is set but the min score is null', () => {
     it('Then the score falls back to 70', async () => {
-      svc.list.mockResolvedValue([{ id: 'x', name: 'N', is_default: false, auto_segment_id: 's1', auto_segment_min_score: null }]);
+      svc.list.mockResolvedValue([{ id: 'x', name: 'N', is_default: false, auto_audience_id: 's1', auto_segment_min_score: null }]);
       render(<IcpListPage />);
       expect(await screen.findByText('Hot LinkedIn leads · score ≥ 70')).toBeTruthy();
     });
   });
   describe('When the segments request fails', () => {
     it('Then profiles still render and the list name is "Unknown list"', async () => {
-      svc.segments.mockRejectedValue(new Error('segs down'));
+      svc.audiences.mockRejectedValue(new Error('segs down'));
       render(<IcpListPage />);
       await screen.findByTestId('icp-row-i1');
       expect(screen.getByText('Unknown list · score ≥ 80')).toBeTruthy();

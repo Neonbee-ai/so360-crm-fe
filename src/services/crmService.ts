@@ -91,6 +91,12 @@ const PROJECTS_API_ORIGIN = String(
     'http://localhost:3010'
 ).replace(/\/$/, '');
 
+const MARKETING_API_ORIGIN = String(
+    win.VITE_SO360_MARKETING_API ||
+    import.meta.env.VITE_SO360_MARKETING_API ||
+    'http://localhost:3053'
+).replace(/\/$/, '');
+
 const MAINTENANCE_API_ORIGIN = String(
     win.VITE_SO360_MAINTENANCE_API ||
     import.meta.env.VITE_SO360_MAINTENANCE_API ||
@@ -526,6 +532,9 @@ const projectsClient = new ApiClient(PROJECTS_API_ORIGIN, TENANT_ID);
 // Maintenance module's own backend (/v1/maintenance/*) — read-only lists for the
 // customer / deal "Maintenance" tab. Called directly, no CRM BE proxy.
 const maintenanceClient = new ApiClient(MAINTENANCE_API_ORIGIN, TENANT_ID);
+// Marketing module's own backend (/v1/marketing/*) — ICP auto-list audience picker.
+// Called directly, no CRM BE proxy.
+const marketingClient = new ApiClient(MARKETING_API_ORIGIN, TENANT_ID);
 /**
  * Core and Inventory clients for the record importers (existing clients →
  * Core channel import; projects/towers/units → Inventory), sharing the
@@ -535,6 +544,7 @@ export { coreClient as crmCoreClient, inventoryClient as crmInventoryClient };
 /** Neura AI client (bare routes, no CRM BE involved) — ICP drafting. */
 export { neuraClient as crmNeuraClient };
 export { maintenanceClient as crmMaintenanceClient };
+export { marketingClient as crmMarketingClient };
 
 // Type Definitions for API Responses
 interface LeadStatsResponse {
@@ -2884,6 +2894,7 @@ export const crmService = {
         inboxClient.setTenantId(id);
         projectsClient.setTenantId(id);
         maintenanceClient.setTenantId(id);
+        marketingClient.setTenantId(id);
     },
     setOrgId: (id: string) => {
         if (id !== ORG_ID) {
@@ -2909,6 +2920,7 @@ export const crmService = {
         inboxClient.setOrgId(id);
         projectsClient.setOrgId(id);
         maintenanceClient.setOrgId(id);
+        marketingClient.setOrgId(id);
     },
     setUser: (user: User) => {
         CURRENT_USER = user;
@@ -2930,6 +2942,7 @@ export const crmService = {
         inboxClient.setAccessToken(token);
         projectsClient.setAccessToken(token);
         maintenanceClient.setAccessToken(token);
+        marketingClient.setAccessToken(token);
     },
 };
 

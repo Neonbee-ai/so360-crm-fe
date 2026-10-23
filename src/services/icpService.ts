@@ -1,4 +1,4 @@
-import { crmApiClient, crmNeuraClient, crmService } from './crmService';
+import { crmApiClient, crmNeuraClient, crmMarketingClient } from './crmService';
 
 /**
  * Ideal Customer Profiles (LinkedIn fit scoring). crm-be has no /v1 prefix.
@@ -39,7 +39,7 @@ export interface Icp {
     target_persona?: string | null;
     is_default: boolean;
     status?: string;
-    auto_segment_id?: string | null;
+    auto_audience_id?: string | null;
     auto_segment_min_score?: number | null;
     icp_criteria?: IcpCriterion[];
 }
@@ -50,7 +50,7 @@ export interface IcpFormValues {
     target_persona: string;
     is_default: boolean;
     criteria: IcpCriterion[];
-    auto_segment_id: string | null;
+    auto_audience_id: string | null;
     auto_segment_min_score: number | null;
 }
 
@@ -67,7 +67,7 @@ export const emptyCriterion = (): IcpCriterion => ({
 
 export const emptyIcpForm = (): IcpFormValues => ({
     name: '', description: '', target_persona: '', is_default: false,
-    criteria: [emptyCriterion()], auto_segment_id: null, auto_segment_min_score: DEFAULT_MIN_SCORE,
+    criteria: [emptyCriterion()], auto_audience_id: null, auto_segment_min_score: DEFAULT_MIN_SCORE,
 });
 
 export const categoryLabel = (c: string): string => ICP_CATEGORIES.find((x) => x.value === c)?.label ?? c;
@@ -94,8 +94,8 @@ export function icpToForm(icp: Icp): IcpFormValues {
         target_persona: icp.target_persona ?? '',
         is_default: !!icp.is_default,
         criteria: (icp.icp_criteria ?? []).map(normaliseCriterion),
-        auto_segment_id: icp.auto_segment_id ?? null,
-        auto_segment_min_score: icp.auto_segment_id ? (icp.auto_segment_min_score ?? DEFAULT_MIN_SCORE) : (icp.auto_segment_min_score ?? DEFAULT_MIN_SCORE),
+        auto_audience_id: icp.auto_audience_id ?? null,
+        auto_segment_min_score: icp.auto_audience_id ? (icp.auto_segment_min_score ?? DEFAULT_MIN_SCORE) : (icp.auto_segment_min_score ?? DEFAULT_MIN_SCORE),
     };
 }
 
@@ -126,15 +126,15 @@ export function validateIcp(v: IcpFormValues): IcpErrors {
 
 /** Form values -> API body. Auto-list fields are sent only as a pair, score clamped 1..100. */
 export function toIcpBody(v: IcpFormValues) {
-    const hasSegment = !!v.auto_segment_id;
+    const hasAudience = !!v.auto_audience_id;
     const score = v.auto_segment_min_score == null ? DEFAULT_MIN_SCORE : Math.min(100, Math.max(1, Math.round(v.auto_segment_min_score)));
     return {
         name: v.name.trim(),
         description: v.description.trim() || undefined,
         target_persona: v.target_persona.trim() || undefined,
         is_default: v.is_default,
-        auto_segment_id: hasSegment ? v.auto_segment_id : null,
-        auto_segment_min_score: hasSegment ? score : null,
+        auto_audience_id: hasAudience ? v.auto_audience_id : null,
+        auto_segment_min_score: hasAudience ? score : null,
         criteria: v.criteria.map((c) => ({
             category: c.category,
             label: c.label.trim(),
@@ -154,9 +154,11 @@ export const icpService = {
     update: (id: string, v: IcpFormValues) => crmApiClient.put<Icp>(`/linkedin-sync/icps/${id}`, toIcpBody(v)),
     setDefault: (id: string) => crmApiClient.put<Icp>(`/linkedin-sync/icps/${id}`, { is_default: true }),
     archive: (id: string) => crmApiClient.delete<unknown>(`/linkedin-sync/icps/${id}`),
-    segments: async (): Promise<{ id: string; name: string }[]> => {
-        const r = await crmService.getCustomerSegments();
-        return Array.isArray(r) ? r : [];
+    /** Marketing audiences for the auto-list picker (marketing-be GET /v1/marketing/audiences). */
+    audiences: async (): Promise<{ id: string; name: string }[]> => {
+        const r = await crmMarketingClient.get<unknown>('/v1/marketing/audiences');
+        const rows = Array.isArray(r) ? r : (r as any)?.data ?? (r as any)?.items;
+        return Array.isArray(rows) ? rows : [];
     },
     draft: (description: string, name?: string) =>
         crmNeuraClient.post<IcpDraft>('/linkedin-ai/draft-icp', { description, ...(name?.trim() ? { name: name.trim() } : {}) }),

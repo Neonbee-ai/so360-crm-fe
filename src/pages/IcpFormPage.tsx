@@ -31,7 +31,7 @@ const IcpFormPage: React.FC = () => {
     const isEdit = !!id;
 
     const [values, setValues] = useState<IcpFormValues>(emptyIcpForm());
-    const [segments, setSegments] = useState<{ id: string; name: string }[]>([]);
+    const [audiences, setAudiences] = useState<{ id: string; name: string }[]>([]);
     const [loading, setLoading] = useState(isEdit);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
@@ -43,7 +43,7 @@ const IcpFormPage: React.FC = () => {
 
     useEffect(() => {
         let alive = true;
-        icpService.segments().then((s: { id: string; name: string }[]) => alive && setSegments(s)).catch(() => undefined);
+        icpService.audiences().then((s: { id: string; name: string }[]) => alive && setAudiences(s)).catch(() => undefined);
         if (id) {
             icpService.list()
                 .then((list: Icp[]) => {
@@ -201,13 +201,13 @@ const IcpFormPage: React.FC = () => {
                     </div>
                 </FormSection>
 
-                <FormSection title="Auto-add to list" description="Optionally add captured leads that score at or above the minimum to a customer list.">
+                <FormSection title="Auto-add to list" description="Optionally add captured leads that score at or above the minimum to a Marketing audience.">
                     <Select
-                        label="List" name="icp-segment" value={values.auto_segment_id ?? ''} data-testid="icp-segment"
-                        options={[{ value: '', label: 'None' }, ...segments.map((sg) => ({ value: sg.id, label: sg.name }))]}
-                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('auto_segment_id', e.target.value || null)}
+                        label="Marketing audience" name="icp-audience" value={values.auto_audience_id ?? ''} data-testid="icp-audience"
+                        options={[{ value: '', label: 'None' }, ...audiences.map((au) => ({ value: au.id, label: au.name }))]}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('auto_audience_id', e.target.value || null)}
                     />
-                    {values.auto_segment_id && (
+                    {values.auto_audience_id && (
                         <NumberInput
                             label="Minimum fit score" name="icp-min-score" min={1} max={100}
                             value={values.auto_segment_min_score ?? DEFAULT_MIN_SCORE} data-testid="icp-min-score"
