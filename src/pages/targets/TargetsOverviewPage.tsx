@@ -7,6 +7,8 @@ import {
 import {
   EmptyState,
   ErrorState,
+  UNLINKED_PROFILE_MESSAGE,
+  isUnlinkedPayload,
   LoadingState,
   STATUS_TONE,
   STATUS_LEGEND,
@@ -51,7 +53,9 @@ export default function TargetsOverviewPage() {
     setError(null);
     targetPlanService
       .myOverview()
-      .then(setData)
+      .then((d) =>
+        isUnlinkedPayload(d) ? setError(UNLINKED_PROFILE_MESSAGE) : setData(d),
+      )
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, []);

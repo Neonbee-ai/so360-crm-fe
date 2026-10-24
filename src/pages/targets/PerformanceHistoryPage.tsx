@@ -4,6 +4,8 @@ import { targetPlanService } from '../../services/targetPlanService';
 import {
   EmptyState,
   ErrorState,
+  UNLINKED_PROFILE_MESSAGE,
+  isUnlinkedPayload,
   formatPct,
   formatValue,
 } from './targetUi';
@@ -42,7 +44,9 @@ export default function PerformanceHistoryPage() {
     setError(null);
     targetPlanService
       .myHistory(12)
-      .then(setData)
+      .then((d) =>
+        isUnlinkedPayload(d) ? setError(UNLINKED_PROFILE_MESSAGE) : setData(d),
+      )
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, []);

@@ -154,6 +154,18 @@ export function isUnlinkedProfileError(error: string | null | undefined): boolea
 }
 
 /**
+ * Message used when a self-service read answers 200 with `linked: false`.
+ * Routed through ErrorState so it renders the linking empty state.
+ */
+export const UNLINKED_PROFILE_MESSAGE =
+  'No People Connect person is linked to this user';
+
+/** True when a `/target-plans/me/*` payload says the user has no linked person. */
+export function isUnlinkedPayload(data: unknown): boolean {
+  return !!data && (data as { linked?: boolean }).linked === false;
+}
+
+/**
  * In-frame error. Always rendered inside the page's floorplan so the header
  * stays; an unlinked profile gets its own explanation instead of raw API text.
  */

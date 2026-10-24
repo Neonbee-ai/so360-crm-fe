@@ -5,6 +5,8 @@ import {
   AsOfBanner,
   EmptyState,
   ErrorState,
+  UNLINKED_PROFILE_MESSAGE,
+  isUnlinkedPayload,
   LoadingState,
   PeriodPicker,
   formatPct,
@@ -46,7 +48,9 @@ export default function MeasurementPage() {
     setError(null);
     targetPlanService
       .myMeasurement(asOf || undefined)
-      .then(setData)
+      .then((d) =>
+        isUnlinkedPayload(d) ? setError(UNLINKED_PROFILE_MESSAGE) : setData(d),
+      )
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [asOf]);

@@ -9,6 +9,8 @@ import {
   AsOfBanner,
   EmptyState,
   ErrorState,
+  UNLINKED_PROFILE_MESSAGE,
+  isUnlinkedPayload,
   LoadingState,
   PeriodPicker,
   STATUS_TONE,
@@ -53,7 +55,9 @@ export default function MyTargetsPage() {
     setError(null);
     targetPlanService
       .myOverview(asOf || undefined)
-      .then(setData)
+      .then((d) =>
+        isUnlinkedPayload(d) ? setError(UNLINKED_PROFILE_MESSAGE) : setData(d),
+      )
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [asOf]);
