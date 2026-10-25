@@ -13,6 +13,9 @@ import NeuraAiSummaryCard from './components/NeuraAiSummaryCard';
 import { useFormatters } from '@so360/formatters';
 import { DetailPageTemplate, Card, Badge, Button, KpiCard, EmptyState, DataTable, TextField, NumberInput, Select } from '@so360/design-system';
 import { Modal } from '../components/common/Modal';
+import { PartnerDlCustomFields } from '../components/customFields/PartnerDlCustomFields';
+import { DL_CUSTOM_FIELDS_FLAG } from '../components/customFields/DlCustomFieldsPanel';
+import { useCrmFeatureFlag } from '../hooks/useCrmFeatureFlag';
 
 type TabType = 'overview' | 'deals' | 'commissions' | 'activity';
 
@@ -98,6 +101,7 @@ const PartnerDetailPage = () => {
     const shellCtx = useShell() as any;
     const canUseNeuraAi = (shellCtx?.effectiveFlagsLoaded !== false) && (shellCtx?.isFeatureEnabled?.('submodule:crm:neura_ai_copilot') ?? false);
     const [activities, setActivities] = useState<any[]>([]);
+    const dlCustomFields = useCrmFeatureFlag(DL_CUSTOM_FIELDS_FLAG);
     const [activeTab, setActiveTab] = useState<TabType>('overview');
     const [isLoading, setIsLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
@@ -577,6 +581,7 @@ const PartnerDetailPage = () => {
                             </Card>
                         </>
                     )}
+                    {dlCustomFields && !isEditing && <PartnerDlCustomFields corePartnerId={partner?.core_partner_id} />}
                 </div>
             )}
 

@@ -88,7 +88,7 @@ const BLANK_RULE: Partial<LeadScoringRule> = {
     priority: 0,
 };
 
-const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
+const SettingsPage = ({ onOpenIcps, onOpenDataSettings }: { onOpenIcps?: () => void; onOpenDataSettings?: () => void } = {}) => {
     const shell = useShellBridge();
     const icpEnabled = useCrmFeatureFlag('submodule:crm:icp_manager');
     const canWriteSettings = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('submodule:crm:settings') ?? true);
@@ -642,7 +642,7 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
                     <Banner
                         variant="warning"
                         data-testid="crm-custom-fields-deprecated"
-                        action={{ label: 'Open Data settings', onClick: () => window.location.assign('/settings/data') }}
+                        action={onOpenDataSettings ? { label: 'Open Data settings', onClick: onOpenDataSettings } : undefined}
                     >
                         Custom fields for leads and deals are now managed in Data settings (datasets crm.lead and crm.deal). This page is deprecated and no longer edits fields.
                     </Banner>

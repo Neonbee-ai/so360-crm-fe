@@ -409,3 +409,9 @@ export const ChipGroup = ({ name, label, options = [], value = [], onChange, 'da
       key: o.value, type: 'button', role: 'checkbox', 'aria-checked': value.includes(o.value),
       onClick: () => onChange(value.includes(o.value) ? value.filter((v: string) => v !== o.value) : [...value, o.value]),
     }, o.label)));
+
+export const Banner = ({ children, action, 'data-testid': testId }: any) =>
+  React.createElement('div', { role: 'alert', 'data-testid': testId }, children,
+    action ? React.createElement('button', { type: 'button', onClick: action.onClick }, action.label) : null);
+export const CustomFieldsPanel = ({ title, fields = [], 'data-testid': testId }: any) =>
+  React.createElement('section', { 'aria-label': title, 'data-testid': testId ?? 'cf-panel-stub' }, fields.map((f: any) => f.field_key).join(','));

@@ -121,4 +121,17 @@ describe('DlCustomFieldsPanel', () => {
     await panelProps.current.onSave({ budget: 1 }, null);
     expect(save).toHaveBeenCalledWith({ budget: 1 }, null);
   });
+
+  it('Given a partner / When rendered / Then it reads dataset core.partner', () => {
+    renderPanel({ entity: 'partner' });
+    expect(schemaState.code).toBe('core.partner');
+  });
+
+  it('Given create mode / When rendered / Then mode, values and onValuesChange reach the panel and no record is bound', () => {
+    const onValuesChange = vi.fn();
+    render(<DlCustomFieldsPanel entity="lead" mode="create" values={{ budget: 2 }} onValuesChange={onValuesChange} version={null} />);
+    expect(panelProps.current.mode).toBe('create');
+    expect(panelProps.current.values).toEqual({ budget: 2 });
+    expect(panelProps.current.onValuesChange).toBe(onValuesChange);
+  });
 });

@@ -24,11 +24,12 @@ vi.mock('../../services/crmService', () => ({
 }));
 
 vi.mock('@so360/shell-context', () => ({
+  useDatasetSchema: () => ({ fields: [], isLoading: false, error: null }),
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useNotify: () => ({ emitNotification: vi.fn().mockResolvedValue(undefined) }),
   useActivity: () => ({ recordActivity: (...a: any[]) => mockRecordActivity(...a) }),
   useIdentity: () => ({ user: { id: 'u1', full_name: 'Test User', email: 't@t.com' } }),
-  useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
+  useShellBridge: () => ({ isFeatureEnabled: (k: string) => k !== 'submodule:crm:dl_custom_fields', isFeatureHidden: () => false }),
 
   useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 

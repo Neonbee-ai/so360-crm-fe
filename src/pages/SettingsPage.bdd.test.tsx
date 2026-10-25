@@ -208,6 +208,29 @@ describe('SettingsPage BDD', () => {
       expect(screen.queryByDisplayValue('Company Size')).toBeNull();
     });
 
+    it('Given dl_custom_fields flag on and onOpenDataSettings / When the banner action is clicked / Then it navigates in-shell via the callback', async () => {
+      const shell = await import('@so360/shell-context');
+      vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
+      const onOpen = vi.fn();
+      const user = userEvent.setup();
+      render(<SettingsPage onOpenDataSettings={onOpen} />);
+      await waitFor(() => expect(screen.getByText('CRM Settings')).toBeInTheDocument());
+      await user.click(screen.getByRole('tab', { name: /custom fields/i }));
+      await user.click(await screen.findByRole('button', { name: /open data settings/i }));
+      expect(onOpen).toHaveBeenCalledTimes(1);
+    });
+
+    it('Given dl_custom_fields flag on and no onOpenDataSettings / Then the banner has no action button', async () => {
+      const shell = await import('@so360/shell-context');
+      vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
+      const user = userEvent.setup();
+      render(<SettingsPage />);
+      await waitFor(() => expect(screen.getByText('CRM Settings')).toBeInTheDocument());
+      await user.click(screen.getByRole('tab', { name: /custom fields/i }));
+      await waitFor(() => expect(screen.getByTestId('crm-custom-fields-deprecated')).toBeInTheDocument());
+      expect(screen.queryByRole('button', { name: /open data settings/i })).toBeNull();
+    });
+
     it('When Lead Sources tab clicked / Then shows sources list', async () => {
       const user = userEvent.setup();
       render(<SettingsPage />);

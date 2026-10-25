@@ -4,6 +4,8 @@ import { Modal } from '../common/Modal';
 import { PartnerSearchDropdown } from '../common/PartnerSearchDropdown';
 import { crmService, settingsApi } from '../../services/crmService';
 import { AlertCircle } from 'lucide-react';
+import { DlCustomFieldsPanel, DL_CUSTOM_FIELDS_FLAG } from '../customFields/DlCustomFieldsPanel';
+import { useCrmFeatureFlag } from '../../hooks/useCrmFeatureFlag';
 import { CustomFieldDefinition, User, Lead, SourceTypeOption } from '../../types/crm';
 import { useNotify, useActivity, useIdentity } from '@so360/shell-context';
 import {
@@ -81,6 +83,8 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
     const { emitNotification } = useNotify();
     const { recordActivity } = useActivity();
     const { user: currentUser } = useIdentity();
+    const dlCustomFields = useCrmFeatureFlag(DL_CUSTOM_FIELDS_FLAG);
+    const [dlValues, setDlValues] = useState<Record<string, unknown>>({});
     const [formData, setFormData] = useState({
         company_name: '',
         first_name: '',
@@ -140,6 +144,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
             setError(null);
             setExistingRecord(null);
             setDuplicateLead(null);
+            setDlValues({});
             fetchSettings();
         }
     }, [isOpen]);
@@ -230,6 +235,10 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                 owner_id: formData.owner_id,
                 referred_by: formData.referred_by || undefined,
                 ...(confirmDuplicates && { confirm_duplicates: true }),
+                // Data Layer values (flag ON): Core validates them server-side.
+                ...(dlCustomFields && Object.keys(dlValues).length > 0 && {
+                    custom_fields: { ...formData.custom_fields, ...dlValues },
+                }),
             } as any);
             // Fire-and-forget notification + activity
             recordActivity({ eventType: 'lead.created', eventCategory: 'crm', description: `Created lead "${formData.company_name}"`, resourceType: 'lead', resourceId: newLead?.id }).catch(() => {});
@@ -561,7 +570,23 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                                 </>
                             ),
                         },
-                        ...(customFieldDefs.length > 0
+                        ...(dlCustomFields
+                            ? [{
+                                id: 'custom',
+                                title: 'Additional Details',
+                                content: (
+                                    <GridItem span={{ md: 4, lg: 12 }}>
+                                        <DlCustomFieldsPanel
+                                            entity="lead"
+                                            mode="create"
+                                            values={dlValues}
+                                            onValuesChange={setDlValues}
+                                            version={null}
+                                        />
+                                    </GridItem>
+                                ),
+                            }]
+                            : customFieldDefs.length > 0
                             ? [{
                                 id: 'custom',
                                 title: 'Additional Details',

@@ -45,3 +45,31 @@ describe('crmService data-layer custom fields', () => {
     await expect(crmService.updateDealCustomFields('d1', { a: 1 }, 1)).rejects.toMatchObject({ status: 503 });
   });
 });
+
+import { partnersApi } from './crmService';
+
+describe('partnersApi core.partner custom fields', () => {
+  it('Given a Core partner id / When reading / Then GET /v1/partners/:id', async () => {
+    ok({ id: 'cp1', custom_fields: { a: 1 }, custom_fields_version: 2 });
+    const row = await partnersApi.getCore('cp1');
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain('/v1/partners/cp1');
+    expect(init.method ?? 'GET').toBe('GET');
+    expect(row.custom_fields_version).toBe(2);
+  });
+
+  it('Given a version / When saving / Then PATCH body is custom_fields plus version', async () => {
+    ok({ id: 'cp1' });
+    await partnersApi.updateCoreCustomFields('cp1', { a: 1 }, 5);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain('/v1/partners/cp1');
+    expect(init.method).toBe('PATCH');
+    expect(JSON.parse(init.body)).toEqual({ custom_fields: { a: 1 }, version: 5 });
+  });
+
+  it('Given no version / Then version is omitted', async () => {
+    ok({ id: 'cp1' });
+    await partnersApi.updateCoreCustomFields('cp1', { a: 1 }, null);
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ custom_fields: { a: 1 } });
+  });
+});

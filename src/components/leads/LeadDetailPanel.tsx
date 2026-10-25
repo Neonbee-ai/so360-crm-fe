@@ -23,6 +23,8 @@ import {
 import { Card, EmptyState, Tabs, Button, Drawer, Select } from '@so360/design-system';
 import { Lead, Activity as ActivityType, Deal, Task, TASK_PRIORITY_STYLES, User as CrmUser, SourceTypeOption, CustomFieldDefinition } from '../../types/crm';
 import { crmService, settingsApi } from '../../services/crmService';
+import { DlCustomFieldsPanel, DL_CUSTOM_FIELDS_FLAG } from '../customFields/DlCustomFieldsPanel';
+import { useCrmFeatureFlag } from '../../hooks/useCrmFeatureFlag';
 import { useEntityTimeline } from '../../pages/components/timeline/useEntityTimeline';
 import { useCRMFormatters } from '../../utils/formatters';
 import { formatFieldValue, visibleMetaEntries, EMPTY_VALUE } from '../../utils/fieldPresentation';
@@ -128,6 +130,15 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
   const [tab, setTab] = useState<PanelTab>('overview');
   const formatters = useCRMFormatters();
   const panelRef = useRef<HTMLDivElement>(null);
+  // Data Layer custom fields: the list row may predate the DL values/version,
+  // so fetch the full lead while the panel is open (flag ON only).
+  const dlCustomFields = useCrmFeatureFlag(DL_CUSTOM_FIELDS_FLAG);
+  const [dlLead, setDlLead] = useState<Lead | null>(null);
+  const loadDlLead = React.useCallback(async () => {
+    if (!dlCustomFields || !lead?.id) return;
+    try { setDlLead((await crmService.getLeadById(lead.id)) ?? null); } catch { /* panel keeps last values */ }
+  }, [dlCustomFields, lead?.id]);
+  useEffect(() => { setDlLead(null); void loadDlLead(); }, [loadDlLead]);
 
   // Lazily-loaded linked records — fetched only when their tab is first opened
   // for the current lead. null = not yet loaded; [] = loaded-but-empty.
@@ -460,6 +471,19 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                       />
                     )}
                   </Card>
+
+                  {dlCustomFields && lead && (
+                    <div className="mb-3" data-testid="lead-panel-dl-custom-fields">
+                      <DlCustomFieldsPanel
+                        entity="lead"
+                        recordId={lead.id}
+                        values={(dlLead ?? lead).dl_custom_fields}
+                        version={(dlLead ?? lead).custom_fields_version}
+                        save={(values, version) => crmService.updateLeadCustomFields(lead.id, values, version)}
+                        reload={loadDlLead}
+                      />
+                    </div>
+                  )}
 
                   {/* Merge provenance — resolved to a name and linked, never the
                       raw UUID/ISO pair that used to fall out of the generic dump. */}

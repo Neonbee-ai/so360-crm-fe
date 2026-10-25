@@ -1401,6 +1401,20 @@ export const partnersApi = {
     update: async (id: string, data: any) => {
         return apiClient.patch<any>(`/partners/${id}`, data);
     },
+    /**
+     * Core partner master row (custom_fields + custom_fields_version). A CRM
+     * partner links to it by `core_partner_id`; Core owns the data-layer values.
+     */
+    getCore: async (corePartnerId: string) => {
+        return coreClient.get<any>(`/v1/partners/${corePartnerId}`);
+    },
+    /** Save core.partner custom fields through Core's partner update (409 on stale version, 503 when validation is down). */
+    updateCoreCustomFields: async (corePartnerId: string, customFields: Record<string, unknown>, version?: number | null) => {
+        return coreClient.patch<any>(`/v1/partners/${corePartnerId}`, {
+            custom_fields: customFields,
+            ...(version != null ? { version } : {}),
+        });
+    },
     getDeals: async (id: string) => {
         return apiClient.get<any>(`/partners/${id}/deals`);
     },

@@ -4,6 +4,12 @@ import { vi, describe, test, expect, beforeEach } from 'vitest';
 import PartnerDetailPage from './PartnerDetailPage';
 import { toast } from '@so360/design-system';
 
+const dlFlag = vi.hoisted(() => ({ on: false }));
+
+vi.mock('../components/customFields/PartnerDlCustomFields', () => ({
+  PartnerDlCustomFields: ({ corePartnerId }: any) => <div data-testid="partner-dl-stub">{String(corePartnerId)}</div>,
+}));
+
 // ── service mocks ─────────────────────────────────────────────────────────────
 const mockPartnersGetOne = vi.fn();
 const mockPartnersUpdate = vi.fn();
@@ -41,19 +47,20 @@ vi.mock('react-router-dom', () => ({
 }));
 
 vi.mock('@so360/shell-context', () => ({
+  useDatasetSchema: () => ({ fields: [], isLoading: false, error: null }),
   useShellBridge: () => ({
     tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee',
     orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
     userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
     effectiveFlagsLoaded: true,
-    isFeatureEnabled: vi.fn().mockReturnValue(true),
+    isFeatureEnabled: vi.fn((k: string) => (k === 'submodule:crm:dl_custom_fields' ? dlFlag.on : true)),
   }),
   useShell: () => ({
     tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee',
     orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
     userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
     isModuleEnabled: () => true,
-    isFeatureEnabled: () => true,
+    isFeatureEnabled: (k: string) => (k === 'submodule:crm:dl_custom_fields' ? dlFlag.on : true),
     isFeatureHidden: () => false,
   }),
   useBusinessSettings: () => ({
@@ -82,7 +89,7 @@ vi.mock('../hooks/useShellBridge', () => ({
     orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
     userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
     effectiveFlagsLoaded: true,
-    isFeatureEnabled: vi.fn().mockReturnValue(true),
+    isFeatureEnabled: vi.fn((k: string) => (k === 'submodule:crm:dl_custom_fields' ? dlFlag.on : true)),
   }),
 }));
 
@@ -117,6 +124,7 @@ const mockCommissions = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  dlFlag.on = false;
   mockPartnersGetOne.mockResolvedValue(mockPartner);
   mockPartnerTypesGetAll.mockResolvedValue([{ value: 'reseller', label: 'Reseller' }]);
   mockGetUsers.mockResolvedValue([]);
@@ -299,5 +307,20 @@ describe('Given PartnerDetailPage — royalty rate display', () => {
     await waitFor(() => {
       expect(screen.getByText('15%')).toBeInTheDocument();
     });
+  });
+});
+
+describe('Given PartnerDetailPage — data-layer custom fields', () => {
+  test('Given the flag is on / When overview loads / Then the core.partner panel renders with core_partner_id', async () => {
+    dlFlag.on = true;
+    mockPartnersGetOne.mockResolvedValue({ ...mockPartner, core_partner_id: 'core-9' });
+    render(<PartnerDetailPage />);
+    await waitFor(() => expect(screen.getByTestId('partner-dl-stub').textContent).toBe('core-9'));
+  });
+
+  test('Given the flag is off / When overview loads / Then no data-layer panel renders', async () => {
+    render(<PartnerDetailPage />);
+    await waitFor(() => expect(screen.getByText('Ravi Shankar')).toBeInTheDocument());
+    expect(screen.queryByTestId('partner-dl-stub')).toBeNull();
   });
 });
