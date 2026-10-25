@@ -33,6 +33,7 @@ import { countActiveRules, type FilterGroup } from '../components/leads/leadFilt
 import { leadsToCsv, downloadCsv } from '../components/leads/leadsCsv';
 import { SummaryMetricChips } from '../components/common/SummaryMetricChips';
 import { useNotify, useActivity, useShellBridge, useQuota, useSandboxLimit } from '@so360/shell-context';
+import { LEAD_TEMPERATURE_OPTIONS, matchesTemperatureFilter } from '../components/leads/LeadTemperatureBadge';
 import { useCRMFormatters } from '../utils/formatters';
 import { describeApiError } from '../utils/apiErrorMessage';
 import { publishLeadsChanged } from '../utils/leadEvents';
@@ -51,6 +52,8 @@ interface FilterState {
   dateRange: string;
   customDateStart: string;
   customDateEnd: string;
+  /** RE §20 — 'All' | 'hot' | 'warm' | 'cold'. Optional: older saved views lack it. */
+  temperature?: string;
 }
 
 const DEFAULT_FILTERS: FilterState = {
@@ -61,6 +64,7 @@ const DEFAULT_FILTERS: FilterState = {
   dateRange: 'All',
   customDateStart: '',
   customDateEnd: '',
+  temperature: 'All',
 };
 
 const SAVED_VIEWS_KEY = 'crm_leads_saved_views_v1';
@@ -164,6 +168,8 @@ const LeadsPage = () => {
   // already enforces leads.delete on both the single and bulk delete routes —
   // this only controls visibility of a control the user couldn't otherwise use.
   const canDeleteLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.delete') ?? false);
+  // RE §20 — Hot/Warm/Cold badge + filter. Off unless the flag resolves true.
+  const showTemperature = useCrmFeatureFlag(RE_FLAGS.LEAD_TEMPERATURE);
   // Bulk import (A7) — flag-gated, and only for users who may create leads.
   const bulkImportEnabled = useCrmFeatureFlag(RE_FLAGS.BULK_IMPORT);
   const canImportLeads = canCreateLead && bulkImportEnabled;
@@ -341,9 +347,10 @@ const LeadsPage = () => {
       if (filters.owner !== 'All' && lead.owner?.id !== filters.owner) return false;
       if (filters.creator !== 'All' && lead.creator?.id !== filters.creator) return false;
       if (!isDateInRange(lead.created_at, filters.dateRange, filters.customDateStart, filters.customDateEnd)) return false;
+      if (showTemperature && !matchesTemperatureFilter(lead, filters.temperature)) return false;
       return true;
     });
-  }, [leads, filters]);
+  }, [leads, filters, showTemperature]);
 
   // KPI chip counts — derived purely for display, computed off the full unpaginated
   // list (not filteredLeads) so the chips always reflect totals regardless of the
@@ -674,7 +681,8 @@ const LeadsPage = () => {
     onOpen: (lead) => navigate(`${lead.id}`),
     formatDate: formatters.formatDate,
     onInlineEdit: handleInlineEdit,
-  }), [users, leadStages, canUpdateLead, canDeleteLead, handleOwnerChange, handleStatusChange, navigate, formatters, handleInlineEdit]);
+    showTemperature,
+  }), [users, leadStages, canUpdateLead, canDeleteLead, handleOwnerChange, handleStatusChange, navigate, formatters, handleInlineEdit, showTemperature]);
 
   const bulkActions = useMemo(() => [
     {
@@ -843,6 +851,21 @@ const LeadsPage = () => {
             <option key={user.id} value={user.id}>{user.full_name}</option>
           ))}
         </select>
+
+        {showTemperature && (
+          <select
+            aria-label="Lead temperature"
+            data-testid="lead-temperature-filter"
+            value={filters.temperature ?? 'All'}
+            onChange={(e) => setFilter('temperature', e.target.value)}
+            className="bg-slate-950 border border-slate-700/50 text-slate-300 px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50 shrink-0"
+          >
+            <option value="All">All Temperatures</option>
+            {LEAD_TEMPERATURE_OPTIONS.map((t) => (
+              <option key={t.value} value={t.value}>{t.label}</option>
+            ))}
+          </select>
+        )}
 
         <select
           value={filters.dateRange}
