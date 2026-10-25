@@ -105,7 +105,7 @@ vi.mock('@so360/shell-context', () => ({
     hasAnyPermission: () => true,
   }),
   useActivity: () => ({ recordActivity: async () => {} }),
-  useShellBridge: () => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true }),
+  useShellBridge: () => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: (k: string) => k !== 'submodule:crm:dl_custom_fields' }),
 }));
 
 vi.mock('../config/features', () => ({

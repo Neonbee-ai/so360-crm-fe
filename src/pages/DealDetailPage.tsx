@@ -19,6 +19,8 @@ import { useCrmFeatureFlag, RE_FLAGS } from '../hooks/useCrmFeatureFlag';
 import { CrossLinkChip, toast, useConfirm, DetailPageTemplate, Button, IconButton, Card, EmptyState, Badge, Select, DatePicker, NumberInput, Textarea, Grid, GridItem, FileUpload } from '@so360/design-system';
 import { crmService, dealsApi, tasksApi, activitiesApi, TimelineEvent } from '../services/crmService';
 import { useCRMFormatters } from '../utils/formatters';
+import { DlCustomFieldsPanel, DL_CUSTOM_FIELDS_FLAG } from '../components/customFields/DlCustomFieldsPanel';
+import { useCrmFeatureFlag } from '../hooks/useCrmFeatureFlag';
 import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType } from '../types/crm';
 import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import TaskModal from './components/TaskModal';
@@ -77,6 +79,7 @@ const DealDetailPage = () => {
     const commissionsOn = useCrmFeatureFlag(RE_FLAGS.COMMISSIONS);
     const maintenanceTabOn = useCrmFeatureFlag(MAINTENANCE_TAB_FLAG);
 
+    const dlCustomFields = useCrmFeatureFlag(DL_CUSTOM_FIELDS_FLAG);
     const [deal, setDeal] = useState<Deal | null>(null);
     const [associatedLead, setAssociatedLead] = useState<any>(null);
     // G8 Client 360: full cross-module timeline (calls, WhatsApp, email, meetings, tasks, notes, documents, bookings)
@@ -1210,7 +1213,17 @@ const DealDetailPage = () => {
                             )}
 
                             {/* CUSTOM FIELDS TAB */}
-                            {activeTab === 'custom' && (
+                            {activeTab === 'custom' && dlCustomFields && (
+                                <DlCustomFieldsPanel
+                                    entity="deal"
+                                    recordId={deal.id}
+                                    values={deal.custom_fields}
+                                    version={deal.custom_fields_version}
+                                    save={(values, version) => crmService.updateDealCustomFields(deal.id, values, version)}
+                                    reload={fetchData}
+                                />
+                            )}
+                            {activeTab === 'custom' && !dlCustomFields && (
                                 <Grid gap="md">
                                     {customFieldDefs.length === 0 ? (
                                         <GridItem span="full"><p className="text-fg-muted italic text-sm">No additional fields configured in Deals settings.</p></GridItem>

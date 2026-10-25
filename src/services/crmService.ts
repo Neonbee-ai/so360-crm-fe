@@ -226,6 +226,9 @@ const mapLeadFromApi = (apiLead: any): Lead => {
         tasks: (apiLead.tasks || []).map(mapTaskFromApi),
         activities: (apiLead.activities || []).map(mapActivityFromApi),
         custom_fields: apiLead.meta_data || {},
+        // Data-layer values live in the lead's own `custom_fields` column (keyed by field_key).
+        dl_custom_fields: apiLead.custom_fields && typeof apiLead.custom_fields === 'object' ? apiLead.custom_fields : {},
+        custom_fields_version: apiLead.custom_fields_version ?? undefined,
         contact_email: apiLead.email,
         backend_status: apiLead.status,
         status: STATUS_MAP_BE_TO_FE[apiLead.status] || apiLead.status || 'New'
@@ -1755,6 +1758,22 @@ export const crmService = {
         if (updates.type !== undefined) data.type = updates.type;
 
         return leadsApi.update(id, data);
+    },
+
+    /**
+     * Data-layer custom fields (flag submodule:crm:dl_custom_fields): only the
+     * changed field_keys + the version read. 409 = stale, 503 = Core validation down.
+     */
+    updateLeadCustomFields: async (id: string, customFields: Record<string, unknown>, version: number | null): Promise<Lead> => {
+        const body: any = { custom_fields: customFields };
+        if (version != null) body.custom_fields_version = version;
+        return leadsApi.update(id, body);
+    },
+
+    updateDealCustomFields: async (id: string, customFields: Record<string, unknown>, version: number | null): Promise<Deal> => {
+        const body: any = { custom_fields: customFields };
+        if (version != null) body.custom_fields_version = version;
+        return dealsApi.update(id, body);
     },
 
     deleteLead: async (id: string): Promise<void> => {

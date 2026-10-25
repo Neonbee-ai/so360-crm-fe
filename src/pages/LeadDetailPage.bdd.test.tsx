@@ -123,7 +123,7 @@ vi.mock('@so360/shell-context', () => ({
   useShell: () => ({ isModuleEnabled: () => false }),
   useCurrentEntity: () => ({ setCurrentEntity: mockSetCurrentEntity }),
   useActivity: () => ({ recordActivity: async () => {} }),
-  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
+  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: (k: string) => k !== 'submodule:crm:dl_custom_fields', isFeatureHidden: () => false })),
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
@@ -300,7 +300,7 @@ beforeEach(async () => {
   // Re-apply the default useShellBridge implementation so tests that call mockReturnValue don't bleed through
   const shell = await import('@so360/shell-context');
   mockUseShellBridge = vi.mocked(shell.useShellBridge);
-  mockUseShellBridge.mockImplementation(() => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
+  mockUseShellBridge.mockImplementation(() => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: (k: string) => k !== 'submodule:crm:dl_custom_fields', isFeatureHidden: () => false }));
   mockPathname = '/crm/leads/lead-1';
   mockGetLeadById.mockResolvedValue(makeLead());
   mockGetDealsByLeadId.mockResolvedValue(associatedDeals);

@@ -40,7 +40,7 @@ vi.mock('@so360/design-system', async (importOriginal) => {
 
 vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
-  useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
+  useShellBridge: () => ({ isFeatureEnabled: (k: string) => k !== 'submodule:crm:dl_custom_fields', isFeatureHidden: () => false }),
 }));
 
 import SettingsPage from './SettingsPage';

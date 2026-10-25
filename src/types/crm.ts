@@ -55,6 +55,9 @@ export interface Lead {
     notes: Note[];
     documents?: Attachment[];
     custom_fields?: Record<string, any>;
+    /** Data-layer custom fields keyed by field_key (flag submodule:crm:dl_custom_fields). */
+    dl_custom_fields?: Record<string, any>;
+    custom_fields_version?: number;
     creator?: User;
     customer_category?: 'b2b' | 'b2c';
     tax_id?: string;
@@ -115,6 +118,7 @@ export interface Deal {
     invoice_id?: string;
     invoice_number?: string;
     custom_fields?: Record<string, any>;
+    custom_fields_version?: number;
     created_at: string;
     fulfillment_status?: 'pending' | 'in_transit' | 'out_for_delivery' | 'delivered' | 'failed' | null;
 }

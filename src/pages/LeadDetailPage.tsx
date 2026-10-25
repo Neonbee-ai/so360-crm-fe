@@ -19,6 +19,7 @@ import { validateEmailRequired } from '../utils/emailValidation';
 import { validatePhone } from '../utils/phoneValidation';
 import { validateFirstNameRequired, validateLastName } from '../utils/leadFieldValidation';
 import { describeApiError } from '../utils/apiErrorMessage';
+import { DlCustomFieldsPanel, DL_CUSTOM_FIELDS_FLAG } from '../components/customFields/DlCustomFieldsPanel';
 import { Lead, Deal, Task, Activity, ActivityType, CustomFieldDefinition, LeadScoringRule, User, Attachment, Note, SourceTypeOption } from '../types/crm';
 import { useCrmFeatureFlag } from '../hooks/useCrmFeatureFlag';
 import { ContactFeedPanel } from '../components/ContactFeedPanel';
@@ -198,6 +199,7 @@ const LeadDetailPage = () => {
     const [associatedTasks, setAssociatedTasks] = useState<Task[]>([]);
     const [customFieldDefs, setCustomFieldDefs] = useState<CustomFieldDefinition[]>([]);
     const [scoringRules, setScoringRules] = useState<LeadScoringRule[]>([]);
+    const dlCustomFields = useCrmFeatureFlag(DL_CUSTOM_FIELDS_FLAG);
     const ratingEnabled = useCrmFeatureFlag('submodule:crm:lead_rating');
     const contactFeedEnabled = useCrmFeatureFlag(S2S_FLAGS.CONTACT_FEED);
     const maintenanceTabOn = useCrmFeatureFlag(MAINTENANCE_TAB_FLAG);
@@ -1346,7 +1348,17 @@ const LeadDetailPage = () => {
                                 </Grid>
                             )}
 
-                            {infoTab === 'additional' && (
+                            {infoTab === 'additional' && dlCustomFields && (
+                                <DlCustomFieldsPanel
+                                    entity="lead"
+                                    recordId={lead.id}
+                                    values={lead.dl_custom_fields}
+                                    version={lead.custom_fields_version}
+                                    save={(values, version) => crmService.updateLeadCustomFields(lead.id, values, version)}
+                                    reload={fetchLeadData}
+                                />
+                            )}
+                            {infoTab === 'additional' && !dlCustomFields && (
                                 <Grid gap="md">
                                     {customFieldDefs.map(field => (
                                         <GridItem key={field.id} span={{ md: 4, lg: 6 }}>                                        <div className="flex items-center gap-4 text-fg-subtle">

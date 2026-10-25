@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { crmService, settingsApi } from '../services/crmService';
 import { CRMSettings, SourceTypeOption, LeadScoringRule, ScoreCategory } from '../types/crm';
 import { Save, AlertCircle, Edit2, Archive, Plus, Trash2, Loader2, Zap, Trophy, ShieldCheck, ToggleLeft, ToggleRight, X, Check, RefreshCw } from 'lucide-react';
-import { toast, SettingsPageTemplate, Button, IconButton, TextField, Select, Card, ColorPicker, Grid, GridItem } from '@so360/design-system';
+import { Banner, toast, SettingsPageTemplate, Button, IconButton, TextField, Select, Card, ColorPicker, Grid, GridItem } from '@so360/design-system';
 import { StageStatusSelect } from '../components/common/StageStatusSelect';
 import { useShellBridge } from '@so360/shell-context';
 import DealNamingSettingsTab from './components/settings/DealNamingSettingsTab';
@@ -14,6 +14,7 @@ import QuoteApprovalSettingsTab from './components/settings/QuoteApprovalSetting
 import TaskReminderSettingsTab from './components/settings/TaskReminderSettingsTab';
 import SalesCommissionSettingsTab from './components/settings/SalesCommissionSettingsTab';
 import { useCrmFeatureFlag, RE_FLAGS } from '../hooks/useCrmFeatureFlag';
+import { DL_CUSTOM_FIELDS_FLAG } from '../components/customFields/DlCustomFieldsPanel';
 
 type SettingsTab = 'pipeline' | 'lead-stages' | 'custom-fields' | 'sources' | 'scoring' | 'deal-naming' | 'assignment' | 'sales-commission' | 'loss-reasons' | 'lead-rating' | 'duplicate-rules' | 'quote-approvals' | 'task-reminders';
 
@@ -91,6 +92,7 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
     const shell = useShellBridge();
     const icpEnabled = useCrmFeatureFlag('submodule:crm:icp_manager');
     const canWriteSettings = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('submodule:crm:settings') ?? true);
+    const dlCustomFields = useCrmFeatureFlag(DL_CUSTOM_FIELDS_FLAG);
     const assignmentEnabled = useCrmFeatureFlag(RE_FLAGS.LEAD_ASSIGNMENT);
     const lossReasonsEnabled = useCrmFeatureFlag('submodule:crm:loss_reasons');
     const leadRatingEnabled = useCrmFeatureFlag('submodule:crm:lead_rating');
@@ -636,7 +638,17 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
                     </Card>
                 )}
 
-                {activeTab === 'custom-fields' && (
+                {activeTab === 'custom-fields' && dlCustomFields && (
+                    <Banner
+                        variant="warning"
+                        data-testid="crm-custom-fields-deprecated"
+                        action={{ label: 'Open Data settings', onClick: () => window.location.assign('/settings/data') }}
+                    >
+                        Custom fields for leads and deals are now managed in Data settings (datasets crm.lead and crm.deal). This page is deprecated and no longer edits fields.
+                    </Banner>
+                )}
+
+                {activeTab === 'custom-fields' && !dlCustomFields && (
                     <Grid gap="md">
                         {/* Lead Custom Fields */}
                         <GridItem span={{ lg: 4 }}><Card title="Lead Fields" padding="none" className="h-fit min-w-0" actions={(

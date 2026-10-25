@@ -63,7 +63,7 @@ vi.mock('@so360/design-system', async (importOriginal) => {
 
 vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
-  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
+  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: (k: string) => k !== 'submodule:crm:dl_custom_fields', isFeatureHidden: () => false })),
 }));
 
 import SettingsPage from './SettingsPage';
@@ -122,7 +122,7 @@ describe('SettingsPage BDD', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     const shell = await import('@so360/shell-context');
-    vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
+    vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: (k: string) => k !== 'submodule:crm:dl_custom_fields', isFeatureHidden: () => false }));
     mockGetSettings.mockResolvedValue(mockSettings);
     mockUpdateSettings.mockResolvedValue(mockSettings);
     mockUpdateDealNaming.mockResolvedValue({ enabled: true, template: '{lead_name}', prefix: '', suffix: '', separator: ' - ', sequence: { enabled: false, reset_mode: 'none', padding: 4, start_at: 1 } });
@@ -195,6 +195,17 @@ describe('SettingsPage BDD', () => {
       await waitFor(() => {
         expect(screen.getByDisplayValue('Company Size')).toBeInTheDocument();
       });
+    });
+
+    it('Given dl_custom_fields flag on / When Custom Fields tab clicked / Then deprecation banner replaces the editors', async () => {
+      const shell = await import('@so360/shell-context');
+      vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
+      const user = userEvent.setup();
+      render(<SettingsPage />);
+      await waitFor(() => expect(screen.getByText('CRM Settings')).toBeInTheDocument());
+      await user.click(screen.getByRole('tab', { name: /custom fields/i }));
+      await waitFor(() => expect(screen.getByTestId('crm-custom-fields-deprecated')).toBeInTheDocument());
+      expect(screen.queryByDisplayValue('Company Size')).toBeNull();
     });
 
     it('When Lead Sources tab clicked / Then shows sources list', async () => {
