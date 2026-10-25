@@ -32,7 +32,7 @@ export function DlCustomFieldsPanel({ entity, recordId, values, version, save, r
     const { fields, isLoading, error } = useDatasetSchema(`crm.${entity}`);
     const dlFields = useMemo(() => (fields as any[]).filter((f) => !f.is_system), [fields]);
     const record = useMemo(
-        () => ({ id: recordId, custom_fields: values ?? {}, version: version ?? null }),
+        () => ({ id: recordId, custom_fields: values ?? {}, version: version ?? null }) as any,
         [recordId, values, version],
     );
 

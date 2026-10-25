@@ -20,7 +20,6 @@ import { CrossLinkChip, toast, useConfirm, DetailPageTemplate, Button, IconButto
 import { crmService, dealsApi, tasksApi, activitiesApi, TimelineEvent } from '../services/crmService';
 import { useCRMFormatters } from '../utils/formatters';
 import { DlCustomFieldsPanel, DL_CUSTOM_FIELDS_FLAG } from '../components/customFields/DlCustomFieldsPanel';
-import { useCrmFeatureFlag } from '../hooks/useCrmFeatureFlag';
 import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType } from '../types/crm';
 import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import TaskModal from './components/TaskModal';
