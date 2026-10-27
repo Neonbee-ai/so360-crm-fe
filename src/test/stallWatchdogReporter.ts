@@ -27,12 +27,28 @@ export default class StallWatchdogReporter {
 
   private files = new Map<string, string>();
 
-  onCollected(files: Array<{ id: string; filepath: string }> = []) {
-    for (const f of files) this.files.set(f.id, f.filepath);
+  private names = new Map<string, string>();
+  private reported = new Set<string>();
+
+  onCollected(files: any[] = []) {
+    const walk = (t: any, prefix: string) => {
+      this.names.set(t.id, `${prefix}${t.name}`);
+      for (const c of t.tasks || []) walk(c, `${prefix}${t.name} > `);
+    };
+    for (const f of files) {
+      this.files.set(f.id, f.filepath);
+      for (const c of f.tasks || []) walk(c, `${String(f.filepath).split('/src/').pop()} :: `);
+    }
   }
 
   onTaskUpdate(packs: Array<[string, { state?: string } | undefined]> = []) {
     for (const [id, result] of packs) {
+      if (result?.state === 'fail' && !this.reported.has(id) && this.names.has(id)) {
+        this.reported.add(id);
+        const msg = String(((result as any).errors || [])[0]?.message || '').replace(/\s+/g, ' ').slice(0, 260);
+        // eslint-disable-next-line no-console
+        console.error(`[fail] ${this.names.get(id)} => ${msg}`);
+      }
       const file = this.files.get(id);
       if (!file) continue;
       if (result?.state === 'run') {
