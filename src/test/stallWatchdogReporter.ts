@@ -5,12 +5,14 @@
  * finished for STALL_MS it names the modules still running and exits non-zero
  * instead of letting the job hang until the runner kills it.
  */
+declare const process: any;
+
 const STALL_MS = Number(process.env.VITEST_STALL_MS || 8 * 60 * 1000);
 
 export default class StallWatchdogReporter {
   private running = new Map<string, number>();
   private lastProgress = Date.now();
-  private timer: NodeJS.Timeout | undefined;
+  private timer: any | undefined;
 
   onInit() {
     this.timer = setInterval(() => {
