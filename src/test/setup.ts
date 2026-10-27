@@ -38,3 +38,11 @@ document.elementFromPoint = () => null;
 // pass on an idle box. Raise the budget globally — a passing assertion still
 // resolves as soon as its condition holds, so this costs nothing when green.
 configure({ asyncUtilTimeout: 5000 });
+
+// TEMP-TRACE (remove): pinpoint hanging specs on CI
+import { expect as __ex, beforeEach as __be, afterAll as __aa } from 'vitest';
+import { writeSync as __w } from 'node:fs';
+const __f = () => String(__ex.getState().testPath || '').split('/src/').pop();
+try { __w(2, `[trace] start ${__f()}\n`); } catch { /* ignore */ }
+__be(() => { try { __w(2, `[trace] test ${__f()} :: ${__ex.getState().currentTestName}\n`); } catch { /* ignore */ } });
+__aa(() => { try { __w(2, `[trace] end ${__f()}\n`); } catch { /* ignore */ } });
