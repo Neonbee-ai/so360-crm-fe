@@ -19,20 +19,30 @@ export default class StallWatchdogReporter {
       if (Date.now() - this.lastProgress < STALL_MS) return;
       const stuck = [...this.running.entries()].map(([id, t]) => `  - ${id} (running ${Math.round((Date.now() - t) / 1000)}s)`);
       // eslint-disable-next-line no-console
-      console.error(`\n[stall-watchdog] no test file finished for ${Math.round(STALL_MS / 1000)}s. Still running:\n${stuck.join('\n') || '  (none started)'}\n`);
+      console.error(`\n[stall-watchdog] no test file finished for ${Math.round(STALL_MS / 1000)}s. Still running:\n${stuck.join('\n') || '  (none reported running; files collected: ' + this.files.size + ')'}\n`);
       process.exit(1);
     }, 15000);
     this.timer.unref();
   }
 
-  onTestModuleStart(m: { moduleId: string }) {
-    this.running.set(m.moduleId, Date.now());
-    this.lastProgress = Date.now();
+  private files = new Map<string, string>();
+
+  onCollected(files: Array<{ id: string; filepath: string }> = []) {
+    for (const f of files) this.files.set(f.id, f.filepath);
   }
 
-  onTestModuleEnd(m: { moduleId: string }) {
-    this.running.delete(m.moduleId);
-    this.lastProgress = Date.now();
+  onTaskUpdate(packs: Array<[string, { state?: string } | undefined]> = []) {
+    for (const [id, result] of packs) {
+      const file = this.files.get(id);
+      if (!file) continue;
+      if (result?.state === 'run') {
+        if (!this.running.has(file)) this.running.set(file, Date.now());
+        this.lastProgress = Date.now();
+      } else if (result?.state === 'pass' || result?.state === 'fail' || result?.state === 'skip') {
+        this.running.delete(file);
+        this.lastProgress = Date.now();
+      }
+    }
   }
 
   onTestRunEnd() {
