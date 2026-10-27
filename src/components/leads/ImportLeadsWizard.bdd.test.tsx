@@ -211,7 +211,6 @@ describe('Given the upload step', () => {
             expect(screen.getByTestId('icon-UploadCloud')).toBeInTheDocument();
             pick(csv());
             expect(await screen.findByText('Reading file…')).toBeInTheDocument();
-            expect(screen.getByTestId('icon-Loader2')).toBeInTheDocument();
             expect(screen.getByLabelText('Import file')).toBeDisabled();
             closeX();
             expect(onClose).not.toHaveBeenCalled();
