@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useEffect } from 'react';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
 import { useShellBridge } from '@so360/shell-context';
 import { CombScope, FeatureRoute, PortalProvider, Button } from '@so360/design-system';
 import { CrossLinkProvider } from '@so360/cross-link';
@@ -8,6 +8,14 @@ import { salesTargetService } from './services/salesTargetService';
 import { CrmScope, crmPortalRoot } from './utils/crmScope';
 
 // Synchronizes Shell Context with CRM Service
+const CrmNotFound = () => (
+    <div className="flex flex-col items-center justify-center min-h-[40vh] text-center" data-testid="crm-not-found">
+        <h1 className="text-2xl font-bold mb-2">Page Not Found</h1>
+        <p className="text-slate-500 max-w-md mb-6">The page you are looking for doesn't exist or has been moved.</p>
+        <Link to="/crm/dashboard" className="underline">Back to CRM</Link>
+    </div>
+);
+
 const CrmShellInitializer = ({ children }: { children: React.ReactNode }) => {
     // Access context directly to avoid throwing if provider is missing
     const shell = useShellBridge();
@@ -243,6 +251,7 @@ const App = () => {
                     <Route path="targets/reviews" element={<PermissionGuard permission='sales_targets.read'><FlagGuard flagKey="submodule:crm:sales_reviews"><SalesReviewsPage /></FlagGuard></PermissionGuard>} />
                     <Route path="targets/templates" element={<PermissionGuard permission={['sales_targets.create','sales_targets.assign']}><FlagGuard flagKey="action:crm:targets:manage"><TargetTemplatesPage /></FlagGuard></PermissionGuard>} />
                     <Route path="targets/compensation" element={<PermissionGuard permission={['sales_targets.create','sales_targets.view_team']}><FlagGuard flagKey="action:crm:targets:compensation"><CompensationPage /></FlagGuard></PermissionGuard>} />
+                    <Route path="*" element={<CrmNotFound />} />
                 </Routes>
                 </CrossLinkBridge>
             </CrmShellInitializer>
