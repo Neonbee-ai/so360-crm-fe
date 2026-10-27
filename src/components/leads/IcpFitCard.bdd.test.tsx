@@ -380,10 +380,10 @@ describe('Feature: accessibility and structure', () => {
     expect(screen.getByLabelText('unknown').textContent).toBe('?');
   });
 
-  it('Given a rendered card Then the root is a section containing every part', () => {
+  it('Given a rendered card Then the root wraps a Comb card section containing every part', () => {
     render(<IcpFitCard meta={{ icp_score: 50, icp_name: 'N', icp_criteria: { a: 1 }, synced_at: '2026-10-01T10:00:00Z' }} />);
     const root = screen.getByTestId('icp-fit-card');
-    expect(root.tagName).toBe('SECTION');
+    expect(root.querySelector('section')).not.toBeNull();
     ['icp-fit-band', 'icp-fit-score', 'icp-fit-name', 'icp-fit-criteria', 'icp-fit-source'].forEach((id) =>
       expect(within(root).getByTestId(id)).toBeTruthy());
   });

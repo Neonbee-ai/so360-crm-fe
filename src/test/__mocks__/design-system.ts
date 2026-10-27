@@ -372,7 +372,9 @@ export const DateTimePicker = ({ label, hint: _h, error, name, onChange, default
 // ---- Comb layout primitives: passthrough wrappers carrying data-testid / className ----
 const passthrough = (defaultTestId: string, tag = 'div') => ({ children, className, 'data-testid': testId, as, ...rest }: any) =>
   React.createElement(as || tag, { className, 'data-testid': testId ?? defaultTestId, ...(rest['aria-label'] ? { 'aria-label': rest['aria-label'] } : {}) }, children);
-export const GridItem = passthrough('grid-item');
+// Exposes `span` as data-span so specs can assert a widget's width without the real grid CSS.
+export const GridItem = ({ children, className, 'data-testid': testId, span }: any) =>
+  React.createElement('div', { className, 'data-testid': testId ?? 'grid-item', ...(span != null ? { 'data-span': String(span) } : {}) }, children);
 export const Grid: any = passthrough('grid');
 Grid.Item = GridItem;
 export const Stack = passthrough('stack');
@@ -400,8 +402,12 @@ export { Sparkline } from '@ds-real/components/Sparkline';
 export { TrendIndicator } from '@ds-real/components/TrendIndicator';
 // @ts-ignore -- resolved by the vitest '@ds-real' alias
 export { StatusLegend } from '@ds-real/components/StatusLegend';
-export const FileUpload = ({ name, 'aria-label': ariaLabel, accept, disabled, multiple, onChange, 'data-testid': testId }: any) =>
-  React.createElement('input', { type: 'file', name, 'aria-label': ariaLabel, accept, disabled, multiple, 'data-testid': testId, onChange: (e: any) => onChange?.(Array.from(e.target.files ?? [])) });
+// Mirrors the real FileUpload: the drop zone shows `prompt` (and `hint`) as text next to the file input.
+export const FileUpload = ({ name, 'aria-label': ariaLabel, accept, disabled, multiple, onChange, prompt, hint, 'data-testid': testId }: any) =>
+  React.createElement('div', null,
+    prompt ? React.createElement('span', null, prompt) : null,
+    hint ? React.createElement('span', null, hint) : null,
+    React.createElement('input', { type: 'file', name, 'aria-label': ariaLabel, accept, disabled, multiple, 'data-testid': testId, onChange: (e: any) => onChange?.(Array.from(e.target.files ?? [])) }));
 
 export const ChipGroup = ({ name, label, options = [], value = [], onChange, 'data-testid': testId }: any) =>
   React.createElement('div', { role: 'group', 'aria-label': label ?? name, 'data-testid': testId },

@@ -238,9 +238,9 @@ describe('Given the Top agents leaderboard card', () => {
         it('Then the card spans the full widget row', async () => {
             render(<REWidgets />);
             const card = await screen.findByTestId('re-widget-agents');
-            expect(card.className).toMatch(/md:col-span-2/);
-            expect(card.className).toMatch(/xl:col-span-4/);
-            expect(screen.getByTestId('re-widget-sources').className).not.toMatch(/col-span/);
+            // The Comb grid owns the responsive column maths; the widget only declares span="full".
+            expect(card.closest('[data-span]')).toHaveAttribute('data-span', 'full');
+            expect(screen.getByTestId('re-widget-sources').closest('[data-span]')).not.toHaveAttribute('data-span', 'full');
         });
     });
 

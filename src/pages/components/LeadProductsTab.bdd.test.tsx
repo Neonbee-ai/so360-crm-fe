@@ -130,7 +130,9 @@ describe('Given the Add Product modal opens', () => {
     it('When inventory fails to load / Then an error with Retry is shown instead of a misleading empty state', async () => {
         mockSearchInventoryItems.mockRejectedValue(new Error('inventory is down'));
         await openModal();
-        expect(await screen.findByText('inventory is down')).toBeInTheDocument();
+        // describeApiError shows the caller's friendly fallback (not the raw dev message) for non-4xx failures
+        expect(await screen.findByText("Couldn't load products. Try again.")).toBeInTheDocument();
+        expect(screen.queryByText('inventory is down')).not.toBeInTheDocument();
         expect(screen.getByRole('button', { name: /Retry/i })).toBeInTheDocument();
         expect(screen.queryByText(/No products in inventory/i)).not.toBeInTheDocument();
     });
