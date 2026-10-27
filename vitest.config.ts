@@ -23,6 +23,9 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
     testTimeout: 15000,
+    hookTimeout: 20000,
+    teardownTimeout: 10000,
+    reporters: ['default', path.resolve(__dirname, 'src/test/stallWatchdogReporter.ts')],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov', 'html'],
