@@ -312,8 +312,8 @@ describe('CRM Quote Approval Workflow BDD Specifications', () => {
 
       render(<QuoteDetailPage />);
 
-      fireEvent.click(await screen.findByRole('button', { name: 'Row actions' }));
-      fireEvent.click(await screen.findByRole('menuitem', { name: /^approve$/i }));
+      await waitFor(() => screen.getByRole('button', { name: /^approve$/i }));
+      fireEvent.click(screen.getByRole('button', { name: /^approve$/i }));
 
       await waitFor(() => {
         expect(mockApproveQuote).toHaveBeenCalledWith('quote-100');

@@ -7,6 +7,7 @@
  */
 declare const process: any;
 
+const POST_RUN_MS = Number(process.env.VITEST_POST_RUN_MS || 90 * 1000);
 const STALL_MS = Number(process.env.VITEST_STALL_MS || 8 * 60 * 1000);
 
 export default class StallWatchdogReporter {
@@ -16,6 +17,15 @@ export default class StallWatchdogReporter {
 
   onInit() {
     this.timer = setInterval(() => {
+      // Every collected file already reached a terminal state, so the tests are
+      // done and only vitest's pool teardown is wedged (it never prints the
+      // summary). Report the real outcome instead of hanging: non-zero if any
+      // test failed, zero otherwise. The wedge itself is logged for follow-up.
+      if (this.running.size === 0 && this.files.size > 0 && Date.now() - this.lastProgress >= POST_RUN_MS) {
+        // eslint-disable-next-line no-console
+        console.error(`\n[stall-watchdog] all ${this.files.size} files finished but vitest never closed its pool; exiting with ${this.reported.size} failed test(s).\n`);
+        process.exit(this.reported.size > 0 ? 1 : 0);
+      }
       if (Date.now() - this.lastProgress < STALL_MS) return;
       const stuck = [...this.running.entries()].map(([id, t]) => `  - ${id} (running ${Math.round((Date.now() - t) / 1000)}s)`);
       // eslint-disable-next-line no-console

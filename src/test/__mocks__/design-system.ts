@@ -1,6 +1,7 @@
 // Stub for @so360/design-system — vi.mock() in each test overrides these
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { UploadCloud } from 'lucide-react';
 export const Button = ({ children, onClick, type, disabled, leftIcon: _l, rightIcon: _r, variant, size, loading, fullWidth: _f, ...rest }: any) =>
   React.createElement('button', { onClick, type, disabled, 'data-comb': 'button', 'data-variant': variant, 'data-size': size, 'data-loading': loading ? 'true' : undefined, ...rest }, children);
 export const Input = (props: any) => props;
@@ -71,7 +72,7 @@ export const Slider = ({ value, onChange, min = 0, max = 100, step = 1, name, 'a
 export const PortalProvider = ({ children }: any) => React.createElement(React.Fragment, null, children);
 export const usePortalContainer = () => (typeof document !== 'undefined' ? document.body : null);
 export const Card = ({ title, actions, footer, children, 'data-testid': testId }: any) =>
-    React.createElement('div', { 'data-testid': testId }, title ? React.createElement('h3', null, title) : null, actions, children, footer);
+    React.createElement('section', { 'data-testid': testId }, title ? React.createElement('h3', null, title) : null, actions, children, footer);
 export const Badge = ({ children, onClick, tone, size, 'data-testid': testId }: any) =>
   React.createElement('span', { onClick, 'data-testid': testId, 'data-tone': tone, 'data-size': size }, children);
 export const Spinner = (props: any) => props;
@@ -403,11 +404,16 @@ export { TrendIndicator } from '@ds-real/components/TrendIndicator';
 // @ts-ignore -- resolved by the vitest '@ds-real' alias
 export { StatusLegend } from '@ds-real/components/StatusLegend';
 // Mirrors the real FileUpload: the drop zone shows `prompt` (and `hint`) as text next to the file input.
-export const FileUpload = ({ name, 'aria-label': ariaLabel, accept, disabled, multiple, onChange, prompt, hint, 'data-testid': testId }: any) =>
-  React.createElement('div', null,
-    prompt ? React.createElement('span', null, prompt) : null,
-    hint ? React.createElement('span', null, hint) : null,
-    React.createElement('input', { type: 'file', name, 'aria-label': ariaLabel, accept, disabled, multiple, 'data-testid': testId, onChange: (e: any) => onChange?.(Array.from(e.target.files ?? [])) }));
+export const FileUpload = ({ name, 'aria-label': ariaLabel, accept, disabled, multiple, onChange, prompt, hint, 'data-testid': testId }: any) => {
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  return React.createElement('div', null,
+    // The real drop zone is a role="button" that opens the native picker on click.
+    React.createElement('div', { role: 'button', tabIndex: 0, onClick: () => { if (!disabled) inputRef.current?.click(); } },
+      React.createElement(UploadCloud, { 'aria-hidden': 'true' }),
+      prompt ? React.createElement('span', null, prompt) : null,
+      hint ? React.createElement('span', null, hint) : null),
+    React.createElement('input', { ref: inputRef, type: 'file', name, 'aria-label': ariaLabel, accept, disabled, multiple, 'data-testid': testId, onChange: (e: any) => onChange?.(Array.from(e.target.files ?? [])) }));
+};
 
 export const ChipGroup = ({ name, label, options = [], value = [], onChange, 'data-testid': testId }: any) =>
   React.createElement('div', { role: 'group', 'aria-label': label ?? name, 'data-testid': testId },

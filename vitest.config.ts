@@ -18,7 +18,7 @@ export default defineConfig({
         ? path.resolve(__dirname, '../../so360-shell-fe/packages/design-system/src')
         // PR Gate / CI runners do not check out so360-shell-fe next to this repo; an
         // unresolved @ds-real import there stalls every spec that loads the DS mock.
-        : path.resolve(__dirname, 'src/test/__mocks__/ds-real'),
+        : path.resolve(__dirname, 'test-support/ds-real'),
       'lucide-react': path.join(stubs, 'lucide-react.tsx'),
     },
   },
