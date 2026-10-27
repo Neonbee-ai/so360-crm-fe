@@ -1096,7 +1096,7 @@ const LeadDetailPage = () => {
                             onChange={(id) => setInfoTab(id as typeof infoTab)}
                             items={[
                                 { id: 'profile', label: 'Full Profile', icon: <Users size={14} /> },
-                                ...(customFieldDefs.length > 0 ? [{ id: 'additional', label: 'Additional Info', icon: <Info size={14} /> }] : []),
+                                ...(!dlCustomFields && customFieldDefs.length > 0 ? [{ id: 'additional', label: 'Additional Info', icon: <Info size={14} /> }] : []),
                                 { id: 'business', label: 'Business Profile', icon: <Building2 size={14} /> },
                             ]}
                             end={(
@@ -1348,16 +1348,6 @@ const LeadDetailPage = () => {
                                 </Grid>
                             )}
 
-                            {infoTab === 'additional' && dlCustomFields && (
-                                <DlCustomFieldsPanel
-                                    entity="lead"
-                                    recordId={lead.id}
-                                    values={lead.dl_custom_fields}
-                                    version={lead.custom_fields_version}
-                                    save={(values, version) => crmService.updateLeadCustomFields(lead.id, values, version)}
-                                    reload={fetchLeadData}
-                                />
-                            )}
                             {infoTab === 'additional' && !dlCustomFields && (
                                 <Grid gap="md">
                                     {customFieldDefs.map(field => (
@@ -1404,6 +1394,20 @@ const LeadDetailPage = () => {
                             )}
                         </div>
                     </Card>
+                    {/* Data Layer custom fields are always on the record page (HubSpot "About" card), never behind a tab
+                        whose visibility depended on the legacy /settings/custom-fields definitions. */}
+                    {dlCustomFields && (
+                        <div data-testid="lead-dl-custom-fields">
+                            <DlCustomFieldsPanel
+                                entity="lead"
+                                recordId={lead.id}
+                                values={lead.dl_custom_fields}
+                                version={lead.custom_fields_version}
+                                save={(values, version) => crmService.updateLeadCustomFields(lead.id, values, version)}
+                                reload={fetchLeadData}
+                            />
+                        </div>
+                    )}
                     </div>
                 )}
 

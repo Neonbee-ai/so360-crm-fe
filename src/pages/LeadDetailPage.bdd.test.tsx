@@ -109,6 +109,10 @@ vi.mock('./components/QuickActionBar', () => ({
   ),
 }));
 vi.mock('./components/LeadLayoutSettingsPanel', () => ({ default: () => null }));
+vi.mock('../components/customFields/DlCustomFieldsPanel', () => ({
+  DL_CUSTOM_FIELDS_FLAG: 'submodule:crm:dl_custom_fields',
+  DlCustomFieldsPanel: ({ recordId }: any) => <div data-testid="dl-custom-fields-panel">DL fields for {recordId}</div>,
+}));
 
 const mockNavigate = vi.fn();
 let mockPathname = '/crm/leads/lead-1';
@@ -802,6 +806,33 @@ describe('LeadDetailPage', () => {
         expect(screen.getByText('Priority Level')).toBeInTheDocument();
         expect(screen.getByText('High')).toBeInTheDocument();
       });
+    });
+  });
+
+  describe('Given the Data Layer custom fields flag is ON (HubSpot: custom properties visible on the record page)', () => {
+    const flagOn = () => mockUseShellBridge.mockImplementation(() => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
+
+    it('When the lead detail opens / Then the DL custom fields panel is visible without clicking any tab', async () => {
+      flagOn();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      expect(await screen.findByTestId('dl-custom-fields-panel')).toBeInTheDocument();
+    });
+
+    it('When the lead detail opens / Then the legacy Additional Info tab is not offered', async () => {
+      flagOn();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      expect(screen.queryByRole('tab', { name: 'Additional Info' })).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Given the Data Layer custom fields flag is OFF', () => {
+    it('When the lead detail opens / Then the DL panel is not rendered and the legacy tab remains', async () => {
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      expect(screen.queryByTestId('dl-custom-fields-panel')).not.toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: 'Additional Info' })).toBeInTheDocument();
     });
   });
 
