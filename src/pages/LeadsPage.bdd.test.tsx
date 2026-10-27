@@ -142,6 +142,7 @@ vi.mock('../components/leads/CreateLeadModal', () => ({
 }));
 
 import LeadsPage from './LeadsPage';
+import { toast } from '@so360/design-system';
 
 const settings = {
   deal_stages: [],
@@ -726,6 +727,32 @@ describe('LeadsPage — saved views (backend)', () => {
         expect(screen.getByTestId('lead-row-l1').textContent).toContain('Acme Corp'),
       );
     });
+  });
+});
+
+// ── Inline owner change (Pulse a21e3dd8) ──────────────────────────────────
+describe('LeadsPage — inline owner change', () => {
+  it('Given the owner PATCH fails / When the owner is changed inline / Then an error toast shows and the row keeps the old owner', async () => {
+    const errorSpy = vi.spyOn(toast, 'error');
+    mockUpdateLead.mockRejectedValueOnce(new Error('owner_id must be a valid user id'));
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+    const lead = capturedGridProps.leads.find((l: any) => l.id === 'l1');
+    await act(async () => { await capturedGridProps.context.onOwnerChange(lead, 'u2'); });
+    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('owner_id must be a valid user id'));
+    expect(screen.getByTestId('lead-row-l1').textContent).toContain('u1');
+    expect(mockLogActivity).not.toHaveBeenCalled();
+    errorSpy.mockRestore();
+  });
+
+  it('Given the owner is saved but the activity log fails / When the owner is changed inline / Then the row shows the new owner', async () => {
+    mockLogActivity.mockRejectedValueOnce(new Error('log down'));
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+    const lead = capturedGridProps.leads.find((l: any) => l.id === 'l1');
+    await act(async () => { await capturedGridProps.context.onOwnerChange(lead, 'u2'); });
+    expect(mockUpdateLead).toHaveBeenCalledWith('l1', { owner: expect.objectContaining({ id: 'u2' }) });
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1').textContent).toContain('u2'));
   });
 });
 
