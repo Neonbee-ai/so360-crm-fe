@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, ChevronRight, ChevronDown, Package } from 'lucide-react';
+import { Button, TextField } from '@so360/design-system';
 import { Modal } from './common/Modal';
 import { Skeleton } from './common/Skeleton';
-import { EDITABLE_FIELD_CLASS } from './common/fieldStyles';
 import { crmService } from '../services/crmService';
 import { InventoryItem, InventoryVariant, ProductPickerSelection } from '../types/crm';
 
@@ -105,14 +105,15 @@ export const ProductPickerModal = ({ isOpen, onClose, onSelect }: ProductPickerM
             <div className="space-y-4">
                 {/* Search input */}
                 <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                    <input
+                    <TextField
+                        name="product-search"
+                        aria-label="Search products"
                         autoFocus
                         type="text"
                         value={query}
-                        onChange={e => setQuery(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
                         placeholder="Search by product name or SKU..."
-                        className={`${EDITABLE_FIELD_CLASS} pl-9 text-sm`}
+                        leadingIcon={Search}
                     />
                 </div>
 
@@ -127,21 +128,18 @@ export const ProductPickerModal = ({ isOpen, onClose, onSelect }: ProductPickerM
                     )}
 
                     {!isLoading && error && (
-                        <div className="flex flex-col items-center justify-center py-16 text-slate-500">
+                        <div className="flex flex-col items-center justify-center py-16 text-fg-muted">
                             <Package className="w-10 h-10 mb-3 opacity-40" />
                             <p className="text-sm">Couldn't load products.</p>
-                            <button
-                                onClick={() => search(query)}
-                                className="mt-3 px-3 py-1.5 rounded-lg text-xs font-medium text-blue-400 bg-blue-600/10 hover:bg-blue-600/20 transition-colors"
-                            >
+                            <Button type="button" size="sm" variant="secondary" className="mt-3" onClick={() => search(query)}>
                                 Retry
-                            </button>
+                            </Button>
                         </div>
                     )}
 
                     {/* Only a *completed* search with nothing in it is "no products". */}
                     {!isLoading && !error && hasResolved && items.length === 0 && (
-                        <div className="flex flex-col items-center justify-center py-16 text-slate-500">
+                        <div className="flex flex-col items-center justify-center py-16 text-fg-muted">
                             <Package className="w-10 h-10 mb-3 opacity-40" />
                             <p className="text-sm">
                                 {query.trim() ? `No products found for "${query}"` : 'No products in Inventory yet'}
@@ -156,32 +154,31 @@ export const ProductPickerModal = ({ isOpen, onClose, onSelect }: ProductPickerM
                                 return (
                                     <div key={item.id}>
                                         {/* Parent item row */}
-                                        <button
+                                        <Button variant="secondary" size="sm" className="w-full group"
                                             onClick={() => item.has_variants ? toggleExpand(item.id) : selectItem(item)}
-                                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 transition-colors text-left group"
                                         >
                                             {/* Thumbnail */}
-                                            <div className="w-10 h-10 rounded-md overflow-hidden bg-slate-700 flex-shrink-0 flex items-center justify-center">
+                                            <div className="w-10 h-10 rounded-md overflow-hidden bg-line flex-shrink-0 flex items-center justify-center">
                                                 {item.image_url ? (
                                                     <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
                                                 ) : (
-                                                    <Package className="w-5 h-5 text-slate-500" />
+                                                    <Package className="w-5 h-5 text-fg-muted" />
                                                 )}
                                             </div>
 
                                             {/* Name + SKU */}
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-medium text-slate-200 truncate">{item.name}</p>
-                                                <p className="text-xs text-slate-500">{item.sku}</p>
+                                                <p className="text-sm font-medium text-fg truncate">{item.name}</p>
+                                                <p className="text-xs text-fg-muted">{item.sku}</p>
                                             </div>
 
                                             {/* Price */}
                                             {item.price > 0 ? (
-                                                <span className="text-sm text-slate-300 flex-shrink-0">
+                                                <span className="text-sm text-fg-subtle flex-shrink-0">
                                                     {item.price.toFixed(2)}
                                                 </span>
                                             ) : (
-                                                <span className="text-xs text-amber-400/90 font-medium bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded flex-shrink-0">
+                                                <span className="text-xs text-warning/90 font-medium bg-warning/10 border border-warning/20 px-2 py-0.5 rounded flex-shrink-0">
                                                     No price configured
                                                 </span>
                                             )}
@@ -189,28 +186,27 @@ export const ProductPickerModal = ({ isOpen, onClose, onSelect }: ProductPickerM
                                             {/* Expand chevron or select arrow */}
                                             {item.has_variants ? (
                                                 isExpanded
-                                                    ? <ChevronDown className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                                                    : <ChevronRight className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                                                    ? <ChevronDown className="w-4 h-4 text-fg-subtle flex-shrink-0" />
+                                                    : <ChevronRight className="w-4 h-4 text-fg-subtle flex-shrink-0" />
                                             ) : (
-                                                <ChevronRight className="w-4 h-4 text-blue-400 opacity-0 group-hover:opacity-100 flex-shrink-0 transition-opacity" />
+                                                <ChevronRight className="w-4 h-4 text-info opacity-0 group-hover:opacity-100 flex-shrink-0 transition-opacity" />
                                             )}
-                                        </button>
+                                        </Button>
 
                                         {/* Variant rows */}
                                         {item.has_variants && isExpanded && (
                                             <div className="ml-10 space-y-0.5 mb-1">
                                                 {(item.variants || []).map(variant => (
-                                                    <button
+                                                    <Button variant="secondary" size="sm" className="w-full group"
                                                         key={variant.id}
                                                         onClick={() => selectVariant(item, variant)}
-                                                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 transition-colors text-left group"
                                                     >
                                                         {/* Variant thumbnail */}
-                                                        <div className="w-8 h-8 rounded overflow-hidden bg-slate-700/80 flex-shrink-0 flex items-center justify-center">
+                                                        <div className="w-8 h-8 rounded overflow-hidden bg-surface-high flex-shrink-0 flex items-center justify-center">
                                                             {variant.image_url ? (
                                                                 <img src={variant.image_url} alt={variant.name} className="w-full h-full object-cover" />
                                                             ) : (
-                                                                <Package className="w-4 h-4 text-slate-600" />
+                                                                <Package className="w-4 h-4 text-fg-muted" />
                                                             )}
                                                         </div>
 
@@ -220,28 +216,28 @@ export const ProductPickerModal = ({ isOpen, onClose, onSelect }: ProductPickerM
                                                                 {Object.entries(variant.variant_attributes || {}).map(([k, v]) => (
                                                                     <span
                                                                         key={k}
-                                                                        className="text-xs px-1.5 py-0.5 bg-slate-700 text-slate-300 rounded"
+                                                                        className="text-xs px-1.5 py-0.5 bg-line text-fg-subtle rounded"
                                                                     >
                                                                         {v}
                                                                     </span>
                                                                 ))}
                                                             </div>
-                                                            <p className="text-xs text-slate-500 mt-0.5">{variant.sku}</p>
+                                                            <p className="text-xs text-fg-muted mt-0.5">{variant.sku}</p>
                                                         </div>
 
                                                         {/* Variant price */}
                                                         {variant.price > 0 ? (
-                                                            <span className="text-sm text-slate-300 flex-shrink-0">
+                                                            <span className="text-sm text-fg-subtle flex-shrink-0">
                                                                 {variant.price.toFixed(2)}
                                                             </span>
                                                         ) : (
-                                                            <span className="text-xs text-amber-400/90 font-medium bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded flex-shrink-0">
+                                                            <span className="text-xs text-warning/90 font-medium bg-warning/10 border border-warning/20 px-2 py-0.5 rounded flex-shrink-0">
                                                                 No price configured
                                                             </span>
                                                         )}
 
-                                                        <ChevronRight className="w-4 h-4 text-blue-400 opacity-0 group-hover:opacity-100 flex-shrink-0 transition-opacity" />
-                                                    </button>
+                                                        <ChevronRight className="w-4 h-4 text-info opacity-0 group-hover:opacity-100 flex-shrink-0 transition-opacity" />
+                                                    </Button>
                                                 ))}
                                             </div>
                                         )}

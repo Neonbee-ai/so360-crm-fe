@@ -27,11 +27,15 @@ vi.mock('@so360/shell-context', () => ({
   useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),
   useSandboxLimit: () => ({ isSandboxMode: false, sandboxEntryLimit: 0, isLimited: false }),}));
 
-vi.mock('../components/common/Table', () => ({
-  Table: ({ data, isLoading, emptyMessage }: any) => (
-    <div data-testid="table">{isLoading ? 'Loading...' : data.length === 0 ? emptyMessage : `${data.length} rows`}</div>
-  ),
-}));
+vi.mock('@so360/design-system', async (importOriginal) => {
+  const actual: any = await importOriginal();
+  return {
+    ...actual,
+    DataTable: ({ rows, loading, emptyState }: any) => (
+      <div data-testid="table">{loading ? 'Loading...' : rows.length === 0 ? emptyState : `${rows.length} rows`}</div>
+    ),
+  };
+});
 
 vi.mock('../utils/taskUtils', () => ({
   canCurrentUserBeAssigned: () => true,

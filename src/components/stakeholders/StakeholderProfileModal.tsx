@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { X, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import { Button, TextField, Select, Checkbox, Grid, GridItem } from '@so360/design-system';
+import { Modal } from '../common/Modal';
 import { stakeholderApi } from '../../services/crmService';
 import { Stakeholder, StakeholderRole, BuyingCommitteeRole, RelationshipStrength } from '../../types/crm';
 import StakeholderRolesEditor from './StakeholderRolesEditor';
@@ -64,95 +66,67 @@ const StakeholderProfileModal: React.FC<Props> = ({ leadId, stakeholder, onClose
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <div className="bg-slate-950 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
-                <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 sticky top-0 bg-slate-950 z-10">
-                    <p className="text-xs font-black text-slate-50 uppercase tracking-widest">
-                        {isEditing ? 'Edit Stakeholder' : 'Add Stakeholder'}
-                    </p>
-                    <button onClick={onClose} className="p-1.5 text-slate-500 hover:text-slate-200 rounded-lg hover:bg-slate-800">
-                        <X size={16} />
-                    </button>
-                </div>
+        <Modal
+            isOpen
+            onClose={onClose}
+            title={isEditing ? 'Edit Stakeholder' : 'Add Stakeholder'}
+            size="2xl"
+            dismissible={!saving}
+            data-testid="stakeholder-profile-modal"
+            footer={(
+                <>
+                    <Button variant="secondary" onClick={onClose} disabled={saving}>Cancel</Button>
+                    <Button variant="primary" onClick={handleSave} disabled={saving}>
+                        {saving && <Loader2 size={12} className="animate-spin" />}
+                        {isEditing ? 'Save Changes' : 'Add Stakeholder'}
+                    </Button>
+                </>
+            )}
+        >
+                <div className="space-y-4">
+                    {error && <div className="bg-danger/10 border border-danger/20 text-danger text-xs rounded-nb px-3 py-2">{error}</div>}
 
-                <div className="p-5 space-y-4">
-                    {error && <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-lg px-3 py-2">{error}</div>}
-
-                    <div className="grid grid-cols-2 gap-3">
-                        <Field label="First Name"><input value={form.first_name} onChange={(e) => set('first_name', e.target.value)} className="input" /></Field>
-                        <Field label="Last Name"><input value={form.last_name} onChange={(e) => set('last_name', e.target.value)} className="input" /></Field>
-                        <Field label="Job Title"><input value={form.job_title} onChange={(e) => set('job_title', e.target.value)} className="input" /></Field>
-                        <Field label="Department"><input value={form.department} onChange={(e) => set('department', e.target.value)} className="input" /></Field>
-                        <Field label="Company"><input value={form.company_name} onChange={(e) => set('company_name', e.target.value)} className="input" /></Field>
-                        <Field label="Time Zone"><input value={form.time_zone} onChange={(e) => set('time_zone', e.target.value)} className="input" /></Field>
-                        <Field label="Email"><input type="email" value={form.email} onChange={(e) => set('email', e.target.value)} className="input" /></Field>
-                        <Field label="Phone"><input value={form.phone} onChange={(e) => set('phone', e.target.value)} className="input" /></Field>
-                        <Field label="Mobile"><input value={form.mobile_phone} onChange={(e) => set('mobile_phone', e.target.value)} className="input" /></Field>
-                        <Field label="LinkedIn URL"><input value={form.linkedin_url} onChange={(e) => set('linkedin_url', e.target.value)} className="input" /></Field>
-                    </div>
+                    <Grid gap="md">
+                        <GridItem span={{ md: 4, lg: 6 }}><TextField name="first_name" label="First Name" value={form.first_name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('first_name', e.target.value)} /></GridItem>
+                        <GridItem span={{ md: 4, lg: 6 }}><TextField name="last_name" label="Last Name" value={form.last_name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('last_name', e.target.value)} /></GridItem>
+                        <GridItem span={{ md: 4, lg: 6 }}><TextField name="job_title" label="Job Title" value={form.job_title} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('job_title', e.target.value)} /></GridItem>
+                        <GridItem span={{ md: 4, lg: 6 }}><TextField name="department" label="Department" value={form.department} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('department', e.target.value)} /></GridItem>
+                        <GridItem span={{ md: 4, lg: 6 }}><TextField name="company_name" label="Company" value={form.company_name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('company_name', e.target.value)} /></GridItem>
+                        <GridItem span={{ md: 4, lg: 6 }}><TextField name="time_zone" label="Time Zone" value={form.time_zone} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('time_zone', e.target.value)} /></GridItem>
+                        <GridItem span={{ md: 4, lg: 6 }}><TextField name="email" label="Email" type="email" value={form.email} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('email', e.target.value)} /></GridItem>
+                        <GridItem span={{ md: 4, lg: 6 }}><TextField name="phone" label="Phone" value={form.phone} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('phone', e.target.value)} /></GridItem>
+                        <GridItem span={{ md: 4, lg: 6 }}><TextField name="mobile_phone" label="Mobile" value={form.mobile_phone} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('mobile_phone', e.target.value)} /></GridItem>
+                        <GridItem span={{ md: 4, lg: 6 }}><TextField name="linkedin_url" label="LinkedIn URL" value={form.linkedin_url} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('linkedin_url', e.target.value)} /></GridItem>
+                    </Grid>
 
                     <Field label="Roles">
                         <StakeholderRolesEditor value={roles} onChange={setRoles} />
                     </Field>
 
-                    <div className="grid grid-cols-2 gap-3">
-                        <Field label="Buying Committee">
-                            <select value={form.buying_committee_role} onChange={(e) => set('buying_committee_role', e.target.value as BuyingCommitteeRole)} className="input">
-                                {COMMITTEE_OPTIONS.map((o) => <option key={o} value={o}>{o.replace(/_/g, ' ')}</option>)}
-                            </select>
-                        </Field>
-                        <Field label="Relationship Strength">
-                            <select value={form.relationship_strength} onChange={(e) => set('relationship_strength', e.target.value as RelationshipStrength)} className="input">
-                                {STRENGTH_OPTIONS.map((o) => <option key={o} value={o}>{o.replace(/_/g, ' ')}</option>)}
-                            </select>
-                        </Field>
-                        <Field label="Preferred Contact Method">
-                            <select value={form.preferred_communication_method} onChange={(e) => set('preferred_communication_method', e.target.value)} className="input">
-                                <option value="">—</option>
-                                {['email', 'phone', 'mobile', 'linkedin', 'sms', 'other'].map((o) => <option key={o} value={o}>{o}</option>)}
-                            </select>
-                        </Field>
-                        <Field label="Preferred Contact Time"><input value={form.preferred_contact_time} onChange={(e) => set('preferred_contact_time', e.target.value)} className="input" /></Field>
-                        <Field label="Preferred Language"><input value={form.preferred_language} onChange={(e) => set('preferred_language', e.target.value)} className="input" /></Field>
-                    </div>
+                    <Grid gap="md">
+                        <GridItem span={{ md: 4, lg: 6 }}><Select name="buying_committee_role" label="Buying Committee" value={form.buying_committee_role} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('buying_committee_role', e.target.value as BuyingCommitteeRole)} options={COMMITTEE_OPTIONS.map((o) => ({ value: o, label: o.replace(/_/g, ' ') }))} /></GridItem>
+                        <GridItem span={{ md: 4, lg: 6 }}><Select name="relationship_strength" label="Relationship Strength" value={form.relationship_strength} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('relationship_strength', e.target.value as RelationshipStrength)} options={STRENGTH_OPTIONS.map((o) => ({ value: o, label: o.replace(/_/g, ' ') }))} /></GridItem>
+                        <GridItem span={{ md: 4, lg: 6 }}><Select name="preferred_communication_method" label="Preferred Contact Method" value={form.preferred_communication_method} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('preferred_communication_method', e.target.value)} options={[{ value: '', label: '—' }, ...['email', 'phone', 'mobile', 'linkedin', 'sms', 'other'].map((o) => ({ value: o, label: o }))]} /></GridItem>
+                        <GridItem span={{ md: 4, lg: 6 }}><TextField name="preferred_contact_time" label="Preferred Contact Time" value={form.preferred_contact_time} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('preferred_contact_time', e.target.value)} /></GridItem>
+                        <GridItem span={{ md: 4, lg: 6 }}><TextField name="preferred_language" label="Preferred Language" value={form.preferred_language} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('preferred_language', e.target.value)} /></GridItem>
+                    </Grid>
 
                     <div className="flex flex-wrap items-center gap-4 pt-1">
-                        <Checkbox label="Active" checked={form.is_active} onChange={(v) => set('is_active', v)} />
-                        <Checkbox label="Primary Contact" checked={form.is_primary_contact} onChange={(v) => set('is_primary_contact', v)} />
-                        <Checkbox label="Do Not Contact" checked={form.do_not_contact} onChange={(v) => set('do_not_contact', v)} />
-                        <Checkbox label="Marketing Opt-Out" checked={form.marketing_opt_out} onChange={(v) => set('marketing_opt_out', v)} />
+                        <Checkbox name="is_active" label="Active" checked={form.is_active} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('is_active', e.target.checked)} />
+                        <Checkbox name="is_primary_contact" label="Primary Contact" checked={form.is_primary_contact} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('is_primary_contact', e.target.checked)} />
+                        <Checkbox name="do_not_contact" label="Do Not Contact" checked={form.do_not_contact} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('do_not_contact', e.target.checked)} />
+                        <Checkbox name="marketing_opt_out" label="Marketing Opt-Out" checked={form.marketing_opt_out} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('marketing_opt_out', e.target.checked)} />
                     </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-slate-800 sticky bottom-0 bg-slate-950">
-                    <button onClick={onClose} className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-200">Cancel</button>
-                    <button
-                        onClick={handleSave}
-                        disabled={saving}
-                        className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest disabled:opacity-50"
-                    >
-                        {saving && <Loader2 size={12} className="animate-spin" />}
-                        {isEditing ? 'Save Changes' : 'Add Stakeholder'}
-                    </button>
-                </div>
-            </div>
-
-            <style>{`.input { background: rgb(15 23 42 / 0.6); border: 1px solid rgb(51 65 85); border-radius: 0.5rem; padding: 0.5rem 0.75rem; font-size: 0.75rem; color: rgb(226 232 240); outline: none; width: 100%; }`}</style>
-        </div>
+        </Modal>
     );
 };
 
 const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
     <label className="block">
-        <span className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">{label}</span>
+        <span className="block text-xs font-medium text-fg-muted mb-1">{label}</span>
         {children}
-    </label>
-);
-
-const Checkbox: React.FC<{ label: string; checked: boolean; onChange: (v: boolean) => void }> = ({ label, checked, onChange }) => (
-    <label className="flex items-center gap-1.5 text-[10px] text-slate-400 cursor-pointer">
-        <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="rounded border-slate-700 bg-slate-900" />
-        {label}
     </label>
 );
 

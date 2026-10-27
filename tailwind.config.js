@@ -1,10 +1,11 @@
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
-const themePreset = require('@so360/theme/src/preset.cjs');
+const withComb = require('@so360/theme/src/withComb.cjs');
 
 /** @type {import('tailwindcss').Config} */
-export default {
-  presets: [themePreset],
+export default withComb({
+  // Scope utilities to the CRM subtree — see src/utils/crmScope.tsx.
+  important: '.crm-scope',
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -13,4 +14,4 @@ export default {
     extend: {},
   },
   plugins: [],
-};
+});

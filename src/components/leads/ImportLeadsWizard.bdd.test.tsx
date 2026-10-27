@@ -88,7 +88,7 @@ describe('Given the lead import wizard', () => {
             fireEvent.change(screen.getByLabelText('Field for Name'), { target: { value: '' } });
             fireEvent.click(screen.getByRole('button', { name: 'Next' }));
             expect(screen.getByRole('alert')).toHaveTextContent(/first name or full name/i);
-            expect(screen.queryByRole('table', { name: 'Import preview' })).not.toBeInTheDocument();
+            expect(screen.queryByTestId('import-preview-table')).not.toBeInTheDocument();
         });
     });
 
@@ -108,7 +108,7 @@ describe('Given the lead import wizard', () => {
             await toMapStep();
             fireEvent.change(screen.getByLabelText('Field for Budget'), { target: { value: 'custom:cf-1' } });
             fireEvent.click(screen.getByRole('button', { name: 'Next' }));
-            const table = screen.getByRole('table', { name: 'Import preview' });
+            const table = screen.getByTestId('import-preview-table');
             const headers = within(table).getAllByRole('columnheader').map((h) => h.textContent);
             expect(headers).toEqual(['Full name', 'Email', 'Budget']);
             expect(within(table).getByText('Asha Rao')).toBeInTheDocument();
@@ -173,8 +173,7 @@ describe('Given the lead import wizard', () => {
 });
 
 const closeX = () => {
-    const icon = screen.getByTestId('icon-X');
-    fireEvent.click(icon.closest('button') as HTMLButtonElement);
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
 };
 
 describe('Given the wizard is closed', () => {
@@ -235,10 +234,10 @@ describe('Given the upload step', () => {
             const steps = () => within(screen.getByRole('list', { name: 'Import steps' })).getAllByRole('listitem');
             expect(steps()[0]).toHaveAttribute('aria-current', 'step');
             expect(steps()[1]).not.toHaveAttribute('aria-current');
-            expect(steps()[1].className).toMatch(/text-slate-500/);
+            expect(steps()[1].className).toMatch(/text-fg-muted/);
             await toMapStep();
             expect(steps()[1]).toHaveAttribute('aria-current', 'step');
-            expect(steps()[0].className).toMatch(/text-blue-400/);
+            expect(steps()[0].className).toMatch(/text-primary/);
         });
     });
 });
@@ -264,8 +263,8 @@ describe('Given the map step', () => {
             const rows = screen.getAllByTestId('import-mapping-row');
             expect(rows[0].querySelectorAll('p')[1].textContent).toBe('');
             fireEvent.click(screen.getByRole('button', { name: 'Next' }));
-            const table = screen.getByRole('table', { name: 'Import preview' });
-            expect(within(table).queryAllByRole('cell')).toHaveLength(0);
+            expect(screen.queryByTestId('import-preview-table')).not.toBeInTheDocument();
+            expect(screen.getByTestId('import-preview-empty')).toBeInTheDocument();
             expect(screen.getByText(/Showing 0 of 42 rows/)).toBeInTheDocument();
         });
     });
@@ -277,7 +276,7 @@ describe('Given the map step', () => {
             await toMapStep();
             expect(screen.getAllByTestId('import-mapping-row')[1].querySelectorAll('p')[1].textContent).toBe('');
             fireEvent.click(screen.getByRole('button', { name: 'Next' }));
-            const cells = within(screen.getByRole('table', { name: 'Import preview' })).getAllByRole('cell');
+            const cells = within(screen.getByTestId('import-preview-table')).getAllByRole('cell');
             expect(cells.map(c => c.textContent)).toEqual(['Asha Rao', '']);
         });
     });
@@ -288,7 +287,7 @@ describe('Given the map step', () => {
             renderWizard();
             await toMapStep();
             fireEvent.click(screen.getByRole('button', { name: 'Next' }));
-            const headers = within(screen.getByRole('table', { name: 'Import preview' })).getAllByRole('columnheader').map(h => h.textContent);
+            const headers = within(screen.getByTestId('import-preview-table')).getAllByRole('columnheader').map(h => h.textContent);
             expect(headers).toEqual(['Full name', 'legacy_email']);
         });
     });
@@ -325,7 +324,7 @@ describe('Given the map step', () => {
             fireEvent.change(screen.getByLabelText('Field for Name'), { target: { value: 'first_name' } });
             fireEvent.click(screen.getByRole('button', { name: 'Next' }));
             expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-            expect(screen.getByRole('table', { name: 'Import preview' })).toBeInTheDocument();
+            expect(screen.getByTestId('import-preview-table')).toBeInTheDocument();
         });
     });
 });

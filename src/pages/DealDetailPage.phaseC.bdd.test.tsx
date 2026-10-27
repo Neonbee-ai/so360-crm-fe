@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 
@@ -228,7 +228,7 @@ const PP = 'submodule:crm:payment_plans';
 const CM = 'submodule:crm:commissions';
 
 const tabLabels = () =>
-  within(screen.getByTestId('deal-detail-tab-strip')).getAllByRole('button').map((b) => b.textContent || '');
+  screen.getAllByRole('tab').map((b) => b.textContent || '');
 
 const renderLoaded = async () => {
   render(<DealDetailPage />);
@@ -265,7 +265,7 @@ describe('Feature: RE Phase C deal tabs (payment plan + commission)', () => {
       await renderLoaded();
       expect(tabLabels().some((l) => l.includes('Commission'))).toBe(false);
       expect(screen.queryByTestId('payment-plan-panel')).not.toBeInTheDocument();
-      await user.click(screen.getByRole('button', { name: /Payment plan/ }));
+      await user.click(screen.getByRole('tab', { name: /Payment plan/ }));
       expect(screen.getByTestId('payment-plan-panel')).toHaveAttribute('data-deal-id', 'deal-1');
       expect(screen.queryByTestId('commission-panel')).not.toBeInTheDocument();
     });
@@ -277,7 +277,7 @@ describe('Feature: RE Phase C deal tabs (payment plan + commission)', () => {
       const user = userEvent.setup();
       await renderLoaded();
       expect(tabLabels().some((l) => l.includes('Payment plan'))).toBe(false);
-      await user.click(screen.getByRole('button', { name: /^\s*Commission$/ }));
+      await user.click(screen.getByRole('tab', { name: /^\s*Commission$/ }));
       expect(screen.getByTestId('commission-panel')).toHaveAttribute('data-deal-id', 'deal-1');
       expect(screen.queryByTestId('payment-plan-panel')).not.toBeInTheDocument();
     });
@@ -292,11 +292,11 @@ describe('Feature: RE Phase C deal tabs (payment plan + commission)', () => {
       expect(labels.some((l) => l.includes('Payment plan'))).toBe(true);
       expect(labels.some((l) => l.includes('Commission'))).toBe(true);
 
-      await user.click(screen.getByRole('button', { name: /Payment plan/ }));
+      await user.click(screen.getByRole('tab', { name: /Payment plan/ }));
       expect(screen.getByTestId('payment-plan-panel')).toBeInTheDocument();
       expect(screen.queryByTestId('commission-panel')).not.toBeInTheDocument();
 
-      await user.click(screen.getByRole('button', { name: /^\s*Commission$/ }));
+      await user.click(screen.getByRole('tab', { name: /^\s*Commission$/ }));
       expect(screen.getByTestId('commission-panel')).toBeInTheDocument();
       expect(screen.queryByTestId('payment-plan-panel')).not.toBeInTheDocument();
     });

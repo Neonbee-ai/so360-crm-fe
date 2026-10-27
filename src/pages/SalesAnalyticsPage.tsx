@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
-import SalesFiltersBar, { type FilterOption } from './components/SalesFiltersBar';
+import { DashboardPageTemplate, ListFilters, DataTable, Select, Grid, Button } from '@so360/design-system';
+import { useSalesFilterConfig, type FilterOption } from './components/SalesFiltersBar';
 import ExportMenu, { useCanExport } from '../components/ExportMenu';
 import { validateDateRange, type SalesFilters } from '../services/salesReportService';
 import {
@@ -13,8 +14,6 @@ import {
 import { useCRMFormatters } from '../utils/formatters';
 import { describeApiError } from '../utils/apiErrorMessage';
 
-const TH = 'px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-slate-500 whitespace-nowrap';
-const TD = 'px-4 py-3 text-xs font-bold text-slate-300 whitespace-nowrap';
 
 const PERIOD_LABELS: Record<ReportPeriod, string> = { month: 'Monthly', quarter: 'Quarterly', year: 'Yearly' };
 
@@ -120,6 +119,7 @@ const SalesAnalyticsPage: React.FC = () => {
     const [reloadKey, setReloadKey] = useState(0);
     const [developers, setDevelopers] = useState<FilterOption[]>([]);
 
+    const { config: filterConfig, rangeError } = useSalesFilterConfig(filters, setFilters, developers);
     const rangeInvalid = validateDateRange(filters) !== null;
 
     useEffect(() => {
@@ -156,27 +156,27 @@ const SalesAnalyticsPage: React.FC = () => {
 
     let body: React.ReactNode = null;
     if (rangeInvalid) {
-        body = null;
+        body = <div role="alert" className="text-xs text-danger">{rangeError}</div>;
     } else if (loading) {
-        body = <div role="status" className="p-8 text-sm text-slate-400">Loading sales reports…</div>;
+        body = <div role="status" className="p-8 text-sm text-fg-subtle">Loading sales reports…</div>;
     } else if (forbidden) {
         body = (
-            <div data-testid="sales-analytics-forbidden" className="p-10 text-center bg-slate-900 border border-slate-800 rounded-2xl text-sm text-slate-400">
+            <div data-testid="sales-analytics-forbidden" className="p-10 text-center bg-surface border border-line rounded-nb-lg text-sm text-fg-subtle">
                 You don't have access to sales reports. Ask your manager if you need them.
             </div>
         );
     } else if (error) {
         body = (
-            <div role="alert" className="p-6 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-center justify-between gap-3">
-                <span className="text-sm font-bold text-rose-300">{error}</span>
-                <button type="button" onClick={() => setReloadKey((k) => k + 1)} className="flex items-center gap-1 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-200 bg-slate-800 hover:bg-slate-700">
+            <div role="alert" className="p-6 bg-danger/10 border border-danger/30 rounded-nb-lg flex items-center justify-between gap-3">
+                <span className="text-sm font-bold text-danger">{error}</span>
+                <Button type="button" size="sm" variant="secondary" onClick={() => setReloadKey((k) => k + 1)}>
                     <RefreshCw size={12} /> Retry
-                </button>
+                </Button>
             </div>
         );
     } else if (data && isEmptyAnalytics(data)) {
         body = (
-            <div data-testid="sales-analytics-empty" className="p-10 text-center bg-slate-900 border border-slate-800 rounded-2xl text-sm text-slate-400">
+            <div data-testid="sales-analytics-empty" className="p-10 text-center bg-surface border border-line rounded-nb-lg text-sm text-fg-subtle">
                 No sales activity for these filters.
             </div>
         );
@@ -193,18 +193,18 @@ const SalesAnalyticsPage: React.FC = () => {
         ];
         body = (
             <>
-                <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-3">
+                <Grid columns={7} gap="md">
                     {cards.map((c) => (
-                        <div key={c.key} className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">{c.label}</p>
-                            <p className="mt-1 text-lg font-black text-slate-50" data-testid={`sa-total-${c.key}`}>{c.value}</p>
+                        <div key={c.key} className="bg-surface border border-line rounded-nb-lg p-4">
+                            <p className="text-xs font-semibold text-fg-muted">{c.label}</p>
+                            <p className="mt-1 text-lg font-semibold text-fg" data-testid={`sa-total-${c.key}`}>{c.value}</p>
                         </div>
                     ))}
-                </div>
+                </Grid>
                 {sections.map((s) => (
-                    <section key={s.section} data-testid={`sa-section-${s.section}`} className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
-                        <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between gap-3 flex-wrap">
-                            <h2 className="text-xs font-black uppercase tracking-widest text-slate-300">{s.title}</h2>
+                    <section key={s.section} data-testid={`sa-section-${s.section}`} className="bg-surface border border-line rounded-nb-lg overflow-hidden">
+                        <div className="px-4 py-3 border-b border-line flex items-center justify-between gap-3 flex-wrap">
+                            <h2 className="text-xs font-semibold text-fg-subtle">{s.title}</h2>
                             {canExport ? (
                                 <ExportMenu
                                     label={`Export ${s.title}`}
@@ -213,28 +213,21 @@ const SalesAnalyticsPage: React.FC = () => {
                             ) : null}
                         </div>
                         {s.rows.length === 0 ? (
-                            <p className="px-4 py-6 text-xs text-slate-500">Nothing to show.</p>
+                            <p className="px-4 py-6 text-xs text-fg-muted">Nothing to show.</p>
                         ) : (
-                            <div className="overflow-x-auto">
-                                <table aria-label={s.title} className="w-full">
-                                    <thead>
-                                        <tr>
-                                            {s.header.map((h) => (
-                                                <th key={h.label} className={`${TH}${h.numeric ? ' text-right' : ''}`}>{h.label}</th>
-                                            ))}
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-800">
-                                        {s.rows.map((r) => (
-                                            <tr key={r.key}>
-                                                {r.cells.map((c, i) => (
-                                                    <td key={i} className={`${TD}${c.numeric ? ' text-right' : ''}`}>{c.value}</td>
-                                                ))}
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                            <DataTable
+                                name={`sa-table-${s.section}`}
+                                data-testid={`sa-table-${s.section}`}
+                                density="compact"
+                                columns={s.header.map((h, ci) => ({
+                                    key: `c${ci}`,
+                                    header: h.label,
+                                    align: h.numeric ? 'right' as const : undefined,
+                                    render: (r: (typeof s.rows)[number]) => r.cells[ci]?.value,
+                                }))}
+                                rows={s.rows}
+                                rowKey={(r) => r.key}
+                            />
                         )}
                     </section>
                 ))}
@@ -243,27 +236,25 @@ const SalesAnalyticsPage: React.FC = () => {
     }
 
     return (
-        <div className="p-6 space-y-6">
-            <div className="flex items-end justify-between gap-4 flex-wrap">
-                <div>
-                    <h1 className="text-2xl font-black text-slate-50">Sales reports</h1>
-                    <p className="text-sm text-slate-400">Bookings, lead sources, lost reasons, reservations and agent performance.</p>
+        <DashboardPageTemplate
+            trail={[{ label: 'Sales', to: '/crm/sales' }]}
+            title="Sales reports"
+            description="Bookings, lead sources, lost reasons, reservations and agent performance."
+            filters={(
+                <div className="space-y-4">
+            <Select
+                name="sales-report-period"
+                aria-label="Report period"
+                value={period}
+                onValueChange={(v) => setPeriod(v as ReportPeriod)}
+                options={REPORT_PERIODS.map((p) => ({ value: p, label: PERIOD_LABELS[p] }))}
+            />
+                    <ListFilters {...filterConfig} />
                 </div>
-                <label className="flex flex-col gap-1 text-[10px] font-black uppercase tracking-widest text-slate-500">
-                    Period
-                    <select
-                        aria-label="Report period"
-                        value={period}
-                        onChange={(e) => setPeriod(e.target.value as ReportPeriod)}
-                        className="bg-slate-950 border border-slate-800 text-slate-50 rounded-xl px-3 py-2 outline-none focus:border-blue-500 font-bold text-xs"
-                    >
-                        {REPORT_PERIODS.map((p) => <option key={p} value={p}>{PERIOD_LABELS[p]}</option>)}
-                    </select>
-                </label>
-            </div>
-            <SalesFiltersBar value={filters} onChange={setFilters} developers={developers} />
-            {body}
-        </div>
+            )}
+        >
+            <div className="space-y-6">{body}</div>
+        </DashboardPageTemplate>
     );
 };
 

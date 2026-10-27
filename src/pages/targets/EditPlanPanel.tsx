@@ -1,6 +1,6 @@
+import { Button, TextField, Select, Drawer } from '@so360/design-system';
 import React, { useEffect, useState } from 'react';
 import { targetPlanService } from '../../services/targetPlanService';
-import { Panel } from './targetUi';
 import { planPeriods } from './planShape';
 
 /**
@@ -117,80 +117,76 @@ export default function EditPlanPanel({
   const periods = planPeriods(plan);
 
   return (
-    <Panel
-      title={plan ? `Edit · ${plan.name}` : 'Edit plan'}
-      action={
-        <button
-          className="text-xs text-slate-400 hover:text-slate-200"
-          onClick={onClose}
-        >
-          Close
-        </button>
-      }
-    >
-      {error && <div className="mb-2 text-sm text-rose-300">{error}</div>}
-      {notice && <div className="mb-2 text-sm text-emerald-300">{notice}</div>}
+    <Drawer isOpen onClose={onClose} size="lg" title={plan ? `Edit · ${plan.name}` : 'Edit plan'}>
+      {error && <div className="mb-2 text-sm text-danger">{error}</div>}
+      {notice && <div className="mb-2 text-sm text-success">{notice}</div>}
 
       {!plan ? (
-        <div className="text-sm text-slate-400">Loading plan…</div>
+        <div className="text-sm text-fg-subtle">Loading plan…</div>
       ) : (
         <div className="space-y-4">
           <div className="flex flex-wrap items-end gap-3">
             <div className="grow basis-64">
-              <label className="block text-[11px] text-slate-400 mb-1">
+              <label className="block text-xs text-fg-subtle mb-1">
                 Name
               </label>
-              <input
+              <TextField
+                name="plan-name"
                 aria-label="Plan name"
-                className="w-full rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none"
+                size="sm"
                 value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, name: e.target.value })}
               />
             </div>
             <div>
-              <label className="block text-[11px] text-slate-400 mb-1">
+              <label className="block text-xs text-fg-subtle mb-1">
                 Priority
               </label>
-              <select
+              <Select
+                name="plan-priority"
                 aria-label="Priority"
-                className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
+                size="sm"
                 value={form.priority}
-                onChange={(e) => setForm({ ...form, priority: e.target.value })}
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm({ ...form, priority: e.target.value })}
+                options={[
+                  { value: 'low', label: 'Low' },
+                  { value: 'medium', label: 'Medium' },
+                  { value: 'high', label: 'High' },
+                ]}
+              />
             </div>
             <div>
-              <label className="block text-[11px] text-slate-400 mb-1">
+              <label className="block text-xs text-fg-subtle mb-1">
                 Status
               </label>
-              <select
+              <Select
+                name="plan-status"
                 aria-label="Status"
-                className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
+                size="sm"
                 value={form.status}
-                onChange={(e) => setForm({ ...form, status: e.target.value })}
-              >
-                <option value="draft">Draft</option>
-                <option value="active">Active</option>
-                <option value="closed">Closed</option>
-              </select>
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm({ ...form, status: e.target.value })}
+                options={[
+                  { value: 'draft', label: 'Draft' },
+                  { value: 'active', label: 'Active' },
+                  { value: 'closed', label: 'Closed' },
+                ]}
+              />
             </div>
             <div>
-              <label className="block text-[11px] text-slate-400 mb-1">
+              <label className="block text-xs text-fg-subtle mb-1">
                 Role
               </label>
-              <input
+              <TextField
+                name="plan-role"
                 aria-label="Role"
-                className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none"
+                size="sm"
                 value={form.role}
-                onChange={(e) => setForm({ ...form, role: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, role: e.target.value })}
               />
             </div>
           </div>
 
-          <div className="text-xs text-slate-500">
+          <div className="text-xs text-fg-muted">
             {plan.start_date} → {plan.end_date} · {plan.period}. The window is
             fixed: history is already recorded against these buckets, so moving
             it would leave stored numbers attributed to a period that no longer
@@ -198,65 +194,68 @@ export default function EditPlanPanel({
           </div>
 
           {periods.length > 0 && (
-            <div className="border-t border-slate-800 pt-3">
-              <div className="mb-2 text-sm text-slate-300">Period targets</div>
+            <div className="border-t border-line pt-3">
+              <div className="mb-2 text-sm text-fg-subtle">Period targets</div>
               <div className="space-y-2">
                 {periods.map((pr) => (
                   <div key={pr.id} className="flex items-center gap-2">
-                    <span className="w-64 shrink-0 text-xs text-slate-400">
-                      <span className="text-slate-300">{pr.lineLabel}</span>{' '}
+                    <span className="w-64 shrink-0 text-xs text-fg-subtle">
+                      <span className="text-fg-subtle">{pr.lineLabel}</span>{' '}
                       {pr.period_start} → {pr.period_end}
                     </span>
-                    <input
+                    <div className="w-32">
+                    <TextField
+                      name={`period-target-${pr.id}`}
                       aria-label={`Target for ${pr.period_start}`}
-                      className="w-32 rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none"
+                      size="sm"
                       placeholder={String(pr.target_value ?? '')}
                       value={periodEdits[pr.id] ?? ''}
-                      onChange={(e) =>
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                         setPeriodEdits({
                           ...periodEdits,
                           [pr.id]: e.target.value,
                         })
                       }
                     />
-                    <span className="text-xs text-slate-500">
+                    </div>
+                    <span className="text-xs text-fg-muted">
                       currently {pr.target_value}
                     </span>
                   </div>
                 ))}
               </div>
-              <div className="mt-2 text-xs text-slate-500">
+              <div className="mt-2 text-xs text-fg-muted">
                 Leave a box empty to keep its current target. Every change is
                 recorded as a revision.
               </div>
             </div>
           )}
 
-          <div className="flex flex-wrap items-end gap-3 border-t border-slate-800 pt-3">
+          <div className="flex flex-wrap items-end gap-3 border-t border-line pt-3">
             <div className="grow basis-64">
-              <label className="block text-[11px] text-slate-400 mb-1">
+              <label className="block text-xs text-fg-subtle mb-1">
                 Reason for the change
               </label>
-              <input
+              <TextField
+                name="plan-change-reason"
                 aria-label="Change reason"
-                className="w-full rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none"
+                size="sm"
                 placeholder="Territory reassigned mid-quarter"
                 value={form.change_reason}
-                onChange={(e) =>
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   setForm({ ...form, change_reason: e.target.value })
                 }
               />
             </div>
-            <button
-              className="rounded bg-slate-700 px-3 py-1.5 text-sm text-slate-100 hover:bg-slate-600 disabled:opacity-50"
+            <Button variant="primary" size="sm"
               onClick={save}
               disabled={busy}
             >
               {busy ? 'Saving…' : 'Save changes'}
-            </button>
+            </Button>
           </div>
         </div>
       )}
-    </Panel>
+    </Drawer>
   );
 }

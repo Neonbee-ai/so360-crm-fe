@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { Phone, Mail, CalendarPlus, CheckSquare, FileEdit, Users, X } from 'lucide-react';
+import { Phone, Mail, CalendarPlus, CheckSquare, FileEdit, Users } from 'lucide-react';
+import { Modal } from '../common/Modal';
 import { Stakeholder } from '../../types/crm';
 import TaskModal from '../../pages/components/TaskModal';
+import { Button } from '@so360/design-system';
 
 interface Props {
     leadId: string;
@@ -25,13 +27,8 @@ const StakeholderQuickActions: React.FC<Props> = ({ leadId, stakeholder, onClose
     const blocked = stakeholder.do_not_contact;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
-            <div className="bg-slate-950 border border-slate-800 rounded-2xl w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
-                <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
-                    <p className="text-xs font-black text-slate-50 uppercase tracking-widest">{stakeholder.full_name || 'Stakeholder'}</p>
-                    <button onClick={onClose} className="p-1.5 text-slate-500 hover:text-slate-200 rounded-lg hover:bg-slate-800"><X size={16} /></button>
-                </div>
-                <div className="p-3 space-y-1.5">
+        <Modal isOpen onClose={onClose} title={stakeholder.full_name || 'Stakeholder'} size="sm" data-testid="stakeholder-quick-actions">
+                <div className="space-y-1.5">
                     <ActionButton
                         icon={<Phone size={14} />}
                         label="Call"
@@ -49,9 +46,8 @@ const StakeholderQuickActions: React.FC<Props> = ({ leadId, stakeholder, onClose
                     <ActionButton icon={<CheckSquare size={14} />} label="Create Task" onClick={() => setShowTaskModal(true)} />
                     <ActionButton icon={<FileEdit size={14} />} label="Add Note" onClick={() => onAddNote?.(stakeholder)} />
                     <ActionButton icon={<Users size={14} />} label="Open Contact Profile" onClick={() => onOpenProfile(stakeholder)} />
-                    {blocked && <p className="text-[9px] text-red-400 px-2 pt-1">This stakeholder is marked Do Not Contact.</p>}
+                    {blocked && <p className="text-xs text-danger px-2 pt-1">This stakeholder is marked Do Not Contact.</p>}
                 </div>
-            </div>
 
             {showTaskModal && (
                 <TaskModal
@@ -61,16 +57,16 @@ const StakeholderQuickActions: React.FC<Props> = ({ leadId, stakeholder, onClose
                     onSuccess={() => { setShowTaskModal(false); onTaskCreated?.(); onClose(); }}
                 />
             )}
-        </div>
+        </Modal>
     );
 };
 
 const ActionButton: React.FC<{ icon: React.ReactNode; label: string; disabled?: boolean; href?: string; onClick?: () => void }> = ({ icon, label, disabled, href, onClick }) => {
-    const className = `w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-bold text-slate-300 transition-colors ${disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-slate-800'}`;
+    const className = `w-full flex items-center gap-2.5 px-3 py-2.5 rounded-nb text-xs font-medium text-fg-subtle transition-colors ${disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-surface-raised'}`;
     if (href && !disabled) {
         return <a href={href} className={className}>{icon}{label}</a>;
     }
-    return <button onClick={onClick} disabled={disabled} className={className}>{icon}{label}</button>;
+    return <Button variant="secondary" size="sm" className="w-full !justify-start" onClick={onClick} disabled={disabled}>{icon}{label}</Button>;
 };
 
 export default StakeholderQuickActions;

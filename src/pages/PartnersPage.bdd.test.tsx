@@ -31,7 +31,8 @@ vi.mock('react-router-dom', () => ({
 }));
 
 vi.mock('@so360/shell-context', () => ({
-    useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US' } }),
+  useDatasetSchema: () => ({ fields: [], isLoading: false, error: null }),
+  useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US' } }),
 }));
 
 vi.mock('@so360/formatters', () => ({
@@ -43,22 +44,26 @@ vi.mock('../utils/phoneValidation', () => ({
 }));
 
 let tableProps: any = {};
-vi.mock('../components/common/Table', () => ({
-    Table: (props: any) => {
-        tableProps = props;
-        if (props.isLoading) return <div data-testid="table">Loading...</div>;
-        if (!props.data.length) return <div data-testid="table">{props.emptyMessage}</div>;
-        return (
-            <div data-testid="table">
-                {props.data.map((p: any) => (
-                    <div key={p.id} data-testid={`partner-row-${p.id}`} onClick={() => props.onRowClick(p)}>
-                        {p.contact_name}
-                    </div>
-                ))}
-            </div>
-        );
-    },
-}));
+vi.mock('@so360/design-system', async (importOriginal) => {
+    const actual: any = await importOriginal();
+    return {
+        ...actual,
+        DataTable: (props: any) => {
+            tableProps = { ...props, data: props.rows, isLoading: props.loading, emptyMessage: props.emptyState, columns: props.columns.map((c: any) => ({ ...c, accessor: c.render, className: c.align === 'right' ? 'text-right' : undefined })) };
+            if (props.loading) return <div data-testid="table">Loading...</div>;
+            if (!props.rows.length) return <div data-testid="table">{props.emptyState}</div>;
+            return (
+                <div data-testid="table">
+                    {props.rows.map((p: any) => (
+                        <div key={p.id} {...props.getRowProps(p)} onClick={() => props.onRowClick(p)}>
+                            {p.contact_name}
+                        </div>
+                    ))}
+                </div>
+            );
+        },
+    };
+});
 
 import PartnersPage from './PartnersPage';
 
@@ -107,16 +112,11 @@ describe('PartnersPage', () => {
             });
         });
 
-        it('When data loads / Then shows the Partner Type Distribution status overview instead of KPI cards', async () => {
+        it('When data loads / Then no type-distribution strip or KPI cards are drawn above the toolbar', async () => {
             render(<PartnersPage />);
-            await waitFor(() => {
-                // "Partner Type Distribution" is unique to the new overview component —
-                // its own "N partners" count text is NOT asserted here because the
-                // pre-existing pagination footer independently renders the same
-                // "2 partners" string (see the dedicated segment-count assertions in
-                // "Given the Partner Status Overview" below for count/percentage coverage).
-                expect(screen.getByText('Partner Type Distribution')).toBeInTheDocument();
-            });
+            await waitFor(() => expect(screen.getByTestId('partner-row-p1')).toBeInTheDocument());
+            expect(screen.queryByText('Partner type distribution')).not.toBeInTheDocument();
+            expect(document.querySelector('[data-slot="kpis"]')).toBeNull();
         });
 
         it('When no partners returned / Then shows empty message', async () => {
@@ -178,7 +178,7 @@ describe('PartnersPage', () => {
             const user = userEvent.setup();
             render(<PartnersPage />);
             await waitFor(() => expect(screen.getByTestId('partner-row-p1')).toBeInTheDocument());
-            const typeSelect = screen.getByDisplayValue('All Types');
+            const typeSelect = screen.getByLabelText('Type');
             await user.selectOptions(typeSelect, 'referral');
             await waitFor(() => {
                 expect(tableProps.data.length).toBe(1);
@@ -190,10 +190,9 @@ describe('PartnersPage', () => {
             const user = userEvent.setup();
             render(<PartnersPage />);
             await waitFor(() => expect(screen.getByTestId('partner-row-p1')).toBeInTheDocument());
-            const typeSelect = screen.getByDisplayValue('All Types');
+            const typeSelect = screen.getByLabelText('Type');
             await user.selectOptions(typeSelect, 'referral');
-            await waitFor(() => expect(screen.getByText('Clear Filters')).toBeInTheDocument());
-            await user.click(screen.getByText('Clear Filters'));
+            await user.click(await screen.findByRole('button', { name: 'Clear all' }));
             await waitFor(() => {
                 expect(tableProps.data.length).toBe(2);
             });
@@ -210,27 +209,22 @@ describe('PartnersPage', () => {
             expect(document.querySelector('form#create-partner-form')).not.toBeNull();
         });
 
-        it('When modal opens / Then header is rendered outside the scrollable body (viewport-safe structure)', async () => {
+        it('When modal opens / Then the title is rendered by the common Modal', async () => {
             const user = userEvent.setup();
             render(<PartnersPage />);
             await user.click(screen.getByRole('button', { name: /add partner/i }));
 
-            // The h2 modal title must sit in a non-scrolling div (shrink-0 header zone)
-            const h2 = screen.getByRole('heading', { level: 2, name: 'Add Partner' });
-            const headerDiv = h2.closest('div');
-            expect(headerDiv).not.toBeNull();
-            expect(headerDiv!.className).not.toContain('overflow-y-auto');
+            expect(screen.getByRole('heading', { name: 'Add Partner' })).toBeInTheDocument();
         });
 
-        it('When modal opens / Then the form body has overflow-y-auto for internal scroll', async () => {
+        it('When modal opens / Then the form is rendered inside the dialog body', async () => {
             const user = userEvent.setup();
             render(<PartnersPage />);
             await user.click(screen.getByRole('button', { name: /add partner/i }));
 
-            // The scrollable area is the <form> element, not the outer wrapper
             const form = document.querySelector('form#create-partner-form');
             expect(form).not.toBeNull();
-            expect(form!.className).toContain('overflow-y-auto');
+            expect(screen.getByRole('dialog').contains(form)).toBe(true);
         });
 
         it('When modal opens / Then footer buttons are rendered outside the scrollable form', async () => {
@@ -248,54 +242,13 @@ describe('PartnersPage', () => {
             expect(submitBtn.closest('form')).toBeNull();
         });
 
-        it('When modal outer wrapper is rendered / Then it does NOT carry overflow-y-auto', async () => {
-            const user = userEvent.setup();
-            render(<PartnersPage />);
-            await user.click(screen.getByRole('button', { name: /add partner/i }));
-
-            // The outer fixed backdrop should not have overflow-y-auto
-            const backdrop = document.querySelector('.fixed.inset-0');
-            expect(backdrop).not.toBeNull();
-            expect(backdrop!.className).not.toContain('overflow-y-auto');
-
-            // The immediate modal panel (child of backdrop) must not overflow-y-auto either
-            const panel = backdrop!.firstElementChild as HTMLElement;
-            expect(panel.className).not.toContain('overflow-y-auto');
-        });
-
-        it('When modal panel is rendered / Then it carries overflow-hidden to clip child overflow', async () => {
-            const user = userEvent.setup();
-            render(<PartnersPage />);
-            await user.click(screen.getByRole('button', { name: /add partner/i }));
-
-            const backdrop = document.querySelector('.fixed.inset-0');
-            expect(backdrop).not.toBeNull();
-            const panel = backdrop!.firstElementChild as HTMLElement;
-            expect(panel.className).toContain('overflow-hidden');
-        });
-
-        it('When modal panel is rendered / Then it has max-h-[90vh] to prevent viewport overflow', async () => {
-            const user = userEvent.setup();
-            render(<PartnersPage />);
-            await user.click(screen.getByRole('button', { name: /add partner/i }));
-
-            const backdrop = document.querySelector('.fixed.inset-0');
-            const panel = backdrop!.firstElementChild as HTMLElement;
-            expect(panel.className).toContain('max-h-[90vh]');
-        });
-
         it('When X button clicked / Then modal closes', async () => {
             const user = userEvent.setup();
             render(<PartnersPage />);
             await user.click(screen.getByRole('button', { name: /add partner/i }));
             expect(document.querySelector('form#create-partner-form')).not.toBeNull();
 
-            // The X icon button lives in the modal header div alongside the h2
-            const h2 = screen.getByRole('heading', { level: 2, name: 'Add Partner' });
-            const headerDiv = h2.closest('div')!;
-            const closeBtn = headerDiv.querySelector('button');
-            expect(closeBtn).not.toBeNull();
-            await user.click(closeBtn!);
+            await user.click(screen.getByRole('button', { name: 'Close' }));
             await waitFor(() => {
                 expect(document.querySelector('form#create-partner-form')).toBeNull();
             });
@@ -555,7 +508,7 @@ describe('PartnersPage', () => {
         it('When the Deals column renders / Then its cell is right-aligned', async () => {
             render(<PartnersPage />);
             await waitFor(() => expect(screen.getByTestId('partner-row-p1')).toBeInTheDocument());
-            const { container } = render(<>{tableProps.columns[3].header}</>);
+            const container = { textContent: tableProps.columns[3].header };
             expect(container.textContent).toContain('Deals');
             expect(tableProps.columns[3].className).toBe('text-right');
         });
@@ -563,7 +516,7 @@ describe('PartnersPage', () => {
         it('When the Deal Value column renders / Then its cell is right-aligned', async () => {
             render(<PartnersPage />);
             await waitFor(() => expect(screen.getByTestId('partner-row-p1')).toBeInTheDocument());
-            const { container } = render(<>{tableProps.columns[4].header}</>);
+            const container = { textContent: tableProps.columns[4].header };
             expect(container.textContent).toContain('Deal Value');
             expect(tableProps.columns[4].className).toBe('text-right');
         });
@@ -584,33 +537,21 @@ describe('PartnersPage', () => {
     });
 
     // ── status overview (replaces the old KPI card grid — task 52daf7c7) ───────
-    describe('Given the Partner Status Overview', () => {
-        it('When partners span multiple types / Then shows a segment and count per type', async () => {
+    describe('Given the Type filter carries counts (no separate overview strip)', () => {
+        it('When partners span multiple types / Then each Type option shows its count and no overview renders', async () => {
             render(<PartnersPage />);
-            await waitFor(() => {
-                expect(screen.getByTestId('partner-status-segment-referral')).toBeInTheDocument();
-                expect(screen.getByTestId('partner-status-segment-reseller')).toBeInTheDocument();
-            });
-            // p1=referral, p2=reseller → 1 each out of 2 = 50% each
-            expect(screen.getAllByText('(50%)')).toHaveLength(2);
+            await waitFor(() => expect(screen.getByTestId('partner-row-p1')).toBeInTheDocument());
+            const typeSelect = screen.getByLabelText('Type');
+            expect(typeSelect.querySelector('option[value="referral"]')).toHaveAttribute('data-count', '1');
+            expect(typeSelect.querySelector('option[value="reseller"]')).toHaveAttribute('data-count', '1');
+            expect(screen.queryByTestId('partner-status-segment-referral')).not.toBeInTheDocument();
         });
 
-        it('When no partners exist / Then the status overview is not rendered', async () => {
+        it('When no partners exist / Then the type counts are zero', async () => {
             mockPartnersGetAll.mockResolvedValue([]);
             render(<PartnersPage />);
             await waitFor(() => expect(screen.getByTestId('table')).toBeInTheDocument());
-            expect(screen.queryByText('Partner Type Distribution')).not.toBeInTheDocument();
-        });
-
-        it('When a partner has a type not present in Settings / Then it still gets its own segment', async () => {
-            mockPartnersGetAll.mockResolvedValue([
-                ...partners,
-                { id: 'p3', contact_name: 'Gamma LLC', partner_type: 'legacy_unlisted', grading: 'low', total_deals: 0, total_deal_value: 0, pending_commission: 0 },
-            ]);
-            render(<PartnersPage />);
-            await waitFor(() => {
-                expect(screen.getByTestId('partner-status-segment-legacy_unlisted')).toBeInTheDocument();
-            });
+            expect(screen.getByLabelText('Type').querySelector('option[value="referral"]')).toHaveAttribute('data-count', '0');
         });
     });
     // ── Field-format rules shared with the lead forms ──────────────────────────
@@ -665,14 +606,14 @@ describe('PartnersPage', () => {
         it('When the PIN is short / Then the six-digit message appears and the count is shown', async () => {
             const user = userEvent.setup();
             await openModal(user);
-            expect(screen.getByText('0/6 digits')).toBeInTheDocument();
+            expect(screen.getByText(/0\/6 digits/)).toBeInTheDocument();
             const pin = screen.getByPlaceholderText('560001');
             fireEvent.change(pin, { target: { value: '5600' } });
             fireEvent.blur(pin);
             await waitFor(() =>
                 expect(screen.getByText('Please enter a valid 6-digit PIN Code.')).toBeInTheDocument(),
             );
-            expect(screen.getByText('4/6 digits')).toBeInTheDocument();
+            expect(screen.getByText(/4\/6 digits/)).toBeInTheDocument();
         });
 
         it('When the country switches / Then the postal field follows that country s rule', async () => {

@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const api = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn() }));
 const neura = vi.hoisted(() => ({ post: vi.fn() }));
-const crm = vi.hoisted(() => ({ getCustomerSegments: vi.fn() }));
-vi.mock('./crmService', () => ({ crmApiClient: api, crmNeuraClient: neura, crmService: crm }));
+const mkt = vi.hoisted(() => ({ get: vi.fn() }));
+vi.mock('./crmService', () => ({ crmApiClient: api, crmNeuraClient: neura, crmMarketingClient: mkt }));
 
 import {
   icpService, toIcpBody, validateIcp, icpToForm, applyDraft, emptyIcpForm, emptyCriterion, ICP_CATEGORIES,
@@ -50,10 +50,26 @@ describe('Given the ICP service', () => {
     });
   });
 
-  describe('When loading segments', () => {
-    it('Then the existing customer-segments client is reused', async () => {
-      crm.getCustomerSegments.mockResolvedValueOnce([{ id: 's', name: 'S' }]);
-      expect(await icpService.segments()).toEqual([{ id: 's', name: 'S' }]);
+  describe('When loading Marketing audiences', () => {
+    it('Then marketing-be GET /v1/marketing/audiences is called and a bare array is returned', async () => {
+      mkt.get.mockResolvedValueOnce([{ id: 'a', name: 'A' }]);
+      expect(await icpService.audiences()).toEqual([{ id: 'a', name: 'A' }]);
+      expect(mkt.get).toHaveBeenLastCalledWith('/v1/marketing/audiences');
+    });
+    it('Then a { data: [] } envelope is unwrapped', async () => {
+      mkt.get.mockResolvedValueOnce({ data: [{ id: 'd', name: 'D' }] });
+      expect(await icpService.audiences()).toEqual([{ id: 'd', name: 'D' }]);
+    });
+    it('Then an { items: [] } envelope is unwrapped', async () => {
+      mkt.get.mockResolvedValueOnce({ items: [{ id: 'i', name: 'I' }] });
+      expect(await icpService.audiences()).toEqual([{ id: 'i', name: 'I' }]);
+    });
+  });
+  describe('When a legacy auto_segment_id is on the form', () => {
+    it('Then toIcpBody never sends auto_segment_id', () => {
+      const body = toIcpBody({ ...valid(), auto_audience_id: 'a', auto_segment_min_score: 80, auto_segment_id: 'old' } as any);
+      expect(body).not.toHaveProperty('auto_segment_id');
+      expect(body.auto_audience_id).toBe('a');
     });
   });
 });
@@ -61,13 +77,13 @@ describe('Given the ICP service', () => {
 describe('Given toIcpBody', () => {
   it('When no segment is chosen Then auto fields are null', () => {
     const b = toIcpBody(valid());
-    expect(b).toMatchObject({ name: 'Ent', auto_segment_id: null, auto_segment_min_score: null });
+    expect(b).toMatchObject({ name: 'Ent', auto_audience_id: null, auto_segment_min_score: null });
     expect(b.criteria[0]).toEqual({ category: 'role', label: 'CTO', weight: 50, match_config: { keywords: ['cto'] }, is_positive: true });
   });
   it('When a segment is chosen Then score defaults to 70 and is clamped to 1..100', () => {
-    expect(toIcpBody({ ...valid(), auto_segment_id: 's' , auto_segment_min_score: null }).auto_segment_min_score).toBe(70);
-    expect(toIcpBody({ ...valid(), auto_segment_id: 's', auto_segment_min_score: 500 }).auto_segment_min_score).toBe(100);
-    expect(toIcpBody({ ...valid(), auto_segment_id: 's', auto_segment_min_score: 0 }).auto_segment_min_score).toBe(1);
+    expect(toIcpBody({ ...valid(), auto_audience_id: 's' , auto_segment_min_score: null }).auto_segment_min_score).toBe(70);
+    expect(toIcpBody({ ...valid(), auto_audience_id: 's', auto_segment_min_score: 500 }).auto_segment_min_score).toBe(100);
+    expect(toIcpBody({ ...valid(), auto_audience_id: 's', auto_segment_min_score: 0 }).auto_segment_min_score).toBe(1);
   });
 });
 
@@ -88,10 +104,10 @@ describe('Given validateIcp', () => {
 describe('Given icpToForm and applyDraft', () => {
   it('When a saved ICP is mapped Then fields and criteria are prefilled', () => {
     const f = icpToForm({
-      id: 'i', name: 'N', is_default: true, auto_segment_id: 's', auto_segment_min_score: 90,
+      id: 'i', name: 'N', is_default: true, auto_audience_id: 's', auto_segment_min_score: 90,
       icp_criteria: [{ id: 'c', category: 'location', label: 'UAE', weight: 20, match_config: { keywords: ['dubai'] }, is_positive: false }],
     });
-    expect(f).toMatchObject({ name: 'N', is_default: true, auto_segment_id: 's', auto_segment_min_score: 90 });
+    expect(f).toMatchObject({ name: 'N', is_default: true, auto_audience_id: 's', auto_segment_min_score: 90 });
     expect(f.criteria[0]).toMatchObject({ category: 'location', is_positive: false });
   });
   it('When a draft has unknown categories and wild weights Then they are normalised', () => {
@@ -116,19 +132,19 @@ describe('Given service request payloads and error propagation', () => {
     it('Then the body is the mapped form body and the response is returned', async () => {
       api.post.mockResolvedValueOnce({ id: 'new' });
       api.put.mockResolvedValueOnce({ id: 'i1' });
-      const v = { ...valid(), is_default: true, auto_segment_id: 's1', auto_segment_min_score: 85 };
+      const v = { ...valid(), is_default: true, auto_audience_id: 's1', auto_segment_min_score: 85 };
       expect(await icpService.create(v)).toEqual({ id: 'new' });
       expect(api.post).toHaveBeenCalledWith('/linkedin-sync/icps', toIcpBody(v));
       expect(await icpService.update('i1', v)).toEqual({ id: 'i1' });
       expect(api.put).toHaveBeenCalledWith('/linkedin-sync/icps/i1', toIcpBody(v));
-      expect(toIcpBody(v)).toMatchObject({ is_default: true, auto_segment_id: 's1', auto_segment_min_score: 85 });
+      expect(toIcpBody(v)).toMatchObject({ is_default: true, auto_audience_id: 's1', auto_segment_min_score: 85 });
     });
   });
 
   describe('When the auto segment is cleared on update', () => {
     it('Then both auto fields are sent as null even if a stale score remains', async () => {
-      await icpService.update('i1', { ...valid(), auto_segment_id: null, auto_segment_min_score: 90 });
-      expect(api.put.mock.calls[0][1]).toMatchObject({ auto_segment_id: null, auto_segment_min_score: null });
+      await icpService.update('i1', { ...valid(), auto_audience_id: null, auto_segment_min_score: 90 });
+      expect(api.put.mock.calls[0][1]).toMatchObject({ auto_audience_id: null, auto_segment_min_score: null });
     });
   });
 
@@ -152,17 +168,17 @@ describe('Given service request payloads and error propagation', () => {
       await expect(icpService.setDefault('i1')).rejects.toBe(err);
       api.delete.mockRejectedValueOnce(err);
       await expect(icpService.archive('i1')).rejects.toBe(err);
-      crm.getCustomerSegments.mockRejectedValueOnce(err);
-      await expect(icpService.segments()).rejects.toBe(err);
+      mkt.get.mockRejectedValueOnce(err);
+      await expect(icpService.audiences()).rejects.toBe(err);
       neura.post.mockRejectedValueOnce(err);
       await expect(icpService.draft('x')).rejects.toBe(err);
     });
   });
 
-  describe('When segments returns a non-array', () => {
+  describe('When audiences returns a non-array', () => {
     it('Then it reads as empty', async () => {
-      crm.getCustomerSegments.mockResolvedValueOnce(undefined);
-      expect(await icpService.segments()).toEqual([]);
+      mkt.get.mockResolvedValueOnce(undefined);
+      expect(await icpService.audiences()).toEqual([]);
     });
   });
 
@@ -185,9 +201,9 @@ describe('Given toIcpBody optional text fields', () => {
     expect(b).toMatchObject({ description: 'd', target_persona: 'p' });
   });
   it('When the min score is fractional or in range Then it is rounded / kept', () => {
-    expect(toIcpBody({ ...valid(), auto_segment_id: 's', auto_segment_min_score: 55.6 }).auto_segment_min_score).toBe(56);
-    expect(toIcpBody({ ...valid(), auto_segment_id: 's', auto_segment_min_score: 1 }).auto_segment_min_score).toBe(1);
-    expect(toIcpBody({ ...valid(), auto_segment_id: 's', auto_segment_min_score: 100 }).auto_segment_min_score).toBe(100);
+    expect(toIcpBody({ ...valid(), auto_audience_id: 's', auto_segment_min_score: 55.6 }).auto_segment_min_score).toBe(56);
+    expect(toIcpBody({ ...valid(), auto_audience_id: 's', auto_segment_min_score: 1 }).auto_segment_min_score).toBe(1);
+    expect(toIcpBody({ ...valid(), auto_audience_id: 's', auto_segment_min_score: 100 }).auto_segment_min_score).toBe(100);
   });
   it('When is_positive is false Then it is kept in the body', () => {
     const v = valid(); v.criteria[0].is_positive = false;
@@ -200,7 +216,7 @@ describe('Given icpToForm defaults and normalisation', () => {
     const f = icpToForm({ id: 'i', name: undefined as any, is_default: undefined as any });
     expect(f).toEqual({
       name: '', description: '', target_persona: '', is_default: false, criteria: [],
-      auto_segment_id: null, auto_segment_min_score: 70,
+      auto_audience_id: null, auto_segment_min_score: 70,
     });
   });
   it('When null description and persona Then empty strings', () => {
@@ -212,11 +228,11 @@ describe('Given icpToForm defaults and normalisation', () => {
       .toMatchObject({ description: 'd', target_persona: 'p' });
   });
   it('When a segment is set without a score Then the score defaults to 70', () => {
-    expect(icpToForm({ id: 'i', name: 'N', is_default: false, auto_segment_id: 's', auto_segment_min_score: null }).auto_segment_min_score).toBe(70);
+    expect(icpToForm({ id: 'i', name: 'N', is_default: false, auto_audience_id: 's', auto_segment_min_score: null }).auto_segment_min_score).toBe(70);
   });
   it('When no segment but a stale score Then the score is kept; null score defaults', () => {
-    expect(icpToForm({ id: 'i', name: 'N', is_default: false, auto_segment_id: null, auto_segment_min_score: 40 }).auto_segment_min_score).toBe(40);
-    expect(icpToForm({ id: 'i', name: 'N', is_default: false, auto_segment_id: null, auto_segment_min_score: null }).auto_segment_min_score).toBe(70);
+    expect(icpToForm({ id: 'i', name: 'N', is_default: false, auto_audience_id: null, auto_segment_min_score: 40 }).auto_segment_min_score).toBe(40);
+    expect(icpToForm({ id: 'i', name: 'N', is_default: false, auto_audience_id: null, auto_segment_min_score: null }).auto_segment_min_score).toBe(70);
   });
   it('When a criterion is sparse Then it is normalised (no id, role, empty label, weight 50, no keywords, positive)', () => {
     const f = icpToForm({ id: 'i', name: 'N', is_default: false, icp_criteria: [{} as any] });
@@ -260,7 +276,7 @@ describe('Given the factory helpers', () => {
     expect(emptyIcpForm()).toEqual({
       name: '', description: '', target_persona: '', is_default: false,
       criteria: [{ category: 'role', label: '', weight: 50, match_config: { keywords: [] }, is_positive: true }],
-      auto_segment_id: null, auto_segment_min_score: DEFAULT_MIN_SCORE,
+      auto_audience_id: null, auto_segment_min_score: DEFAULT_MIN_SCORE,
     });
   });
   it('Then categoryLabel maps known values and falls back to the raw value', () => {

@@ -1,3 +1,4 @@
+import { IconButton } from '@so360/design-system';
 /**
  * NoteEditor.tsx — rich-text editor for CRM notes (Tiptap-based).
  *
@@ -35,18 +36,16 @@ function ToolbarButton({
   children: ReactNode;
 }) {
   return (
-    <button
+    <IconButton
       type="button"
-      aria-label={label}
+      label={label}
       aria-pressed={active}
+      selected={active}
+      size="sm"
       onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
-      className={`p-1.5 rounded transition-colors ${
-        active ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'
-      }`}
-    >
-      {children}
-    </button>
+      icon={children}
+    />
   );
 }
 
@@ -70,7 +69,7 @@ export default function NoteEditor({ value, onChange, placeholder, autoFocus }: 
         role: 'textbox',
         'aria-multiline': 'true',
         class:
-          'min-h-[6rem] text-sm text-slate-50 focus:outline-none [&_p]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-blue-400 [&_a]:underline [&_code]:bg-slate-800 [&_code]:px-1 [&_code]:rounded [&_pre]:bg-slate-800 [&_pre]:p-2 [&_pre]:rounded [&_pre]:overflow-x-auto',
+          'min-h-[6rem] text-sm text-fg focus:outline-none [&_p]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-primary [&_a]:underline [&_code]:bg-surface-raised [&_code]:px-1 [&_code]:rounded [&_pre]:bg-surface-raised [&_pre]:p-2 [&_pre]:rounded [&_pre]:overflow-x-auto',
       },
     },
   });
@@ -90,7 +89,7 @@ export default function NoteEditor({ value, onChange, placeholder, autoFocus }: 
 
   return (
     <div data-testid="note-editor">
-      <div className="flex items-center gap-1 pb-2 mb-2 border-b border-slate-800">
+      <div className="flex items-center gap-1 pb-2 mb-2 border-b border-line">
         <ToolbarButton label="Bold" active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()}>
           <Bold size={14} />
         </ToolbarButton>

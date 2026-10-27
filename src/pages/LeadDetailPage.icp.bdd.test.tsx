@@ -234,8 +234,8 @@ describe('Feature: ICP fit card on LeadDetailPage', () => {
     render(<LeadDetailPage />);
     const icp = await screen.findByTestId('icp-fit-card');
     const prev = icp.previousElementSibling;
-    expect(prev?.tagName).toBe('SECTION');
     expect(prev?.getAttribute('data-testid')).not.toBe('icp-fit-card');
+    expect(prev?.textContent).toMatch(/lead potential/i);
   });
 
   it('Given the same lead When opened on the customers route Then the ICP fit card is hidden', async () => {

@@ -6,15 +6,21 @@ import {
   type Overview,
 } from '../../services/targetPlanService';
 import {
-  ElapsedBar,
+  AsOfBanner,
   EmptyState,
-  ProgressBar,
-  StatusChip,
+  ErrorState,
+  UNLINKED_PROFILE_MESSAGE,
+  isUnlinkedPayload,
+  LoadingState,
+  PeriodPicker,
+  STATUS_TONE,
+  attainmentProps,
   formatPct,
   formatValue,
-  PeriodPicker,
-  AsOfBanner,
+  isUnlinkedProfileError,
+  statusText,
 } from './targetUi';
+import { DashboardPageTemplate, Badge, Progress, Card, Grid, GridItem } from '@so360/design-system';
 
 /**
  * Per-metric detail view.
@@ -49,7 +55,9 @@ export default function MyTargetsPage() {
     setError(null);
     targetPlanService
       .myOverview(asOf || undefined)
-      .then(setData)
+      .then((d) =>
+        isUnlinkedPayload(d) ? setError(UNLINKED_PROFILE_MESSAGE) : setData(d),
+      )
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [asOf]);
@@ -72,38 +80,38 @@ export default function MyTargetsPage() {
   // Rendered by EVERY branch, including the loading and empty states. If the
   // picker vanished when a period came back empty, the user would be stuck on
   // that period with no way to choose another.
-  const header = (
+  const header = isUnlinkedProfileError(error) ? undefined : (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <h1 className="text-lg font-semibold text-slate-100">My Targets</h1>
-        <PeriodPicker value={asOf} onChange={setAsOf} />
-      </div>
+      <PeriodPicker value={asOf} onChange={setAsOf} />
       <AsOfBanner asOf={asOf} />
     </div>
   );
 
   if (loading) {
     return (
-      <div className="p-6 space-y-4">
-        {header}
-        <div className="text-sm text-slate-400">Loading targets…</div>
+      <DashboardPageTemplate title="My Targets" filters={header} trail={[{ label: 'Targets', to: '/crm/targets' }]}>
+      <div className="space-y-4">
+        <LoadingState />
       </div>
+      </DashboardPageTemplate>
     );
   }
   if (error) {
     return (
-      <div className="p-6 space-y-4">
-        {header}
-        <div className="text-sm text-rose-300">{error}</div>
+      <DashboardPageTemplate title="My Targets" filters={header} trail={[{ label: 'Targets', to: '/crm/targets' }]}>
+      <div className="space-y-4">
+        <ErrorState error={error} onRetry={load} />
       </div>
+      </DashboardPageTemplate>
     );
   }
   if (!grouped.length) {
     return (
-      <div className="p-6 space-y-4">
-        {header}
-        <EmptyState message="No targets assigned for this period." />
+      <DashboardPageTemplate title="My Targets" filters={header} trail={[{ label: 'Targets', to: '/crm/targets' }]}>
+      <div className="space-y-4">
+        <EmptyState title="No targets for this period" description="Nothing is assigned to you in the selected period. Pick another date or ask an admin." />
       </div>
+      </DashboardPageTemplate>
     );
   }
 
@@ -111,10 +119,10 @@ export default function MyTargetsPage() {
   const anyMetric = data?.metrics?.[0];
 
   return (
-    <div className="p-6 space-y-5">
-      <div>
-        {header}
-        <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
+    <DashboardPageTemplate title="My Targets" filters={header} trail={[{ label: 'Targets', to: '/crm/targets' }]}>
+    <Grid>
+      <GridItem span={12}>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-fg-subtle">
           <span>{plan?.name}</span>
           {anyMetric && (
             <span>
@@ -124,31 +132,27 @@ export default function MyTargetsPage() {
           {anyMetric && <span>{anyMetric.days_remaining} days left</span>}
         </div>
         {anyMetric && (
-          <div className="mt-3 max-w-md">
-            <ElapsedBar fraction={anyMetric.elapsed_fraction} />
+          <div className="mt-3">
+            <Progress value={Math.min(Math.max(anyMetric.elapsed_fraction, 0), 1) * 100} size="sm" label="Period elapsed" showValue />
           </div>
         )}
-      </div>
+      </GridItem>
 
-      <div className="flex flex-wrap gap-4">
-        {grouped.map(({ rollup, slices }) => (
-          <MetricCard
-            key={rollup.target_line_id}
-            metric={rollup}
-            slices={slices}
-            currency={currency}
-          />
-        ))}
-      </div>
+      {grouped.map(({ rollup, slices }) => (
+        <GridItem key={rollup.target_line_id} span={4}>
+          <MetricCard metric={rollup} slices={slices} currency={currency} />
+        </GridItem>
+      ))}
 
-      <div className="flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-slate-500">
-        <span>● On Track</span>
-        <span>◐ At Risk</span>
-        <span>○ Behind</span>
-        <span>✓ Achieved</span>
-        <span>★ Exceeded</span>
-      </div>
-    </div>
+      <GridItem span={12}>
+        <div className="flex flex-wrap gap-nb-2">
+          {(['on_track', 'at_risk', 'behind', 'achieved', 'exceeded'] as const).map((st) => (
+            <Badge key={st} tone={STATUS_TONE[st]} dot>{statusText(st)}</Badge>
+          ))}
+        </div>
+      </GridItem>
+    </Grid>
+    </DashboardPageTemplate>
   );
 }
 
@@ -162,36 +166,29 @@ function MetricCard({
   currency?: string;
 }) {
   return (
-    <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4 grow basis-80 max-w-md">
-      <div className="text-xs uppercase tracking-wide text-slate-400">
-        {metric.metric_name}
-      </div>
+    <Card title={metric.metric_name}>
 
       <div className="mt-2 flex items-baseline gap-2">
-        <span className="text-2xl font-semibold text-slate-100">
+        <span className="text-2xl font-semibold text-fg">
           {formatValue(metric.actual, metric.unit, currency)}
         </span>
-        <span className="text-sm text-slate-500">
+        <span className="text-sm text-fg-muted">
           of {formatValue(metric.target, metric.unit, currency)}
         </span>
       </div>
 
-      <ProgressBar
-        actual={metric.actual}
-        target={metric.target}
-        status={metric.status}
-      />
+      <Progress {...attainmentProps(metric.actual, metric.target, metric.status)} />
 
       <div className="mt-2 flex items-center justify-between">
-        <StatusChip status={metric.status} label={metric.status_label} />
-        <span className="text-xs text-slate-400">
+        <Badge tone={STATUS_TONE[metric.status]} dot>{statusText(metric.status, metric.status_label)}</Badge>
+        <span className="text-xs text-fg-subtle">
           {metric.remaining > 0
             ? `${formatValue(metric.remaining, metric.unit, currency)} to go`
             : 'target met'}
         </span>
       </div>
 
-      <div className="mt-1 text-[11px] text-slate-500">
+      <div className="mt-1 text-xs text-fg-muted">
         {formatPct(metric.attainment)} achieved
         {metric.projection.projectable &&
           metric.projection.projectedAttainment !== null && (
@@ -201,12 +198,12 @@ function MetricCard({
       </div>
 
       {slices.length > 0 && (
-        <div className="mt-3 border-t border-slate-800 pt-3 space-y-2">
+        <div className="mt-3 border-t border-line pt-3 space-y-2">
           {slices.map((s) => (
             <div key={s.target_line_id}>
               <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-300">{s.dimension_value}</span>
-                <span className="text-slate-400">
+                <span className="text-fg-subtle">{s.dimension_value}</span>
+                <span className="text-fg-subtle">
                   {s.target > 0
                     ? `${formatValue(s.actual)} / ${formatValue(s.target)}`
                     : `${formatValue(s.actual)} · tracked`}
@@ -214,18 +211,13 @@ function MetricCard({
               </div>
               {s.target > 0 && (
                 <div className="mt-1">
-                  <ProgressBar
-                    actual={s.actual}
-                    target={s.target}
-                    status={s.status}
-                    compact
-                  />
+                  <Progress {...attainmentProps(s.actual, s.target, s.status)} size="sm" />
                 </div>
               )}
             </div>
           ))}
         </div>
       )}
-    </div>
+    </Card>
   );
 }

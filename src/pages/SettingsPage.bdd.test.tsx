@@ -63,7 +63,7 @@ vi.mock('@so360/design-system', async (importOriginal) => {
 
 vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
-  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
+  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: (k: string) => k !== 'submodule:crm:dl_custom_fields', isFeatureHidden: () => false })),
 }));
 
 import SettingsPage from './SettingsPage';
@@ -122,7 +122,7 @@ describe('SettingsPage BDD', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     const shell = await import('@so360/shell-context');
-    vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
+    vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: (k: string) => k !== 'submodule:crm:dl_custom_fields', isFeatureHidden: () => false }));
     mockGetSettings.mockResolvedValue(mockSettings);
     mockUpdateSettings.mockResolvedValue(mockSettings);
     mockUpdateDealNaming.mockResolvedValue({ enabled: true, template: '{lead_name}', prefix: '', suffix: '', separator: ' - ', sequence: { enabled: false, reset_mode: 'none', padding: 4, start_at: 1 } });
@@ -154,7 +154,7 @@ describe('SettingsPage BDD', () => {
     it('When rendered / Then Pipeline tab is active by default', async () => {
       render(<SettingsPage />);
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /pipeline/i })).toBeInTheDocument();
+        expect(screen.getByRole('tab', { name: /pipeline/i })).toBeInTheDocument();
       });
     });
   });
@@ -165,7 +165,7 @@ describe('SettingsPage BDD', () => {
       render(<SettingsPage />);
       await waitFor(() => expect(screen.getByText('CRM Settings')).toBeInTheDocument());
 
-      await user.click(screen.getByRole('button', { name: /^pipeline$/i }));
+      await user.click(screen.getByRole('tab', { name: /^pipeline$/i }));
       await waitFor(() => {
         // Pipeline stage names visible in default tab
         expect(screen.getByDisplayValue('New')).toBeInTheDocument();
@@ -177,7 +177,7 @@ describe('SettingsPage BDD', () => {
       render(<SettingsPage />);
       await waitFor(() => expect(screen.getByText('CRM Settings')).toBeInTheDocument());
 
-      await user.click(screen.getByRole('button', { name: /lead stages/i }));
+      await user.click(screen.getByRole('tab', { name: /lead stages/i }));
       await waitFor(() => {
         // Lead stages are read-only (owned by the Flow module) — rendered as text, not inputs
         expect(screen.getByText('New Lead')).toBeInTheDocument();
@@ -191,10 +191,44 @@ describe('SettingsPage BDD', () => {
       render(<SettingsPage />);
       await waitFor(() => expect(screen.getByText('CRM Settings')).toBeInTheDocument());
 
-      await user.click(screen.getByRole('button', { name: /custom fields/i }));
+      await user.click(screen.getByRole('tab', { name: /custom fields/i }));
       await waitFor(() => {
         expect(screen.getByDisplayValue('Company Size')).toBeInTheDocument();
       });
+    });
+
+    it('Given dl_custom_fields flag on / When Custom Fields tab clicked / Then deprecation banner replaces the editors', async () => {
+      const shell = await import('@so360/shell-context');
+      vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
+      const user = userEvent.setup();
+      render(<SettingsPage />);
+      await waitFor(() => expect(screen.getByText('CRM Settings')).toBeInTheDocument());
+      await user.click(screen.getByRole('tab', { name: /custom fields/i }));
+      await waitFor(() => expect(screen.getByTestId('crm-custom-fields-deprecated')).toBeInTheDocument());
+      expect(screen.queryByDisplayValue('Company Size')).toBeNull();
+    });
+
+    it('Given dl_custom_fields flag on and onOpenDataSettings / When the banner action is clicked / Then it navigates in-shell via the callback', async () => {
+      const shell = await import('@so360/shell-context');
+      vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
+      const onOpen = vi.fn();
+      const user = userEvent.setup();
+      render(<SettingsPage onOpenDataSettings={onOpen} />);
+      await waitFor(() => expect(screen.getByText('CRM Settings')).toBeInTheDocument());
+      await user.click(screen.getByRole('tab', { name: /custom fields/i }));
+      await user.click(await screen.findByRole('button', { name: /open data settings/i }));
+      expect(onOpen).toHaveBeenCalledTimes(1);
+    });
+
+    it('Given dl_custom_fields flag on and no onOpenDataSettings / Then the banner has no action button', async () => {
+      const shell = await import('@so360/shell-context');
+      vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
+      const user = userEvent.setup();
+      render(<SettingsPage />);
+      await waitFor(() => expect(screen.getByText('CRM Settings')).toBeInTheDocument());
+      await user.click(screen.getByRole('tab', { name: /custom fields/i }));
+      await waitFor(() => expect(screen.getByTestId('crm-custom-fields-deprecated')).toBeInTheDocument());
+      expect(screen.queryByRole('button', { name: /open data settings/i })).toBeNull();
     });
 
     it('When Lead Sources tab clicked / Then shows sources list', async () => {
@@ -202,7 +236,7 @@ describe('SettingsPage BDD', () => {
       render(<SettingsPage />);
       await waitFor(() => expect(screen.getByText('CRM Settings')).toBeInTheDocument());
 
-      await user.click(screen.getByRole('button', { name: /lead sources/i }));
+      await user.click(screen.getByRole('tab', { name: /lead sources/i }));
       await waitFor(() => {
         // Sources tab now shows source_type_options as text labels (not input fields)
         expect(screen.getByText('Website')).toBeInTheDocument();
@@ -215,7 +249,7 @@ describe('SettingsPage BDD', () => {
       render(<SettingsPage />);
       await waitFor(() => expect(screen.getByText('CRM Settings')).toBeInTheDocument());
 
-      await user.click(screen.getByRole('button', { name: /lead scoring/i }));
+      await user.click(screen.getByRole('tab', { name: /lead scoring/i }));
       await waitFor(() => {
         // Scoring tab content is rendered
         const body = document.body.textContent || '';
@@ -288,7 +322,7 @@ describe('SettingsPage BDD', () => {
     it('When a stage is removed / Then it stays local (no save call) but Save Configuration becomes enabled', async () => {
       const user = userEvent.setup();
       render(<SettingsPage />);
-      await waitFor(() => expect(screen.getByDisplayValue('Won')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getAllByDisplayValue('Won')[0]).toBeInTheDocument());
 
       const allButtons = screen.getAllByRole('button');
       const trashBtn = allButtons.find(btn => btn.title === 'Remove Stage');
@@ -383,7 +417,7 @@ describe('SettingsPage BDD', () => {
       expect(screen.getByText(/unsaved changes/i)).toBeInTheDocument();
     });
 
-    it('When saving / Then shows Saving... text on button', async () => {
+    it('When saving / Then shows Saving… text on button', async () => {
       let resolveUpdate: (v: any) => void;
       mockUpdateSettings.mockReturnValue(new Promise(resolve => { resolveUpdate = resolve; }));
 
@@ -393,7 +427,7 @@ describe('SettingsPage BDD', () => {
 
       await dirtyStageName(user);
       await user.click(screen.getByRole('button', { name: /save configuration/i }));
-      expect(screen.getByText(/saving\.\.\./i)).toBeInTheDocument();
+      expect(screen.getByText(/saving…/i)).toBeInTheDocument();
 
       // Resolve to avoid hanging test
       resolveUpdate!(mockSettings);
@@ -418,7 +452,7 @@ describe('SettingsPage BDD', () => {
       render(<SettingsPage />);
       await waitFor(() => expect(screen.getByRole('button', { name: /save configuration/i })).toBeInTheDocument());
 
-      await user.click(screen.getByRole('button', { name: /deal naming/i }));
+      await user.click(screen.getByRole('tab', { name: /deal naming/i }));
       // Edit the template so `settings` actually diverges — the tab's own
       // mount-time onChange call alone doesn't dirty anything.
       await waitFor(() => expect(screen.getByDisplayValue('{lead_name} - {YYYYMMDD}')).toBeInTheDocument());
@@ -457,7 +491,7 @@ describe('SettingsPage BDD', () => {
       render(<SettingsPage />);
       await waitFor(() => expect(screen.getByRole('button', { name: /save configuration/i })).toBeInTheDocument());
 
-      await user.click(screen.getByRole('button', { name: /deal naming/i }));
+      await user.click(screen.getByRole('tab', { name: /deal naming/i }));
       await waitFor(() => expect(screen.getByDisplayValue('{lead_name} - {YYYYMMDD}')).toBeInTheDocument());
       fireEvent.change(screen.getByDisplayValue('{lead_name} - {YYYYMMDD}'), { target: { value: 'DL-{seq}' } });
       await waitFor(() => expect(screen.getByRole('button', { name: /save configuration/i })).toBeEnabled());
@@ -475,7 +509,7 @@ describe('SettingsPage BDD', () => {
       render(<SettingsPage />);
       await waitFor(() => expect(screen.getByRole('button', { name: /save configuration/i })).toBeInTheDocument());
 
-      await user.click(screen.getByRole('button', { name: /deal naming/i }));
+      await user.click(screen.getByRole('tab', { name: /deal naming/i }));
       await waitFor(() => expect(screen.getByText(/deal naming convention/i)).toBeInTheDocument());
       // Exactly one Save Configuration control on the page — the global one.
       expect(screen.getAllByRole('button', { name: /save configuration/i })).toHaveLength(1);
@@ -488,7 +522,7 @@ describe('SettingsPage BDD', () => {
       render(<SettingsPage />);
       await waitFor(() => expect(screen.getByText('CRM Settings')).toBeInTheDocument());
 
-      await user.click(screen.getByRole('button', { name: /lead sources/i }));
+      await user.click(screen.getByRole('tab', { name: /lead sources/i }));
       await waitFor(() => {
         // Sources tab now shows source_type_options as text labels (not input fields)
         expect(screen.getByText('Website')).toBeInTheDocument();
@@ -506,7 +540,7 @@ describe('SettingsPage BDD', () => {
       render(<SettingsPage />);
       await waitFor(() => expect(screen.getByText('CRM Settings')).toBeInTheDocument());
       // canWriteSettings is false before flags resolve — save button must not flash
-      expect(screen.queryByText('Save Configuration')).not.toBeInTheDocument();
+      expect(screen.queryByText('Save configuration')).not.toBeInTheDocument();
     });
 
     it('When effectiveFlagsLoaded is true and isFeatureEnabled returns true / Then Save Configuration button is present', async () => {
@@ -517,7 +551,7 @@ describe('SettingsPage BDD', () => {
       } as any);
       render(<SettingsPage />);
       await waitFor(() => expect(screen.getByText('CRM Settings')).toBeInTheDocument());
-      expect(screen.getByText('Save Configuration')).toBeInTheDocument();
+      expect(screen.getByText('Save configuration')).toBeInTheDocument();
     });
   });
 
@@ -527,14 +561,14 @@ describe('SettingsPage BDD', () => {
     const renderScoring = async () => {
       render(<SettingsPage />);
       await waitFor(() => expect(screen.getByText('Lead Scoring Rules')).toBeFalsy().catch(() => {}));
-      const scoringBtn = await screen.findByRole('button', { name: /scoring/i });
+      const scoringBtn = await screen.findByRole('tab', { name: /scoring/i });
       await userEvent.click(scoringBtn);
     };
 
     it('When scoring tab is opened / Then shows Lead Scoring Rules heading', async () => {
       render(<SettingsPage />);
       await waitFor(() => screen.getByText('CRM Settings'));
-      const tabs = screen.getAllByRole('button');
+      const tabs = screen.getAllByRole('tab');
       const scoringTab = tabs.find(b => b.textContent?.match(/scoring/i));
       if (scoringTab) await userEvent.click(scoringTab);
       await waitFor(() => {
@@ -545,7 +579,7 @@ describe('SettingsPage BDD', () => {
     it('When scoring tab is opened / Then shows existing rule', async () => {
       render(<SettingsPage />);
       await waitFor(() => screen.getByText('CRM Settings'));
-      const tabs = screen.getAllByRole('button');
+      const tabs = screen.getAllByRole('tab');
       const scoringTab = tabs.find(b => b.textContent?.match(/scoring/i));
       if (scoringTab) await userEvent.click(scoringTab);
       await waitFor(() => {
@@ -556,7 +590,7 @@ describe('SettingsPage BDD', () => {
     it('When scoring tab is opened / Then shows Score Bands section', async () => {
       render(<SettingsPage />);
       await waitFor(() => screen.getByText('CRM Settings'));
-      const tabs = screen.getAllByRole('button');
+      const tabs = screen.getAllByRole('tab');
       const scoringTab = tabs.find(b => b.textContent?.match(/scoring/i));
       if (scoringTab) await userEvent.click(scoringTab);
       await waitFor(() => {
@@ -567,7 +601,7 @@ describe('SettingsPage BDD', () => {
     it('When ADD RULE is clicked / Then shows rule creation form', async () => {
       render(<SettingsPage />);
       await waitFor(() => screen.getByText('CRM Settings'));
-      const tabs = screen.getAllByRole('button');
+      const tabs = screen.getAllByRole('tab');
       const scoringTab = tabs.find(b => b.textContent?.match(/scoring/i));
       if (scoringTab) await userEvent.click(scoringTab);
       await waitFor(() => screen.getByText('Lead Scoring Rules'));
@@ -582,7 +616,7 @@ describe('SettingsPage BDD', () => {
       const { settingsApi: sApi } = await import('../services/crmService');
       render(<SettingsPage />);
       await waitFor(() => screen.getByText('CRM Settings'));
-      const tabs = screen.getAllByRole('button');
+      const tabs = screen.getAllByRole('tab');
       const scoringTab = tabs.find(b => b.textContent?.match(/scoring/i));
       if (scoringTab) await userEvent.click(scoringTab);
       await waitFor(() => screen.getByText('Referral Source'));
@@ -594,7 +628,7 @@ describe('SettingsPage BDD', () => {
     it('When ADD RULE is clicked with Source rule type / Then the redundant Value input is hidden (Source dropdown is the value)', async () => {
       render(<SettingsPage />);
       await waitFor(() => screen.getByText('CRM Settings'));
-      const tabs = screen.getAllByRole('button');
+      const tabs = screen.getAllByRole('tab');
       const scoringTab = tabs.find(b => b.textContent?.match(/scoring/i));
       if (scoringTab) await userEvent.click(scoringTab);
       await waitFor(() => screen.getByText('Lead Scoring Rules'));
@@ -608,7 +642,7 @@ describe('SettingsPage BDD', () => {
       const { settingsApi: sApi } = await import('../services/crmService');
       render(<SettingsPage />);
       await waitFor(() => screen.getByText('CRM Settings'));
-      const tabs = screen.getAllByRole('button');
+      const tabs = screen.getAllByRole('tab');
       const scoringTab = tabs.find(b => b.textContent?.match(/scoring/i));
       if (scoringTab) await userEvent.click(scoringTab);
       await waitFor(() => screen.getByText('Lead Scoring Rules'));
@@ -626,7 +660,7 @@ describe('SettingsPage BDD', () => {
       (sApi.scoringRules.recalculate as any).mockRejectedValueOnce(new Error('boom'));
       render(<SettingsPage />);
       await waitFor(() => screen.getByText('CRM Settings'));
-      const tabs = screen.getAllByRole('button');
+      const tabs = screen.getAllByRole('tab');
       const scoringTab = tabs.find(b => b.textContent?.match(/scoring/i));
       if (scoringTab) await userEvent.click(scoringTab);
       await waitFor(() => screen.getByText('Lead Scoring Rules'));

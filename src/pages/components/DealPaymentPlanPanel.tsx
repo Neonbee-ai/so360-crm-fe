@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Edit2, Loader2, Plus, Receipt, Save, Trash2, X } from 'lucide-react';
-import { toast } from '@so360/design-system';
+import { toast, Button, IconButton, TextField, NumberInput, DatePicker, Select, DataTable, Grid, GridItem } from '@so360/design-system';
+import type { DataTableColumn } from '@so360/design-system';
 import {
     paymentScheduleService,
     resolveDealTemplates,
@@ -23,9 +24,6 @@ import {
 import { useCRMFormatters } from '../../utils/formatters';
 import { describeApiError } from '../../utils/apiErrorMessage';
 
-const FIELD_CLS = 'w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl px-3 py-2 outline-none focus:border-blue-500 transition-all font-bold text-xs';
-const BTN_PRIMARY = 'flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest disabled:opacity-60';
-const BTN_GHOST = 'flex items-center gap-1 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-200';
 
 export const BILLING_MODE_LABELS: Record<BillingMode, string> = {
     full_invoice: 'One invoice for the full price',
@@ -34,11 +32,11 @@ export const BILLING_MODE_LABELS: Record<BillingMode, string> = {
 };
 
 const STATUS_CHIP: Record<ScheduleLineStatus, string> = {
-    due: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
-    invoiced: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
-    paid: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
-    bounced: 'bg-rose-500/10 text-rose-400 border-rose-500/30',
-    cancelled: 'bg-slate-500/10 text-slate-400 border-slate-500/30',
+    due: 'bg-warning/10 text-warning border-warning/30',
+    invoiced: 'bg-info/10 text-info border-info/30',
+    paid: 'bg-success/10 text-success border-success/30',
+    bounced: 'bg-danger/10 text-danger border-danger/30',
+    cancelled: 'bg-fg-muted/10 text-fg-subtle border-line',
 };
 
 const MODE_VALUES: readonly string[] = PAYMENT_MODES.map((m) => m.value);
@@ -146,7 +144,7 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
 
     if (loading) {
         return (
-            <div className="p-8 flex items-center gap-2 text-slate-400 text-sm" role="status">
+            <div className="p-8 flex items-center gap-2 text-fg-subtle text-sm" role="status">
                 <Loader2 className="animate-spin" size={16} /> Loading payment plan…
             </div>
         );
@@ -154,8 +152,8 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
     if (loadError || !data) {
         return (
             <div className="p-8 space-y-3">
-                <p role="alert" className="text-sm text-rose-400">{loadError ?? 'Could not load the payment plan.'}</p>
-                <button type="button" className={BTN_GHOST} onClick={() => void load()}>Retry</button>
+                <p role="alert" className="text-sm text-danger">{loadError ?? 'Could not load the payment plan.'}</p>
+                <Button variant="secondary" size="sm" type="button" onClick={() => void load()}>Retry</Button>
             </div>
         );
     }
@@ -210,7 +208,7 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
         toast.success(`Invoice raised for ${line.label}`);
     }, 'Could not raise the invoice.');
 
-    const errorLine = error && <p role="alert" className="text-sm text-rose-400">{error}</p>;
+    const errorLine = error && <p role="alert" className="text-sm text-danger">{error}</p>;
 
     // ── Empty state ────────────────────────────────────────────────────────
     if (!data.schedule) {
@@ -221,69 +219,62 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
         return (
             <div className="p-8 space-y-6" data-testid="payment-plan-empty">
                 <div>
-                    <h3 className="text-sm font-black text-slate-200 uppercase tracking-widest">No payment plan yet</h3>
-                    <p className="text-xs text-slate-500 mt-1">Start from one of the project's plans, or enter the instalments yourself.</p>
+                    <h3 className="text-sm font-semibold text-fg">No payment plan yet</h3>
+                    <p className="text-xs text-fg-muted mt-1">Start from one of the project's plans, or enter the instalments yourself.</p>
                 </div>
                 {manual === null && (
                     <div className="flex flex-wrap items-end gap-3">
                         {templates.length > 0 ? (
                             <>
                                 <div className="min-w-[16rem]">
-                                    <label htmlFor="pp-template" className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Project plan</label>
-                                    <select id="pp-template" className={FIELD_CLS} value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
-                                        {templates.map((t) => (
-                                            <option key={t.id} value={t.id}>{t.name}{t.is_default ? ' (default)' : ''}</option>
-                                        ))}
-                                    </select>
+                                    <label htmlFor="pp-template" className="block text-xs font-semibold text-fg-muted mb-1.5">Project plan</label>
+                                    <Select id="pp-template" name="pp-template" value={templateId} options={templates.map((t) => ({ value: t.id, label: `${t.name}${t.is_default ? ' (default)' : ''}` }))} onChange={(e) => setTemplateId(e.target.value)} />
                                 </div>
-                                <button type="button" className={BTN_PRIMARY} disabled={busy || !templateId} onClick={() => void createFromTemplate()}>
+                                <Button variant="primary" size="sm" type="button" disabled={busy || !templateId} onClick={() => void createFromTemplate()}>
                                     {busy ? <Loader2 className="animate-spin" size={14} /> : <Plus size={14} />} Create from template
-                                </button>
+                                </Button>
                             </>
                         ) : (
-                            <p className="text-xs text-slate-500">This deal's project has no payment plans set up.</p>
+                            <p className="text-xs text-fg-muted">This deal's project has no payment plans set up.</p>
                         )}
-                        <button type="button" className={BTN_GHOST} onClick={() => { setError(null); setManual([blankRow()]); }}>
+                        <Button variant="secondary" size="sm" type="button" onClick={() => { setError(null); setManual([blankRow()]); }}>
                             <Edit2 size={14} /> Enter instalments manually
-                        </button>
+                        </Button>
                     </div>
                 )}
                 {manual !== null && (
                     <div className="space-y-3" aria-label="Manual instalments">
                         {manual.map((r, i) => (
-                            <div key={i} className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_1fr_auto] gap-2 items-center">
-                                <input aria-label={`Instalment ${i + 1} label`} placeholder="Label, e.g. Booking" className={FIELD_CLS} value={r.label} onChange={(e) => setRow(i, { label: e.target.value })} />
-                                <input aria-label={`Instalment ${i + 1} amount`} type="number" min={0} placeholder="Amount" className={FIELD_CLS} value={r.amount} onChange={(e) => setRow(i, { amount: e.target.value })} />
-                                <input aria-label={`Instalment ${i + 1} due date`} type="date" className={FIELD_CLS} value={r.due_date} onChange={(e) => setRow(i, { due_date: e.target.value })} />
-                                <select
+                            <Grid key={i} template="2fr 1fr 1fr 1fr auto" gap="sm" className="items-center">
+                                <TextField name={`pp-label-${i}`} aria-label={`Instalment ${i + 1} label`} placeholder="Label, e.g. Booking" value={r.label} onChange={(e) => setRow(i, { label: e.target.value })} />
+                                <NumberInput name={`pp-amount-${i}`} aria-label={`Instalment ${i + 1} amount`} min={0} placeholder="Amount" value={r.amount === '' ? null : Number(r.amount)} onChange={(v) => setRow(i, { amount: v == null ? '' : String(v) })} />
+                                <DatePicker name={`pp-due-${i}`} aria-label={`Instalment ${i + 1} due date`} value={r.due_date} onChange={(v) => setRow(i, { due_date: v })} />
+                                <Select
+                                    name={`pp-mode-${i}`}
                                     aria-label={`Instalment ${i + 1} payment mode`}
-                                    className={FIELD_CLS}
                                     value={r.payment_mode}
+                                    placeholder="Mode…"
+                                    options={PAYMENT_MODES.map((m) => ({ value: m.value, label: m.label }))}
                                     onChange={(e) => setRow(i, { payment_mode: MODE_VALUES.includes(e.target.value) ? e.target.value as PaymentMode : '' })}
-                                >
-                                    <option value="">Mode…</option>
-                                    {PAYMENT_MODES.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
-                                </select>
-                                <button
-                                    type="button"
-                                    aria-label={`Remove instalment ${i + 1}`}
-                                    className="p-2 text-slate-500 hover:text-rose-400"
+                                />
+                                <IconButton
+                                    label={`Remove instalment ${i + 1}`}
+                                    variant="danger"
+                                    icon={<Trash2 size={14} />}
                                     onClick={() => setManual((rows) => (rows ?? []).filter((_, j) => j !== i))}
-                                >
-                                    <Trash2 size={14} />
-                                </button>
-                            </div>
+                                />
+                            </Grid>
                         ))}
                         <div className="flex flex-wrap gap-2">
-                            <button type="button" className={BTN_GHOST} onClick={() => setManual((rows) => [...(rows ?? []), blankRow()])}>
+                            <Button variant="secondary" size="sm" type="button" onClick={() => setManual((rows) => [...(rows ?? []), blankRow()])}>
                                 <Plus size={14} /> Add instalment
-                            </button>
-                            <button type="button" className={BTN_PRIMARY} disabled={busy} onClick={createManual}>
+                            </Button>
+                            <Button variant="primary" size="sm" type="button" disabled={busy} onClick={createManual}>
                                 {busy ? <Loader2 className="animate-spin" size={14} /> : <Save size={14} />} Create plan
-                            </button>
-                            <button type="button" className={BTN_GHOST} onClick={() => { setError(null); setManual(null); }}>
+                            </Button>
+                            <Button variant="secondary" size="sm" type="button" onClick={() => { setError(null); setManual(null); }}>
                                 <X size={14} /> Cancel
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 )}
@@ -300,144 +291,162 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
         setEditing((e) => (e ? { ...e, draft: { ...e.draft, ...patch } } : e));
     };
 
+    const ppColumns: DataTableColumn<PaymentScheduleLine>[] = [
+        { key: 'seq', header: '#', render: (l) => <span className="text-fg-muted">{l.seq}</span> },
+        {
+            key: 'label',
+            header: 'Instalment',
+            render: (l) => (
+                <div>
+                    <p className="font-bold text-fg">{l.label}</p>
+                    {l.trigger && <p className="text-xs text-fg-muted">{TRIGGER_LABELS[l.trigger]}</p>}
+                </div>
+            ),
+        },
+        {
+            key: 'amount',
+            header: 'Amount',
+            render: (l) => {
+                const d = editing && editing.id === l.id ? editing.draft : null;
+                return d ? (
+                    <NumberInput name={`pp-line-amount-${l.id}`} aria-label={`${l.label} amount`} min={0} value={d.amount === '' ? null : Number(d.amount)} onChange={(v) => setDraft({ amount: v == null ? '' : String(v) })} />
+                ) : <span className="font-bold text-fg">{fmt.formatCurrency(l.amount)}</span>;
+            },
+        },
+        {
+            key: 'due_date',
+            header: 'Due',
+            render: (l) => {
+                const d = editing && editing.id === l.id ? editing.draft : null;
+                return d ? (
+                    <DatePicker name={`pp-line-due-${l.id}`} aria-label={`${l.label} due date`} value={d.due_date} onChange={(v) => setDraft({ due_date: v })} />
+                ) : <span className="text-fg-subtle">{l.due_date ? fmt.formatDate(l.due_date) : '—'}</span>;
+            },
+        },
+        {
+            key: 'payment_mode',
+            header: 'Mode',
+            render: (l) => {
+                const d = editing && editing.id === l.id ? editing.draft : null;
+                return d ? (
+                    <div className="space-y-2">
+                        <Select
+                            name={`pp-line-mode-${l.id}`}
+                            aria-label={`${l.label} payment mode`}
+                            value={d.payment_mode}
+                            placeholder="—"
+                            options={PAYMENT_MODES.map((m) => ({ value: m.value, label: m.label }))}
+                            onChange={(e) => setDraft({ payment_mode: MODE_VALUES.includes(e.target.value) ? e.target.value as PaymentMode : '' })}
+                        />
+                        {isChequeMode(d.payment_mode || null) && (
+                            <>
+                                <TextField name={`pp-line-chq-no-${l.id}`} aria-label={`${l.label} cheque number`} placeholder="Cheque no." value={d.cheque_number} onChange={(e) => setDraft({ cheque_number: e.target.value })} />
+                                <DatePicker name={`pp-line-chq-date-${l.id}`} aria-label={`${l.label} cheque date`} value={d.cheque_date} onChange={(v) => setDraft({ cheque_date: v })} />
+                                <TextField name={`pp-line-chq-bank-${l.id}`} aria-label={`${l.label} cheque bank`} placeholder="Bank" value={d.cheque_bank} onChange={(e) => setDraft({ cheque_bank: e.target.value })} />
+                            </>
+                        )}
+                    </div>
+                ) : (
+                    <div className="space-y-2">
+                        <span className="text-fg-subtle">{modeLabel(l.payment_mode)}</span>
+                        {isChequeMode(l.payment_mode) && (l.cheque_number || l.cheque_bank) && (
+                            <p className="text-xs text-fg-muted">
+                                {[l.cheque_number && `#${l.cheque_number}`, l.cheque_bank, l.cheque_date && fmt.formatDate(l.cheque_date)].filter(Boolean).join(' · ')}
+                            </p>
+                        )}
+                    </div>
+                );
+            },
+        },
+        {
+            key: 'status',
+            header: 'Status',
+            render: (l) => {
+                const d = editing && editing.id === l.id ? editing.draft : null;
+                return (
+                    <>
+                        {d ? (
+                            <Select
+                                name={`pp-line-status-${l.id}`}
+                                aria-label={`${l.label} status`}
+                                value={d.status}
+                                options={LINE_STATUSES
+                                    .filter((s) => s.value !== 'invoiced' || l.status === 'invoiced')
+                                    .map((s) => ({ value: s.value, label: s.label }))}
+                                onChange={(e) => {
+                                    const v = e.target.value;
+                                    if (STATUS_VALUES.includes(v)) setDraft({ status: v as ScheduleLineStatus });
+                                }}
+                            />
+                        ) : (
+                            <span className={`inline-block px-2 py-0.5 rounded-full border text-xs font-semibold ${STATUS_CHIP[l.status]}`}>
+                                {statusLabel(l.status)}
+                            </span>
+                        )}
+                        {l.invoice_id && !d && <p className="text-xs text-fg-muted mt-1">Invoice raised</p>}
+                    </>
+                );
+            },
+        },
+        {
+            key: 'actions',
+            header: '',
+            align: 'right',
+            render: (l) => {
+                const d = editing && editing.id === l.id ? editing.draft : null;
+                return d ? (
+                    <div className="flex justify-end gap-1">
+                        <Button variant="primary" size="sm" type="button" disabled={busy} onClick={() => saveLine(l, d)}>
+                            <Save size={12} /> Save
+                        </Button>
+                        <Button variant="secondary" size="sm" type="button" onClick={() => { setError(null); setEditing(null); }}>
+                            Cancel
+                        </Button>
+                    </div>
+                ) : (
+                    <div className="flex justify-end gap-1">
+                        {canRaiseInvoice(schedule.billing_mode, l) && (
+                            <Button variant="secondary" size="sm" type="button" disabled={busy} onClick={() => void raiseInvoice(l)} aria-label={`Raise invoice for ${l.label}`}>
+                                <Receipt size={12} /> Raise invoice
+                            </Button>
+                        )}
+                        <IconButton
+                            label={`Edit ${l.label}`}
+                            icon={<Edit2 size={12} />}
+                            onClick={() => { setError(null); setEditing({ id: l.id, draft: toDraft(l) }); }}
+                        />
+                    </div>
+                );
+            },
+        },
+    ];
+
     return (
         <div className="p-8 space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                    <h3 className="text-sm font-black text-slate-200 uppercase tracking-widest">{schedule.template_name ?? 'Payment plan'}</h3>
-                    <p className="text-xs text-slate-500 mt-1">{BILLING_MODE_LABELS[schedule.billing_mode]}</p>
+                    <h3 className="text-sm font-semibold text-fg">{schedule.template_name ?? 'Payment plan'}</h3>
+                    <p className="text-xs text-fg-muted mt-1">{BILLING_MODE_LABELS[schedule.billing_mode]}</p>
                 </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <Grid gap="md">
                 {([['Total', totals.total], ['Paid', totals.paid], ['Outstanding', totals.outstanding]] as const).map(([label, v]) => (
-                    <div key={label} className="bg-slate-950/50 border border-slate-800 rounded-xl p-4" data-testid={`pp-total-${label.toLowerCase()}`}>
-                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{label}</p>
-                        <p className="text-lg font-black text-slate-50 mt-1">{fmt.formatCurrency(v)}</p>
-                    </div>
+                    <GridItem key={label} span={4}>                    <div className="bg-surface-sunken border border-line rounded-nb-lg p-4" data-testid={`pp-total-${label.toLowerCase()}`}>
+                        <p className="text-xs font-semibold text-fg-muted">{label}</p>
+                        <p className="text-lg font-semibold text-fg mt-1">{fmt.formatCurrency(v)}</p>
+                    </div></GridItem>
                 ))}
-            </div>
+            </Grid>
 
-            <div className="overflow-x-auto">
-                <table className="w-full text-xs" aria-label="Instalments">
-                    <thead>
-                        <tr className="text-left text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                            <th className="py-2 pr-3">#</th>
-                            <th className="py-2 pr-3">Instalment</th>
-                            <th className="py-2 pr-3">Amount</th>
-                            <th className="py-2 pr-3">Due</th>
-                            <th className="py-2 pr-3">Mode</th>
-                            <th className="py-2 pr-3">Status</th>
-                            <th className="py-2" />
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {lines.map((l) => {
-                            const d: LineDraft | null = editing && editing.id === l.id ? editing.draft : null;
-                            return (
-                                <tr key={l.id} className="border-t border-slate-800 align-top" data-testid={`pp-line-${l.id}`}>
-                                    <td className="py-3 pr-3 text-slate-500">{l.seq}</td>
-                                    <td className="py-3 pr-3">
-                                        <p className="font-bold text-slate-200">{l.label}</p>
-                                        {l.trigger && <p className="text-[10px] text-slate-500">{TRIGGER_LABELS[l.trigger]}</p>}
-                                    </td>
-                                    <td className="py-3 pr-3">
-                                        {d ? (
-                                            <input aria-label={`${l.label} amount`} type="number" min={0} className={FIELD_CLS} value={d.amount} onChange={(e) => setDraft({ amount: e.target.value })} />
-                                        ) : <span className="font-bold text-slate-200">{fmt.formatCurrency(l.amount)}</span>}
-                                    </td>
-                                    <td className="py-3 pr-3">
-                                        {d ? (
-                                            <input aria-label={`${l.label} due date`} type="date" className={FIELD_CLS} value={d.due_date} onChange={(e) => setDraft({ due_date: e.target.value })} />
-                                        ) : <span className="text-slate-300">{l.due_date ? fmt.formatDate(l.due_date) : '—'}</span>}
-                                    </td>
-                                    <td className="py-3 pr-3 space-y-2">
-                                        {d ? (
-                                            <>
-                                                <select
-                                                    aria-label={`${l.label} payment mode`}
-                                                    className={FIELD_CLS}
-                                                    value={d.payment_mode}
-                                                    onChange={(e) => setDraft({ payment_mode: MODE_VALUES.includes(e.target.value) ? e.target.value as PaymentMode : '' })}
-                                                >
-                                                    <option value="">—</option>
-                                                    {PAYMENT_MODES.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
-                                                </select>
-                                                {isChequeMode(d.payment_mode || null) && (
-                                                    <>
-                                                        <input aria-label={`${l.label} cheque number`} placeholder="Cheque no." className={FIELD_CLS} value={d.cheque_number} onChange={(e) => setDraft({ cheque_number: e.target.value })} />
-                                                        <input aria-label={`${l.label} cheque date`} type="date" className={FIELD_CLS} value={d.cheque_date} onChange={(e) => setDraft({ cheque_date: e.target.value })} />
-                                                        <input aria-label={`${l.label} cheque bank`} placeholder="Bank" className={FIELD_CLS} value={d.cheque_bank} onChange={(e) => setDraft({ cheque_bank: e.target.value })} />
-                                                    </>
-                                                )}
-                                            </>
-                                        ) : (
-                                            <>
-                                                <span className="text-slate-300">{modeLabel(l.payment_mode)}</span>
-                                                {isChequeMode(l.payment_mode) && (l.cheque_number || l.cheque_bank) && (
-                                                    <p className="text-[10px] text-slate-500">
-                                                        {[l.cheque_number && `#${l.cheque_number}`, l.cheque_bank, l.cheque_date && fmt.formatDate(l.cheque_date)].filter(Boolean).join(' · ')}
-                                                    </p>
-                                                )}
-                                            </>
-                                        )}
-                                    </td>
-                                    <td className="py-3 pr-3">
-                                        {d ? (
-                                            <select
-                                                aria-label={`${l.label} status`}
-                                                className={FIELD_CLS}
-                                                value={d.status}
-                                                onChange={(e) => {
-                                                    const v = e.target.value;
-                                                    if (STATUS_VALUES.includes(v)) setDraft({ status: v as ScheduleLineStatus });
-                                                }}
-                                            >
-                                                {LINE_STATUSES
-                                                    .filter((s) => s.value !== 'invoiced' || l.status === 'invoiced')
-                                                    .map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-                                            </select>
-                                        ) : (
-                                            <span className={`inline-block px-2 py-0.5 rounded-full border text-[10px] font-black uppercase tracking-widest ${STATUS_CHIP[l.status]}`}>
-                                                {statusLabel(l.status)}
-                                            </span>
-                                        )}
-                                        {l.invoice_id && !d && <p className="text-[10px] text-slate-500 mt-1">Invoice raised</p>}
-                                    </td>
-                                    <td className="py-3 text-right whitespace-nowrap">
-                                        {d ? (
-                                            <div className="flex justify-end gap-1">
-                                                <button type="button" className={BTN_PRIMARY} disabled={busy} onClick={() => saveLine(l, d)}>
-                                                    <Save size={12} /> Save
-                                                </button>
-                                                <button type="button" className={BTN_GHOST} onClick={() => { setError(null); setEditing(null); }}>
-                                                    Cancel
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <div className="flex justify-end gap-1">
-                                                {canRaiseInvoice(schedule.billing_mode, l) && (
-                                                    <button type="button" className={BTN_GHOST} disabled={busy} onClick={() => void raiseInvoice(l)} aria-label={`Raise invoice for ${l.label}`}>
-                                                        <Receipt size={12} /> Raise invoice
-                                                    </button>
-                                                )}
-                                                <button
-                                                    type="button"
-                                                    className={BTN_GHOST}
-                                                    aria-label={`Edit ${l.label}`}
-                                                    onClick={() => { setError(null); setEditing({ id: l.id, draft: toDraft(l) }); }}
-                                                >
-                                                    <Edit2 size={12} />
-                                                </button>
-                                            </div>
-                                        )}
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
-            </div>
+            <DataTable<PaymentScheduleLine>
+                name="pp-instalments"
+                data-testid="pp-instalments"
+                rows={lines}
+                rowKey={(l) => l.id}
+                getRowProps={(l) => ({ 'data-testid': `pp-line-${l.id}` })}
+                columns={ppColumns}
+            />
             {errorLine}
         </div>
     );

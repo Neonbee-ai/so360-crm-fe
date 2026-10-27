@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import React from 'react';
 import LeadLayoutSettingsPanel from './LeadLayoutSettingsPanel';
 
@@ -11,7 +11,8 @@ describe('Given the layout settings panel', () => {
     describe('When no labels or title are given', () => {
         it('Then it keeps its lead-detail defaults and falls back to the key', () => {
             render(<LeadLayoutSettingsPanel {...props()} sections={[{ key: 'notes', visible: true }, { key: 'zzz', visible: true }]} />);
-            expect(screen.getByRole('dialog', { name: 'Layout Settings' })).toBeInTheDocument();
+            expect(screen.getByTestId('lead-layout-settings')).toBeInTheDocument();
+            expect(screen.getByText('Layout Settings')).toBeInTheDocument();
             expect(screen.getByText('Notes')).toBeInTheDocument();
             expect(screen.getByText('zzz')).toBeInTheDocument();
         });
@@ -21,7 +22,8 @@ describe('Given the layout settings panel', () => {
         it('Then rows, buttons and the dialog use them', () => {
             const p = props();
             render(<LeadLayoutSettingsPanel {...p} title="Customize Dashboard" labels={{ a: 'Alpha', b: 'Beta' }} />);
-            expect(screen.getByRole('dialog', { name: 'Customize Dashboard' })).toBeInTheDocument();
+            expect(screen.getByRole('dialog')).toBeInTheDocument();
+            expect(screen.getByText('Customize Dashboard')).toBeInTheDocument();
             expect(screen.getByRole('button', { name: 'Move Alpha up' })).toBeDisabled();
             expect(screen.getByRole('button', { name: 'Move Beta down' })).toBeDisabled();
             fireEvent.click(screen.getByRole('button', { name: 'Move Alpha down' }));
@@ -35,7 +37,7 @@ describe('Given the layout settings panel', () => {
             const p = props();
             render(<LeadLayoutSettingsPanel {...p} />);
             fireEvent.click(screen.getByRole('button', { name: /Reset to Default/ }));
-            fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+            fireEvent.click(within(screen.getByRole('dialog')).getAllByRole('button')[0]);
             expect(p.onReset).toHaveBeenCalled();
             expect(p.onClose).toHaveBeenCalled();
         });

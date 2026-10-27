@@ -1,17 +1,16 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { Search, CheckCircle2, Circle, AlertCircle, Calendar, Trash2, ChevronUp, ChevronDown, ChevronsUpDown, UserPlus, Building2, Plus } from 'lucide-react';
+import { CheckCircle2, Circle, AlertCircle, Calendar, Trash2, UserPlus, Building2, Plus, X } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { Task } from '../types/crm';
-import { Table } from '../components/common/Table';
+import { ListPageTemplate, Pagination, Button, IconButton, SegmentedControl, DataTable, Select, SearchInput, toast, type DataTableColumn, type FilterValues, type ListFilterConfig } from '@so360/design-system';
 import { useShell, useShellBridge, useSandboxLimit } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import { canCurrentUserBeAssigned, isTaskAssignedToUser, isTaskLocked, isTaskOverdue, TASK_LOCKED_HINT } from '../utils/taskUtils';
 import { dueDateCalendarDay, hasTimeComponent } from '../utils/datetime';
-import { toast } from '@so360/design-system';
 import TaskModal from './components/TaskModal';
 import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
+import { Modal } from '../components/common/Modal';
 
 type SortField = 'title' | 'due_date' | 'status' | 'assigned_to' | 'associated_with';
 type SortDirection = 'asc' | 'desc' | null;
@@ -144,34 +143,6 @@ const TasksPage = () => {
         }
     };
 
-    const toggleSort = (field: SortField) => {
-        if (sortField === field) {
-            if (sortDirection === 'asc') setSortDirection('desc');
-            else if (sortDirection === 'desc') { setSortField(null); setSortDirection(null); }
-            else setSortDirection('asc');
-        } else {
-            setSortField(field);
-            setSortDirection('asc');
-        }
-    };
-
-    const SortIcon = ({ field }: { field: SortField }) => {
-        if (sortField !== field) return <ChevronsUpDown size={14} className="text-slate-600" />;
-        if (sortDirection === 'asc') return <ChevronUp size={14} className="text-blue-400" />;
-        if (sortDirection === 'desc') return <ChevronDown size={14} className="text-blue-400" />;
-        return <ChevronsUpDown size={14} className="text-slate-600" />;
-    };
-
-    const SortableHeader = ({ label, field }: { label: string, field: SortField }) => (
-        <button
-            onClick={() => toggleSort(field)}
-            className="flex items-center gap-1 hover:text-slate-50 transition-colors cursor-pointer"
-        >
-            {label}
-            <SortIcon field={field} />
-        </button>
-    );
-
     const sortedAndFilteredTasks = useMemo(() => {
         let result = tasks.filter(task => {
             const lc = searchTerm.toLowerCase();
@@ -236,22 +207,25 @@ const TasksPage = () => {
         setCurrentPage(1);
     }, [searchTerm, filter]);
 
-    const columns = [
+    const columns: DataTableColumn<Task>[] = [
         {
-            header: <SortableHeader label="Task" field="title" />,
-            accessor: (task: Task) => (
+            key: 'title',
+            header: 'Task',
+            sortable: true,
+            widthClassName: 'min-w-64',
+            render: (task: Task) => (
                 <div className="flex items-start gap-3">
-                    <button
+                    <IconButton
+                        label={task.status === 'DONE' ? 'Mark as open' : 'Mark as done'}
+                        size="sm"
+                        icon={task.status === 'DONE' ? <CheckCircle2 size={18} className="text-success" /> : <Circle size={18} />}
                         onClick={(e) => {
                             e.stopPropagation();
                             handleStatusChange(task, task.status === 'DONE' ? 'OPEN' : 'DONE');
                         }}
-                        className="mt-0.5 text-slate-500 hover:text-blue-400 transition-colors"
-                    >
-                        {task.status === 'DONE' ? <CheckCircle2 size={18} className="text-emerald-500" /> : <Circle size={18} />}
-                    </button>
-                    <div className="flex flex-col gap-0.5">
-                        <span className={`font-semibold ${task.status === 'DONE' ? 'text-slate-500 line-through' : 'text-slate-50'}`}>
+                    />
+                    <div className="flex min-w-0 flex-col gap-0.5">
+                        <span className={`line-clamp-2 font-semibold ${task.status === 'DONE' ? 'text-fg-muted line-through' : 'text-fg'}`}>
                             {task.title}
                         </span>
                     </div>
@@ -259,25 +233,29 @@ const TasksPage = () => {
             )
         },
         {
-            header: <SortableHeader label="Due Date" field="due_date" />,
-            accessor: (task: Task) => {
+            key: 'due_date',
+            header: 'Due Date',
+            sortable: true,
+            render: (task: Task) => {
                 const isOverdue = isTaskOverdue(task);
                 return (
-                    <div className={`flex items-center gap-2 text-xs font-medium whitespace-nowrap ${isOverdue ? 'text-rose-400' : 'text-slate-300'}`}>
+                    <div className={`flex items-center gap-2 text-xs font-medium whitespace-nowrap ${isOverdue ? 'text-danger' : 'text-fg-subtle'}`}>
                         {isOverdue ? <AlertCircle size={14} className="shrink-0" /> : <Calendar size={14} className="shrink-0" />}
                         <span>{formatters.formatDate(dueDateCalendarDay(task.due_date))}</span>
                         {/* Only a task the user gave a time to shows one. */}
                         {hasTimeComponent(task.due_date) && (
-                            <span className="text-slate-400">{formatters.formatDate(task.due_date, { hour: 'numeric', minute: '2-digit' })}</span>
+                            <span className="text-fg-subtle">{formatters.formatDate(task.due_date, { hour: 'numeric', minute: '2-digit' })}</span>
                         )}
-                        {isOverdue && <span className="uppercase text-[9px] font-black tracking-tighter">Overdue</span>}
+                        {isOverdue && <span className=" text-xs font-semibolder">Overdue</span>}
                     </div>
                 );
             }
         },
         {
-            header: <SortableHeader label="Associated With" field="associated_with" />,
-            accessor: (task: Task) => {
+            key: 'associated_with',
+            header: 'Associated With',
+            sortable: true,
+            render: (task: Task) => {
                 const entity = task.deal
                     ? { label: task.deal.name || task.deal.company_name, sub: task.deal.company_name !== task.deal.name ? task.deal.company_name : null, type: 'deal' as const }
                     : task.lead
@@ -285,16 +263,16 @@ const TasksPage = () => {
                     : null;
 
                 if (!entity) {
-                    return <span className="text-slate-600 text-xs">—</span>;
+                    return <span className="text-fg-muted text-xs">—</span>;
                 }
 
                 return (
                     <div className="flex items-center gap-2">
-                        <Building2 size={13} className={entity.type === 'deal' ? 'text-violet-400 shrink-0' : 'text-blue-400 shrink-0'} />
+                        <Building2 size={13} className={entity.type === 'deal' ? 'text-primary shrink-0' : 'text-primary shrink-0'} />
                         <div className="flex flex-col gap-0.5 min-w-0">
-                            <span className="text-sm text-slate-200 truncate">{entity.label}</span>
-                            {entity.sub && <span className="text-[11px] text-slate-400 truncate">{entity.sub}</span>}
-                            <span className={`text-[9px] font-black uppercase tracking-widest ${entity.type === 'deal' ? 'text-violet-500' : 'text-blue-500'}`}>
+                            <span className="text-sm text-fg truncate">{entity.label}</span>
+                            {entity.sub && <span className="text-xs text-fg-subtle truncate">{entity.sub}</span>}
+                            <span className={`text-xs font-semibold  ${entity.type === 'deal' ? 'text-primary' : 'text-primary'}`}>
                                 {entity.type}
                             </span>
                         </div>
@@ -303,226 +281,151 @@ const TasksPage = () => {
             }
         },
         {
-            header: <SortableHeader label="Assigned To" field="assigned_to" />,
-            accessor: (task: Task) => (
+            key: 'assigned_to',
+            header: 'Assigned To',
+            sortable: true,
+            widthClassName: 'min-w-48',
+            render: (task: Task) => (
                 <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-2">
-                    <select
+                    <Select
+                        name={`task-assignee-${task.id}`}
+                        aria-label="Assigned to"
+                        size="sm"
                         value={task.assigned_to.id}
-                        onChange={(e) => handleAssigneeChange(task, e.target.value)}
+                        onValueChange={(v) => handleAssigneeChange(task, v)}
                         disabled={isTaskLocked(task.status)}
                         title={isTaskLocked(task.status) ? TASK_LOCKED_HINT : undefined}
-                        className="flex-1 bg-transparent text-slate-300 text-sm focus:outline-none cursor-pointer hover:text-slate-50 transition-colors py-1 disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                        {users.map(user => (
-                            <option key={user.id} value={user.id} className="bg-slate-900 text-slate-300">
-                                {user.full_name}
-                                {user.id === currentUserId ? ' (You)' : ''}
-                            </option>
-                        ))}
-                    </select>
+                        className="flex-1"
+                        options={users.map(user => ({ value: user.id, label: `${user.full_name}${user.id === currentUserId ? ' (You)' : ''}` }))}
+                    />
 
                     {!isTaskAssignedToUser(task, currentUserId) && (
-                        <button
+                        <IconButton
+                            size="sm"
                             onClick={() => handleQuickAssignToMe(task)}
                             disabled={!canCurrentUserBeAssigned(currentUser, users) || isTaskLocked(task.status)}
-                            className="p-1 text-slate-400 hover:text-blue-400 hover:bg-blue-600/10 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                            title={
+                            label={
                                 isTaskLocked(task.status)
                                     ? TASK_LOCKED_HINT
                                     : canCurrentUserBeAssigned(currentUser, users)
                                         ? "Assign to me"
                                         : "You don't have permission to be assigned tasks"
                             }
-                        >
-                            <UserPlus className="w-4 h-4" />
-                        </button>
+                            icon={<UserPlus className="w-4 h-4" />}
+                        />
                     )}
                 </div>
             )
         },
         {
-            header: <SortableHeader label="Status" field="status" />,
-            accessor: (task: Task) => (
+            key: 'status',
+            header: 'Status',
+            sortable: true,
+            render: (task: Task) => (
                 <div onClick={(e) => e.stopPropagation()}>
-                    <select
+                    <Select
+                        name={`task-status-${task.id}`}
+                        aria-label="Status"
+                        size="sm"
                         value={task.status}
-                        onChange={(e) => handleStatusChange(task, e.target.value)}
-                        className={`px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-slate-950 ${task.status === 'DONE'
-                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 focus:ring-emerald-500'
-                            : task.status === 'IN_PROGRESS'
-                            ? 'bg-amber-500/10 text-amber-400 border-amber-500/20 focus:ring-amber-500'
-                            : task.status === 'ON_HOLD'
-                            ? 'bg-orange-500/10 text-orange-400 border-orange-500/20 focus:ring-orange-500'
-                            : task.status === 'CANCELLED'
-                            ? 'bg-rose-500/10 text-rose-400 border-rose-500/20 focus:ring-rose-500'
-                            : 'bg-slate-800 text-slate-400 border-slate-700 focus:ring-slate-500'
-                            }`}
-                    >
-                        <option value="OPEN" className="bg-slate-900 text-slate-300">OPEN</option>
-                        <option value="IN_PROGRESS" className="bg-slate-900 text-slate-300">IN PROGRESS</option>
-                        <option value="DONE" className="bg-slate-900 text-slate-300">DONE</option>
-                        <option value="ON_HOLD" className="bg-slate-900 text-slate-300">ON HOLD</option>
-                        <option value="CANCELLED" className="bg-slate-900 text-slate-300">CANCELLED</option>
-                    </select>
+                        onValueChange={(v) => handleStatusChange(task, v)}
+                        options={[
+                            { value: 'OPEN', label: 'Open' },
+                            { value: 'IN_PROGRESS', label: 'In progress' },
+                            { value: 'DONE', label: 'Done' },
+                            { value: 'ON_HOLD', label: 'On hold' },
+                            { value: 'CANCELLED', label: 'Cancelled' },
+                        ]}
+                    />
                 </div>
             )
         },
-        {
-            header: '',
-            accessor: (task: Task) => (
-                <div onClick={(e) => e.stopPropagation()}>
-                    {canCreateTask && <button
-                        onClick={() => setShowDeleteConfirm(task.id)}
-                        className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded transition-colors"
-                        title="Delete task"
-                    >
-                        <Trash2 size={16} />
-                    </button>}
-                </div>
-            )
-        }
     ];
+    const statusOptions = ['Open', 'In Progress', 'Done', 'On Hold', 'Cancelled', 'Overdue'].map(v => ({ value: v, label: v }));
+    const filterConfig: ListFilterConfig = {
+        fields: [{ key: 'status', label: 'Status', type: 'select', quick: true, options: statusOptions }],
+        values: (filter !== 'All' ? { status: filter } : {}) as FilterValues,
+        onChange: (next: FilterValues) => setFilter((next.status as string) || 'All'),
+        onClear: () => { setSearchTerm(''); setFilter('All'); },
+    };
 
     return (
-        <div className="p-8" ref={listAnchorRef}>
-            <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold text-slate-50 tracking-tight leading-none">Tasks & Follow-ups</h1>
-                    <p className="text-slate-300 mt-2">Personal execution discipline and daily tasks</p>
-                </div>
-                {canCreateTask && (
-                    <button
-                        onClick={() => setShowCreateModal(true)}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-blue-900/30 active:scale-95"
-                    >
-                        <Plus size={16} />
-                        Create Task
-                    </button>
-                )}
-            </header>
-
-            {(canViewTeamTasks || canViewAllTasks) && (
-                <div className="flex flex-wrap gap-2 mb-4">
-                    {([
-                        { key: 'own' as const, label: 'My Tasks' },
-                        ...(canViewTeamTasks ? [{ key: 'team' as const, label: 'Team Tasks' }] : []),
-                        ...(canViewAllTasks ? [{ key: 'all' as const, label: 'All Tasks' }] : []),
-                    ]).map((tab) => (
-                        <button
-                            key={tab.key}
-                            onClick={() => setTaskScope(tab.key)}
-                            className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all border ${taskScope === tab.key
-                                ? 'bg-slate-700 text-white border-slate-600'
-                                : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-100 hover:bg-slate-800'
-                                }`}
-                        >
-                            {tab.label}
-                        </button>
-                    ))}
-                </div>
-            )}
-
-            <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6">
-                <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
-                    <input
-                        type="text"
-                        placeholder="Search tasks..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 text-slate-200 placeholder-slate-400 text-sm pl-10 pr-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
-                    />
-                </div>
-                <div className="flex flex-wrap gap-2">
-                    {['All', 'Open', 'In Progress', 'Done', 'On Hold', 'Cancelled', 'Overdue'].map((btn) => (
-                        <button
-                            key={btn}
-                            onClick={() => setFilter(btn)}
-                            className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all border ${filter === btn
-                                ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-900/20'
-                                : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-100 hover:bg-slate-800'
-                                }`}
-                        >
-                            {btn}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
+        <ListPageTemplate
+            trail={[]}
+            title="Tasks & Follow-ups"
+            description="Personal execution discipline and daily tasks"
+            primaryAction={canCreateTask ? (
+                <Button onClick={() => setShowCreateModal(true)}><Plus size={16} />
+                    Create Task
+                </Button>
+            ) : undefined}
+            search={
+                <SearchInput
+                    placeholder="Search tasks..."
+                    value={searchTerm}
+                    onChange={setSearchTerm}
+                />
+            }
+            filterConfig={filterConfig}
+            views={(canViewTeamTasks || canViewAllTasks) ? (
+                <SegmentedControl
+                    aria-label="Task scope"
+                    data-testid="tasks-scope-views"
+                    value={taskScope}
+                    onChange={(id) => setTaskScope(id as typeof taskScope)}
+                    options={[
+                        { value: 'own', label: 'My Tasks' },
+                        ...(canViewTeamTasks ? [{ value: 'team', label: 'Team Tasks' }] : []),
+                        ...(canViewAllTasks ? [{ value: 'all', label: 'All Tasks' }] : []),
+                    ]}
+                />
+            ) : undefined}
+            pagination={sandboxLimitedTasks.length > 0 ? (
+                <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages || 1}
+                    totalItems={sandboxLimitedTasks.length}
+                    pageSize={pageSize}
+                    pageSizeOptions={[10, 25, 50, 100]}
+                    onPageChange={setCurrentPage}
+                    onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
+                />
+            ) : undefined}
+        >
+            <div ref={listAnchorRef}>
             {error && (
-                <div className="mb-4 p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300">
+                <div className="mb-4 p-4 bg-danger/20 border border-danger/50 rounded-lg text-danger">
                     {error}
-                    <button onClick={() => setError(null)} className="ml-2 text-red-400 hover:text-red-300">×</button>
+                    <IconButton label="Dismiss error" size="sm" icon={<X size={14} />} onClick={() => setError(null)} />
                 </div>
             )}
 
             {/* Sandbox limit notice */}
             {isSandboxMode && isLimited(sortedAndFilteredTasks.length) && (
-                <div className="mb-4 px-4 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-400 text-sm flex items-center gap-2">
+                <div className="mb-4 px-4 py-2.5 bg-warning/10 border border-warning/30 rounded-lg text-warning text-sm flex items-center gap-2">
                     <span className="font-semibold">Sandbox mode:</span>
                     showing {sandboxEntryLimit} of {sortedAndFilteredTasks.length} tasks — full list visible in production.
                 </div>
             )}
 
-            <Table
-                data={paginatedTasks}
+            <DataTable
+                name="tasks"
+                data-testid="tasks-table"
+                rows={paginatedTasks}
+                rowKey={(task: Task) => task.id}
                 columns={columns}
-                isLoading={isLoading}
-                onRowClick={(task) => navigate(`${task.id}`)}
-                emptyMessage="No tasks found for the selected filter."
+                loading={isLoading}
+                onRowClick={(task: Task) => navigate(`${task.id}`)}
+                emptyState="No tasks found for the selected filter."
+                sortKey={sortField ?? undefined}
+                sortDir={sortDirection ?? undefined}
+                onSortChange={(key: string, dir?: SortDirection) => { setSortField(dir ? (key as SortField) : null); setSortDirection(dir ?? null); }}
+                rowActions={canCreateTask ? (task: Task) => [
+                    { label: 'Delete task', danger: true, onSelect: () => setShowDeleteConfirm(task.id) },
+                ] : undefined}
             />
 
-            {/* Pagination Controls */}
-            {sandboxLimitedTasks.length > 0 && (
-                <div className="flex items-center justify-between mt-4 px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-lg">
-                    <div className="flex items-center gap-2 text-sm text-slate-400">
-                        <span>Show</span>
-                        <select
-                            value={pageSize}
-                            onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
-                            className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200"
-                        >
-                            {[10, 25, 50, 100].map(size => (
-                                <option key={size} value={size}>{size}</option>
-                            ))}
-                        </select>
-                        <span>of {sandboxLimitedTasks.length} tasks</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => setCurrentPage(1)}
-                            disabled={currentPage === 1}
-                            className="px-3 py-1 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            First
-                        </button>
-                        <button
-                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                            disabled={currentPage === 1}
-                            className="px-3 py-1 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Prev
-                        </button>
-                        <span className="px-3 py-1 text-slate-300">
-                            Page {currentPage} of {totalPages || 1}
-                        </span>
-                        <button
-                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                            disabled={currentPage === totalPages || totalPages === 0}
-                            className="px-3 py-1 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Next
-                        </button>
-                        <button
-                            onClick={() => setCurrentPage(totalPages)}
-                            disabled={currentPage === totalPages || totalPages === 0}
-                            className="px-3 py-1 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Last
-                        </button>
-                    </div>
-                </div>
-            )}
+            </div>
 
             {/* Create Task Modal */}
             {showCreateModal && (
@@ -537,35 +440,32 @@ const TasksPage = () => {
             )}
 
             {/* Delete Confirmation Dialog */}
-            {showDeleteConfirm && createPortal(
-                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60">
-                    <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-xl w-full max-w-md p-6">
-                        <h2 className="text-xl font-semibold text-slate-100 mb-2">Delete Task</h2>
-                        <p className="text-slate-400 mb-6">
-                            Are you sure you want to delete this task? This action cannot be undone.
-                        </p>
-                        <div className="flex justify-end gap-3">
-                            <button
-                                onClick={() => setShowDeleteConfirm(null)}
-                                disabled={isDeleting}
-                                className="px-4 py-2 text-slate-300 hover:text-slate-50 transition-colors disabled:opacity-50"
-                            >
+            {showDeleteConfirm && (
+                <Modal
+                    isOpen
+                    onClose={() => setShowDeleteConfirm(null)}
+                    size="md"
+                    title="Delete Task"
+                    dismissible={!isDeleting}
+                    data-testid="delete-task-modal"
+                    footer={
+                        <>
+                            <Button type="button" variant="secondary" onClick={() => setShowDeleteConfirm(null)} disabled={isDeleting}>
                                 Cancel
-                            </button>
-                            <button
-                                onClick={() => handleDeleteTask(showDeleteConfirm)}
-                                disabled={isDeleting}
-                                className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-800 text-white rounded-lg transition-colors flex items-center gap-2"
-                            >
-                                {isDeleting && <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />}
+                            </Button>
+                            <Button type="button" variant="danger" onClick={() => handleDeleteTask(showDeleteConfirm)} disabled={isDeleting}>
+                                {isDeleting && <div className="w-4 h-4 border-2 border-current/20 border-t-current rounded-full animate-spin" />}
                                 Delete
-                            </button>
-                        </div>
-                    </div>
-                </div>,
-                document.body
+                            </Button>
+                        </>
+                    }
+                >
+                    <p className="text-fg-subtle">
+                        Are you sure you want to delete this task? This action cannot be undone.
+                    </p>
+                </Modal>
             )}
-        </div>
+        </ListPageTemplate>
     );
 };
 

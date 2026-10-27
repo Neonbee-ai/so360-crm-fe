@@ -35,7 +35,7 @@ vi.mock('../../utils/formatters', () => ({
         formatDate: (d: string) => `D:${d}`,
     }),
 }));
-vi.mock('@so360/design-system', () => ({ toast: toasts }));
+vi.mock('@so360/design-system', async (importOriginal) => ({ ...(await importOriginal<any>()), toast: toasts }));
 
 import DealPaymentPlanPanel, { diffLine } from './DealPaymentPlanPanel';
 
@@ -127,7 +127,7 @@ describe('Given the deal payment plan panel', () => {
             await loaded();
             fireEvent.change(screen.getByLabelText('Project plan'), { target: { value: 't2' } });
             fireEvent.click(screen.getByRole('button', { name: /create from template/i }));
-            await waitFor(() => expect(screen.getByRole('table', { name: 'Instalments' })).toBeInTheDocument());
+            await waitFor(() => expect(screen.getByTestId('pp-instalments')).toBeInTheDocument());
             expect(svc.createFromTemplate).toHaveBeenCalledWith('d1', 't2');
             expect(toasts.success).toHaveBeenCalledWith('Payment plan created');
         });
@@ -174,7 +174,7 @@ describe('Given the deal payment plan panel', () => {
                 { label: 'Booking', amount: 100, due_date: '2026-10-01', payment_mode: 'cheque' },
                 { label: 'Handover', amount: 50, due_date: null, payment_mode: null },
             ]);
-            await waitFor(() => expect(screen.getByRole('table', { name: 'Instalments' })).toBeInTheDocument());
+            await waitFor(() => expect(screen.getByTestId('pp-instalments')).toBeInTheDocument());
         });
 
         it('Then a blank amount is rejected before anything is sent, and editing clears the error', async () => {

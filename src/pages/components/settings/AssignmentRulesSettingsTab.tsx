@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronUp, ChevronDown, Edit2, Trash2, Plus, Loader2, ToggleLeft, ToggleRight, X } from 'lucide-react';
-import { toast, DepartmentSelector, UserSelector } from '@so360/design-system';
+import { toast, DepartmentSelector, UserSelector, useConfirm, Card, Button, IconButton, TextField, NumberInput, Select, Checkbox, Grid, GridItem } from '@so360/design-system';
 import { useShellBridge } from '@so360/shell-context';
 import {
     assignmentRulesService,
@@ -12,15 +12,13 @@ import {
     CONDITION_OPS,
     MAX_REASSIGN_AFTER_MINUTES,
     emptyRule,
-    parseReassignMinutes,
     toRuleBody,
     validateRule,
 } from '../../../services/assignmentRulesService';
 import { crmService } from '../../../services/crmService';
 import { describeApiError } from '../../../utils/apiErrorMessage';
 
-const FIELD_CLS = 'w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl px-4 py-2.5 outline-none focus:border-blue-500 transition-all font-bold text-sm';
-const LABEL_CLS = 'block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5';
+const LABEL_CLS = 'block text-xs font-semibold text-fg-muted mb-1.5';
 
 interface Props {
     canWrite: boolean;
@@ -73,6 +71,7 @@ function targetSummary(rule: AssignmentRule): string {
  * lead against the rules.
  */
 const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
+    const [confirm, confirmDialog] = useConfirm();
     const shell = useShellBridge() as any;
     const orgId: string = shell?.currentOrg?.id ?? '';
     const tenantId: string | undefined = shell?.currentTenant?.id ?? undefined;
@@ -91,11 +90,15 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
     const [testResult, setTestResult] = useState<AssignmentTestResult | null>(null);
     const [assigneeName, setAssigneeName] = useState<string | null>(null);
 
+    // Spinner only for the first load; later refetches (after save) keep the
+    // list on screen instead of swapping it for a spinner (flicker).
+    const hasLoaded = useRef(false);
     const load = useCallback(async () => {
-        setLoading(true);
+        if (!hasLoaded.current) setLoading(true);
         try {
             setRules(await assignmentRulesService.list());
             setLoadError(null);
+            hasLoaded.current = true;
         } catch (err) {
             setLoadError(describeApiError(err, 'Could not load assignment rules.'));
         } finally {
@@ -151,7 +154,7 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
     };
 
     const removeRule = async (rule: AssignmentRule) => {
-        if (!window.confirm(`Delete the rule "${rule.name}"?`)) return;
+        if (!await confirm({ title: 'Delete?', message: `Delete the rule "${rule.name}"?`, intent: 'danger', confirmLabel: 'Delete' })) return;
         setBusy(true);
         try {
             await assignmentRulesService.remove(rule.id);
@@ -212,21 +215,19 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
         setDraft((d) => ({ ...d, conditions: d.conditions.map((c, idx) => (idx === i ? { ...c, ...patch } : c)) }));
 
     const editor = editingId && (
-        <div className="p-6 border-b border-slate-700/50 bg-slate-950/40 space-y-5" data-testid="assignment-rule-editor">
+        <div className="p-nb-4 border-b border-line space-y-5" data-testid="assignment-rule-editor">
             <div className="flex items-center justify-between">
-                <h4 className="font-black text-slate-50 uppercase tracking-widest text-xs">
+                <h4 className="font-semibold text-fg text-xs">
                     {editingId === 'new' ? 'New rule' : 'Edit rule'}
                 </h4>
-                <button type="button" onClick={closeEditor} aria-label="Close rule editor" className="text-slate-500 hover:text-slate-300">
-                    <X size={16} />
-                </button>
+                <IconButton label="Close rule editor" icon={<X size={16} />} onClick={closeEditor} />
             </div>
 
             <div>
-                <label htmlFor="assignment-rule-name" className={LABEL_CLS}>Rule name</label>
-                <input
+                <TextField
                     id="assignment-rule-name"
-                    className={FIELD_CLS}
+                    name="assignment-rule-name"
+                    label="Rule name"
                     value={draft.name}
                     maxLength={120}
                     placeholder="e.g. Marina Heights — Facebook leads"
@@ -237,91 +238,75 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
             <div>
                 <span className={LABEL_CLS}>When a new lead matches all of</span>
                 {draft.conditions.length === 0 && (
-                    <p className="text-xs text-slate-500 font-bold mb-2">No conditions — this rule catches every lead that reaches it.</p>
+                    <p className="text-xs text-fg-muted font-bold mb-2">No conditions — this rule catches every lead that reaches it.</p>
                 )}
                 <div className="space-y-2">
                     {draft.conditions.map((c, i) => (
-                        <div key={i} className="grid grid-cols-[1fr_1fr_2fr_auto] gap-2 items-center" data-testid="assignment-condition-row">
-                            <select
+                        <Grid key={i} template="1fr 1fr 2fr auto" gap="sm" data-testid="assignment-condition-row">
+                            <Select
+                                name={`assignment-condition-${i}-field`}
                                 aria-label={`Condition ${i + 1} field`}
-                                className={FIELD_CLS}
                                 value={c.field}
+                                options={CONDITION_FIELDS.map((f) => ({ value: f.value, label: f.label }))}
                                 onChange={(e) => setCondition(i, { field: e.target.value })}
-                            >
-                                {CONDITION_FIELDS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
-                            </select>
-                            <select
+                            />
+                            <Select
+                                name={`assignment-condition-${i}-op`}
                                 aria-label={`Condition ${i + 1} operator`}
-                                className={FIELD_CLS}
                                 value={c.op}
+                                options={CONDITION_OPS.map((o) => ({ value: o.value, label: o.label }))}
                                 onChange={(e) => setCondition(i, { op: e.target.value as any })}
-                            >
-                                {CONDITION_OPS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                            </select>
-                            <input
+                            />
+                            <TextField
+                                name={`assignment-condition-${i}-value`}
                                 aria-label={`Condition ${i + 1} value`}
-                                className={FIELD_CLS}
                                 value={Array.isArray(c.value) ? c.value.join(', ') : c.value}
                                 placeholder={c.op === 'in' ? 'facebook, google' : 'facebook'}
                                 onChange={(e) => setCondition(i, { value: e.target.value })}
                             />
-                            <button
-                                type="button"
-                                aria-label={`Remove condition ${i + 1}`}
-                                className="p-2 text-slate-500 hover:text-red-400"
+                            <IconButton
+                                label={`Remove condition ${i + 1}`}
+                                variant="danger"
+                                icon={<Trash2 size={14} />}
                                 onClick={() => setDraft((d) => ({ ...d, conditions: d.conditions.filter((_, idx) => idx !== i) }))}
-                            >
-                                <Trash2 size={14} />
-                            </button>
-                        </div>
+                            />
+                        </Grid>
                     ))}
                 </div>
                 {draft.conditions.length < 20 && (
-                    <button
+                    <Button
                         type="button"
-                        className="mt-2 text-xs font-black text-blue-400 hover:text-blue-300 uppercase tracking-widest"
+                        variant="secondary"
+                        size="sm"
+                        className="mt-2"
                         onClick={() => setDraft((d) => ({ ...d, conditions: [...d.conditions, { field: 'source', op: 'eq', value: '' }] }))}
                     >
                         + Add condition
-                    </button>
+                    </Button>
                 )}
             </div>
 
             <div>
                 <span className={LABEL_CLS}>Assign to</span>
-                <div className="flex gap-1 bg-slate-900/50 p-1 rounded-xl border border-slate-700/50 w-fit mb-3" role="radiogroup" aria-label="Assign to">
+                <div className="flex gap-1 bg-surface-sunken p-1 rounded-nb border border-line w-fit mb-3" role="radiogroup" aria-label="Assign to">
                     {(['users', 'department'] as const).map((t) => {
                         const on = draft.pool_source !== 'project_assigned' && draft.target_type === t;
                         return (
-                            <button
-                                key={t}
-                                type="button"
-                                role="radio"
-                                aria-checked={on}
-                                // Leaving the project pool writes null so the server clears it.
-                                onClick={() => setDraft((d) => ({
+                            <Button variant={on ? "primary" : "secondary"} size="sm" key={t} type="button" role="radio" aria-checked={on} onClick={() => setDraft((d) => ({
                                     ...d,
                                     target_type: t,
                                     ...(d.pool_source === 'project_assigned' ? { pool_source: null } : {}),
-                                }))}
-                                className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${on ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}
-                            >
+                                }))}>
                                 {t === 'users' ? 'People' : 'Department'}
-                            </button>
+                            </Button>
                         );
                     })}
-                    <button
-                        type="button"
-                        role="radio"
-                        aria-checked={draft.pool_source === 'project_assigned'}
-                        onClick={() => setDraft((d) => ({ ...d, pool_source: 'project_assigned', target_type: 'users', target_user_ids: [] }))}
-                        className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${draft.pool_source === 'project_assigned' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}
-                    >
+                    <Button variant={draft.pool_source === 'project_assigned' ? 'primary' : 'secondary'} size="sm" type="button" role="radio" aria-checked={draft.pool_source === 'project_assigned'} onClick={() => setDraft((d) => ({ ...d, pool_source: 'project_assigned', target_type: 'users', target_user_ids: [] }))}>
                         Project agents
-                    </button>
+                    </Button>
                 </div>
                 {draft.pool_source === 'project_assigned' ? (
-                    <p className="text-xs text-slate-400">The pool is the agents (and team members) allocated to the lead's project.</p>
+                    <p className="text-xs text-fg-subtle">The pool is the agents (and team members) allocated to the lead's project.</p>
                 ) : draft.target_type === 'department' ? (
                     <DepartmentSelector
                         value={draft.target_department_id ?? undefined}
@@ -344,177 +329,143 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                 )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4 items-end">
-                <div>
-                    <label htmlFor="assignment-rule-method" className={LABEL_CLS}>Method</label>
-                    <select
+            <Grid gap="md" className="items-end">
+                <GridItem span={{ md: 4, lg: 6 }}><div>
+                    <Select
                         id="assignment-rule-method"
-                        className={FIELD_CLS}
+                        name="assignment-rule-method"
+                        label="Method"
                         value={draft.method}
+                        options={ASSIGNMENT_METHODS.map((m) => ({ value: m.value, label: m.label }))}
                         onChange={(e) => setDraft((d) => ({ ...d, method: e.target.value as any }))}
-                    >
-                        {ASSIGNMENT_METHODS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
-                    </select>
-                </div>
-                <label className="flex items-center gap-2 text-sm font-bold text-slate-300 pb-2.5">
-                    <input
-                        type="checkbox"
-                        checked={draft.skip_inactive}
-                        onChange={(e) => setDraft((d) => ({ ...d, skip_inactive: e.target.checked }))}
                     />
-                    Skip people who are inactive
-                </label>
-            </div>
+                </div></GridItem>
+                <GridItem span={{ md: 4, lg: 6 }}><Checkbox
+                    name="assignment-skip-inactive"
+                    label="Skip people who are inactive"
+                    checked={draft.skip_inactive}
+                    onChange={(e) => setDraft((d) => ({ ...d, skip_inactive: e.target.checked }))}
+                /></GridItem>
+            </Grid>
 
-            <div className="grid grid-cols-2 gap-4 items-end">
-                <div>
-                    <label htmlFor="assignment-rule-reassign" className={LABEL_CLS}>Reassign if not contacted within (minutes)</label>
-                    <input
+            <Grid gap="md" className="items-end">
+                <GridItem span={{ md: 4, lg: 6 }}><div>
+                    <NumberInput
                         id="assignment-rule-reassign"
-                        type="number"
-                        inputMode="numeric"
+                        name="assignment-rule-reassign"
+                        label="Reassign if not contacted within (minutes)"
                         min={1}
                         max={MAX_REASSIGN_AFTER_MINUTES}
                         step={1}
-                        className={FIELD_CLS}
                         placeholder="Never"
-                        value={draft.reassign_after_minutes ?? ''}
-                        onChange={(e) => setDraft((d) => ({ ...d, reassign_after_minutes: parseReassignMinutes(e.target.value) }))}
+                        value={draft.reassign_after_minutes ?? null}
+                        onChange={(v) => setDraft((d) => ({ ...d, reassign_after_minutes: v }))}
                     />
-                </div>
-                <label className="flex items-center gap-2 text-sm font-bold text-slate-300 pb-2.5">
-                    <input
-                        type="checkbox"
-                        checked={draft.skip_on_leave !== false}
-                        onChange={(e) => setDraft((d) => ({ ...d, skip_on_leave: e.target.checked }))}
-                    />
-                    Skip people on leave today
-                </label>
-            </div>
+                </div></GridItem>
+                <GridItem span={{ md: 4, lg: 6 }}><Checkbox
+                    name="assignment-skip-on-leave"
+                    label="Skip people on leave today"
+                    checked={draft.skip_on_leave !== false}
+                    onChange={(e) => setDraft((d) => ({ ...d, skip_on_leave: e.target.checked }))}
+                /></GridItem>
+            </Grid>
 
-            {draftError && <p role="alert" className="text-xs font-bold text-red-400">{draftError}</p>}
+            {draftError && <p role="alert" className="text-xs font-bold text-danger">{draftError}</p>}
 
             <div className="flex justify-end gap-2">
-                <button type="button" onClick={closeEditor} className="px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-slate-400 hover:text-slate-200">
+                <Button type="button" variant="secondary" onClick={closeEditor}>
                     Cancel
-                </button>
-                <button
-                    type="button"
-                    onClick={saveDraft}
-                    disabled={busy}
-                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest disabled:opacity-50"
-                >
+                </Button>
+                <Button type="button" variant="primary" onClick={saveDraft} disabled={busy}>
                     {busy && <Loader2 size={14} className="animate-spin" />}
                     Save rule
-                </button>
+                </Button>
             </div>
         </div>
     );
 
     return (
-        <div className="space-y-10">
-            <section className="bg-slate-900 border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
-                <div className="p-6 border-b border-slate-700/50 bg-slate-900/50 flex items-center justify-between">
-                    <div>
-                        <h3 className="font-black text-slate-50 uppercase tracking-widest text-xs">Lead Assignment Rules</h3>
-                        <p className="text-[10px] text-slate-500 font-bold mt-1">NEW LEADS GO TO THE FIRST MATCHING RULE, TOP TO BOTTOM</p>
-                    </div>
-                    {canWrite && !editingId && (
-                        <button
-                            type="button"
-                            onClick={() => openEditor()}
-                            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest"
-                        >
-                            <Plus size={14} /> Add rule
-                        </button>
-                    )}
-                </div>
+        <div className="space-y-nb-4">
+            {confirmDialog}
+            <Card
+                title="Lead assignment rules"
+                padding="none"
+                actions={canWrite && !editingId ? (
+                    <Button type="button" variant="primary" onClick={() => openEditor()}>
+                        <Plus size={14} /> Add rule
+                    </Button>
+                ) : undefined}
+            >
+                <p className="px-nb-4 pt-nb-3 text-xs text-fg-muted">New leads go to the first matching rule, top to bottom</p>
 
                 {editor}
 
                 {loading ? (
-                    <div className="p-10 flex justify-center text-slate-500"><Loader2 size={20} className="animate-spin" /></div>
+                    <div className="p-10 flex justify-center text-fg-muted"><Loader2 size={20} className="animate-spin" /></div>
                 ) : loadError ? (
-                    <p role="alert" className="p-6 text-sm font-bold text-red-400">{loadError}</p>
+                    <p role="alert" className="p-6 text-sm font-bold text-danger">{loadError}</p>
                 ) : rules.length === 0 ? (
-                    <p className="p-6 text-sm font-bold text-slate-500">No rules yet. New leads keep the owner they are created with.</p>
+                    <p className="p-6 text-sm font-bold text-fg-muted">No rules yet. New leads keep the owner they are created with.</p>
                 ) : (
-                    <ol className="divide-y divide-slate-800" aria-label="Assignment rules">
+                    <ol className="divide-y divide-line" aria-label="Assignment rules">
                         {rules.map((rule, i) => (
                             <li key={rule.id} className="p-4 flex items-center gap-4" data-testid="assignment-rule-row">
-                                <span className="w-6 text-center text-xs font-black text-slate-500">{i + 1}</span>
+                                <span className="w-6 text-center text-xs font-semibold text-fg-muted">{i + 1}</span>
                                 <div className="flex-1 min-w-0">
-                                    <p className={`font-bold text-sm truncate ${rule.is_active ? 'text-slate-50' : 'text-slate-500 line-through'}`}>{rule.name}</p>
-                                    <p className="text-xs text-slate-500 truncate">{conditionSummary(rule)} → {targetSummary(rule)}</p>
+                                    <p className={`font-bold text-sm truncate ${rule.is_active ? 'text-fg' : 'text-fg-muted line-through'}`}>{rule.name}</p>
+                                    <p className="text-xs text-fg-muted truncate">{conditionSummary(rule)} → {targetSummary(rule)}</p>
                                 </div>
                                 {canWrite && (
                                     <div className="flex items-center gap-1">
-                                        <button type="button" aria-label={`Move ${rule.name} up`} disabled={busy || i === 0} onClick={() => move(i, -1)} className="p-1.5 text-slate-500 hover:text-slate-200 disabled:opacity-30">
-                                            <ChevronUp size={16} />
-                                        </button>
-                                        <button type="button" aria-label={`Move ${rule.name} down`} disabled={busy || i === rules.length - 1} onClick={() => move(i, 1)} className="p-1.5 text-slate-500 hover:text-slate-200 disabled:opacity-30">
-                                            <ChevronDown size={16} />
-                                        </button>
-                                        <button
-                                            type="button"
-                                            aria-label={rule.is_active ? `Turn off ${rule.name}` : `Turn on ${rule.name}`}
+                                        <IconButton label={`Move ${rule.name} up`} icon={<ChevronUp size={16} />} disabled={busy || i === 0} onClick={() => move(i, -1)} />
+                                        <IconButton label={`Move ${rule.name} down`} icon={<ChevronDown size={16} />} disabled={busy || i === rules.length - 1} onClick={() => move(i, 1)} />
+                                        <IconButton
+                                            label={rule.is_active ? `Turn off ${rule.name}` : `Turn on ${rule.name}`}
                                             disabled={busy}
                                             onClick={() => toggleActive(rule)}
-                                            className="p-1.5 text-slate-500 hover:text-slate-200"
-                                        >
-                                            {rule.is_active ? <ToggleRight size={18} className="text-emerald-400" /> : <ToggleLeft size={18} />}
-                                        </button>
-                                        <button type="button" aria-label={`Edit ${rule.name}`} disabled={busy} onClick={() => openEditor(rule)} className="p-1.5 text-slate-500 hover:text-slate-200">
-                                            <Edit2 size={14} />
-                                        </button>
-                                        <button type="button" aria-label={`Delete ${rule.name}`} disabled={busy} onClick={() => removeRule(rule)} className="p-1.5 text-slate-500 hover:text-red-400">
-                                            <Trash2 size={14} />
-                                        </button>
+                                            icon={rule.is_active ? <ToggleRight size={18} className="text-success" /> : <ToggleLeft size={18} />}
+                                        />
+                                        <IconButton label={`Edit ${rule.name}`} icon={<Edit2 size={14} />} disabled={busy} onClick={() => openEditor(rule)} />
+                                        <IconButton label={`Delete ${rule.name}`} variant="danger" icon={<Trash2 size={14} />} disabled={busy} onClick={() => removeRule(rule)} />
                                     </div>
                                 )}
                             </li>
                         ))}
                     </ol>
                 )}
-            </section>
+            </Card>
 
-            <section className="bg-slate-900 border border-slate-700/50 rounded-2xl p-6 shadow-2xl space-y-4" aria-label="Test assignment">
-                <div>
-                    <h3 className="font-black text-slate-50 uppercase tracking-widest text-xs">Test a lead</h3>
-                    <p className="text-[10px] text-slate-500 font-bold mt-1">SEE WHO A LEAD WOULD GO TO. NOTHING IS SAVED.</p>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <Card title="Test a lead">
+              <div className="space-y-4">
+                <p className="text-xs text-fg-muted">See who a lead would go to. nothing is saved.</p>
+                <Grid gap="md">
                     {CONDITION_FIELDS.map((f) => (
-                        <div key={f.value}>
+                        <GridItem key={f.value} span={3}>                        <div>
                             <label htmlFor={`assignment-test-${f.value}`} className={LABEL_CLS}>{f.label}</label>
-                            <input
+                            <TextField
                                 id={`assignment-test-${f.value}`}
-                                className={FIELD_CLS}
+                                name={`assignment-test-${f.value}`}
                                 value={sample[f.value] ?? ''}
                                 onChange={(e) => setSample((s) => ({ ...s, [f.value]: e.target.value }))}
                             />
-                        </div>
+                        </div></GridItem>
                     ))}
-                </div>
+                </Grid>
                 <div className="flex items-center gap-4">
-                    <button
-                        type="button"
-                        onClick={runTest}
-                        disabled={testing}
-                        className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-100 px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest disabled:opacity-50"
-                    >
+                    <Button type="button" variant="secondary" onClick={runTest} disabled={testing}>
                         {testing && <Loader2 size={14} className="animate-spin" />}
                         Run test
-                    </button>
+                    </Button>
                     {testResult && (
-                        <p className="text-sm font-bold text-slate-300" data-testid="assignment-test-result">
+                        <p className="text-sm font-bold text-fg-subtle" data-testid="assignment-test-result">
                             {testResult.assigned
                                 ? `Goes to ${assigneeName ?? testResult.user_id} via "${testResult.rule_name}".`
                                 : `No rule would assign this lead${testResult.reason ? ` (${testResult.reason})` : ''}.`}
                         </p>
                     )}
                 </div>
-            </section>
+              </div>
+            </Card>
         </div>
     );
 };

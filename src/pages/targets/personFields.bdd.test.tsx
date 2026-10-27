@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
+import { PeopleSelector } from '@so360/design-system';
 
 /**
  * BDD specs for the person fields on Targets & Performance.
@@ -27,7 +28,8 @@ vi.mock('../../services/crmService', () => ({
 
 import {
   PersonName,
-  PersonPicker,
+  loadDirectoryPeople,
+  personIdOf,
   __resetPeopleDirectoryForTests,
 } from './targetUi';
 
@@ -60,7 +62,7 @@ function Harness({ initial = '' }: { initial?: string }) {
   return (
     <>
       <div data-testid="picker">
-        <PersonPicker value={value} onChange={setValue} />
+        <PeopleSelector clearable loadOptions={loadDirectoryPeople} value={value} onChange={(id) => setValue(personIdOf(id))} />
       </div>
       {/* Read-back of the stored value, kept OUTSIDE the picker so assertions
           about what the field displays are not satisfied by this probe. */}
@@ -72,13 +74,12 @@ function Harness({ initial = '' }: { initial?: string }) {
 describe('Given a person field on a targets screen', () => {
   it('When it mounts / Then it suggests people by name rather than asking for a UUID', async () => {
     render(<Harness />);
-    await userEvent.click(await screen.findByRole('combobox'));
+    await userEvent.click(await screen.findByText('Select person...'));
 
     // Sorted by name, so the list does not arrive in whatever order the
     // registry happened to return.
-    const options = await screen.findAllByRole('button');
-    expect(options[0]).toHaveTextContent('Asha Menon');
-    expect(screen.getByText(/Brian Kelly/)).toBeInTheDocument();
+    const names = (await screen.findAllByText(/Asha Menon|Brian Kelly/)).map((n) => n.textContent);
+    expect(names).toEqual(['Asha Menon', 'Brian Kelly']);
   });
 
   it('When the user searches a job title / Then it still matches', async () => {
@@ -86,7 +87,8 @@ describe('Given a person field on a targets screen', () => {
     // client-side precisely so searching by role or department is not a dead
     // end for the user.
     render(<Harness />);
-    await userEvent.type(await screen.findByRole('combobox'), 'field eng');
+    await userEvent.click(await screen.findByText('Select person...'));
+    await userEvent.type(await screen.findByPlaceholderText('Search people...'), 'field eng');
 
     await waitFor(() => {
       expect(screen.getByText(/Brian Kelly/)).toBeInTheDocument();
@@ -96,15 +98,16 @@ describe('Given a person field on a targets screen', () => {
 
   it('When a search matches nobody / Then it says so instead of showing an empty box', async () => {
     render(<Harness />);
-    await userEvent.type(await screen.findByRole('combobox'), 'zzzz');
-    expect(await screen.findByText('No matching people')).toBeInTheDocument();
+    await userEvent.click(await screen.findByText('Select person...'));
+    await userEvent.type(await screen.findByPlaceholderText('Search people...'), 'zzzz');
+    expect(await screen.findByText('No people found')).toBeInTheDocument();
   });
 
   it('When a person is picked / Then the stored value is their id, not their name', async () => {
     // The API contracts take a People Connect person id. Storing a display
     // name here would break every downstream lookup.
     render(<Harness />);
-    await userEvent.click(await screen.findByRole('combobox'));
+    await userEvent.click(await screen.findByText('Select person...'));
     await userEvent.click(await screen.findByText(/Asha Menon/));
 
     await waitFor(() => {
@@ -119,11 +122,14 @@ describe('Given a person field on a targets screen', () => {
       within(screen.getByTestId('picker')).queryByText(ASHA.id),
     ).not.toBeInTheDocument();
   });
+});
 
-  it('When the selection is cleared / Then the field returns to searching', async () => {
+describe('Given a person is selected', () => {
+  it('When the selection is cleared / Then the stored value is emptied and the field returns to searching', async () => {
     render(<Harness initial={ASHA.id} />);
     await userEvent.click(await screen.findByLabelText('Clear selection'));
-    expect(await screen.findByRole('combobox')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId('value')).toHaveTextContent(/^$/));
+    expect(await screen.findByText('Select person...')).toBeInTheDocument();
   });
 });
 
@@ -146,13 +152,9 @@ describe('Given the directory call fails', () => {
   it('When the field renders / Then it says so rather than looking like an empty org', async () => {
     getSalesReps.mockRejectedValueOnce(new Error('503'));
     render(<Harness />);
+    await userEvent.click(await screen.findByText('Select person...'));
 
-    await waitFor(() => {
-      expect(screen.getByRole('combobox')).toHaveAttribute(
-        'placeholder',
-        'People directory unavailable',
-      );
-    });
+    expect(await screen.findByText('People directory unavailable')).toBeInTheDocument();
   });
 
   it('When a later field mounts / Then it retries, because a rejection is not cached', async () => {
@@ -164,7 +166,6 @@ describe('Given the directory call fails', () => {
     unmount();
 
     render(<Harness />);
-    await screen.findByRole('combobox');
     await waitFor(() => expect(getSalesReps).toHaveBeenCalledTimes(2));
   });
 });

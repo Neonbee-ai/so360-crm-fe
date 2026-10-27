@@ -4,11 +4,16 @@ import { targetPlanService } from '../../services/targetPlanService';
 import {
   AsOfBanner,
   EmptyState,
-  Panel,
+  ErrorState,
+  UNLINKED_PROFILE_MESSAGE,
+  isUnlinkedPayload,
+  LoadingState,
   PeriodPicker,
   formatPct,
   formatValue,
+  isUnlinkedProfileError,
 } from './targetUi';
+import { DashboardPageTemplate, Card, Grid, GridItem, Progress } from '@so360/design-system';
 
 /**
  * Pipeline health, deal mix, sales cycle and win/loss.
@@ -43,7 +48,9 @@ export default function MeasurementPage() {
     setError(null);
     targetPlanService
       .myMeasurement(asOf || undefined)
-      .then(setData)
+      .then((d) =>
+        isUnlinkedPayload(d) ? setError(UNLINKED_PROFILE_MESSAGE) : setData(d),
+      )
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [asOf]);
@@ -55,38 +62,38 @@ export default function MeasurementPage() {
   // Rendered by EVERY branch, including the loading and empty states. If the
   // picker vanished when a period came back empty, the user would be stuck on
   // that period with no way to choose another.
-  const header = (
+  const header = isUnlinkedProfileError(error) ? undefined : (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <h1 className="text-lg font-semibold text-slate-100">Measurement</h1>
-        <PeriodPicker value={asOf} onChange={setAsOf} />
-      </div>
+      <PeriodPicker value={asOf} onChange={setAsOf} />
       <AsOfBanner asOf={asOf} />
     </div>
   );
 
   if (loading) {
     return (
-      <div className="p-6 space-y-4">
-        {header}
-        <div className="text-sm text-slate-400">Loading…</div>
+      <DashboardPageTemplate title="Measurement" filters={header} trail={[{ label: 'Targets', to: '/crm/targets' }]}>
+      <div className="space-y-4">
+        <LoadingState />
       </div>
+      </DashboardPageTemplate>
     );
   }
   if (error) {
     return (
-      <div className="p-6 space-y-4">
-        {header}
-        <div className="text-sm text-rose-300">{error}</div>
+      <DashboardPageTemplate title="Measurement" filters={header} trail={[{ label: 'Targets', to: '/crm/targets' }]}>
+      <div className="space-y-4">
+        <ErrorState error={error} onRetry={load} />
       </div>
+      </DashboardPageTemplate>
     );
   }
   if (!data) {
     return (
-      <div className="p-6 space-y-4">
-        {header}
-        <EmptyState message="No measurement data for this period." />
+      <DashboardPageTemplate title="Measurement" filters={header} trail={[{ label: 'Targets', to: '/crm/targets' }]}>
+      <div className="space-y-4">
+        <EmptyState title="No measurement data" description="There is nothing to measure in the selected period." />
       </div>
+      </DashboardPageTemplate>
     );
   }
 
@@ -95,22 +102,24 @@ export default function MeasurementPage() {
     !pipeline?.applicable && !mix?.applicable && !winLoss?.won_count && !winLoss?.lost_count;
 
   return (
-    <div className="p-6 space-y-5">
-      <div>
-        {header}
-        <div className="mt-1 text-xs text-slate-400">
+    <DashboardPageTemplate title="Measurement" filters={header} trail={[{ label: 'Targets', to: '/crm/targets' }]}>
+    <Grid>
+      <GridItem span={12}>
+        <div className="text-xs text-fg-subtle">
           {data.period_start} → {data.period_end}
         </div>
-      </div>
+      </GridItem>
 
       {nothingApplies && (
-        <EmptyState message="No pipeline, product lines or closed deals in this period yet." />
+        <GridItem span={12}>
+          <EmptyState title="Nothing to measure yet" description="No pipeline, product lines or closed deals in this period." />
+        </GridItem>
       )}
 
-      <div className="flex flex-wrap gap-4">
         {pipeline?.applicable && (
-          <Panel title="Pipeline Health">
-            <div className="space-y-2 text-sm min-w-[18rem]">
+          <GridItem span={4}>
+          <Card title="Pipeline Health">
+            <div className="space-y-2 text-sm">
               <Row
                 label="Period target"
                 value={formatValue(pipeline.target, 'currency', currency)}
@@ -119,10 +128,10 @@ export default function MeasurementPage() {
                 label="Total pipeline"
                 value={formatValue(pipeline.total_pipeline, 'currency', currency)}
               />
-              <div className="flex items-center justify-between border-y border-slate-800 py-2">
-                <span className="text-slate-400">Coverage</span>
+              <div className="flex items-center justify-between border-y border-line py-2">
+                <span className="text-fg-subtle">Coverage</span>
                 <span className="flex items-center gap-2">
-                  <span className="text-slate-100">
+                  <span className="text-fg">
                     {pipeline.coverage === null
                       ? '—'
                       : `${pipeline.coverage.toFixed(1)}×`}
@@ -130,7 +139,7 @@ export default function MeasurementPage() {
                   {pipeline.healthy !== null && (
                     <span
                       className={
-                        pipeline.healthy ? 'text-emerald-300' : 'text-amber-300'
+                        pipeline.healthy ? 'text-success' : 'text-warning'
                       }
                     >
                       {pipeline.healthy ? 'Healthy' : 'Below band'}
@@ -138,7 +147,7 @@ export default function MeasurementPage() {
                   )}
                 </span>
               </div>
-              <div className="text-[11px] text-slate-500">
+              <div className="text-xs text-fg-muted">
                 Healthy band {pipeline.coverage_min}× – {pipeline.coverage_max}×
                 (org configurable)
               </div>
@@ -154,48 +163,49 @@ export default function MeasurementPage() {
                 value={formatValue(pipeline.expected_revenue, 'currency', currency)}
               />
             </div>
-          </Panel>
+          </Card>
+          </GridItem>
         )}
 
         {mix?.applicable && (
-          <Panel title="Deal Mix">
-            <div className="space-y-2 text-sm min-w-[18rem]">
+          <GridItem span={4}>
+          <Card title="Deal Mix">
+            <div className="space-y-2 text-sm">
               {mix.lines.map((l: any) => (
                 <div key={l.key}>
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-300">{l.label}</span>
-                    <span className="text-slate-400 text-xs">
+                    <span className="text-fg-subtle">{l.label}</span>
+                    <span className="text-fg-subtle text-xs">
                       {formatValue(l.value, 'currency', currency)} ·{' '}
                       {formatPct(l.share)}
                     </span>
                   </div>
-                  <div className="mt-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-slate-400 rounded-full"
-                      style={{ width: `${Math.min(l.share * 100, 100)}%` }}
-                    />
+                  <div className="mt-1">
+                    <Progress value={Math.min(l.share * 100, 100)} size="sm" />
                   </div>
                 </div>
               ))}
-              <div className="border-t border-slate-800 pt-2 text-xs text-slate-400">
+              <div className="border-t border-line pt-2 text-xs text-fg-subtle">
                 {mix.total_deals} won deal{mix.total_deals === 1 ? '' : 's'} ·{' '}
                 {formatValue(mix.total_value, 'currency', currency)}
               </div>
               {mix.grouping === 'category_name' && (
                 // Worth surfacing: grouping on a free-text category is fragile,
                 // and the fix is a catalog backfill rather than a code change.
-                <div className="text-[11px] text-amber-300">
+                <div className="text-xs text-warning">
                   Grouped by category name — backfill product types for stable
                   service-line reporting.
                 </div>
               )}
             </div>
-          </Panel>
+          </Card>
+          </GridItem>
         )}
 
         {(winLoss?.won_count > 0 || winLoss?.lost_count > 0) && (
-          <Panel title="Win / Loss">
-            <div className="space-y-2 text-sm min-w-[18rem]">
+          <GridItem span={4}>
+          <Card title="Win / Loss">
+            <div className="space-y-2 text-sm">
               <Row
                 label="Won"
                 value={`${winLoss.won_count} · ${formatValue(winLoss.won_value, 'currency', currency)}`}
@@ -206,14 +216,14 @@ export default function MeasurementPage() {
               />
               <Row label="Win rate" value={formatPct(winLoss.win_rate)} />
               <Row label="Loss rate" value={formatPct(winLoss.loss_rate)} />
-              <div className="border-t border-slate-800 pt-2 space-y-1">
+              <div className="border-t border-line pt-2 space-y-1">
                 {winLoss.by_reason?.map((r: any) => (
                   <div
                     key={r.value}
                     className="flex items-center justify-between text-xs"
                   >
-                    <span className="text-slate-300">{r.label}</span>
-                    <span className="text-slate-400">
+                    <span className="text-fg-subtle">{r.label}</span>
+                    <span className="text-fg-subtle">
                       {r.count} ·{' '}
                       {formatValue(r.lost_value, 'currency', currency)}
                     </span>
@@ -230,24 +240,25 @@ export default function MeasurementPage() {
               {winLoss.uncoded_losses > 0 && (
                 // A data-quality signal, not an insight: an unexplained loss
                 // cannot inform the next quarter.
-                <div className="text-[11px] text-amber-300">
+                <div className="text-xs text-warning">
                   {winLoss.uncoded_losses} lost deal
                   {winLoss.uncoded_losses === 1 ? '' : 's'} without a reason code
                 </div>
               )}
             </div>
-          </Panel>
+          </Card>
+          </GridItem>
         )}
-      </div>
-    </div>
+    </Grid>
+    </DashboardPageTemplate>
   );
 }
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-slate-400">{label}</span>
-      <span className="text-slate-200">{value}</span>
+      <span className="text-fg-subtle">{label}</span>
+      <span className="text-fg">{value}</span>
     </div>
   );
 }

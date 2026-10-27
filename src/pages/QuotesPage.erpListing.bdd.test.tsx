@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 
@@ -123,34 +123,26 @@ describe('Feature: CRM Quotes Listing ERP UI/UX Improvements (BDD)', () => {
     mockGetDeals.mockResolvedValue(mockDeals);
   });
 
-  describe('Scenario 1: Interactive KPI Stat Cards', () => {
-    it('Given loaded quotes, When rendered, Then displays 5 KPI stat cards with correct counts', async () => {
+  describe('Scenario 1: Status counts live on the Status filter (no KPI row)', () => {
+    it('Given loaded quotes, When rendered, Then no KPI cards render and Status options carry counts', async () => {
       render(<QuotesPage />);
 
       await waitFor(() => {
         expect(screen.getByText('QT-2026-00001')).toBeInTheDocument();
       });
 
-      const totalCard = screen.getByRole('group', { name: /kpi total quotes/i });
-      const draftCard = screen.getByRole('group', { name: /kpi draft/i });
-      const pendingCard = screen.getByRole('group', { name: /kpi pending approval/i });
-      const approvedCard = screen.getByRole('group', { name: /kpi approved/i });
-      const convertedCard = screen.getByRole('group', { name: /kpi converted/i });
+      expect(screen.queryByRole('group', { name: /kpi/i })).not.toBeInTheDocument();
+      expect(screen.queryByTestId('list-kpis')).not.toBeInTheDocument();
 
-      expect(totalCard).toBeInTheDocument();
-      expect(draftCard).toBeInTheDocument();
-      expect(pendingCard).toBeInTheDocument();
-      expect(approvedCard).toBeInTheDocument();
-      expect(convertedCard).toBeInTheDocument();
-
-      expect(totalCard).toHaveTextContent('4');
-      expect(draftCard).toHaveTextContent('1');
-      expect(pendingCard).toHaveTextContent('1');
-      expect(approvedCard).toHaveTextContent('1');
-      expect(convertedCard).toHaveTextContent('1');
+      const status = screen.getByLabelText('Status') as HTMLSelectElement;
+      const count = (value: string) => status.querySelector(`option[value="${value}"]`)?.getAttribute('data-count');
+      expect(count('draft')).toBe('1');
+      expect(count('pending_approval')).toBe('1');
+      expect(count('approved')).toBe('1');
+      expect(count('converted')).toBe('1');
     });
 
-    it('Given KPI cards, When clicking the Draft card, Then filters table to only draft quotes', async () => {
+    it('Given the Status filter, When choosing Draft, Then filters table to only draft quotes', async () => {
       const user = userEvent.setup();
       render(<QuotesPage />);
 
@@ -158,8 +150,7 @@ describe('Feature: CRM Quotes Listing ERP UI/UX Improvements (BDD)', () => {
         expect(screen.getByText('QT-2026-00001')).toBeInTheDocument();
       });
 
-      const draftCard = screen.getByRole('group', { name: /kpi draft/i });
-      await user.click(draftCard);
+      await user.selectOptions(screen.getByLabelText('Status'), 'draft');
 
       expect(screen.getByText('QT-2026-00001')).toBeInTheDocument();
       expect(screen.queryByText('QT-2026-00002')).not.toBeInTheDocument();
@@ -192,18 +183,13 @@ describe('Feature: CRM Quotes Listing ERP UI/UX Improvements (BDD)', () => {
         expect(screen.getByText('QT-2026-00001')).toBeInTheDocument();
       });
 
-      const selects = screen.getAllByRole('combobox');
-      const validitySelect = selects.find(s => (s as HTMLSelectElement).querySelector('option[value="expired"]'));
-      expect(validitySelect).toBeDefined();
-      if (validitySelect) {
-        await user.selectOptions(validitySelect, 'expired');
-      }
+      await user.selectOptions(screen.getByLabelText('Validity'), 'expired');
 
       expect(screen.getByText('QT-2026-00002')).toBeInTheDocument();
       expect(screen.queryByText('QT-2026-00001')).not.toBeInTheDocument();
     });
 
-    it('Given active filters, When clicking Clear Filters, Then clears all filters and restores full list', async () => {
+    it('Given active filters, When clicking Clear filters, Then clears all filters and restores full list', async () => {
       const user = userEvent.setup();
       render(<QuotesPage />);
 
@@ -252,8 +238,7 @@ describe('Feature: CRM Quotes Listing ERP UI/UX Improvements (BDD)', () => {
         expect(screen.getByText('QT-2026-00001')).toBeInTheDocument();
       });
 
-      const selectAll = screen.getByTitle('Select all on this page');
-      await user.click(selectAll);
+      for (const box of screen.getAllByLabelText('Select row')) await user.click(box);
 
       expect(screen.getByText('4 selected')).toBeInTheDocument();
 
@@ -281,9 +266,9 @@ describe('Feature: CRM Quotes Listing ERP UI/UX Improvements (BDD)', () => {
         expect(screen.getByText('QT-2026-00001')).toBeInTheDocument();
       });
 
-      const moreButtons = screen.getAllByTitle('More actions');
+      const moreButtons = screen.getAllByLabelText('Row actions');
       expect(moreButtons.length).toBeGreaterThan(0);
-      moreButtons[0].click();
+      fireEvent.click(moreButtons[0]);
 
       await waitFor(() => {
         expect(screen.getByText('View Quote Details')).toBeInTheDocument();
@@ -295,16 +280,16 @@ describe('Feature: CRM Quotes Listing ERP UI/UX Improvements (BDD)', () => {
   });
 
   describe('Scenario 6: Pagination Control', () => {
-    it('Given loaded quotes, When rendered, Then shows pagination indicator and page size selector', async () => {
+    it('Given loaded quotes, When rendered, Then renders the Comb pagination with total and current page', async () => {
       render(<QuotesPage />);
 
       await waitFor(() => {
         expect(screen.getByText('QT-2026-00001')).toBeInTheDocument();
       });
 
-      expect(screen.getByText(/of 4 quotes/i)).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /first/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /next/i })).toBeInTheDocument();
+      const pagination = screen.getByTestId('pagination');
+      expect(pagination).toHaveAttribute('data-total', '4');
+      expect(pagination).toHaveAttribute('data-page', '1');
     });
   });
 });

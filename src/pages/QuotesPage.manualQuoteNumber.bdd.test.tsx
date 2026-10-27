@@ -72,7 +72,7 @@ async function openModalWithDeal() {
   await user.click(screen.getByRole('button', { name: /New Quote/i }));
   await waitFor(() => expect(screen.getByText('Create New Quote')).toBeInTheDocument());
   await user.click(screen.getByText('Select a deal...'));
-  await user.click(await screen.findByText('Acme — Q3 Expansion'));
+  await user.click(await screen.findByText('Acme — Q3 Expansion', { selector: 'span' }));
   return user;
 }
 

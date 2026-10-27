@@ -1,6 +1,11 @@
+import { PeopleSelector, Button, TextField, Select, Drawer } from '@so360/design-system';
 import React, { useEffect, useState } from 'react';
 import { targetPlanService } from '../../services/targetPlanService';
-import { Panel, PersonPicker, formatValue } from './targetUi';
+import {
+  loadDirectoryPeople,
+  personIdOf,
+  formatValue,
+} from './targetUi';
 import {
   buildAllocationEntries,
   summariseAllocation,
@@ -86,57 +91,43 @@ export default function AllocateTeamPlanPanel({
   };
 
   return (
-    <Panel
-      title={plan ? `Allocate · ${plan.name}` : 'Allocate'}
-      action={
-        <button
-          className="text-xs text-slate-400 hover:text-slate-200"
-          onClick={onClose}
-        >
-          Close
-        </button>
-      }
-    >
-      {error && <div className="mb-2 text-sm text-rose-300">{error}</div>}
-      {notice && <div className="mb-2 text-sm text-emerald-300">{notice}</div>}
+    <Drawer isOpen onClose={onClose} size="lg" title={plan ? `Allocate · ${plan.name}` : 'Allocate'}>
+      {error && <div className="mb-2 text-sm text-danger">{error}</div>}
+      {notice && <div className="mb-2 text-sm text-success">{notice}</div>}
 
       {!plan ? (
-        <div className="text-sm text-slate-400">Loading plan…</div>
+        <div className="text-sm text-fg-subtle">Loading plan…</div>
       ) : !lines.length ? (
-        <div className="text-sm text-amber-300">
+        <div className="text-sm text-warning">
           This plan has no target lines, so there is nothing to allocate.
         </div>
       ) : (
         <div className="space-y-3">
           <div className="flex flex-wrap items-end gap-3">
             <div>
-              <label className="block text-[11px] text-slate-400 mb-1">
+              <label className="block text-xs text-fg-subtle mb-1">
                 Metric
               </label>
-              <select
+              <Select
+                name="allocate-metric"
                 aria-label="Metric to allocate"
-                className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
+                size="sm"
                 value={taskTypeId}
-                onChange={(e) => setTaskTypeId(e.target.value)}
-              >
-                {lines.map((l) => (
-                  <option key={l.task_type_id} value={l.task_type_id}>
-                    {lineLabel(l)}
-                  </option>
-                ))}
-              </select>
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setTaskTypeId(e.target.value)}
+                options={lines.map((l) => ({ value: l.task_type_id, label: lineLabel(l) }))}
+              />
             </div>
-            <div className="text-xs text-slate-400">
+            <div className="text-xs text-fg-subtle">
               Team target{' '}
-              <span className="text-slate-200">
+              <span className="text-fg">
                 {formatValue(summary.teamTarget, line && lineUnit(line), currency)}
               </span>
               {' · '}allocated{' '}
-              <span className="text-slate-200">
+              <span className="text-fg">
                 {formatValue(summary.allocated, line && lineUnit(line), currency)}
               </span>
               {' · '}
-              <span className={summary.over ? 'text-amber-300' : 'text-slate-200'}>
+              <span className={summary.over ? 'text-warning' : 'text-fg'}>
                 {summary.over ? 'over by ' : 'remaining '}
                 {formatValue(
                   Math.abs(summary.remaining),
@@ -151,23 +142,27 @@ export default function AllocateTeamPlanPanel({
             {rows.map((r, i) => (
               <div key={r.key} className="flex flex-wrap items-center gap-2">
                 <div className="min-w-64">
-                  <PersonPicker
+                  <PeopleSelector
+                    clearable
+                    loadOptions={loadDirectoryPeople}
                     value={r.person_id}
-                    onChange={(id) =>
+                    onChange={(pick) =>
                       setRows((cur) =>
                         cur.map((x) =>
-                          x.key === r.key ? { ...x, person_id: id } : x,
+                          x.key === r.key ? { ...x, person_id: personIdOf(pick) } : x,
                         ),
                       )
                     }
                   />
                 </div>
-                <input
+                <div className="w-32">
+                <TextField
+                  name={`allocate-target-${r.key}`}
                   aria-label={`Target for row ${i + 1}`}
-                  className="w-32 rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none"
+                  size="sm"
                   placeholder="target"
                   value={r.value}
-                  onChange={(e) =>
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     setRows((cur) =>
                       cur.map((x) =>
                         x.key === r.key ? { ...x, value: e.target.value } : x,
@@ -175,24 +170,26 @@ export default function AllocateTeamPlanPanel({
                     )
                   }
                 />
+                </div>
                 {rows.length > 1 && (
-                  <button
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
                     aria-label={`Remove row ${i + 1}`}
-                    className="text-xs text-slate-500 hover:text-slate-300"
                     onClick={() =>
                       setRows((cur) => cur.filter((x) => x.key !== r.key))
                     }
                   >
                     remove
-                  </button>
+                  </Button>
                 )}
               </div>
             ))}
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              className="text-xs text-slate-400 hover:text-slate-200"
+            <Button variant="secondary" size="sm"
               onClick={() =>
                 setRows((cur) => [
                   ...cur,
@@ -201,20 +198,19 @@ export default function AllocateTeamPlanPanel({
               }
             >
               + person
-            </button>
-            <button
-              className="rounded bg-slate-700 px-3 py-1.5 text-sm text-slate-100 hover:bg-slate-600 disabled:opacity-50"
+            </Button>
+            <Button variant="primary" size="sm"
               onClick={submit}
               disabled={busy}
             >
               Allocate
-            </button>
-            <span className="text-xs text-slate-500">
+            </Button>
+            <span className="text-xs text-fg-muted">
               Each person gets their own plan. Nothing is split automatically.
             </span>
           </div>
         </div>
       )}
-    </Panel>
+    </Drawer>
   );
 }

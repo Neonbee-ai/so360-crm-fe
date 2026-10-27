@@ -157,7 +157,7 @@ async function renderAndOpenDocumentsTab() {
     // Wait for the lead to load (loading spinner disappears)
     await waitFor(() => expect(screen.queryByText(/Loading lead workspace/i)).not.toBeInTheDocument());
     // Click the Documents tab
-    const docsTab = screen.getByRole('button', { name: /Documents/i });
+    const docsTab = screen.getByRole('tab', { name: /Documents/i });
     await act(async () => { fireEvent.click(docsTab); });
     return docsTab;
 }

@@ -1,55 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, toast } from '@so360/design-system';
+import { Button, Card, FormPageTemplate, FormSection, NumberInput, Select, Spinner, Switch, TextField, Textarea, Grid, GridItem, toast } from '@so360/design-system';
 import {
     ICP_CATEGORIES, DEFAULT_MIN_SCORE, applyDraft, emptyCriterion, emptyIcpForm, icpService, icpToForm,
     validateIcp, type Icp, type IcpCriterion, type IcpErrors, type IcpFormValues,
 } from '../services/icpService';
 
 const LIST = '/crm/settings/icps';
-
-const INPUT = 'w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500';
-const LABEL = 'flex flex-col gap-1 text-xs font-bold text-slate-300';
-const SECTION = 'rounded-2xl border border-slate-700/50 bg-slate-900 p-6';
-
-const Field: React.FC<{ label: string; error?: string; children: React.ReactNode }> = ({ label, error, children }) => (
-    <label className={LABEL}>
-        {label}
-        {children}
-        {error && <span role="alert" className="text-xs font-medium text-red-400">{error}</span>}
-    </label>
-);
-
-const Section: React.FC<{ title: string; description?: string; children: React.ReactNode }> = ({ title, description, children }) => (
-    <fieldset className={`${SECTION} flex flex-col gap-4`}>
-        <legend className="px-2 text-xs font-black text-slate-50">{title}</legend>
-        {description && <p className="text-xs text-slate-400">{description}</p>}
-        {children}
-    </fieldset>
-);
-
-const PageShell: React.FC<{ title: string; onBack: () => void; side?: React.ReactNode; children: React.ReactNode }> = ({ title, onBack, side, children }) => (
-    <div className="p-8">
-        <header className="mb-8 flex items-center gap-3">
-            <button type="button" className="rounded-lg px-2 py-1 text-xs font-bold text-slate-300 hover:bg-slate-800" onClick={onBack}>Back</button>
-            <h1 className="text-3xl font-black tracking-tight text-slate-50">{title}</h1>
-        </header>
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2">{children}</div>
-            <aside>{side}</aside>
-        </div>
-    </div>
-);
-
-const ToggleSwitch: React.FC<{ label: string; checked: boolean; onChange: (v: boolean) => void; testId: string }> = ({ label, checked, onChange, testId }) => (
-    <button
-        type="button" role="switch" aria-checked={checked} aria-label={label} data-testid={testId}
-        className={`rounded-lg border px-3 py-2 text-xs font-bold ${checked ? 'border-blue-500 bg-blue-600/20 text-blue-200' : 'border-slate-700 text-slate-400'}`}
-        onClick={() => onChange(!checked)}
-    >
-        {label}
-    </button>
-);
+const ICP_TRAIL = [{ label: 'Settings', to: '/crm/settings' }, { label: 'Ideal customer profiles', to: LIST }];
 
 const parseTags = (t: string): string[] => t.split(',').map((x) => x.trim()).filter(Boolean);
 
@@ -60,16 +18,12 @@ const KeywordsField: React.FC<{ value: string[]; onChange: (tags: string[]) => v
         setText((cur: string) => (parseTags(cur).join('\u0000') === value.join('\u0000') ? cur : value.join(', ')));
     }, [value]);
     return (
-        <Field label="Keywords (comma-separated)">
-            <input
-                className={INPUT} value={text} data-testid={testId}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setText(e.target.value); onChange(parseTags(e.target.value)); }}
-            />
-        </Field>
+        <TextField
+            label="Keywords (comma-separated)" name={`${testId}-input`} value={text} data-testid={testId}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setText(e.target.value); onChange(parseTags(e.target.value)); }}
+        />
     );
 };
-
-const numOrNull = (v: string): number | null => (v === '' ? null : Number(v));
 
 const IcpFormPage: React.FC = () => {
     const navigate = useNavigate();
@@ -77,7 +31,7 @@ const IcpFormPage: React.FC = () => {
     const isEdit = !!id;
 
     const [values, setValues] = useState<IcpFormValues>(emptyIcpForm());
-    const [segments, setSegments] = useState<{ id: string; name: string }[]>([]);
+    const [audiences, setAudiences] = useState<{ id: string; name: string }[]>([]);
     const [loading, setLoading] = useState(isEdit);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
@@ -89,7 +43,7 @@ const IcpFormPage: React.FC = () => {
 
     useEffect(() => {
         let alive = true;
-        icpService.segments().then((s: { id: string; name: string }[]) => alive && setSegments(s)).catch(() => undefined);
+        icpService.audiences().then((s: { id: string; name: string }[]) => alive && setAudiences(s)).catch(() => undefined);
         if (id) {
             icpService.list()
                 .then((list: Icp[]) => {
@@ -140,100 +94,93 @@ const IcpFormPage: React.FC = () => {
         }
     };
 
-    if (loading) return <div className="flex justify-center py-10 text-slate-400"><span data-testid="spinner">Loading…</span></div>;
+    const back = () => navigate(LIST);
+
+    if (loading) return <div className="flex justify-center py-nb-6 text-fg-muted"><Spinner /><span className="sr-only" data-testid="spinner">Loading…</span></div>;
     if (loadError) {
         return (
-            <PageShell title="Ideal customer profile" onBack={() => navigate(LIST)}>
-                <p role="alert" className="text-sm text-slate-400">{loadError}</p>
-            </PageShell>
+            <FormPageTemplate title="Ideal customer profile" trail={ICP_TRAIL}>
+                <Card><p role="alert" className="text-sm text-fg-muted">{loadError}</p></Card>
+            </FormPageTemplate>
         );
     }
 
-    const rail = (
-        <section aria-label="Neura" className={`${SECTION} flex flex-col gap-3`}>
-            <h2 className="text-xs font-black text-slate-50">Neura</h2>
-            <Field label="Describe your ideal customer">
-                <textarea
-                    name="icp-brief" rows={5} className={INPUT} value={brief} data-testid="icp-brief"
-                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setBrief(e.target.value)}
-                />
-            </Field>
-            <p className="text-xs text-slate-400">Neura drafts the criteria. You review and edit before saving.</p>
-            {draftError && <p role="alert" className="text-sm text-red-400" data-testid="icp-draft-error">{draftError}</p>}
-            <Button type="button" variant="secondary" onClick={() => void onDraft()} disabled={drafting || !brief.trim()} data-testid="icp-draft-btn">
-                {drafting ? 'Drafting…' : 'Draft'}
-            </Button>
-        </section>
-    );
-
     return (
-        <PageShell
+        <FormPageTemplate
+            trail={ICP_TRAIL}
             title={isEdit ? 'Edit ideal customer profile' : 'New ideal customer profile'}
-            onBack={() => navigate(LIST)}
-            side={rail}
+            secondaryAction={<Button type="button" variant="secondary" onClick={back} data-testid="icp-cancel">Cancel</Button>}
+            primaryAction={<Button type="button" disabled={saving} onClick={() => void onSave()} data-testid="icp-save">{saving ? 'Saving…' : 'Save'}</Button>}
         >
             <form
-                className="flex flex-col gap-6"
+                className="flex flex-col gap-nb-3"
                 onSubmit={(e: React.FormEvent<HTMLFormElement>) => { e.preventDefault(); void onSave(); }}
                 noValidate
             >
-                <Section title="Profile">
-                    <Field label="Name" error={errors.name}>
-                        <input
-                            name="icp-name" required className={INPUT} value={values.name} data-testid="icp-name"
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('name', e.target.value)}
+                <Card
+                    title="Neura"
+                    actions={
+                        <Button type="button" size="sm" variant="secondary" onClick={() => void onDraft()} disabled={drafting || !brief.trim()} data-testid="icp-draft-btn">
+                            {drafting ? 'Drafting…' : 'Draft'}
+                        </Button>
+                    }
+                >
+                    <div className="flex flex-col gap-nb-3">
+                        <Textarea
+                            label="Describe your ideal customer" name="icp-brief" rows={5} value={brief} data-testid="icp-brief"
+                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setBrief(e.target.value)}
                         />
-                    </Field>
-                    <Field label="Target persona">
-                        <input
-                            name="icp-persona" className={INPUT} value={values.target_persona} data-testid="icp-persona"
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('target_persona', e.target.value)}
-                        />
-                    </Field>
-                    <Field label="Description">
-                        <textarea
-                            name="icp-description" rows={3} className={INPUT} value={values.description} data-testid="icp-description"
-                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('description', e.target.value)}
-                        />
-                    </Field>
-                    <ToggleSwitch label="Default profile" checked={values.is_default} onChange={(v: boolean) => set('is_default', v)} testId="icp-default" />
-                </Section>
+                        <p className="text-xs text-fg-muted">Neura drafts the criteria. You review and edit before saving.</p>
+                        {draftError && <p role="alert" className="text-sm text-danger" data-testid="icp-draft-error">{draftError}</p>}
+                    </div>
+                </Card>
 
-                <Section title="Criteria" description="Each criterion adds (Include) or subtracts (Exclude) its weight from the fit score when a captured profile matches.">
+                <FormSection title="Profile">
+                    <TextField
+                        label="Name" name="icp-name" required error={errors.name} value={values.name} data-testid="icp-name"
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('name', e.target.value)}
+                    />
+                    <TextField
+                        label="Target persona" name="icp-persona" value={values.target_persona} data-testid="icp-persona"
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('target_persona', e.target.value)}
+                    />
+                    <Textarea
+                        label="Description" name="icp-description" rows={3} value={values.description} data-testid="icp-description"
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => set('description', e.target.value)}
+                    />
+                    <Switch label="Default profile" name="icp-default" checked={values.is_default} onCheckedChange={(v: boolean) => set('is_default', v)} data-testid="icp-default" />
+                </FormSection>
+
+                <FormSection title="Criteria" description="Each criterion adds (Include) or subtracts (Exclude) its weight from the fit score when a captured profile matches.">
                     {values.criteria.map((c, i) => (
-                        <div key={i} className="flex flex-col gap-3 rounded-lg border border-slate-700/50 p-3" data-testid={`icp-criterion-${i}`}>
-                            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                                <Field label="Category">
-                                    <select
-                                        name={`criterion-category-${i}`} className={INPUT} value={c.category} data-testid={`icp-criterion-category-${i}`}
-                                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCriterion(i, { category: e.target.value })}
-                                    >
-                                        {ICP_CATEGORIES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                                    </select>
-                                </Field>
-                                <Field label="Label">
-                                    <input
-                                        name={`criterion-label-${i}`} className={INPUT} value={c.label} data-testid={`icp-criterion-label-${i}`}
-                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCriterion(i, { label: e.target.value })}
-                                    />
-                                </Field>
-                            </div>
+                        <div key={i} className="flex flex-col gap-nb-3 border-b border-line pb-nb-3 last:border-b-0 last:pb-0" data-testid={`icp-criterion-${i}`}>
+                            <Grid gap="md">
+                                <GridItem span={{ md: 4, lg: 6 }}><Select
+                                    label="Category" name={`criterion-category-${i}`} value={c.category} data-testid={`icp-criterion-category-${i}`}
+                                    options={ICP_CATEGORIES.map((o) => ({ value: o.value, label: o.label }))}
+                                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCriterion(i, { category: e.target.value })}
+                                /></GridItem>
+                                <GridItem span={{ md: 4, lg: 6 }}><TextField
+                                    label="Label" name={`criterion-label-${i}`} value={c.label} data-testid={`icp-criterion-label-${i}`}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCriterion(i, { label: e.target.value })}
+                                /></GridItem>
+                            </Grid>
                             <KeywordsField
                                 value={c.match_config.keywords}
                                 onChange={(tags: string[]) => setCriterion(i, { match_config: { keywords: tags } })}
                                 testId={`icp-criterion-keywords-${i}`}
                             />
-                            <div className="grid grid-cols-1 items-end gap-3 md:grid-cols-3">
-                                <Field label="Weight (1–100)">
-                                    <input
-                                        type="number" min={1} max={100} name={`criterion-weight-${i}`} className={INPUT}
-                                        value={c.weight ?? ''} data-testid={`icp-criterion-weight-${i}`}
-                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCriterion(i, { weight: numOrNull(e.target.value) ?? 0 })}
+                            <div className="flex flex-wrap items-end gap-nb-3">
+                                <div className="w-full wc-medium:w-48">
+                                    <NumberInput
+                                        label="Weight (1–100)" name={`criterion-weight-${i}`} min={1} max={100} value={c.weight ?? null}
+                                        data-testid={`icp-criterion-weight-${i}`}
+                                        onChange={(n: number | null) => setCriterion(i, { weight: n ?? 0 })}
                                     />
-                                </Field>
-                                <ToggleSwitch
-                                    label={c.is_positive ? 'Include' : 'Exclude'} checked={c.is_positive}
-                                    onChange={(v: boolean) => setCriterion(i, { is_positive: v })} testId={`icp-criterion-positive-${i}`}
+                                </div>
+                                <Switch
+                                    label={c.is_positive ? 'Include' : 'Exclude'} name={`criterion-positive-${i}`} checked={c.is_positive}
+                                    onCheckedChange={(v: boolean) => setCriterion(i, { is_positive: v })} data-testid={`icp-criterion-positive-${i}`}
                                 />
                                 <Button
                                     type="button" variant="secondary" aria-label={`Remove criterion ${i + 1}`}
@@ -245,42 +192,31 @@ const IcpFormPage: React.FC = () => {
                             </div>
                         </div>
                     ))}
-                    {errors.criteria && <p role="alert" className="text-sm text-red-400" data-testid="icp-criteria-error">{errors.criteria}</p>}
-                    {errors.weights && <p role="alert" className="text-sm text-red-400" data-testid="icp-weight-error">{errors.weights}</p>}
+                    {errors.criteria && <p role="alert" className="text-sm text-danger" data-testid="icp-criteria-error">{errors.criteria}</p>}
+                    {errors.weights && <p role="alert" className="text-sm text-danger" data-testid="icp-weight-error">{errors.weights}</p>}
                     <div>
                         <Button type="button" variant="secondary" onClick={() => set('criteria', [...values.criteria, emptyCriterion()])} data-testid="icp-add-criterion">
                             Add criterion
                         </Button>
                     </div>
-                </Section>
+                </FormSection>
 
-                <Section title="Auto-add to list" description="Optionally add captured leads that score at or above the minimum to a customer list.">
-                    <Field label="List">
-                        <select
-                            name="icp-segment" className={INPUT} value={values.auto_segment_id ?? ''} data-testid="icp-segment"
-                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('auto_segment_id', e.target.value || null)}
-                        >
-                            <option value="">None</option>
-                            {segments.map((sg) => <option key={sg.id} value={sg.id}>{sg.name}</option>)}
-                        </select>
-                    </Field>
-                    {values.auto_segment_id && (
-                        <Field label="Minimum fit score">
-                            <input
-                                type="number" min={1} max={100} name="icp-min-score" className={INPUT}
-                                value={values.auto_segment_min_score ?? DEFAULT_MIN_SCORE} data-testid="icp-min-score"
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('auto_segment_min_score', numOrNull(e.target.value))}
-                            />
-                        </Field>
+                <FormSection title="Auto-add to list" description="Optionally add captured leads that score at or above the minimum to a Marketing audience.">
+                    <Select
+                        label="Marketing audience" name="icp-audience" value={values.auto_audience_id ?? ''} data-testid="icp-audience"
+                        options={[{ value: '', label: 'None' }, ...audiences.map((au) => ({ value: au.id, label: au.name }))]}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('auto_audience_id', e.target.value || null)}
+                    />
+                    {values.auto_audience_id && (
+                        <NumberInput
+                            label="Minimum fit score" name="icp-min-score" min={1} max={100}
+                            value={values.auto_segment_min_score ?? DEFAULT_MIN_SCORE} data-testid="icp-min-score"
+                            onChange={(n: number | null) => set('auto_segment_min_score', n)}
+                        />
                     )}
-                </Section>
-
-                <div className="sticky bottom-0 flex justify-end gap-2 border-t border-slate-700/50 bg-slate-950 py-3">
-                    <Button type="button" variant="secondary" onClick={() => navigate(LIST)} data-testid="icp-cancel">Cancel</Button>
-                    <Button type="submit" disabled={saving} data-testid="icp-save">{saving ? 'Saving…' : 'Save'}</Button>
-                </div>
+                </FormSection>
             </form>
-        </PageShell>
+        </FormPageTemplate>
     );
 };
 

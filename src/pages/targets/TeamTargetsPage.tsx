@@ -2,16 +2,21 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useShellBridge } from '@so360/shell-context';
 import { targetPlanService } from '../../services/targetPlanService';
 import {
+  AsOfBanner,
   EmptyState,
-  Panel,
+  ErrorState,
+  LoadingState,
+  PeriodPicker,
   PersonName,
-  ProgressBar,
-  StatusChip,
+  STATUS_TONE,
+  attainmentProps,
   formatPct,
   formatValue,
-  PeriodPicker,
-  AsOfBanner,
+  isUnlinkedProfileError,
+  statusText,
 } from './targetUi';
+import { DashboardPageTemplate, Button, DataTable, Badge, Progress, Card, Grid, GridItem } from '@so360/design-system';
+import type { DataTableColumn } from '@so360/design-system';
 
 /**
  * Manager roll-up.
@@ -98,152 +103,101 @@ export default function TeamTargetsPage() {
   // Rendered by EVERY branch, including the loading and empty states. If the
   // picker vanished when a period came back empty, the user would be stuck on
   // that period with no way to choose another.
-  const header = (
+  const header = isUnlinkedProfileError(error) ? undefined : (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <h1 className="text-lg font-semibold text-slate-100">Team Targets</h1>
-        <PeriodPicker value={asOf} onChange={setAsOf} />
-      </div>
+      <PeriodPicker value={asOf} onChange={setAsOf} />
       <AsOfBanner asOf={asOf} />
     </div>
   );
 
+  const columns: DataTableColumn<any>[] = [
+    { key: 'person', header: 'Person', render: (r) => <PersonName id={r.person_id} /> },
+    { key: 'metric', header: 'Metric', render: (r) => <span className="text-fg-subtle">{r.metric_name ?? '—'}</span> },
+    { key: 'target', header: 'Target', align: 'right', sortable: true, sortValue: (r) => r.target ?? 0, render: (r) => <span className="text-fg-subtle">{formatValue(r.target, 'currency', currency)}</span> },
+    { key: 'actual', header: 'Actual', align: 'right', sortable: true, sortValue: (r) => r.actual ?? 0, render: (r) => <span className="text-fg-subtle">{formatValue(r.actual, 'currency', currency)}</span> },
+    { key: 'achievement', header: 'Achievement', sortable: true, sortValue: (r) => r.attainment ?? 0, render: (r) => (
+      <div className="flex items-center gap-nb-2">
+        <div className="w-24">
+          <Progress {...attainmentProps(r.actual, r.target, r.status ?? 'on_track')} size="sm" />
+        </div>
+        <span className="text-xs text-fg-subtle">{formatPct(r.attainment)}</span>
+      </div>
+    ) },
+    { key: 'projected', header: 'Projected', render: (r) => <span className="text-xs text-fg-subtle">{r.projection?.projectable ? formatPct(r.projection.projectedAttainment) : '—'}</span> },
+    { key: 'status', header: 'Status', render: (r) => r.status ? <Badge tone={STATUS_TONE[r.status as keyof typeof STATUS_TONE]} dot>{statusText(r.status, r.status_label)}</Badge> : <span className="text-xs text-fg-muted">—</span> },
+  ];
+
   if (loading) {
     return (
-      <div className="p-6 space-y-4">
-        {header}
-        <div className="text-sm text-slate-400">Loading team…</div>
+      <DashboardPageTemplate title="Team Targets" filters={header} trail={[{ label: 'Targets', to: '/crm/targets' }]}>
+      <div className="space-y-4">
+        <LoadingState />
       </div>
+      </DashboardPageTemplate>
     );
   }
   if (error) {
     return (
-      <div className="p-6 space-y-4">
-        {header}
-        <div className="text-sm text-rose-300">{error}</div>
+      <DashboardPageTemplate title="Team Targets" filters={header} trail={[{ label: 'Targets', to: '/crm/targets' }]}>
+      <div className="space-y-4">
+        <ErrorState error={error} onRetry={load} />
       </div>
+      </DashboardPageTemplate>
     );
   }
   if (!rows.length) {
     return (
-      <div className="p-6 space-y-4">
-        {header}
-        <EmptyState message="No active individual target plans in this period." />
+      <DashboardPageTemplate title="Team Targets" filters={header} trail={[{ label: 'Targets', to: '/crm/targets' }]}>
+      <div className="space-y-4">
+        <EmptyState title="No team targets" description="There are no active individual target plans in this period." />
       </div>
+      </DashboardPageTemplate>
     );
   }
 
   return (
-    <div className="p-6 space-y-5">
-      <div>
-        {header}
-        {totals && (
-          <div className="mt-2 max-w-md">
-            <div className="flex items-baseline justify-between text-xs text-slate-400">
-              <span>
-                {formatValue(totals.actual, 'currency', currency)} of{' '}
-                {formatValue(totals.target, 'currency', currency)}
-              </span>
-              <span>{formatPct(totals.attainment)}</span>
-            </div>
-            <div className="mt-1">
-              <ProgressBar
-                actual={totals.actual}
-                target={totals.target}
-                status={
-                  (totals.attainment ?? 0) >= 1 ? 'achieved' : 'on_track'
-                }
-                compact
-              />
-            </div>
-          </div>
-        )}
-      </div>
+    <DashboardPageTemplate title="Team Targets" filters={header} trail={[{ label: 'Targets', to: '/crm/targets' }]}>
+    <Grid>
+      {totals && (
+        <GridItem span={6}>
+          <Progress
+            {...attainmentProps(totals.actual, totals.target,
+              (totals.attainment ?? 0) >= 1 ? 'achieved' : 'on_track')}
+            size="sm"
+            label={`${formatValue(totals.actual, 'currency', currency)} of ${formatValue(totals.target, 'currency', currency)} · ${formatPct(totals.attainment)}`}
+          />
+        </GridItem>
+      )}
 
-      <Panel title="Attainment by person">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-xs text-slate-400 border-b border-slate-800">
-                <th className="py-2 pr-4 font-medium">Person</th>
-                <th className="py-2 pr-4 font-medium">Metric</th>
-                <th className="py-2 pr-4 font-medium text-right">Target</th>
-                <th className="py-2 pr-4 font-medium text-right">Actual</th>
-                <th className="py-2 pr-4 font-medium">Achievement</th>
-                <th className="py-2 pr-4 font-medium">Projected</th>
-                <th className="py-2 font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr
-                  key={r.person_id}
-                  className="border-b border-slate-800/60 hover:bg-slate-800/40 cursor-pointer"
-                  onClick={() => openDetail(r.person_id)}
-                >
-                  <td className="py-2 pr-4 text-slate-200">
-                    <PersonName id={r.person_id} />
-                  </td>
-                  <td className="py-2 pr-4 text-slate-400">
-                    {r.metric_name ?? '—'}
-                  </td>
-                  <td className="py-2 pr-4 text-right text-slate-300">
-                    {formatValue(r.target, 'currency', currency)}
-                  </td>
-                  <td className="py-2 pr-4 text-right text-slate-300">
-                    {formatValue(r.actual, 'currency', currency)}
-                  </td>
-                  <td className="py-2 pr-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-24">
-                        <ProgressBar
-                          actual={r.actual}
-                          target={r.target}
-                          status={r.status ?? 'on_track'}
-                          compact
-                        />
-                      </div>
-                      <span className="text-xs text-slate-400">
-                        {formatPct(r.attainment)}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="py-2 pr-4 text-xs text-slate-400">
-                    {r.projection?.projectable
-                      ? formatPct(r.projection.projectedAttainment)
-                      : '—'}
-                  </td>
-                  <td className="py-2">
-                    {r.status ? (
-                      <StatusChip status={r.status} label={r.status_label} />
-                    ) : (
-                      <span className="text-xs text-slate-500">—</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Panel>
+      <GridItem span={12}>
+      <Card title="Attainment by person">
+        <DataTable
+          columns={columns}
+          rows={rows}
+          rowKey={(r: any) => r.person_id}
+          onRowClick={(r: any) => openDetail(r.person_id)}
+          getRowProps={(r: any) => ({ 'data-testid': `team-row-${r.person_id}` })}
+        />
+      </Card>
+      </GridItem>
 
       {selected && (
-        <Panel
+        <GridItem span={12}>
+        <Card
           title="Detail"
-          action={
-            <button
-              className="text-xs text-slate-400 hover:text-slate-200"
+          actions={
+            <Button variant="secondary" size="sm"
               onClick={() => {
                 setSelected(null);
                 setDetail(null);
               }}
             >
               Close
-            </button>
+            </Button>
           }
         >
           {!detail ? (
-            <div className="text-sm text-slate-400">Loading…</div>
+            <div className="text-sm text-fg-subtle">Loading…</div>
           ) : (
             <div className="space-y-3">
               {detail.metrics
@@ -251,27 +205,24 @@ export default function TeamTargetsPage() {
                 .map((m: any) => (
                   <div key={m.target_line_id}>
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-slate-200">{m.metric_name}</span>
-                      <span className="text-xs text-slate-400">
+                      <span className="text-fg">{m.metric_name}</span>
+                      <span className="text-xs text-fg-subtle">
                         {formatValue(m.actual, m.unit, currency)} /{' '}
                         {formatValue(m.target, m.unit, currency)} ·{' '}
                         {formatPct(m.attainment)}
                       </span>
                     </div>
                     <div className="mt-1">
-                      <ProgressBar
-                        actual={m.actual}
-                        target={m.target}
-                        status={m.status}
-                        compact
-                      />
+                      <Progress {...attainmentProps(m.actual, m.target, m.status)} size="sm" />
                     </div>
                   </div>
                 ))}
             </div>
           )}
-        </Panel>
+        </Card>
+        </GridItem>
       )}
-    </div>
+    </Grid>
+    </DashboardPageTemplate>
   );
 }

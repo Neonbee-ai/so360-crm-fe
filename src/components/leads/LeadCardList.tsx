@@ -8,6 +8,7 @@
  */
 import { Check, Mail, Phone } from 'lucide-react';
 import type { Lead } from '../../types/crm';
+import { IconButton } from '@so360/design-system';
 
 interface LeadCardListProps {
   leads: Lead[];
@@ -22,9 +23,9 @@ function contactName(lead: Lead): string {
 }
 
 function scoreTone(score: number): string {
-  if (score >= 70) return 'text-emerald-400';
-  if (score >= 40) return 'text-amber-400';
-  return 'text-rose-400';
+  if (score >= 70) return 'text-success';
+  if (score >= 40) return 'text-warning';
+  return 'text-danger';
 }
 
 export default function LeadCardList({
@@ -37,7 +38,7 @@ export default function LeadCardList({
     return (
       <div
         data-testid="lead-card-list"
-        className="rounded-xl border border-slate-700/50 bg-slate-950 py-16 text-center text-sm text-slate-500"
+        className="rounded-xl border border-line bg-bg py-16 text-center text-sm text-fg-muted"
       >
         No leads found
       </div>
@@ -56,33 +57,25 @@ export default function LeadCardList({
             data-testid={`lead-card-${lead.id}`}
             onClick={() => onRowClick(lead)}
             className={`rounded-xl border p-3.5 transition-colors ${
-              isSelected ? 'border-blue-500/50 bg-blue-600/10' : 'border-slate-700/50 bg-slate-900/60 active:bg-slate-800/60'
+              isSelected ? 'border-primary/50 bg-primary/10' : 'border-line bg-surface-sunken active:bg-surface-high'
             }`}
           >
             <div className="flex items-start gap-3">
-              <button
-                aria-label="Select lead"
-                onClick={(e) => { e.stopPropagation(); onToggleSelect(lead.id); }}
-                className={`mt-0.5 w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors ${
-                  isSelected ? 'bg-blue-600 border-blue-600' : 'border-slate-600'
-                }`}
-              >
-                {isSelected && <Check size={12} className="text-white" />}
-              </button>
+              <IconButton label="Select lead" icon={<Check size={12} className={isSelected ? 'text-primary' : 'opacity-0'} />} onClick={(e) => { e.stopPropagation(); onToggleSelect(lead.id); }} />
 
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-semibold text-slate-100 truncate">{lead.company_name}</span>
+                  <span className="font-semibold text-fg truncate">{lead.company_name}</span>
                   {score > 0 && <span className={`text-xs font-bold shrink-0 ${scoreTone(score)}`}>{score}</span>}
                 </div>
-                {name && <p className="text-sm text-slate-400 truncate">{name}</p>}
+                {name && <p className="text-sm text-fg-subtle truncate">{name}</p>}
 
                 <div className="flex items-center gap-3 mt-2">
                   {lead.contact_email && (
                     <a
                       href={`mailto:${lead.contact_email}`}
                       onClick={(e) => e.stopPropagation()}
-                      className="flex items-center gap-1 text-xs text-slate-400 hover:text-blue-400 truncate"
+                      className="flex items-center gap-1 text-xs text-fg-subtle hover:text-primary truncate"
                     >
                       <Mail size={12} className="shrink-0" />
                       <span className="truncate">{lead.contact_email}</span>
@@ -92,7 +85,7 @@ export default function LeadCardList({
                     <a
                       href={`tel:${lead.phone}`}
                       onClick={(e) => e.stopPropagation()}
-                      className="flex items-center gap-1 text-xs text-slate-400 hover:text-emerald-400 shrink-0"
+                      className="flex items-center gap-1 text-xs text-fg-subtle hover:text-success shrink-0"
                     >
                       <Phone size={12} />
                       Call
@@ -101,12 +94,12 @@ export default function LeadCardList({
                 </div>
 
                 <div className="flex items-center gap-2 mt-2.5">
-                  <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-800 text-slate-300 border border-slate-700">
+                  <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-surface-raised text-fg-subtle border border-line">
                     {lead.status}
                   </span>
-                  {lead.source && <span className="text-[11px] text-slate-500">{lead.source}</span>}
+                  {lead.source && <span className="text-xs text-fg-muted">{lead.source}</span>}
                   {lead.owner?.full_name && (
-                    <span className="ml-auto text-[11px] text-slate-500 truncate">{lead.owner.full_name}</span>
+                    <span className="ml-auto text-xs text-fg-muted truncate">{lead.owner.full_name}</span>
                   )}
                 </div>
               </div>

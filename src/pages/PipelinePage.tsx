@@ -6,10 +6,12 @@ import { usePersistedState } from '../hooks/useListViewState';
 import { Deal, FlowState } from '../types/crm';
 import { Loader2, Plus } from 'lucide-react';
 import { StageTransitionModal } from '../components/kanban/StageTransitionModal';
-import { toast } from '@so360/design-system';
+import { DealCloseModal } from '../components/kanban/DealCloseModal';
+import { dealCloseService, stageKind, LoseDealBody, WinDealBody } from '../services/salesConfigService';
+import { toast, ListPageTemplate, Button, SearchInput } from '@so360/design-system';
 import CreateDealModal from '../pages/components/CreateDealModal';
 
-import { DealFilters } from '../pages/components/DealFilters';
+import { useDealFilterConfig } from '../pages/components/DealFilters';
 import { DealFilters as Filters } from '../types/crm';
 import { useNotify, useActivity, useShellBridge } from '@so360/shell-context';
 import { useFillViewportHeight } from '../hooks/useFillViewportHeight';
@@ -33,6 +35,12 @@ const PipelinePage = () => {
     const [isFiltering, setIsFiltering] = useState(false);
     // Filters survive a trip to a deal's detail page and back.
     const [filters, setFilters] = usePersistedState<Filters>('pipeline.filters', {});
+    const dealFilterConfig = useDealFilterConfig(filters, setFilters);
+    // Company moves out of the drawer into the toolbar search box (same `company_name` filter).
+    const filterConfig = {
+        ...dealFilterConfig,
+        fields: dealFilterConfig.fields.filter((f) => f.key !== 'company_name'),
+    };
     const [pollTick, setPollTick] = useState(0);
 
     const [transitionModal, setTransitionModal] = useState<{
@@ -46,6 +54,10 @@ const PipelinePage = () => {
         newStage: '',
         newStageId: null
     });
+
+    // Won / lost stages run the real win / lose flow instead of a bare stage move.
+    const [closeModal, setCloseModal] = useState<{ deal: Deal; stage: FlowState; kind: 'won' | 'lost' } | null>(null);
+    const [closing, setClosing] = useState(false);
 
     // Debounce filter changes for text inputs; also re-runs on pollTick for auto-refresh
     useEffect(() => {
@@ -83,7 +95,7 @@ const PipelinePage = () => {
             setStages(fetchedStages.map(s => ({
                 id: s.id,
                 name: s.name,
-                color: s.color || '#94A3B8',
+                color: s.color || 'rgb(var(--nb-fg-muted))',
                 is_terminal: s.is_terminal ?? false,
             })));
 
@@ -100,6 +112,12 @@ const PipelinePage = () => {
     const handleStageChange = (deal: Deal, newStageId: string) => {
         const stage = stages.find(s => s.id === newStageId);
         if (!stage) return;
+
+        const kind = stageKind(stage as { name?: string; type?: string });
+        if (kind !== 'open') {
+            setCloseModal({ deal, stage, kind });
+            return;
+        }
 
         setTransitionModal({
             isOpen: true,
@@ -128,9 +146,30 @@ const PipelinePage = () => {
         }
     };
 
+    const finishClose = async (call: () => Promise<unknown>) => {
+        if (!closeModal) return;
+        const { deal, stage, kind } = closeModal;
+        setClosing(true);
+        try {
+            await call();
+            recordActivity({ eventType: kind === 'won' ? 'deal.won' : 'deal.lost', eventCategory: 'crm', description: `Deal "${deal.name}" moved to ${stage.name}`, resourceType: 'deal', resourceId: deal.id }).catch(() => {});
+            emitNotification({ event: kind === 'won' ? 'CRM_DEAL_WON' : 'CRM_DEAL_LOST', userIds: deal.owner_id ? [deal.owner_id] : [], variables: { dealName: deal.name, stageName: stage.name }, relatedResource: { type: 'deal', id: deal.id } }).catch(() => {});
+            setDeals(prev => prev.map(d => d.id === deal.id ? { ...d, current_flow_state: stage.id } : d));
+            setCloseModal(null);
+            fetchData();
+        } catch (error: any) {
+            toast.error(error?.message || `Could not mark the deal as ${kind}`);
+        } finally {
+            setClosing(false);
+        }
+    };
+
+    const confirmWin = (body: WinDealBody) => finishClose(() => dealCloseService.win(closeModal!.deal.id, body));
+    const confirmLose = (body: LoseDealBody) => finishClose(() => dealCloseService.lose(closeModal!.deal.id, body));
+
     if (isInitialLoading) {
         return (
-            <div className="h-full flex items-center justify-center text-slate-500 gap-3">
+            <div className="h-full flex items-center justify-center text-fg-muted gap-3">
                 <Loader2 className="animate-spin" />
                 <span>Loading pipeline...</span>
             </div>
@@ -138,36 +177,34 @@ const PipelinePage = () => {
     }
 
     return (
-        <div className="p-8 flex flex-col">
-            <header className="mb-4 flex justify-between items-start">
-                <div>
-                    <h1 className="text-3xl font-bold text-slate-50 tracking-tight">Deals Pipeline</h1>
-                    <p className="text-slate-400 mt-1">Visualize deal movement and sales progress</p>
+        <ListPageTemplate
+            trail={[]}
+            title="Deals Pipeline"
+            description="Visualize deal movement and sales progress"
+            primaryAction={canCreateDeal ? (
+                <Button onClick={() => setIsCreateDealOpen(true)}>
+                    <Plus size={16} aria-hidden="true" />
+                    New Deal
+                </Button>
+            ) : undefined}
+            headerSecondaryActions={canExportDeals ? [
+                <ExportMenu key="export" label="Export deals" onExport={(format) => exportService.deals(filters, format)} />,
+            ] : undefined}
+            search={
+                <SearchInput
+                    placeholder="Search deals by company..."
+                    value={filters.company_name ?? ''}
+                    onChange={(v: string) => setFilters({ ...filters, company_name: v || undefined })}
+                />
+            }
+            filterConfig={filterConfig}
+            toolbarEnd={isFiltering ? (
+                <div className="flex items-center gap-2 text-info h-nb-control-md px-3">
+                    <Loader2 className="animate-spin" size={14} />
+                    <span className="text-xs">Refining results...</span>
                 </div>
-                <div className="flex items-center gap-3">
-                    {isFiltering && (
-                        <div className="flex items-center gap-2 text-blue-400 bg-blue-500/10 px-3 py-1.5 rounded-full border border-blue-500/20 animate-pulse">
-                            <Loader2 className="animate-spin" size={14} />
-                            <span className="text-xs font-bold uppercase tracking-wider">Refining results...</span>
-                        </div>
-                    )}
-                    {canExportDeals && (
-                        <ExportMenu label="Export deals" onExport={(format) => exportService.deals(filters, format)} />
-                    )}
-                    {canCreateDeal && (
-                        <button
-                            onClick={() => setIsCreateDealOpen(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-bold transition-colors"
-                        >
-                            <Plus size={16} />
-                            New Deal
-                        </button>
-                    )}
-                </div>
-            </header>
-
-            <DealFilters filters={filters} onChange={setFilters} />
-
+            ) : undefined}
+        >
             <div
                 ref={boardWrapperRef}
                 style={{ height: boardHeight }}
@@ -189,13 +226,24 @@ const PipelinePage = () => {
                 newStage={transitionModal.newStage}
             />
 
+            <DealCloseModal
+                isOpen={!!closeModal}
+                kind={closeModal?.kind ?? 'won'}
+                deal={closeModal?.deal ?? null}
+                stageName={closeModal?.stage.name ?? ''}
+                busy={closing}
+                onClose={() => setCloseModal(null)}
+                onWin={confirmWin}
+                onLose={confirmLose}
+            />
+
             {isCreateDealOpen && (
                 <CreateDealModal
                     onClose={() => setIsCreateDealOpen(false)}
                     onSuccess={() => { setIsCreateDealOpen(false); fetchData(); }}
                 />
             )}
-        </div>
+        </ListPageTemplate>
     );
 };
 

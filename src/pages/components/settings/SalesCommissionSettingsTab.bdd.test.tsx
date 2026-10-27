@@ -26,13 +26,17 @@ vi.mock('@so360/shell-context', () => ({
         isFeatureEnabled: (k: string) => flags.on.has(k),
     }),
 }));
-vi.mock('@so360/design-system', async () => {
+vi.mock('@so360/design-system', async (importOriginal) => {
+    const actual = await importOriginal<Record<string, unknown>>();
     const R = await import('react');
     const btn = (label: string, v: unknown, p: { onChange: (v: unknown) => void }) =>
         R.createElement('button', { key: label, type: 'button', onClick: () => p.onChange(v) }, label);
     const UserSelector = (p: { onChange: (v: unknown) => void }) => R.createElement('span', {},
         btn('pick person', 'u9', p), btn('pick list', ['u3', 'u4'], p), btn('pick empty', [], p), btn('pick none', null, p));
-    return { toast: toasts, UserSelector };
+    const Card = (p: { title?: string; children?: unknown }) =>
+        R.createElement('section', { 'aria-label': p.title }, p.title ? R.createElement('h2', {}, p.title) : null, p.children as any);
+    const Button = ({ children, variant: _v, ...rest }: any) => R.createElement('button', { type: 'button', ...rest }, children);
+    return { ...actual, toast: toasts, UserSelector, Card, Button };
 });
 
 import SalesCommissionSettingsTab from './SalesCommissionSettingsTab';

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
-import SalesFiltersBar from './components/SalesFiltersBar';
+import { DashboardPageTemplate, Card, ListFilters, DataTable, Grid, Button } from '@so360/design-system';
+import { useSalesFilterConfig } from './components/SalesFiltersBar';
 import {
     salesReportService,
     validateDateRange,
@@ -24,45 +25,32 @@ export const TOTAL_CARDS: Array<{ key: keyof CommissionTotals; label: string }> 
     { key: 'paid', label: 'Paid' },
 ];
 
-const TH = 'px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-slate-500 whitespace-nowrap';
-const TD = 'px-4 py-3 text-xs font-bold text-slate-300 whitespace-nowrap';
 
 export const isEmptyReport = (r: CommissionReport): boolean =>
     r.by_project.length === 0 && r.by_agent.length === 0 && r.by_month.length === 0
     && TOTAL_CARDS.every((c) => r.totals[c.key] === 0);
 
 const BucketTable: React.FC<{ title: string; nameHeader: string; rows: CommissionBucket[]; money: (n: number) => string }> = ({ title, nameHeader, rows, money }) => (
-    <section className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
-        <h2 className="px-4 py-3 text-xs font-black uppercase tracking-widest text-slate-300 border-b border-slate-800">{title}</h2>
+    <Card title={title} padding="none">
         {rows.length === 0 ? (
-            <p className="px-4 py-6 text-xs text-slate-500">Nothing to show.</p>
+            <p className="px-4 py-6 text-xs text-fg-muted">Nothing to show.</p>
         ) : (
-            <div className="overflow-x-auto">
-                <table aria-label={title} className="w-full">
-                    <thead>
-                        <tr>
-                            <th className={TH}>{nameHeader}</th>
-                            <th className={`${TH} text-right`}>Deals</th>
-                            <th className={`${TH} text-right`}>Gross</th>
-                            <th className={`${TH} text-right`}>Agent</th>
-                            <th className={`${TH} text-right`}>Company</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800">
-                        {rows.map((b, i) => (
-                            <tr key={b.key || `row-${i}`}>
-                                <td className={TD}>{b.label}</td>
-                                <td className={`${TD} text-right`}>{b.count ?? '—'}</td>
-                                <td className={`${TD} text-right`}>{money(b.gross)}</td>
-                                <td className={`${TD} text-right`}>{money(b.agent)}</td>
-                                <td className={`${TD} text-right`}>{money(b.company)}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+            <DataTable
+                name={`commission-table-${title.toLowerCase().replace(/\s+/g, '-')}`}
+                data-testid={`commission-table-${title.toLowerCase().replace(/\s+/g, '-')}`}
+                density="compact"
+                columns={[
+                    { key: 'label', header: nameHeader, render: (b: CommissionBucket) => b.label },
+                    { key: 'count', header: 'Deals', align: 'right' as const, render: (b: CommissionBucket) => b.count ?? '—' },
+                    { key: 'gross', header: 'Gross', align: 'right' as const, render: (b: CommissionBucket) => money(b.gross) },
+                    { key: 'agent', header: 'Agent', align: 'right' as const, render: (b: CommissionBucket) => money(b.agent) },
+                    { key: 'company', header: 'Company', align: 'right' as const, render: (b: CommissionBucket) => money(b.company) },
+                ]}
+                rows={rows}
+                rowKey={(b) => b.key || `row-${rows.indexOf(b)}`}
+            />
         )}
-    </section>
+    </Card>
 );
 
 /**
@@ -80,6 +68,7 @@ const CommissionReportPage: React.FC = () => {
     const [forbidden, setForbidden] = useState(false);
     const [reloadKey, setReloadKey] = useState(0);
 
+    const { config: filterConfig, rangeError } = useSalesFilterConfig(filters, setFilters, []);
     const rangeInvalid = validateDateRange(filters) !== null;
 
     useEffect(() => {
@@ -106,41 +95,41 @@ const CommissionReportPage: React.FC = () => {
 
     let body: React.ReactNode = null;
     if (rangeInvalid) {
-        body = null;
+        body = <div role="alert" className="text-xs text-danger">{rangeError}</div>;
     } else if (loading) {
-        body = <div role="status" className="p-8 text-sm text-slate-400">Loading commission report…</div>;
+        body = <div role="status" className="p-8 text-sm text-fg-subtle">Loading commission report…</div>;
     } else if (forbidden) {
         body = (
-            <div data-testid="commission-report-forbidden" className="p-10 text-center bg-slate-900 border border-slate-800 rounded-2xl text-sm text-slate-400">
+            <div data-testid="commission-report-forbidden" className="p-10 text-center bg-surface border border-line rounded-nb-lg text-sm text-fg-subtle">
                 You don't have access to commission figures. Ask your manager if you need them.
             </div>
         );
     } else if (error) {
         body = (
-            <div role="alert" className="p-6 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-center justify-between gap-3">
-                <span className="text-sm font-bold text-rose-300">{error}</span>
-                <button type="button" onClick={() => setReloadKey((k) => k + 1)} className="flex items-center gap-1 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-200 bg-slate-800 hover:bg-slate-700">
+            <div role="alert" className="p-6 bg-danger/10 border border-danger/30 rounded-nb-lg flex items-center justify-between gap-3">
+                <span className="text-sm font-bold text-danger">{error}</span>
+                <Button type="button" size="sm" variant="secondary" onClick={() => setReloadKey((k) => k + 1)}>
                     <RefreshCw size={12} /> Retry
-                </button>
+                </Button>
             </div>
         );
     } else if (report && isEmptyReport(report)) {
         body = (
-            <div data-testid="commission-report-empty" className="p-10 text-center bg-slate-900 border border-slate-800 rounded-2xl text-sm text-slate-400">
+            <div data-testid="commission-report-empty" className="p-10 text-center bg-surface border border-line rounded-nb-lg text-sm text-fg-subtle">
                 No commission recorded for these filters.
             </div>
         );
     } else if (report) {
         body = (
             <>
-                <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-3">
+                <Grid columns={7} gap="md">
                     {TOTAL_CARDS.map((c) => (
-                        <div key={c.key} className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">{c.label}</p>
-                            <p className="mt-1 text-lg font-black text-slate-50" data-testid={`cr-total-${c.key}`}>{money(report.totals[c.key])}</p>
-                        </div>
+                        <Card key={c.key}>
+                            <p className="text-xs text-fg-muted">{c.label}</p>
+                            <p className="mt-1 text-lg font-semibold text-fg" data-testid={`cr-total-${c.key}`}>{money(report.totals[c.key])}</p>
+                        </Card>
                     ))}
-                </div>
+                </Grid>
                 <BucketTable title="By project" nameHeader="Project" rows={report.by_project} money={money} />
                 <BucketTable title="By agent" nameHeader="Agent" rows={report.by_agent} money={money} />
                 <BucketTable title="By month" nameHeader="Month" rows={report.by_month} money={money} />
@@ -149,20 +138,18 @@ const CommissionReportPage: React.FC = () => {
     }
 
     return (
-        <div className="p-6 space-y-6">
-            <div className="flex items-start justify-between gap-4 flex-wrap">
-                <div>
-                    <h1 className="text-2xl font-black text-slate-50">Commission report</h1>
-                    <p className="text-sm text-slate-400">Commission earned across projects, agents and months.</p>
-                </div>
-                {canExport && !forbidden ? (
-                    <ExportMenu label="Export commission report" onExport={(format) => exportService.commission(filters, format)} />
-                ) : null}
-            </div>
-            {/* The report carries no developer list, so the developer filter is not offered here. */}
-            <SalesFiltersBar value={filters} onChange={setFilters} developers={[]} />
-            {body}
-        </div>
+        <DashboardPageTemplate
+            trail={[{ label: 'Sales', to: '/crm/sales' }]}
+            title="Commission report"
+            description="Commission earned across projects, agents and months."
+            /* The report carries no developer list, so the developer filter is not offered here. */
+            filters={<ListFilters {...filterConfig} />}
+            secondaryActions={canExport && !forbidden ? (
+                <ExportMenu label="Export commission report" onExport={(format) => exportService.commission(filters, format)} />
+            ) : undefined}
+        >
+            <div className="flex flex-col gap-nb-4">{body}</div>
+        </DashboardPageTemplate>
     );
 };
 

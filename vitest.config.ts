@@ -13,6 +13,7 @@ export default defineConfig({
       '@so360/design-system': path.join(stubs, 'design-system.ts'),
       '@so360/formatters': path.join(stubs, 'formatters.ts'),
       '@so360/event-bus': path.join(stubs, 'event-bus.ts'),
+      '@ds-real': path.resolve(__dirname, '../../so360-shell-fe/packages/design-system/src'),
       'lucide-react': path.join(stubs, 'lucide-react.tsx'),
     },
   },

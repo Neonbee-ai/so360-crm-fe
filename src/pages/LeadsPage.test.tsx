@@ -13,7 +13,6 @@ vi.mock('../services/crmService', () => ({
     getSettings: (...a: any[]) => mockGetSettings(...a),
     getUsers: (...a: any[]) => mockGetUsers(...a),
     getPartners: (...a: any[]) => mockGetPartners(...a),
-    getCustomerSegmentLeads: vi.fn().mockResolvedValue({ leads: [] }),
     updateLead: vi.fn(),
     logActivity: vi.fn(),
     deleteLead: vi.fn(),
@@ -29,6 +28,7 @@ vi.mock('react-router-dom', () => ({
 }));
 
 vi.mock('@so360/shell-context', () => ({
+  useDatasetSchema: () => ({ fields: [], isLoading: false, error: null }),
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useNotify: () => ({ emitNotification: vi.fn().mockResolvedValue(undefined) }),
   useActivity: () => ({ recordActivity: vi.fn().mockResolvedValue(undefined) }),
@@ -110,7 +110,7 @@ describe('Given LeadsPage', () => {
   it('When no leads / Then shows empty state', async () => {
     render(<LeadsPage />);
     await waitFor(() => {
-      expect(screen.getByTestId('leads-grid')).toHaveTextContent('No leads found');
+      expect(screen.getByText('No leads yet')).toBeInTheDocument();
     });
   });
 

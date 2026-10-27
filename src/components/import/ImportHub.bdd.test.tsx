@@ -50,7 +50,7 @@ const renderHub = () => {
 const choose = (label: string) => fireEvent.click(screen.getByRole('button', { name: new RegExp(label) }));
 const pick = (file: File) => fireEvent.change(screen.getByLabelText('Import file'), { target: { files: [file] } });
 const csv = (text: string, name = 'data.csv') => new File([text], name, { type: 'text/csv' });
-const closeModal = () => fireEvent.click(screen.getByTestId('icon-X').closest('button') as HTMLElement);
+const closeModal = () => fireEvent.click(screen.getByRole('button', { name: 'Close' }));
 
 const CLIENTS_CSV = 'Name,Email,Phone\nAli,ali@x.com,\nNobody,,\nSara,,+971500000000';
 const UNITS_CSV = 'Project,Tower,Unit No,Bedrooms,Final price\nPalm Vista,Tower A,101,2,1000000\nPalm Vista,Tower Z,102,3,';

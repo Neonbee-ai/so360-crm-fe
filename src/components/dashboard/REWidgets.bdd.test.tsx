@@ -145,9 +145,9 @@ describe('Given the RE widgets with sparse or long data', () => {
             }));
             render(<REWidgets />);
             const holds = await screen.findByTestId('re-widget-holds');
-            expect(within(holds).getByText('<1h').className).toMatch(/text-red-400/);
-            expect(within(holds).getByText('6h').className).toMatch(/text-red-400/);
-            expect(within(holds).getByText('7h').className).toMatch(/text-amber-400/);
+            expect(within(holds).getByText('<1h').className).toMatch(/text-danger/);
+            expect(within(holds).getByText('6h').className).toMatch(/text-danger/);
+            expect(within(holds).getByText('7h').className).toMatch(/text-warning/);
             expect(within(holds).getByText('U-0')).toHaveAttribute('title', 'Palm');
             expect(within(holds).getByText('U-6')).not.toHaveAttribute('title');
         });

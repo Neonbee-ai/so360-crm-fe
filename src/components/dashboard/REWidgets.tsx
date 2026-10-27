@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Building2, BarChart3, Clock, PieChart, Trophy } from 'lucide-react';
+import { Grid, GridItem } from '@so360/design-system';
 import { useCRMFormatters } from '../../utils/formatters';
 import { useCrmFeatureFlag, RE_FLAGS } from '../../hooks/useCrmFeatureFlag';
 import { reWidgetsService, REWidgetsData, isREWidgetsEmpty } from '../../services/reWidgetsService';
 
-const CARD = 'bg-slate-900/50 border border-slate-700/50 rounded-2xl p-5 shadow-sm min-w-0';
-const TITLE = 'flex items-center gap-2 text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3';
-const EMPTY = 'text-xs text-slate-500';
+const CARD = 'bg-surface border border-line rounded-2xl p-5 shadow-sm min-w-0';
+const TITLE = 'flex items-center gap-2 text-xs font-semibold text-fg-muted mb-3';
+const EMPTY = 'text-xs text-fg-muted';
 /** Rows shown per card; the dashboard is a glance, not a report. */
 const MAX_ROWS = 5;
 
@@ -34,88 +35,88 @@ const REWidgetsInner: React.FC = () => {
     if (!enabled || !data || isREWidgetsEmpty(data)) return null;
 
     return (
-        <section aria-label="Real estate overview" data-testid="re-widgets" className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-            <Card title="Inventory by project" icon={<Building2 size={12} />} testId="re-widget-inventory">
+        <section aria-label="Real estate overview" data-testid="re-widgets"><Grid gap="md">
+            <GridItem span={3}><Card title="Inventory by project" icon={<Building2 size={12} />} testId="re-widget-inventory">
                 {data.inventory_by_project.length === 0 ? <p className={EMPTY}>No units yet</p> : (
                     <ul className="space-y-1.5">
                         {data.inventory_by_project.slice(0, MAX_ROWS).map((r) => (
                             <li key={r.project} className="flex items-center justify-between gap-2 text-sm">
-                                <span className="text-slate-200 truncate">{r.project}</span>
+                                <span className="text-fg truncate">{r.project}</span>
                                 <span className="text-xs font-bold whitespace-nowrap">
-                                    <span className="text-emerald-400" title="Available">{r.available}A</span>{' '}
-                                    <span className="text-amber-400" title="Held">{r.held}H</span>{' '}
-                                    <span className="text-slate-400" title="Sold">{r.sold}S</span>
+                                    <span className="text-success" title="Available">{r.available}A</span>{' '}
+                                    <span className="text-warning" title="Held">{r.held}H</span>{' '}
+                                    <span className="text-fg-subtle" title="Sold">{r.sold}S</span>
                                 </span>
                             </li>
                         ))}
                     </ul>
                 )}
-            </Card>
+            </Card></GridItem>
 
-            <Card title="Pipeline by project" icon={<BarChart3 size={12} />} testId="re-widget-pipeline">
+            <GridItem span={3}><Card title="Pipeline by project" icon={<BarChart3 size={12} />} testId="re-widget-pipeline">
                 {data.pipeline_by_project.length === 0 ? <p className={EMPTY}>No open deals</p> : (
                     <ul className="space-y-1.5">
                         {data.pipeline_by_project.slice(0, MAX_ROWS).map((r) => (
                             <li key={r.project} className="flex items-center justify-between gap-2 text-sm">
-                                <span className="text-slate-200 truncate">{r.project}</span>
-                                <span className="text-slate-100 font-bold whitespace-nowrap">{formatCurrency(r.value)}</span>
+                                <span className="text-fg truncate">{r.project}</span>
+                                <span className="text-fg font-bold whitespace-nowrap">{formatCurrency(r.value)}</span>
                             </li>
                         ))}
                     </ul>
                 )}
-            </Card>
+            </Card></GridItem>
 
-            <Card title="Holds expiring in 24h" icon={<Clock size={12} />} testId="re-widget-holds">
+            <GridItem span={3}><Card title="Holds expiring in 24h" icon={<Clock size={12} />} testId="re-widget-holds">
                 {data.holds_expiring.length === 0 ? <p className={EMPTY}>No holds expiring</p> : (
                     <ul className="space-y-1.5">
                         {data.holds_expiring.slice(0, MAX_ROWS).map((h) => (
                             <li key={h.item_id ?? h.unit_number} className="flex items-center justify-between gap-2 text-sm">
-                                <span className="text-slate-200 truncate" title={h.project ?? undefined}>{h.unit_number}</span>
-                                <span className={`text-xs font-bold whitespace-nowrap ${h.hours_left <= 6 ? 'text-red-400' : 'text-amber-400'}`}>
+                                <span className="text-fg truncate" title={h.project ?? undefined}>{h.unit_number}</span>
+                                <span className={`text-xs font-bold whitespace-nowrap ${h.hours_left <= 6 ? 'text-danger' : 'text-warning'}`}>
                                     {h.hours_left < 1 ? '<1h' : `${h.hours_left}h`}
                                 </span>
                             </li>
                         ))}
                     </ul>
                 )}
-            </Card>
+            </Card></GridItem>
 
-            <Card title="Source performance" icon={<PieChart size={12} />} testId="re-widget-sources">
+            <GridItem span={3}><Card title="Source performance" icon={<PieChart size={12} />} testId="re-widget-sources">
                 {data.source_performance.length === 0 ? <p className={EMPTY}>No leads yet</p> : (
                     <ul className="space-y-1.5">
                         {data.source_performance.slice(0, MAX_ROWS).map((s) => (
                             <li key={s.source} className="flex items-center justify-between gap-2 text-sm">
-                                <span className="text-slate-200 truncate">{s.source}</span>
-                                <span className="text-xs font-bold text-blue-300 whitespace-nowrap" title={`${s.won} won of ${s.leads} leads`}>
+                                <span className="text-fg truncate">{s.source}</span>
+                                <span className="text-xs font-bold text-primary whitespace-nowrap" title={`${s.won} won of ${s.leads} leads`}>
                                     {s.rate}%
                                 </span>
                             </li>
                         ))}
                     </ul>
                 )}
-            </Card>
+            </Card></GridItem>
 
-            <Card title="Top agents" icon={<Trophy size={12} />} testId="re-widget-agents" className="md:col-span-2 xl:col-span-4">
+            <GridItem span="full"><Card title="Top agents" icon={<Trophy size={12} />} testId="re-widget-agents">
                 {data.agent_leaderboard.length === 0 ? <p className={EMPTY}>No agent activity yet</p> : (
                     <ul className="space-y-1.5">
                         {data.agent_leaderboard.slice(0, MAX_ROWS).map((a, i) => (
                             <li key={a.person_id ?? a.user_id ?? `${a.name}-${i}`} className="flex items-center justify-between gap-2 text-sm">
                                 <span className="flex items-center gap-2 min-w-0">
-                                    <span className="text-[10px] font-black text-slate-500 w-4 shrink-0">{i + 1}</span>
-                                    <span className="text-slate-200 truncate">{a.name}</span>
+                                    <span className="text-xs font-semibold text-fg-muted w-4 shrink-0">{i + 1}</span>
+                                    <span className="text-fg truncate">{a.name}</span>
                                 </span>
                                 <span className="flex items-center gap-3 text-xs font-bold whitespace-nowrap">
-                                    <span className="text-slate-400" title="Leads">{a.leads} leads</span>
-                                    <span className="text-emerald-400" title="Deals won">{a.deals_won} won</span>
-                                    <span className="text-blue-300" title="Lead → won conversion">{a.conversion_rate}%</span>
-                                    <span className="text-slate-100 text-sm">{formatCurrency(a.won_value)}</span>
+                                    <span className="text-fg-subtle" title="Leads">{a.leads} leads</span>
+                                    <span className="text-success" title="Deals won">{a.deals_won} won</span>
+                                    <span className="text-primary" title="Lead → won conversion">{a.conversion_rate}%</span>
+                                    <span className="text-fg text-sm">{formatCurrency(a.won_value)}</span>
                                 </span>
                             </li>
                         ))}
                     </ul>
                 )}
-            </Card>
-        </section>
+            </Card></GridItem>
+        </Grid></section>
     );
 };
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { eventBus } from '@so360/event-bus';
+import NeuraAiSummaryCard from './components/NeuraAiSummaryCard';
 import { useActivity, useShell } from '@so360/shell-context';
 import {
     Calendar, DollarSign, Clock, MessageSquare,
@@ -15,19 +16,22 @@ import CallsTab from './components/CallsTab';
 import DealPaymentPlanPanel from './components/DealPaymentPlanPanel';
 import DealCommissionPanel from './components/DealCommissionPanel';
 import { useCrmFeatureFlag, RE_FLAGS } from '../hooks/useCrmFeatureFlag';
-import { CrossLinkChip, toast } from '@so360/design-system';
+import { CrossLinkChip, toast, useConfirm, DetailPageTemplate, Button, IconButton, Card, EmptyState, Badge, Select, DatePicker, NumberInput, Textarea, Grid, GridItem, FileUpload } from '@so360/design-system';
 import { crmService, dealsApi, tasksApi, activitiesApi, TimelineEvent } from '../services/crmService';
 import { useCRMFormatters } from '../utils/formatters';
+import { DlCustomFieldsPanel, DL_CUSTOM_FIELDS_FLAG } from '../components/customFields/DlCustomFieldsPanel';
 import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType } from '../types/crm';
 import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import TaskModal from './components/TaskModal';
+import { Modal } from '../components/common/Modal';
 import { FEATURES } from '../config/features';
 import { DealLifecycleStepper } from '../components/DealLifecycleStepper';
-import DetailBackLink from '../components/common/DetailBackLink';
 import { ProjectSelect } from '../components/common/ProjectSelect';
 import ActivityHistoryDrawer from './components/ActivityHistoryDrawer';
+import MaintenanceTab from './components/MaintenanceTab';
+import { MAINTENANCE_TAB_FLAG, withMaintenanceTab } from '../services/maintenanceTabService';
 
-type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'custom' | 'products' | 'calls' | 'payment-plan' | 'commission';
+type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'custom' | 'products' | 'calls' | 'payment-plan' | 'commission' | 'maintenance';
 
 // Notify other MFEs (e.g. the Documents module) that a CRM deal document changed
 // so they can refresh linked-document views. Uses the shared event bus with a
@@ -51,7 +55,20 @@ export async function openDealDocument(doc: Attachment) {
     if (url) window.open(url, '_blank', 'noopener,noreferrer');
 }
 
+const DEAL_TAB_TITLES: Record<string, string> = {
+    activity: 'Activity timeline',
+    notes: 'Deal notes',
+    tasks: 'Deal tasks',
+    documents: 'Deal documents',
+    products: 'Deal products',
+    custom: 'Additional details',
+    calls: 'Call log',
+    'payment-plan': 'Payment schedule',
+    commission: 'Commission details',
+};
+
 const DealDetailPage = () => {
+    const [confirm, confirmDialog] = useConfirm();
     const formatters = useCRMFormatters();
     const { id = '' } = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -59,7 +76,9 @@ const DealDetailPage = () => {
     // RE Phase C: payment plan + commission tabs, each behind its own flag.
     const paymentPlansOn = useCrmFeatureFlag(RE_FLAGS.PAYMENT_PLANS);
     const commissionsOn = useCrmFeatureFlag(RE_FLAGS.COMMISSIONS);
+    const maintenanceTabOn = useCrmFeatureFlag(MAINTENANCE_TAB_FLAG);
 
+    const dlCustomFields = useCrmFeatureFlag(DL_CUSTOM_FIELDS_FLAG);
     const [deal, setDeal] = useState<Deal | null>(null);
     const [associatedLead, setAssociatedLead] = useState<any>(null);
     // G8 Client 360: full cross-module timeline (calls, WhatsApp, email, meetings, tasks, notes, documents, bookings)
@@ -71,11 +90,6 @@ const DealDetailPage = () => {
     const [dealStages, setDealStages] = useState<{ id: string, name: string, type?: string }[]>([]);
 
     const [activeTab, setActiveTab] = useState<TabType>('activity');
-    const activeDealTabRef = useRef<HTMLButtonElement | null>(null);
-
-    useEffect(() => {
-        activeDealTabRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
-    }, [activeTab]);
     const [isLoading, setIsLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -105,7 +119,9 @@ const DealDetailPage = () => {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [signOpen, setSignOpen] = useState(false);
-    const { isModuleEnabled, hasPermission, permissionsLoaded } = useShell();
+    const shellCtx = useShell() as any;
+    const { isModuleEnabled, hasPermission, permissionsLoaded } = shellCtx;
+    const canUseNeuraAi = (shellCtx?.effectiveFlagsLoaded !== false) && (shellCtx?.isFeatureEnabled?.('submodule:crm:neura_ai_copilot') ?? false);
     // Destructive action — gate on deals.delete, fail closed. Backend already enforces it.
     const canDeleteDeal = permissionsLoaded === true && (hasPermission?.('deals.delete') ?? false);
     // Stage changes mutate the deal — gate on deals.update, fail closed. Backend already enforces it.
@@ -429,7 +445,7 @@ const DealDetailPage = () => {
     };
 
     const handleUnlinkProject = async () => {
-        if (!deal || !window.confirm('Are you sure you want to unlink this project?')) return;
+        if (!deal || !await confirm({ title: 'Unlink project?', message: 'Are you sure you want to unlink this project?', intent: 'default', confirmLabel: 'Unlink' })) return;
 
         try {
             await crmService.unlinkProject(id);
@@ -521,39 +537,39 @@ const DealDetailPage = () => {
 
     if (isLoading) {
         return (
-            <div className="p-8" data-testid="deal-detail-skeleton">
+            <div data-testid="deal-detail-skeleton">
                 <div className="animate-pulse space-y-8">
                     {/* Header region: reserves the deal-name/stage row + button group row */}
                     <div data-testid="deal-detail-skeleton-header">
                         <div className="flex justify-between items-start mb-4">
-                            <div className="h-4 bg-slate-800 rounded w-24" />
+                            <div className="h-4 bg-surface-raised rounded w-24" />
                         </div>
                         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                             <div className="space-y-2">
-                                <div className="h-9 bg-slate-800 rounded w-64" />
-                                <div className="h-4 bg-slate-800 rounded w-40" />
+                                <div className="h-8 bg-surface-raised rounded w-64" />
+                                <div className="h-4 bg-surface-raised rounded w-40" />
                             </div>
                             <div className="flex flex-wrap gap-3">
-                                <div className="h-10 w-10 bg-slate-800 rounded-xl" />
-                                <div className="h-10 w-36 bg-slate-800 rounded-xl" />
-                                <div className="h-10 w-36 bg-slate-800 rounded-xl" />
+                                <div className="size-10 bg-surface-raised rounded-nb-lg" />
+                                <div className="h-10 w-36 bg-surface-raised rounded-nb-lg" />
+                                <div className="h-10 w-36 bg-surface-raised rounded-nb-lg" />
                             </div>
                         </div>
                     </div>
 
                     {/* Lifecycle stepper region */}
-                    <div data-testid="deal-detail-skeleton-lifecycle" className="bg-slate-900 border border-slate-800 rounded-2xl p-6 h-28" />
+                    <div data-testid="deal-detail-skeleton-lifecycle" className="bg-surface border border-line rounded-nb-lg p-6 h-28" />
 
                     {/* Two-column grid region */}
-                    <div data-testid="deal-detail-skeleton-grid" className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <div className="lg:col-span-2 space-y-8">
-                            <div className="bg-slate-900 border border-slate-800 rounded-2xl h-40" />
-                            <div data-testid="deal-detail-skeleton-tabs" className="bg-slate-900 border border-slate-800 rounded-2xl h-96" />
-                        </div>
-                        <div className="space-y-8">
-                            <div className="bg-slate-900 border border-slate-800 rounded-2xl h-64" />
-                        </div>
-                    </div>
+                    <Grid data-testid="deal-detail-skeleton-grid" gap="md">
+                        <GridItem span={{ lg: 8 }}><div className="space-y-nb-3">
+                            <div className="bg-surface border border-line rounded-nb-lg h-40" />
+                            <div data-testid="deal-detail-skeleton-tabs" className="bg-surface border border-line rounded-nb-lg h-96" />
+                        </div></GridItem>
+                        <GridItem span={{ lg: 4 }}><div className="space-y-nb-3">
+                            <div className="bg-surface border border-line rounded-nb-lg h-64" />
+                        </div></GridItem>
+                    </Grid>
                 </div>
             </div>
         );
@@ -561,33 +577,34 @@ const DealDetailPage = () => {
 
     if (!deal) {
         return (
-            <div className="p-8 text-center text-slate-500">
+            <div className="py-12 text-center text-fg-muted">
                 <p>Deal not found.</p>
-                <button onClick={() => navigate('/crm/pipeline')} className="text-blue-500 hover:underline mt-4 inline-block">Back to Pipeline</button>
+                <Button variant="secondary" onClick={() => navigate('/crm/pipeline')}>Back to Pipeline</Button>
             </div>
         );
     }
 
+    const dealTabs = withMaintenanceTab([
+        { id: 'activity', label: 'Activity' },
+        { id: 'notes', label: 'Notes' },
+        { id: 'tasks', label: `Tasks (${tasks.length})` },
+        { id: 'documents', label: `Docs (${deal.documents?.length || 0})` },
+        { id: 'products', label: 'Products' },
+        { id: 'custom', label: 'Additional Info' },
+        { id: 'calls', label: 'Calls' },
+        ...(paymentPlansOn ? [{ id: 'payment-plan', label: 'Payment plan' }] : []),
+        ...(commissionsOn ? [{ id: 'commission', label: 'Commission' }] : []),
+    ], maintenanceTabOn);
+
     return (
-        <div className="p-8">
-
-            <header className="mb-8">
-                <div className="flex justify-between items-start mb-4">
-                    <DetailBackLink fallbackTo="/crm/pipeline" />
-                    {isRefreshing && (
-                        <div className="flex items-center gap-1 text-[10px] font-black text-blue-400 uppercase tracking-widest animate-pulse">
-                            <Loader2 size={10} className="animate-spin" /> Syncing...
-                        </div>
-                    )}
-                </div>
-
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                    <div>
-                        <div className="flex items-center gap-3 mb-2">
-                            {/* The deal name never changes shape — only the stage badge/trigger opens a popover. */}
-                            <h1 className="text-4xl font-black text-slate-50 tracking-tight leading-tight">{deal.name}</h1>
+        <DetailPageTemplate
+            trail={[{ label: 'Pipeline', to: '/crm/pipeline' }]}
+            title={deal.name}
+            status={(
                             <div className="relative" ref={stageDropdownRef}>
-                                <button
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
                                     type="button"
                                     role="combobox"
                                     aria-expanded={isChangingStage}
@@ -595,361 +612,446 @@ const DealDetailPage = () => {
                                     disabled={!canEditDeal}
                                     onClick={() => { if (canEditDeal) setIsChangingStage(o => !o); }}
                                     title={canEditDeal ? 'Change stage' : undefined}
-                                    className={`group flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border bg-blue-500/10 text-blue-400 border-blue-500/20 transition-all outline-none ${canEditDeal ? 'cursor-pointer hover:scale-105' : 'cursor-default'}`}
+                                    className="group gap-1.5"
                                     data-testid="deal-stage-trigger"
                                 >
                                     {deal.stage}
-                                    {canEditDeal && <Edit2 size={12} className="text-blue-400/70 opacity-0 group-hover:opacity-100 transition-opacity" />}
-                                </button>
+                                    {canEditDeal && <Edit2 size={12} className="text-info opacity-0 group-hover:opacity-100 transition-opacity" />}
+                                </Button>
 
                                 {isChangingStage && canEditDeal && (
                                     <div
                                         role="listbox"
                                         data-testid="deal-stage-list"
-                                        className="absolute z-50 top-full left-0 mt-1 min-w-[160px] bg-slate-900 border border-slate-700 rounded-lg shadow-xl overflow-hidden"
+                                        className="absolute z-menu top-full left-0 mt-1 min-w-40 bg-surface border border-line rounded-nb shadow-xl overflow-hidden"
                                     >
                                         {dealStages.map(s => {
                                             const isCurrent = s.id === (deal.stage_id || deal.stage);
                                             return (
-                                                <button
+                                                <Button
+                                                    variant={isCurrent ? 'primary' : 'secondary'}
+                                                    size="sm"
                                                     key={s.id}
                                                     type="button"
                                                     role="option"
                                                     aria-selected={isCurrent}
                                                     onClick={() => handleSelectStage(s.id)}
-                                                    className={`w-full flex items-center justify-between gap-2 text-left px-3 py-2 text-[11px] font-bold uppercase tracking-wide transition-colors ${
-                                                        isCurrent ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-800'
-                                                    }`}
+                                                    className="w-full !justify-between !text-left"
                                                     data-testid={`deal-stage-option-${s.id}`}
                                                 >
                                                     {s.name}
                                                     {isCurrent && <Check size={12} />}
-                                                </button>
+                                                </Button>
                                             );
                                         })}
                                     </div>
                                 )}
                             </div>
-                        </div>
-                        <p className="text-slate-400 flex items-center gap-2 mt-1">
-                            <span className="font-semibold text-slate-50">{deal.company_name}</span>
+            )}
+            meta={(
+                <>
+                        <p className="text-fg-subtle flex items-center gap-2 mt-1">
+                            <span className="font-semibold text-fg">{deal.company_name}</span>
                             {deal.expected_close_date && (
                                 <>
-                                    <span className="w-1 h-1 bg-slate-700 rounded-full" />
+                                    <span className="w-1 h-1 bg-line rounded-full" />
                                     <span className="text-xs">Closing: {formatters.formatDate(deal.expected_close_date)}</span>
                                 </>
                             )}
                         </p>
-                    </div>
-
-                    <div className="flex flex-wrap justify-end gap-3">
-                        {/* Icon-only — see LeadDetailPage for the rationale. */}
-                        {canDeleteDeal && <button
-                            onClick={() => setShowDeleteConfirm(true)}
-                            aria-label="Delete"
-                            title="Delete"
-                            className="bg-slate-800 hover:bg-red-600/20 text-slate-300 hover:text-red-400 p-2.5 rounded-xl transition-all flex items-center justify-center border border-slate-700 hover:border-red-500/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/60"
-                        >
-                            <Trash2 size={14} />
-                        </button>}
-                        {isSignEnabled && (
-                            <button
-                                type="button"
-                                onClick={() => setSignOpen(true)}
-                                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-violet-600 hover:bg-violet-500 text-white transition-all shadow-lg active:scale-95"
-                            >
-                                <FileSignature size={14} /> Request Signature
-                            </button>
-                        )}
-                        {FEATURES.DEAL_ESTIMATE_REQUEST && (
-                            <button
-                                onClick={handleCreateEstimate}
-                                className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2.5 rounded-xl font-black text-[10px] transition-all flex items-center gap-2 uppercase tracking-widest border border-slate-700"
-                            >
-                                <FileText size={14} /> Create Estimate
-                            </button>
-                        )}
-                        {FEATURES.DEAL_INVOICE_REQUEST && (
-                            <button
-                                onClick={handleCreateInvoice}
-                                className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2.5 rounded-xl font-black text-[10px] transition-all flex items-center gap-2 uppercase tracking-widest border border-slate-700"
-                            >
-                                <Receipt size={14} /> Create Invoice
-                            </button>
-                        )}
-                        {FEATURES.DEAL_PROJECT_CREATION && (
-                            <button
-                                onClick={handleOpenProjectModal}
-                                className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl font-black text-[10px] transition-all shadow-lg active:scale-95 flex items-center gap-2 uppercase tracking-widest border border-blue-400/20"
-                            >
-                                <Briefcase size={14} /> {deal.project_id ? 'Manage Project' : 'Create Project'}
-                            </button>
-                        )}
-                    </div>
-                </div>
-            </header>
-
-            {/* Deal Lifecycle Stepper */}
-            <div className="mb-8 bg-slate-900 border border-slate-800 rounded-2xl p-6">
-                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Deal Lifecycle</h3>
-                <DealLifecycleStepper
-                    stages={dealStages}
-                    currentStageId={deal.stage_id}
-                    currentState={deal.current_flow_state || deal.stage}
-                />
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Main Workspace Column */}
-                <div className="lg:col-span-2 space-y-8">
-
-                    {/* Summary & Identity Dual-Tab */}
-                    <section className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
-                        <div className="flex border-b border-slate-800 bg-slate-900/50">
-                            <button className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-blue-400 border-b-2 border-blue-500 flex items-center gap-2">
-                                <Plus size={14} /> Deal Profile
-                            </button>
-                            <div className="ml-auto flex items-center gap-2 px-6">
-                                {isEditingSummary ? (
-                                    <>
-                                        <button
-                                            onClick={handleCancelEdit}
-                                            className="p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all"
-                                            title="Cancel"
-                                        >
-                                            <X size={16} />
-                                        </button>
-                                        <button
-                                            onClick={handleSaveProfile}
-                                            disabled={isSavingProfile}
-                                            className="p-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-500 transition-all disabled:opacity-50 flex items-center gap-1"
-                                            title="Save Changes"
-                                        >
-                                            {isSavingProfile ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
-                                        </button>
-                                    </>
-                                ) : (
-                                    <button
-                                        onClick={handleStartEditing}
-                                        className="p-2 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-all"
-                                        title="Edit Profile"
-                                    >
-                                        <Edit2 size={16} />
-                                    </button>
-                                )}
-                            </div>
+                    {isRefreshing && (
+                        <div className="flex items-center gap-1 text-xs text-info animate-pulse">
+                            <Loader2 size={10} className="animate-spin" /> Syncing...
                         </div>
-                        <div className="p-8">
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                                <div className="space-y-1">
-                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Financial Value</span>
+                    )}
+                </>
+            )}
+            primaryAction={FEATURES.DEAL_PROJECT_CREATION ? (
+                <Button onClick={handleOpenProjectModal}><Briefcase size={14} />
+                    {deal.project_id ? 'Manage Project' : 'Create Project'}
+                </Button>
+            ) : undefined}
+            secondaryActions={[
+                ...(FEATURES.DEAL_ESTIMATE_REQUEST ? [<Button key="estimate" variant="secondary" onClick={handleCreateEstimate}><FileText size={14} />Create Estimate</Button>] : []),
+                ...(FEATURES.DEAL_INVOICE_REQUEST ? [<Button key="invoice" variant="secondary" onClick={handleCreateInvoice}><Receipt size={14} />Create Invoice</Button>] : []),
+            ]}
+            overflowActions={[
+                ...(isSignEnabled ? [{ label: 'Request Signature', onSelect: () => setSignOpen(true) }] : []),
+                ...(canDeleteDeal ? [{ label: 'Delete', danger: true, onSelect: () => setShowDeleteConfirm(true) }] : []),
+            ]}
+            tabs={dealTabs}
+            activeTab={activeTab}
+            onTabChange={(id) => setActiveTab(id as TabType)}
+            sidePanel={(
+                <>
+                    <Card
+                        title="Owner"
+                        actions={isEditingSummary ? (
+                            <div className="flex items-center gap-2">
+                                <Button type="button" variant="secondary" onClick={handleCancelEdit} title="Cancel"><X size={14} /></Button>
+                                <Button type="button" variant="primary" onClick={handleSaveProfile} disabled={isSavingProfile} title="Save Changes">
+                                    {isSavingProfile ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
+                                </Button>
+                            </div>
+                        ) : (
+                            <Button type="button" variant="secondary" onClick={handleStartEditing} title="Edit Profile"><Edit2 size={14} /></Button>
+                        )}
+                    >
+                        <div className="flex flex-col gap-nb-3">
+<div className="space-y-1">
+                                    <span className="text-xs text-fg-muted">Deal Owner</span>
                                     {isEditingSummary ? (
-                                        <input
-                                            type="number"
-                                            value={editedValue ?? deal.value}
-                                            onChange={(e) => setEditedValue(parseFloat(e.target.value) || 0)}
-                                            className="bg-slate-950 border border-slate-800 text-emerald-400 font-black rounded px-2 py-1 w-full outline-none focus:border-emerald-500"
-                                        />
-                                    ) : (
-                                        <p className="text-xl font-black text-emerald-400 flex items-center gap-1.5">
-                                            {formatters.formatCurrency(deal.value)}
-                                        </p>
-                                    )}
-                                </div>
-                                <div className="space-y-1">
-                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Expected Close</span>
-                                    {isEditingSummary ? (
-                                        <input
-                                            type="date"
-                                            value={editedCloseDate ?? deal.expected_close_date ?? ''}
-                                            onChange={(e) => setEditedCloseDate(e.target.value)}
-                                            className="bg-slate-950 border border-slate-800 text-slate-50 font-bold rounded px-2 py-1 w-full outline-none focus:border-blue-500"
-                                        />
-                                    ) : (
-                                        <p className="text-sm font-bold text-slate-50 flex items-center gap-1.5">
-                                            <Calendar size={16} />{deal.expected_close_date || '—'}
-                                        </p>
-                                    )}
-                                </div>
-                                <div className="space-y-1">
-                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Deal Owner</span>
-                                    {isEditingSummary ? (
-                                        <select
+                                        <Select
+                                            name="deal-owner"
+                                            aria-label="Owner"
                                             value={editedOwnerId ?? deal.owner.id}
                                             onChange={(e) => setEditedOwnerId(e.target.value)}
-                                            className="bg-slate-950 border border-slate-800 text-slate-50 font-bold rounded px-2 py-1 w-full outline-none focus:border-blue-500"
-                                        >
-                                            {allUsers.map(u => (
-                                                <option key={u.id} value={u.id}>{u.full_name}</option>
-                                            ))}
-                                        </select>
+                                            options={allUsers.map(u => ({ value: u.id, label: u.full_name }))}
+                                        />
                                     ) : (
                                         <div className="flex items-center gap-2">
-                                            <div className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold overflow-hidden border border-slate-700">
+                                            <div className="w-6 h-6 rounded-full bg-surface-raised flex items-center justify-center text-xs font-medium overflow-hidden border border-line">
                                                 {deal.owner.avatar_url ? <img src={deal.owner.avatar_url} alt={deal.owner.full_name} /> : deal.owner.full_name.charAt(0)}
                                             </div>
-                                            <span className="text-sm font-bold text-slate-200">{deal.owner.full_name}</span>
+                                            <span className="text-sm font-bold text-fg">{deal.owner.full_name}</span>
                                         </div>
                                     )}
                                 </div>
-                                {/* Sales Rep — resolved from People Connect's People
-                                    Registry. An assignment survives the person going
-                                    inactive: the name stays and is badged, never
-                                    silently dropped. */}
                                 {deal.owner_person_id && (
                                     <div className="space-y-1">
-                                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Sales Rep</span>
+                                        <span className="text-xs text-fg-muted">Sales Rep</span>
                                         {deal.owner_person ? (
                                             <div className="flex items-center gap-2 flex-wrap">
-                                                <div className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold overflow-hidden border border-slate-700">
+                                                <div className="w-6 h-6 rounded-full bg-surface-raised flex items-center justify-center text-xs font-medium overflow-hidden border border-line">
                                                     {deal.owner_person.avatar_url
                                                         ? <img src={deal.owner_person.avatar_url} alt={deal.owner_person.full_name} />
                                                         : (deal.owner_person.full_name || '?').charAt(0)}
                                                 </div>
-                                                <span className="text-sm font-bold text-slate-200">{deal.owner_person.full_name}</span>
+                                                <span className="text-sm font-bold text-fg">{deal.owner_person.full_name}</span>
                                                 {deal.owner_person.job_title && (
-                                                    <span className="text-xs font-bold text-slate-500">{deal.owner_person.job_title}</span>
+                                                    <span className="text-xs font-bold text-fg-muted">{deal.owner_person.job_title}</span>
                                                 )}
                                                 {deal.owner_person.department_name && (
-                                                    <span className="text-xs font-bold text-slate-500">· {deal.owner_person.department_name}</span>
+                                                    <span className="text-xs font-bold text-fg-muted">· {deal.owner_person.department_name}</span>
                                                 )}
                                                 {deal.owner_person.status !== 'active' && (
-                                                    <span className="text-[9px] font-black uppercase tracking-widest text-amber-400 border border-amber-500/40 rounded px-1.5 py-0.5">
+                                                    <span className="text-xs text-warning border border-warning/40 rounded-nb px-1.5 py-0.5">
                                                         Inactive
                                                     </span>
                                                 )}
                                             </div>
                                         ) : (
-                                            <p className="text-sm font-bold text-slate-500">
+                                            <p className="text-sm font-bold text-fg-muted">
                                                 Sales rep unavailable from People Connect
                                             </p>
                                         )}
                                     </div>
                                 )}
-                                <div className="space-y-1">
-                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Last Activity</span>
-                                    <p className="text-sm font-bold text-slate-300 flex items-center gap-1.5">
-                                        <Clock size={16} className="text-slate-500" />
+                        </div>
+                    </Card>
+
+                    <Card title="Dates">
+                        <div className="flex flex-col gap-nb-3">
+<div className="space-y-1">
+                                    <span className="text-xs text-fg-muted">Expected Close</span>
+                                    {isEditingSummary ? (
+                                        <DatePicker
+                                            name="deal-close-date"
+                                            value={editedCloseDate ?? deal.expected_close_date ?? ''}
+                                            onChange={(v) => setEditedCloseDate(v as string)}
+                                        />
+                                    ) : (
+                                        <p className="text-sm font-bold text-fg flex items-center gap-1.5">
+                                            <Calendar size={16} />{deal.expected_close_date || '—'}
+                                        </p>
+                                    )}
+                                </div>
+<div className="space-y-1">
+                                    <span className="text-xs text-fg-muted">Last Activity</span>
+                                    <p className="text-sm font-bold text-fg-subtle flex items-center gap-1.5">
+                                        <Clock size={16} className="text-fg-muted" />
                                         {deal.last_activity_at ? formatters.formatDate(deal.last_activity_at) : 'None'}
                                     </p>
                                 </div>
+                            <div className="space-y-1">
+                                <span className="text-xs text-fg-muted">Created</span>
+                                <p className="text-sm text-fg-subtle">{formatters.formatDate(deal.created_at)}</p>
                             </div>
                         </div>
-                    </section>
+                    </Card>
 
-                    {/* Navigation Tabs */}
-                    <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col h-fit">
-                        <div className="relative flex border-b border-slate-800 bg-slate-900/50 min-w-0">
-                            <div className="flex items-center overflow-x-auto scrollbar-hide" data-testid="deal-detail-tab-strip">
-                                {[
-                                    { id: 'activity', name: 'Activity', icon: MessageSquare },
-                                    { id: 'notes', name: 'Notes', icon: FileText },
-                                    { id: 'tasks', name: `Tasks (${tasks.length})`, icon: CheckCircle2 },
-                                    { id: 'documents', name: `Docs (${deal.documents?.length || 0})`, icon: FileIcon },
-                                    { id: 'products', name: 'Products', icon: Briefcase },
-                                    { id: 'custom', name: 'Additional Info', icon: Tag },
-                                    { id: 'calls', name: 'Calls', icon: Phone },
-                                    ...(paymentPlansOn ? [{ id: 'payment-plan', name: 'Payment plan', icon: Receipt }] : []),
-                                    ...(commissionsOn ? [{ id: 'commission', name: 'Commission', icon: DollarSign }] : []),
-                                ].map(tab => (
-                                    <button
-                                        key={tab.id}
-                                        ref={activeTab === tab.id ? activeDealTabRef : undefined}
-                                        onClick={() => setActiveTab(tab.id as TabType)}
-                                        className={`flex shrink-0 items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${activeTab === tab.id ? 'text-blue-400 border-b-2 border-blue-500 bg-blue-500/5' : 'text-slate-500 hover:text-slate-300'}`}
-                                    >
-                                        <tab.icon size={14} /> {tab.name}
-                                    </button>
-                                ))}
-                            </div>
-                            <div
-                                aria-hidden="true"
-                                className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-slate-900 to-transparent"
-                            />
-                        </div>
-
-                        <div className="p-8">
-                            {/* ACTIVITY TAB */}
-                            {activeTab === 'activity' && (
-                                <div className="flex justify-end mb-4">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowActivityDrawer(true)}
-                                        className="text-[10px] font-black uppercase tracking-widest text-blue-400 hover:text-blue-300 transition-colors"
-                                    >
-                                        View All History
-                                    </button>
+                    <Card title="Value">
+<div className="space-y-1">
+                                    <span className="text-xs text-fg-muted">Financial Value</span>
+                                    {isEditingSummary ? (
+                                        <NumberInput
+                                            name="deal-value"
+                                            value={editedValue ?? deal.value}
+                                            onChange={(v) => setEditedValue(v ?? 0)}
+                                        />
+                                    ) : (
+                                        <p className="text-xl font-semibold text-success flex items-center gap-1.5">
+                                            {formatters.formatCurrency(deal.value)}
+                                        </p>
+                                    )}
                                 </div>
-                            )}
+                    </Card>
+
+                    {/* 4. Neura summary */}
+                    {canUseNeuraAi && (
+                        <NeuraAiSummaryCard
+                            leadId={deal.id}
+                            leadLabel={deal.name}
+                            isInboxEnabled={false}
+                            entity="deals"
+                        />
+                    )}
+
+                    {/* Cross-module linked records */}
+                    {(deal.invoice_id || deal.project_id || fulfillmentOrder?.id) && (
+                        <Card title="Linked Records">
+                            <div className="flex flex-wrap gap-2">
+                                {deal.invoice_id && (
+                                    <CrossLinkChip type="accounting.invoice" id={deal.invoice_id} label={deal.invoice_number || undefined} />
+                                )}
+                                {deal.project_id && <CrossLinkChip type="projects.project" id={deal.project_id} />}
+                                {fulfillmentOrder?.id && <CrossLinkChip type="fulfillment.order" id={fulfillmentOrder.id} />}
+                            </div>
+                        </Card>
+                    )}
+
+                    {/* Contact Details Card */}
+                    {associatedLead && (
+                        <Card title="Primary Contact">
+                            <div className="space-y-6">
+                                <Link to={`/crm/leads/${associatedLead.id}`} className="group/link block">
+                                    <h4 className="text-lg font-medium text-fg group-hover/link:text-info transition-colors">{associatedLead.contact_name}</h4>
+                                    <p className="text-xs font-bold text-fg-subtle flex items-center gap-1">
+                                        <Building2 size={12} /> {associatedLead.company_name}
+                                    </p>
+                                </Link>
+                                <div className="space-y-3 pt-4 border-t border-line">
+                                    <a href={`mailto:${associatedLead.contact_email}`} className="flex items-center gap-3 text-xs font-bold text-fg-subtle hover:text-fg transition-colors">
+                                        <div className="w-8 h-8 rounded-lg bg-surface-raised flex items-center justify-center"><Mail size={14} /></div>
+                                        {associatedLead.contact_email}
+                                    </a>
+                                    {associatedLead.phone && (
+                                        <div className="flex items-center gap-2">
+                                            <a href={`tel:${associatedLead.phone}`} className="flex items-center gap-3 flex-1 text-xs font-bold text-fg-subtle hover:text-fg transition-colors">
+                                                <div className="w-8 h-8 rounded-lg bg-surface-raised flex items-center justify-center"><Phone size={14} /></div>
+                                                {associatedLead.phone}
+                                            </a>
+                                            <ClickToCallButton
+                                                number={associatedLead.phone}
+                                                entityType="deal"
+                                                entityId={deal.id}
+                                                name={associatedLead.contact_name || deal.name}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </Card>
+                    )}
+
+                    {/* Linked Invoice Card */}
+                    {invoiceStatus?.has_invoice && (
+                        <Card title="Linked Invoice">
+                            <div className="space-y-4">
+                                {invoiceStatus.invoice_number && (
+                                    <div>
+                                        <span className="text-xs font-medium text-fg-muted  block mb-1">Invoice Number</span>
+                                        <p className="text-sm font-bold text-fg">{invoiceStatus.invoice_number}</p>
+                                    </div>
+                                )}
+
+                                <div className="flex justify-between items-center py-2 border-t border-line">
+                                    <span className="text-xs font-medium text-fg-muted ">Status</span>
+                                    <span className={`px-2 py-0.5 rounded text-xs font-medium  ${
+                                        invoiceStatus.status === 'paid' ? 'bg-success/10 text-success border border-success/20' :
+                                        invoiceStatus.status === 'sent' || invoiceStatus.status === 'pending' ? 'bg-info/10 text-info border border-info/20' :
+                                        invoiceStatus.status === 'overdue' ? 'bg-danger/10 text-danger border border-danger/20' :
+                                        invoiceStatus.status === 'draft' ? 'bg-fg-muted/10 text-fg-subtle border border-line' :
+                                        invoiceStatus.status === 'partially_paid' ? 'bg-warning/10 text-warning border border-warning/20' :
+                                        'bg-fg-muted/10 text-fg-subtle border border-line'
+                                    }`}>
+                                        {invoiceStatus.status === 'partially_paid' ? 'Partial' : invoiceStatus.status || 'Unknown'}
+                                    </span>
+                                </div>
+
+                                {invoiceStatus.total != null && (
+                                    <div className="flex justify-between items-center py-2 border-t border-line">
+                                        <span className="text-xs font-medium text-fg-muted ">Total</span>
+                                        <span className="text-sm font-bold text-success">
+                                            {formatters.formatCurrency(Number(invoiceStatus.total))}
+                                        </span>
+                                    </div>
+                                )}
+
+                                {invoiceStatus.amount_paid != null && invoiceStatus.amount_paid > 0 && (
+                                    <div className="flex justify-between items-center py-2 border-t border-line">
+                                        <span className="text-xs font-medium text-fg-muted ">Paid</span>
+                                        <span className="text-sm font-bold text-success">
+                                            {formatters.formatCurrency(Number(invoiceStatus.amount_paid))}
+                                        </span>
+                                    </div>
+                                )}
+
+                                {invoiceStatus.balance_due != null && invoiceStatus.balance_due > 0 && (
+                                    <div className="flex justify-between items-center py-2 border-t border-line">
+                                        <span className="text-xs font-medium text-fg-muted ">Balance Due</span>
+                                        <span className="text-sm font-bold text-warning">
+                                            {formatters.formatCurrency(Number(invoiceStatus.balance_due))}
+                                        </span>
+                                    </div>
+                                )}
+
+                                {invoiceStatus.due_date && (
+                                    <div className="flex justify-between items-center py-2 border-t border-line">
+                                        <span className="text-xs font-medium text-fg-muted ">Due Date</span>
+                                        <span className="text-xs font-bold text-fg-subtle">
+                                            {formatters.formatDate(invoiceStatus.due_date)}
+                                        </span>
+                                    </div>
+                                )}
+
+                                <a
+                                    href="/accounting/invoices"
+                                    className="mt-2 flex items-center justify-center gap-2 w-full h-nb-control-md bg-surface-raised hover:bg-line text-fg rounded-nb-lg text-xs font-medium  transition-all border border-line"
+                                >
+                                    <ExternalLink size={12} /> View in Accounting
+                                </a>
+                            </div>
+                        </Card>
+                    )}
+
+                    {/* Fulfillment Tracking Card */}
+                    {fulfillmentOrder && (() => {
+                        const fo = fulfillmentOrder;
+                        const lastShipment = fo.fulfillment_shipments?.[0];
+                        const lastEvent = lastShipment?.fulfillment_shipment_events?.[0];
+                        const statusColor =
+                            fo.status === 'delivered' ? 'text-success bg-success/10 border-success/20' :
+                            fo.status === 'out_for_delivery' ? 'text-success bg-success/10 border-success/20' :
+                            fo.status === 'in_transit' ? 'text-info bg-info/10 border-info/20' :
+                            fo.status === 'delivery_failed' ? 'text-danger bg-danger/10 border-danger/20' :
+                            'text-fg-subtle bg-fg-muted/10 border-line';
+                        return (
+                            <Card title="Fulfillment Tracking">
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs font-medium text-fg-muted ">Status</span>
+                                        <span className={`px-2 py-0.5 rounded text-xs font-medium  border ${statusColor}`}>
+                                            {fo.status?.replace(/_/g, ' ') || 'pending'}
+                                        </span>
+                                    </div>
+                                    {lastShipment?.tracking_number && (
+                                        <div className="flex items-center justify-between py-2 border-t border-line">
+                                            <span className="text-xs font-medium text-fg-muted ">Tracking #</span>
+                                            <span className="text-xs font-mono text-fg-subtle">{lastShipment.tracking_number}</span>
+                                        </div>
+                                    )}
+                                    {lastEvent && (
+                                        <div className="py-2 border-t border-line">
+                                            <span className="text-xs font-medium text-fg-muted  block mb-1">Last Event</span>
+                                            <p className="text-xs text-fg-subtle leading-relaxed">{lastEvent.description}</p>
+                                            {lastEvent.location && (
+                                                <p className="text-xs text-fg-muted mt-0.5">{lastEvent.location}</p>
+                                            )}
+                                            <p className="text-xs text-fg-muted mt-1">{formatters.formatDateTime(lastEvent.occurred_at || lastEvent.created_at)}</p>
+                                        </div>
+                                    )}
+                                    {fo.estimated_delivery_at && (
+                                        <div className="flex items-center justify-between py-2 border-t border-line">
+                                            <span className="text-xs font-medium text-fg-muted ">ETA</span>
+                                            <span className="text-xs font-bold text-fg-subtle">{formatters.formatDate(fo.estimated_delivery_at)}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </Card>
+                        );
+                    })()}
+                </>
+            )}
+        >
+            {confirmDialog}
+
+            <div className="flex flex-col gap-nb-3">
+                <Card title="Deal lifecycle">
+                    <DealLifecycleStepper
+                        stages={dealStages}
+                        currentStageId={deal.stage_id}
+                        currentState={deal.current_flow_state || deal.stage}
+                    />
+                </Card>
+
+                <Card
+                    title={DEAL_TAB_TITLES[activeTab] || 'Details'}
+                    actions={activeTab === 'activity' ? (
+                        <Button type="button" variant="secondary" onClick={() => setShowActivityDrawer(true)}>
+                            View All History
+                        </Button>
+                    ) : undefined}
+                >
+                        <div>
+
                             {activeTab === 'activity' && (
-                                <div className="space-y-8 relative before:absolute before:left-4 before:top-2 before:bottom-2 before:w-px before:bg-slate-800">
+                                <div className="space-y-8 relative before:absolute before:left-4 before:top-2 before:bottom-2 before:w-px before:bg-surface-raised">
                                     {getAggregatedTimeline().length === 0 ? (
                                         <div className="text-center py-12 ml-6">
-                                            <MessageSquare size={48} className="mx-auto mb-4 text-slate-700 opacity-30" />
-                                            <p className="text-slate-400 font-semibold mb-2">No activity history yet</p>
-                                            <p className="text-xs text-slate-600 max-w-sm mx-auto leading-relaxed">
+                                            <MessageSquare size={48} className="mx-auto mb-4 text-fg opacity-30" />
+                                            <p className="text-fg-subtle font-semibold mb-2">No activity history yet</p>
+                                            <p className="text-xs text-fg-muted max-w-sm mx-auto leading-relaxed">
                                                 Activities like calls, meetings, and emails will appear here as you interact with this deal.
                                             </p>
                                         </div>
                                     ) : (
                                         getAggregatedTimeline().map((ev) => (
                                             <div key={ev.id} className="relative pl-10">
-                                                <div className="absolute left-0 top-1.5 w-8 h-8 rounded-full bg-slate-800 border-2 border-slate-900 flex items-center justify-center z-10">
-                                                    {(ev.type === 'Activity' && ev.subType === 'CALL') && <Phone size={14} className="text-blue-400" />}
-                                                    {(ev.type === 'Activity' && ev.subType === 'MEETING') && <Users size={14} className="text-purple-400" />}
-                                                    {(ev.type === 'Activity' && ev.subType === 'EMAIL') && <AtSign size={14} className="text-emerald-400" />}
-                                                    {ev.type === 'NOTE' && <FileText size={14} className="text-amber-400" />}
-                                                    {ev.type === 'TASK' && <CheckCircle2 size={14} className="text-indigo-400" />}
-                                                    {ev.type === 'DOCUMENT' && <UploadCloud size={14} className="text-sky-400" />}
-                                                    {['STATUS_CHANGE', 'STAGE_CHANGE', 'OWNER_CHANGE', 'PROFILE_UPDATE'].includes(ev.type) && <Zap size={14} className="text-yellow-400" />}
+                                                <div className="absolute left-0 top-1.5 w-8 h-8 rounded-full bg-surface-raised border-2 border-line flex items-center justify-center">
+                                                    {(ev.type === 'Activity' && ev.subType === 'CALL') && <Phone size={14} className="text-info" />}
+                                                    {(ev.type === 'Activity' && ev.subType === 'MEETING') && <Users size={14} className="text-primary" />}
+                                                    {(ev.type === 'Activity' && ev.subType === 'EMAIL') && <AtSign size={14} className="text-success" />}
+                                                    {ev.type === 'NOTE' && <FileText size={14} className="text-warning" />}
+                                                    {ev.type === 'TASK' && <CheckCircle2 size={14} className="text-primary" />}
+                                                    {ev.type === 'DOCUMENT' && <UploadCloud size={14} className="text-info" />}
+                                                    {['STATUS_CHANGE', 'STAGE_CHANGE', 'OWNER_CHANGE', 'PROFILE_UPDATE'].includes(ev.type) && <Zap size={14} className="text-warning" />}
                                                 </div>
-                                                <div className="bg-slate-950/50 border border-slate-800/40 p-4 rounded-xl group hover:border-slate-700 transition-all">
+                                                <div className="py-2 group">
                                                     <div className="flex items-center justify-between mb-2">
-                                                        <span className="font-black text-slate-50 text-[10px] uppercase tracking-widest">
+                                                        <span className="font-semibold text-fg text-xs">
                                                             {ev.title}
                                                         </span>
                                                         <div className="flex items-center gap-2">
                                                             {ev.type === 'Activity' && (
                                                                 <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                                                                    <button
-                                                                        onClick={async () => {
+                                                                    <IconButton label="Edit activity" variant="ghost" icon={<Edit2 size={12} />} onClick={async () => {
                                                                             const newNotes = prompt('Edit activity notes:', ev.description);
                                                                             if (newNotes !== null) {
                                                                                 await activitiesApi.update(ev.id, { notes: newNotes });
                                                                                 fetchData();
                                                                             }
-                                                                        }}
-                                                                        className="p-1 text-slate-500 hover:text-blue-400 transition-colors"
-                                                                        title="Edit activity"
-                                                                    >
-                                                                        <Edit2 size={12} />
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={async () => {
-                                                                            if (confirm('Delete this activity?')) {
+                                                                        }} />
+                                                                    <IconButton label="Delete activity" variant="ghost" icon={<Trash2 size={12} />} onClick={async () => {
+                                                                            if (await confirm({ title: 'Delete?', message: 'Delete this activity?', intent: 'danger', confirmLabel: 'Delete' })) {
                                                                                 await activitiesApi.delete(ev.id);
                                                                                 fetchData();
                                                                             }
-                                                                        }}
-                                                                        className="p-1 text-slate-500 hover:text-rose-400 transition-colors"
-                                                                        title="Delete activity"
-                                                                    >
-                                                                        <Trash2 size={12} />
-                                                                    </button>
+                                                                        }} />
                                                                 </div>
                                                             )}
-                                                            <span className="text-[9px] bg-slate-800 text-slate-500 px-2 py-0.5 rounded font-black tracking-widest uppercase">
+                                                            <span className="text-xs bg-surface-raised text-fg-muted px-2 py-0.5 rounded font-semibold">
                                                                 {formatters.formatDateTime(ev.date)}
                                                             </span>
                                                         </div>
                                                     </div>
-                                                    <p className="text-slate-400 text-sm leading-relaxed">{ev.description}</p>
+                                                    <p className="text-fg-subtle text-sm leading-relaxed">{ev.description}</p>
                                                     {ev.author && (
                                                         <div className="mt-4 flex items-center gap-2">
-                                                            <div className="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[8px] font-black overflow-hidden border border-slate-700">
+                                                            <div className="w-5 h-5 rounded-full bg-surface-raised flex items-center justify-center text-xs font-semibold overflow-hidden border border-line">
                                                                 {ev.author.avatar_url ? <img src={ev.author.avatar_url} /> : ev.author.full_name?.charAt(0)}
                                                             </div>
-                                                            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{ev.author.full_name}</span>
+                                                            <span className="text-xs font-bold text-fg-muted">{ev.author.full_name}</span>
                                                         </div>
                                                     )}
                                                 </div>
@@ -964,52 +1066,43 @@ const DealDetailPage = () => {
                                 <div className="space-y-6">
                                     <div className="space-y-4">
                                         {deal.notes.map(note => (
-                                            <div key={note.id} className="text-sm border-l-2 border-amber-500/30 pl-4 py-1 group relative">
+                                            <div key={note.id} className="text-sm border-l-2 border-warning/30 pl-4 py-1 group relative">
                                                 <div className="absolute right-0 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                                                    <button
-                                                        onClick={async () => {
+                                                    <IconButton label="Edit note" variant="ghost" icon={<Edit2 size={12} />} onClick={async () => {
                                                             const content = prompt('Edit note:', note.content);
                                                             if (content) {
                                                                 await crmService.updateNote(note.id, content);
                                                                 fetchData();
                                                             }
-                                                        }}
-                                                        className="text-slate-500 hover:text-blue-400"
-                                                    ><Edit2 size={12} /></button>
-                                                    <button
-                                                        onClick={async () => {
-                                                            if (confirm('Delete note?')) {
+                                                        }} />
+                                                    <IconButton label="Delete note" variant="ghost" icon={<Trash2 size={12} />} onClick={async () => {
+                                                            if (await confirm({ title: 'Delete?', message: 'Delete note?', intent: 'danger', confirmLabel: 'Delete' })) {
                                                                 await crmService.deleteNote(note.id);
                                                                 fetchData();
                                                             }
-                                                        }}
-                                                        className="text-slate-500 hover:text-rose-400"
-                                                    ><Trash2 size={12} /></button>
+                                                        }} />
                                                 </div>
-                                                <p className="text-slate-300 leading-relaxed mb-2 pr-12">{note.content}</p>
+                                                <p className="text-fg-subtle leading-relaxed mb-2 pr-12">{note.content}</p>
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{note.author.full_name}</span>
-                                                    <span className="text-[10px] text-slate-600 font-bold">{formatters.formatDate(note.created_at)}</span>
+                                                    <span className="text-xs font-semibold text-fg-muted">{note.author.full_name}</span>
+                                                    <span className="text-xs text-fg-muted font-bold">{formatters.formatDate(note.created_at)}</span>
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
-                                    <div className="bg-slate-950 border border-slate-800 rounded-xl p-4">
-                                        <textarea
+                                    <div className="pt-2">
+                                        <Textarea
+                                            name="deal-new-note"
                                             placeholder="Capture commercial context..."
                                             value={newNoteContent}
                                             onChange={(e) => setNewNoteContent(e.target.value)}
-                                            className="w-full bg-transparent border-none p-0 text-sm font-medium text-slate-50 focus:ring-0 resize-none h-24 mb-3"
                                         />
                                         <div className="flex justify-end">
-                                            <button
-                                                onClick={async () => {
+                                            <Button size="sm" onClick={async () => {
                                                     await crmService.createNote({ deal_id: id, content: newNoteContent });
                                                     setNewNoteContent('');
                                                     fetchData();
-                                                }}
-                                                className="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest"
-                                            >Save Note</button>
+                                                }}>Save Note</Button>
                                         </div>
                                     </div>
                                 </div>
@@ -1019,49 +1112,43 @@ const DealDetailPage = () => {
                             {activeTab === 'tasks' && (
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-center mb-6">
-                                        <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Planned actions</h4>
-                                        <button onClick={() => setIsCreatingTask(true)} className="text-[10px] font-black text-blue-400 hover:text-blue-300 transition-colors uppercase tracking-widest flex items-center gap-1.5">
+                                        <h4 className="text-xs font-semibold text-fg-muted">Planned actions</h4>
+                                        <Button variant="secondary" size="sm" onClick={() => setIsCreatingTask(true)}>
                                             <Plus size={12} /> Add Task
-                                        </button>
+                                        </Button>
                                     </div>
                                     <div className="grid gap-3">
                                         {tasks.length === 0 ? (
-                                            <div className="text-center py-10 text-slate-500 border-2 border-dashed border-slate-800 rounded-xl">
-                                                <CheckCircle2 size={32} className="mx-auto mb-3 opacity-20" />
-                                                <p className="text-sm font-medium uppercase tracking-tight">Zero pending actions</p>
-                                            </div>
+                                            <EmptyState title="Zero pending actions" />
                                         ) : (
                                             tasks.map(task => (
-                                                <div key={task.id} className={`flex items-start gap-4 p-4 bg-slate-950 border rounded-xl group relative transition-all ${task.status === 'DONE' ? 'border-emerald-500/10 opacity-60' : 'border-slate-800 hover:border-blue-500/50'}`}>
-                                                    <button
+                                                <div key={task.id} className={`flex items-start gap-4 p-4 bg-bg border rounded-nb-lg group relative transition-all ${task.status === 'DONE' ? 'border-success/10 opacity-60' : 'border-line hover:border-info/50'}`}>
+                                                    <IconButton
+                                                        label={task.status === 'DONE' ? 'Mark task not done' : 'Mark task done'}
+                                                        icon={task.status === 'DONE' ? <CheckCircle2 size={12} /> : null}
+                                                        size="sm"
                                                         onClick={() => handleTaskToggle(task)}
-                                                        className={`mt-1 w-5 h-5 rounded border transition-colors flex items-center justify-center ${task.status === 'DONE' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-500' : 'border-slate-700'}`}
-                                                    >
-                                                        {task.status === 'DONE' && <CheckCircle2 size={12} />}
-                                                    </button>
+                                                     />
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex justify-between">
-                                                            <h4 className={`text-sm font-bold text-slate-50 truncate ${task.status === 'DONE' ? 'line-through text-slate-500' : ''}`}>
+                                                            <h4 className={`text-sm font-bold text-fg truncate ${task.status === 'DONE' ? 'line-through text-fg-muted' : ''}`}>
                                                                 {task.title}
                                                             </h4>
                                                         </div>
-                                                        <div className="flex items-center gap-4 mt-3 text-[11px] font-bold text-slate-300 uppercase tracking-wider pt-2 border-t border-slate-800/50">
-                                                            <span className="flex items-center gap-1 text-slate-300">
+                                                        <div className="flex items-center gap-4 mt-3 text-xs font-bold text-fg-subtle pt-2 border-t border-line">
+                                                            <span className="flex items-center gap-1 text-fg-subtle">
                                                                 <Clock size={11} /> Due {formatters.formatDate(task.due_date)}
                                                             </span>
                                                         </div>
                                                     </div>
                                                     <div className="absolute right-3 top-3 opacity-0 group-hover:opacity-100 transition-all flex gap-1">
-                                                        <button onClick={() => setEditingTask(task)} className="p-1 hover:text-blue-400"><Edit2 size={14} /></button>
-                                                        <button
-                                                            onClick={async () => {
-                                                                if (confirm('Delete task?')) {
+                                                        <IconButton label="Edit task" variant="ghost" icon={<Edit2 size={14} />} onClick={() => setEditingTask(task)} />
+                                                        <IconButton label="Delete task" variant="ghost" icon={<Trash2 size={14} />} onClick={async () => {
+                                                                if (await confirm({ title: 'Delete?', message: 'Delete task?', intent: 'danger', confirmLabel: 'Delete' })) {
                                                                     await tasksApi.delete(task.id);
                                                                     fetchData();
                                                                 }
-                                                            }}
-                                                            className="p-1 hover:text-rose-400"
-                                                        ><Trash2 size={14} /></button>
+                                                            }} />
                                                     </div>
                                                 </div>
                                             ))
@@ -1073,13 +1160,16 @@ const DealDetailPage = () => {
                             {/* DOCUMENTS TAB */}
                             {activeTab === 'documents' && (
                                 <div className="space-y-6">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Attachments & Contracts</p>
-                                        <label className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer transition-all ${isUploading ? 'bg-slate-800 text-slate-500' : 'bg-blue-600 hover:bg-blue-500 text-slate-50 shadow-lg active:scale-95'}`}>
-                                            {isUploading ? <Loader2 size={12} className="animate-spin" /> : <UploadCloud size={12} />}
-                                            {isUploading ? 'Uploading...' : 'Upload File'}
-                                            <input type="file" className="hidden" disabled={isUploading} onChange={async (e) => {
-                                                const file = e.target.files?.[0];
+                                    <div>
+                                        <p className="text-xs font-semibold text-fg-muted mb-nb-3">Attachments & Contracts</p>
+                                        <FileUpload
+                                            name="deal-document"
+                                            aria-label="Upload file"
+                                            prompt={isUploading ? 'Uploading...' : 'Upload File'}
+                                            disabled={isUploading}
+                                            value={[]}
+                                            onChange={async (files) => {
+                                                const file = files[0];
                                                 if (file) {
                                                     setIsUploading(true);
                                                     try {
@@ -1088,66 +1178,69 @@ const DealDetailPage = () => {
                                                         fetchData();
                                                     } finally { setIsUploading(false); }
                                                 }
-                                            }} />
-                                        </label>
+                                            }}
+                                        />
                                     </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <Grid gap="md">
                                         {(deal.documents || []).map(doc => (
-                                            <div key={doc.id} className="flex items-center justify-between p-4 bg-slate-950 border border-slate-800 rounded-xl group hover:border-slate-700">
+                                            <GridItem key={doc.id} span={{ md: 4, lg: 6 }}>                                            <div className="flex items-center justify-between py-3 border-b border-line group">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="bg-slate-800 p-2 rounded-lg text-blue-400"><FileIcon size={20} /></div>
+                                                    <div className="bg-surface-raised p-2 rounded-lg text-info"><FileIcon size={20} /></div>
                                                     <div>
-                                                        <p className="text-sm font-bold text-slate-50 truncate max-w-[150px]">{doc.name}</p>
-                                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{(doc.size / 1024).toFixed(1)} KB</p>
+                                                        <p className="text-sm font-bold text-fg truncate max-w-36">{doc.name}</p>
+                                                        <p className="text-xs font-semibold text-fg-muted">{(doc.size / 1024).toFixed(1)} KB</p>
                                                     </div>
                                                 </div>
                                                 <div className="flex gap-2">
                                                     {doc.dmsDocumentId ? (
-                                                        <button
-                                                            onClick={() => { void openDealDocument(doc); }}
-                                                            className="p-2 text-slate-500 hover:text-slate-50 transition-colors"
-                                                            title="Download"
-                                                        ><Download size={16} /></button>
+                                                        <IconButton label="Download" variant="ghost" icon={<Download size={16} />} onClick={() => { void openDealDocument(doc); }} />
                                                     ) : (
-                                                        <a href={doc.url} download title="Download" className="p-2 text-slate-500 hover:text-slate-50 transition-colors"><Download size={16} /></a>
+                                                        <a href={doc.url} download title="Download" className="p-2 text-fg-muted hover:text-fg transition-colors"><Download size={16} /></a>
                                                     )}
-                                                    <button
-                                                        onClick={async () => {
-                                                            if (confirm('Delete file?')) {
+                                                    <IconButton label="Delete file" variant="ghost" icon={<Trash2 size={16} />} onClick={async () => {
+                                                            if (await confirm({ title: 'Delete?', message: 'Delete file?', intent: 'danger', confirmLabel: 'Delete' })) {
                                                                 await crmService.deleteDocument(id, doc.id);
                                                                 publishDealDocumentsChanged(id);
                                                                 fetchData();
                                                             }
-                                                        }}
-                                                        className="p-2 text-slate-500 hover:text-rose-400 transition-colors"
-                                                    ><Trash2 size={16} /></button>
+                                                        }} />
                                                 </div>
-                                            </div>
+                                            </div></GridItem>
                                         ))}
-                                    </div>
+                                    </Grid>
                                 </div>
                             )}
 
                             {/* CUSTOM FIELDS TAB */}
-                            {activeTab === 'custom' && (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-10">
+                            {activeTab === 'custom' && dlCustomFields && (
+                                <DlCustomFieldsPanel
+                                    entity="deal"
+                                    recordId={deal.id}
+                                    values={deal.custom_fields}
+                                    version={deal.custom_fields_version}
+                                    save={(values, version) => crmService.updateDealCustomFields(deal.id, values, version)}
+                                    reload={fetchData}
+                                />
+                            )}
+                            {activeTab === 'custom' && !dlCustomFields && (
+                                <Grid gap="md">
                                     {customFieldDefs.length === 0 ? (
-                                        <p className="text-slate-500 italic text-sm col-span-2">No additional fields configured in Deals settings.</p>
+                                        <GridItem span="full"><p className="text-fg-muted italic text-sm">No additional fields configured in Deals settings.</p></GridItem>
                                     ) : (
                                         customFieldDefs.map(field => (
-                                            <div key={field.id} className="flex flex-col gap-1.5">
-                                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{field.label}</span>
-                                                <p className="text-sm font-bold text-slate-50 border-l-2 border-slate-800 pl-3 py-1">
+                                            <GridItem key={field.id} span={{ md: 4, lg: 6 }}><div className="flex flex-col gap-1.5">
+                                                <span className="text-xs font-semibold text-fg-muted">{field.label}</span>
+                                                <p className="text-sm font-bold text-fg border-l-2 border-line pl-3 py-1">
                                                     {field.type === 'boolean'
                                                         ? (deal.custom_fields?.[field.id] ? 'Yes' : 'No')
                                                         : field.type === 'date' && deal.custom_fields?.[field.id]
                                                             ? formatters.formatDate(deal.custom_fields[field.id])
                                                             : deal.custom_fields?.[field.id] || '—'}
                                                 </p>
-                                            </div>
+                                            </div></GridItem>
                                         ))
                                     )}
-                                </div>
+                                </Grid>
                             )}
 
                             {activeTab === 'products' && (
@@ -1161,6 +1254,10 @@ const DealDetailPage = () => {
                                 <CallsTab dealId={deal.id} />
                             )}
 
+                            {activeTab === 'maintenance' && maintenanceTabOn && (
+                                <MaintenanceTab dealId={deal.id} customerPartnerId={deal.partner_id} />
+                            )}
+
                             {activeTab === 'payment-plan' && paymentPlansOn && (
                                 <DealPaymentPlanPanel dealId={deal.id} />
                             )}
@@ -1169,208 +1266,7 @@ const DealDetailPage = () => {
                                 <DealCommissionPanel dealId={deal.id} />
                             )}
                         </div>
-                    </div>
-                </div>
-
-                {/* Sidebar Context */}
-                <div className="space-y-8">
-                    {/* Cross-module linked records */}
-                    {(deal.invoice_id || deal.project_id || fulfillmentOrder?.id) && (
-                        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-                            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                <ExternalLink size={14} className="text-blue-400" /> Linked Records
-                            </h3>
-                            <div className="flex flex-wrap gap-2">
-                                {deal.invoice_id && (
-                                    <CrossLinkChip type="accounting.invoice" id={deal.invoice_id} label={deal.invoice_number || undefined} />
-                                )}
-                                {deal.project_id && <CrossLinkChip type="projects.project" id={deal.project_id} />}
-                                {fulfillmentOrder?.id && <CrossLinkChip type="fulfillment.order" id={fulfillmentOrder.id} />}
-                            </div>
-                        </section>
-                    )}
-
-                    {/* Contact Details Card */}
-                    {associatedLead && (
-                        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-blue-500/10 transition-colors" />
-                            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-2">
-                                <Users size={14} className="text-blue-400" /> Primary Contact
-                            </h3>
-                            <div className="space-y-6">
-                                <Link to={`/crm/leads/${associatedLead.id}`} className="group/link block">
-                                    <h4 className="text-lg font-black text-slate-50 group-hover/link:text-blue-400 transition-colors">{associatedLead.contact_name}</h4>
-                                    <p className="text-xs font-bold text-slate-400 flex items-center gap-1">
-                                        <Building2 size={12} /> {associatedLead.company_name}
-                                    </p>
-                                </Link>
-                                <div className="space-y-3 pt-4 border-t border-slate-800/50">
-                                    <a href={`mailto:${associatedLead.contact_email}`} className="flex items-center gap-3 text-xs font-bold text-slate-300 hover:text-slate-50 transition-colors">
-                                        <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center"><Mail size={14} /></div>
-                                        {associatedLead.contact_email}
-                                    </a>
-                                    {associatedLead.phone && (
-                                        <div className="flex items-center gap-2">
-                                            <a href={`tel:${associatedLead.phone}`} className="flex items-center gap-3 flex-1 text-xs font-bold text-slate-300 hover:text-slate-50 transition-colors">
-                                                <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center"><Phone size={14} /></div>
-                                                {associatedLead.phone}
-                                            </a>
-                                            <ClickToCallButton
-                                                number={associatedLead.phone}
-                                                entityType="deal"
-                                                entityId={deal.id}
-                                                name={associatedLead.contact_name || deal.name}
-                                            />
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </section>
-                    )}
-
-                    {/* Linked Invoice Card */}
-                    {invoiceStatus?.has_invoice && (
-                        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-emerald-500/10 transition-colors" />
-                            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-2">
-                                <Receipt size={14} className="text-emerald-400" /> Linked Invoice
-                            </h3>
-                            <div className="space-y-4">
-                                {invoiceStatus.invoice_number && (
-                                    <div>
-                                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Invoice Number</span>
-                                        <p className="text-sm font-bold text-slate-50">{invoiceStatus.invoice_number}</p>
-                                    </div>
-                                )}
-
-                                <div className="flex justify-between items-center py-2 border-t border-slate-800/50">
-                                    <span className="text-[10px] font-black text-slate-500 uppercase">Status</span>
-                                    <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${
-                                        invoiceStatus.status === 'paid' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                                        invoiceStatus.status === 'sent' || invoiceStatus.status === 'pending' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
-                                        invoiceStatus.status === 'overdue' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
-                                        invoiceStatus.status === 'draft' ? 'bg-slate-500/10 text-slate-400 border border-slate-500/20' :
-                                        invoiceStatus.status === 'partially_paid' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
-                                        'bg-slate-500/10 text-slate-400 border border-slate-500/20'
-                                    }`}>
-                                        {invoiceStatus.status === 'partially_paid' ? 'Partial' : invoiceStatus.status || 'Unknown'}
-                                    </span>
-                                </div>
-
-                                {invoiceStatus.total != null && (
-                                    <div className="flex justify-between items-center py-2 border-t border-slate-800/50">
-                                        <span className="text-[10px] font-black text-slate-500 uppercase">Total</span>
-                                        <span className="text-sm font-bold text-emerald-400">
-                                            {formatters.formatCurrency(Number(invoiceStatus.total))}
-                                        </span>
-                                    </div>
-                                )}
-
-                                {invoiceStatus.amount_paid != null && invoiceStatus.amount_paid > 0 && (
-                                    <div className="flex justify-between items-center py-2 border-t border-slate-800/50">
-                                        <span className="text-[10px] font-black text-slate-500 uppercase">Paid</span>
-                                        <span className="text-sm font-bold text-emerald-400">
-                                            {formatters.formatCurrency(Number(invoiceStatus.amount_paid))}
-                                        </span>
-                                    </div>
-                                )}
-
-                                {invoiceStatus.balance_due != null && invoiceStatus.balance_due > 0 && (
-                                    <div className="flex justify-between items-center py-2 border-t border-slate-800/50">
-                                        <span className="text-[10px] font-black text-slate-500 uppercase">Balance Due</span>
-                                        <span className="text-sm font-bold text-amber-400">
-                                            {formatters.formatCurrency(Number(invoiceStatus.balance_due))}
-                                        </span>
-                                    </div>
-                                )}
-
-                                {invoiceStatus.due_date && (
-                                    <div className="flex justify-between items-center py-2 border-t border-slate-800/50">
-                                        <span className="text-[10px] font-black text-slate-500 uppercase">Due Date</span>
-                                        <span className="text-[10px] font-bold text-slate-300">
-                                            {formatters.formatDate(invoiceStatus.due_date)}
-                                        </span>
-                                    </div>
-                                )}
-
-                                <a
-                                    href="/accounting/invoices"
-                                    className="mt-2 flex items-center justify-center gap-2 w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-slate-700"
-                                >
-                                    <ExternalLink size={12} /> View in Accounting
-                                </a>
-                            </div>
-                        </section>
-                    )}
-
-                    {/* Fulfillment Tracking Card */}
-                    {fulfillmentOrder && (() => {
-                        const fo = fulfillmentOrder;
-                        const lastShipment = fo.fulfillment_shipments?.[0];
-                        const lastEvent = lastShipment?.fulfillment_shipment_events?.[0];
-                        const statusColor =
-                            fo.status === 'delivered' ? 'text-teal-400 bg-teal-500/10 border-teal-500/20' :
-                            fo.status === 'out_for_delivery' ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' :
-                            fo.status === 'in_transit' ? 'text-blue-400 bg-blue-500/10 border-blue-500/20' :
-                            fo.status === 'delivery_failed' ? 'text-red-400 bg-red-500/10 border-red-500/20' :
-                            'text-slate-400 bg-slate-500/10 border-slate-500/20';
-                        return (
-                            <section className="bg-slate-900/50 border border-slate-800 rounded-2xl p-5 relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-teal-500/10 transition-colors" />
-                                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-5 flex items-center gap-2">
-                                    <Zap size={14} className="text-teal-400" /> Fulfillment Tracking
-                                </h3>
-                                <div className="space-y-3">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-[10px] font-black text-slate-500 uppercase">Status</span>
-                                        <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border ${statusColor}`}>
-                                            {fo.status?.replace(/_/g, ' ') || 'pending'}
-                                        </span>
-                                    </div>
-                                    {lastShipment?.tracking_number && (
-                                        <div className="flex items-center justify-between py-2 border-t border-slate-800/50">
-                                            <span className="text-[10px] font-black text-slate-500 uppercase">Tracking #</span>
-                                            <span className="text-xs font-mono text-slate-300">{lastShipment.tracking_number}</span>
-                                        </div>
-                                    )}
-                                    {lastEvent && (
-                                        <div className="py-2 border-t border-slate-800/50">
-                                            <span className="text-[10px] font-black text-slate-500 uppercase block mb-1">Last Event</span>
-                                            <p className="text-xs text-slate-300 leading-relaxed">{lastEvent.description}</p>
-                                            {lastEvent.location && (
-                                                <p className="text-[10px] text-slate-500 mt-0.5">{lastEvent.location}</p>
-                                            )}
-                                            <p className="text-[9px] text-slate-600 mt-1">{formatters.formatDateTime(lastEvent.occurred_at || lastEvent.created_at)}</p>
-                                        </div>
-                                    )}
-                                    {fo.estimated_delivery_at && (
-                                        <div className="flex items-center justify-between py-2 border-t border-slate-800/50">
-                                            <span className="text-[10px] font-black text-slate-500 uppercase">ETA</span>
-                                            <span className="text-[10px] font-bold text-slate-300">{formatters.formatDate(fo.estimated_delivery_at)}</span>
-                                        </div>
-                                    )}
-                                </div>
-                            </section>
-                        );
-                    })()}
-
-                    {/* Stats & Metadata */}
-                    <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-2">
-                            System Intelligence
-                        </h3>
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-center py-2 border-b border-slate-800/50">
-                                <span className="text-[10px] font-black text-slate-500 uppercase">Created On</span>
-                                <span className="text-[10px] font-bold text-slate-300">{formatters.formatDate(deal.created_at)}</span>
-                            </div>
-                            <div className="flex justify-between items-center py-2">
-                                <span className="text-[10px] font-black text-slate-500 uppercase">Last Sync</span>
-                                <span className="text-[10px] font-bold text-slate-300">Just now</span>
-                            </div>
-                        </div>
-                    </section>
-                </div>
+                </Card>
             </div>
 
             {/* Sign Request Modal */}
@@ -1386,115 +1282,100 @@ const DealDetailPage = () => {
 
             {/* PROJECT LINKING MODAL */}
             {isProjectModalOpen && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
-                    <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 max-h-[90vh]">
-                        <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
-                            <h3 className="text-slate-50 font-black uppercase tracking-widest text-xs flex items-center gap-2">
-                                <Briefcase size={16} className="text-blue-400" />
-                                Project Management
-                            </h3>
-                            <button onClick={() => setIsProjectModalOpen(false)} className="text-slate-500 hover:text-slate-50 transition-colors">
-                                <X size={20} />
-                            </button>
+                <Modal
+                    isOpen
+                    onClose={() => setIsProjectModalOpen(false)}
+                    title="Project Management"
+                    size="lg"
+                    data-testid="deal-project-modal"
+                    footer={(
+                        <>
+                            <Button type="button" variant="secondary" onClick={() => setIsProjectModalOpen(false)}>Cancel</Button>
+                            <Button type="button" variant="primary" onClick={handleLinkExistingProject} disabled={!selectedProjectId}>
+                                Confirm Link
+                            </Button>
+                        </>
+                    )}
+                >
+                    <div className="flex flex-col gap-nb-4">
+                        {/* CREATE OPTION */}
+                        <div className="bg-surface border border-line rounded-nb-lg p-nb-4 hover:border-info/30 transition-colors group cursor-pointer" onClick={handleCreateProject}>
+                            <div className="flex items-start justify-between gap-nb-3">
+                                <div className="min-w-0">
+                                    <h4 className="text-fg font-bold text-sm mb-1 group-hover:text-info transition-colors">Create New Project</h4>
+                                    <p className="text-fg-muted text-xs leading-relaxed">
+                                        Open the Projects module with deal info pre-filled to create and configure a new project.
+                                    </p>
+                                </div>
+                                <Button type="button" variant="secondary" size="sm">
+                                    Open <ExternalLink size={10} />
+                                </Button>
+                            </div>
                         </div>
 
-                        <div className="p-8 space-y-8">
-                            {/* CREATE OPTION */}
-                            <div className="bg-slate-950/50 border border-slate-800 rounded-2xl p-6 space-y-4 hover:border-blue-500/30 transition-colors group cursor-pointer" onClick={handleCreateProject}>
-                                <div className="flex items-start justify-between">
-                                    <div>
-                                        <h4 className="text-slate-200 font-bold text-sm mb-1 group-hover:text-blue-400 transition-colors">Create New Project</h4>
-                                        <p className="text-slate-500 text-[10px] leading-relaxed max-w-[200px]">
-                                            Open the Projects module with deal info pre-filled to create and configure a new project.
-                                        </p>
-                                    </div>
-                                    <div className="bg-blue-600 group-hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all shadow-lg flex items-center gap-1">
-                                        Open <ExternalLink size={10} />
-                                    </div>
-                                </div>
-                            </div>
+                        <div className="relative flex items-center gap-nb-3">
+                            <div className="flex-1 h-px bg-surface-raised"></div>
+                            <span className="text-xs font-semibold text-fg">OR</span>
+                            <div className="flex-1 h-px bg-surface-raised"></div>
+                        </div>
 
-                            <div className="relative flex items-center gap-4">
-                                <div className="flex-1 h-px bg-slate-800"></div>
-                                <span className="text-[9px] font-black text-slate-700 uppercase tracking-widest">OR</span>
-                                <div className="flex-1 h-px bg-slate-800"></div>
+                        {/* LINK OPTION */}
+                        <div className="flex flex-col gap-nb-3">
+                            <div>
+                                <h4 className="text-fg font-bold text-sm mb-1">Link Existing Project</h4>
+                                <p className="text-fg-muted text-xs">Reference a project already existing in the system.</p>
                             </div>
-
-                            {/* LINK OPTION */}
-                            <div className="space-y-4">
-                                <div>
-                                    <h4 className="text-slate-200 font-bold text-sm mb-1">Link Existing Project</h4>
-                                    <p className="text-slate-500 text-[10px]">Reference a project already existing in the system.</p>
-                                </div>
-
-                                <div className="space-y-3">
-                                    <ProjectSelect
-                                        value={selectedProjectId}
-                                        onChange={setSelectedProjectId}
-                                        noneLabel="Select current project..."
-                                    />
-                                    <button
-                                        onClick={handleLinkExistingProject}
-                                        disabled={!selectedProjectId}
-                                        className="w-full bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-slate-700"
-                                    >
-                                        Confirm Link
-                                    </button>
-                                </div>
-                            </div>
+                            <ProjectSelect
+                                value={selectedProjectId}
+                                onChange={setSelectedProjectId}
+                                noneLabel="Select current project..."
+                            />
                         </div>
 
                         {projectDetails && (
-                            <div className="p-4 bg-blue-500/5 border-t border-slate-800">
+                            <div className="p-nb-3 bg-surface-sunken border border-line rounded-nb-lg">
                                 <div className="flex items-center justify-between mb-2">
-                                    <span className="text-xs font-black text-slate-500 uppercase tracking-widest">
+                                    <span className="text-xs font-semibold text-fg-muted">
                                         Linked Project
                                     </span>
-                                    <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${
-                                        projectDetails.status === 'COMPLETED'
-                                            ? 'bg-emerald-500/10 text-emerald-400'
-                                            : 'bg-blue-500/10 text-blue-400'
-                                    }`}>
+                                    <Badge size="sm" tone={projectDetails.status === 'COMPLETED' ? 'success' : 'info'}>
                                         {projectDetails.status}
-                                    </span>
+                                    </Badge>
                                 </div>
-                                <h4 className="text-sm font-bold text-slate-50 mb-2">{projectDetails.title}</h4>
+                                <h4 className="text-sm font-bold text-fg mb-2">{projectDetails.title}</h4>
                                 <div className="flex items-center justify-between text-xs">
-                                    <span className="text-slate-400">
+                                    <span className="text-fg-subtle">
                                         Budget: {formatters.formatCurrency(projectDetails.budget_total || 0)}
                                     </span>
                                     {projectDetails.completion_percentage > 0 && (
-                                        <span className="text-slate-400">
+                                        <span className="text-fg-subtle">
                                             {projectDetails.completion_percentage}% Complete
                                         </span>
                                     )}
                                 </div>
-                                <div className="mt-3 flex gap-2">
+                                <div className="mt-nb-3 flex items-center gap-nb-2">
                                     <a
                                         href={`/projects/${projectDetails.id}`}
-                                        className="flex-1 text-center py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold transition-all"
+                                        className="flex-1 text-center text-sm font-bold text-primary hover:underline"
                                     >
                                         View Project Details →
                                     </a>
-                                    <button
-                                        onClick={handleUnlinkProject}
-                                        className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-rose-400 rounded-lg font-bold text-xs border border-slate-700"
-                                    >
+                                    <Button type="button" variant="danger" size="sm" onClick={handleUnlinkProject}>
                                         Unlink
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
                         )}
 
                         {!projectDetails && deal.project_id && (
-                            <div className="p-4 bg-slate-800/50 border-t border-slate-800 text-center">
-                                <span className="text-slate-500 text-xs">
+                            <div className="p-nb-3 bg-surface-sunken border border-line rounded-nb-lg text-center">
+                                <span className="text-fg-muted text-xs">
                                     Project ID: {deal.project_id}
                                 </span>
                             </div>
                         )}
                     </div>
-                </div>
+                </Modal>
             )}
 
             {/* Modals */}
@@ -1519,31 +1400,26 @@ const DealDetailPage = () => {
 
             {/* Delete Deal Confirmation Modal */}
             {showDeleteConfirm && (
-                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                    <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in fade-in zoom-in duration-200 max-h-[90vh]">
-                        <h2 className="text-xl font-bold text-slate-100 mb-2">Delete Deal</h2>
-                        <p className="text-slate-400 mb-6">
-                            Are you sure you want to delete this deal? This will remove all associated notes, activities, tasks, and documents. This action cannot be undone.
-                        </p>
-                        <div className="flex justify-end gap-3">
-                            <button
-                                onClick={() => setShowDeleteConfirm(false)}
-                                disabled={isDeleting}
-                                className="px-4 py-2 text-slate-300 hover:text-slate-50 transition-colors disabled:opacity-50"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleDeleteDeal}
-                                disabled={isDeleting}
-                                className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-800 text-white rounded-lg transition-colors flex items-center gap-2"
-                            >
+                <Modal
+                    isOpen
+                    onClose={() => setShowDeleteConfirm(false)}
+                    title="Delete Deal"
+                    size="sm"
+                    dismissible={!isDeleting}
+                    footer={
+                        <>
+                            <Button variant="secondary" onClick={() => setShowDeleteConfirm(false)} disabled={isDeleting}>Cancel</Button>
+                            <Button variant="danger" onClick={handleDeleteDeal} disabled={isDeleting}>
                                 {isDeleting && <Loader2 size={16} className="animate-spin" />}
                                 Delete Deal
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                            </Button>
+                        </>
+                    }
+                >
+                    <p className="text-fg-subtle">
+                        Are you sure you want to delete this deal? This will remove all associated notes, activities, tasks, and documents. This action cannot be undone.
+                    </p>
+                </Modal>
             )}
 
             {showActivityDrawer && (
@@ -1555,7 +1431,7 @@ const DealDetailPage = () => {
                 />
             )}
 
-        </div>
+        </DetailPageTemplate>
     );
 };
 

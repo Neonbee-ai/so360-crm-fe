@@ -1,7 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useShellBridge } from '@so360/shell-context';
 import { targetPlanService } from '../../services/targetPlanService';
-import { EmptyState, Panel } from './targetUi';
+import { Plus, Radio } from 'lucide-react';
+import {
+  EmptyState,
+  ErrorState,
+} from './targetUi';
+import { ListPageTemplate, Button, DataTable, TextField, Select, Checkbox, Modal, SearchInput, Alert } from '@so360/design-system';
+import type { DataTableColumn, FilterValues } from '@so360/design-system';
 
 /**
  * Channel catalog admin.
@@ -14,12 +20,16 @@ import { EmptyState, Panel } from './targetUi';
  */
 export default function TouchpointChannelsPage() {
   const shell = useShellBridge();
+  const [search, setSearch] = useState('');
+  const [filters, setFilters] = useState<FilterValues>({ source: '', active: '' });
   const [channels, setChannels] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
+  const [addOpen, setAddOpen] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [label, setLabel] = useState('');
   const [value, setValue] = useState('');
   const [actualsSource, setActualsSource] = useState<'auto' | 'manual'>(
@@ -73,7 +83,7 @@ export default function TouchpointChannelsPage() {
       (c: any) => String(c.value).toLowerCase() === key,
     );
     if (clash) {
-      setError(
+      setFormError(
         clash.is_active === false
           ? `A channel with the key "${key}" already exists but is inactive — show inactive channels and reactivate it instead.`
           : `A channel with the key "${key}" already exists (${clash.label}). Pick a different key.`,
@@ -82,7 +92,7 @@ export default function TouchpointChannelsPage() {
     }
 
     setBusy(true);
-    setError(null);
+    setFormError(null);
     try {
       await targetPlanService.createChannel({
         label: label.trim(),
@@ -91,11 +101,12 @@ export default function TouchpointChannelsPage() {
       });
       setLabel('');
       setValue('');
+      setAddOpen(false);
       setNotice(`Added ${label.trim()}.`);
       load();
     } catch (e: any) {
       const raw = String(e?.message ?? '');
-      setError(
+      setFormError(
         /duplicate key|already exists|unique/i.test(raw)
           ? `A channel with the key "${key}" already exists in this organisation. Pick a different key.`
           : raw || 'Could not add the channel.',
@@ -122,167 +133,180 @@ export default function TouchpointChannelsPage() {
     }
   };
 
-  return (
-    <div className="p-6 space-y-5">
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-slate-100">
-          Touchpoint Channels
-        </h1>
-        <button
-          className="rounded bg-slate-700 px-3 py-1.5 text-sm text-slate-100 hover:bg-slate-600 disabled:opacity-50"
-          onClick={importSources}
-          disabled={busy}
-        >
-          Import from Lead Sources
-        </button>
-      </div>
+  const flagCol = (key: string, header: string, field: string): DataTableColumn<any> => ({
+    key,
+    header,
+    render: (c) => (
+      <Checkbox
+        name={`${field}-${c.id}`}
+        label={header}
+        aria-label={`${header} ${c.label}`}
+        checked={!!c[field]}
+        disabled={busy}
+        onChange={() => toggle(c.id, field, !!c[field])}
+      />
+    ),
+  });
 
-      {error && <div className="text-sm text-rose-300">{error}</div>}
-      {notice && <div className="text-sm text-emerald-300">{notice}</div>}
-
-      <Panel title="Add a channel">
-        <div className="flex flex-wrap items-end gap-3">
-          <div>
-            <label className="block text-[11px] text-slate-400 mb-1">
-              Label
-            </label>
-            <input
-              className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none"
-              value={label}
-              onChange={(e) => setLabel(e.target.value)}
-              placeholder="Site Visit"
-            />
-          </div>
-          <div>
-            <label className="block text-[11px] text-slate-400 mb-1">Key</label>
-            <input
-              className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none"
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              placeholder="site_visit"
-            />
-          </div>
-          <div>
-            <label className="block text-[11px] text-slate-400 mb-1">
-              Actuals
-            </label>
-            <select
-              className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
-              value={actualsSource}
-              onChange={(e) => setActualsSource(e.target.value as any)}
-            >
-              <option value="manual">Manual (rep logs it)</option>
-              <option value="auto">Auto (system emits it)</option>
-            </select>
-          </div>
-          <button
-            className="rounded bg-slate-700 px-3 py-1.5 text-sm text-slate-100 hover:bg-slate-600 disabled:opacity-50"
-            onClick={addChannel}
-            disabled={busy || !label.trim() || !value.trim()}
-          >
-            Add
-          </button>
-        </div>
-        {actualsSource === 'auto' && (
-          <div className="mt-2 text-[11px] text-amber-300">
-            Auto channels need an emitter binding — configure it via the API
-            until the binding picker ships.
-          </div>
+  const columns: DataTableColumn<any>[] = [
+    { key: 'channel', header: 'Channel', sortable: true, sortValue: (c) => c.label || '', render: (c) => (
+      <span className="text-fg">
+        {c.label}
+        {c.linked_source_value && (
+          <span className="ml-nb-2 text-xs text-fg-muted" title="Linked to an existing CRM lead source">
+            ↔ lead source
+          </span>
         )}
-      </Panel>
+      </span>
+    ) },
+    { key: 'source', header: 'Source', render: (c) => <span className="text-fg-subtle">{c.actuals_source === 'auto' ? 'Auto' : 'Manual'}</span> },
+    { key: 'bound', header: 'Bound to', render: (c) => (
+      <span className="text-fg-muted text-xs">
+        {c.emitter_binding ? `${c.emitter_binding.module} · ${c.emitter_binding.platform ?? c.emitter_binding.entity}` : '—'}
+      </span>
+    ) },
+    flagCol('counts', 'Counts', 'counts_toward_targets'),
+    flagCol('comp', 'Comp', 'comp_eligible'),
+    flagCol('active', 'Active', 'is_active'),
+  ];
 
-      {loading ? (
-        <div className="text-sm text-slate-400">Loading channels…</div>
-      ) : !channels.length ? (
-        <EmptyState message="No channels configured. Import from lead sources or add one above." />
-      ) : (
-        <Panel title="Channels">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs text-slate-400 border-b border-slate-800">
-                  <th className="py-2 pr-4 font-medium">Channel</th>
-                  <th className="py-2 pr-4 font-medium">Source</th>
-                  <th className="py-2 pr-4 font-medium">Bound to</th>
-                  <th className="py-2 pr-4 font-medium">Counts</th>
-                  <th className="py-2 pr-4 font-medium">Comp</th>
-                  <th className="py-2 font-medium">Active</th>
-                </tr>
-              </thead>
-              <tbody>
-                {channels.map((c) => (
-                  <tr key={c.id} className="border-b border-slate-800/60">
-                    <td className="py-2 pr-4 text-slate-200">
-                      {c.label}
-                      {c.linked_source_value && (
-                        <span
-                          className="ml-2 text-[11px] text-slate-500"
-                          title="Linked to an existing CRM lead source"
-                        >
-                          ↔ lead source
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-2 pr-4 text-slate-400">
-                      {c.actuals_source === 'auto' ? 'Auto' : 'Manual'}
-                    </td>
-                    <td className="py-2 pr-4 text-slate-500 text-xs">
-                      {c.emitter_binding
-                        ? `${c.emitter_binding.module} · ${c.emitter_binding.platform ?? c.emitter_binding.entity}`
-                        : '—'}
-                    </td>
-                    <td className="py-2 pr-4">
-                      <input
-                        type="checkbox"
-                        checked={!!c.counts_toward_targets}
-                        disabled={busy}
-                        onChange={() =>
-                          toggle(
-                            c.id,
-                            'counts_toward_targets',
-                            !!c.counts_toward_targets,
-                          )
-                        }
-                      />
-                    </td>
-                    <td className="py-2 pr-4">
-                      <input
-                        type="checkbox"
-                        checked={!!c.comp_eligible}
-                        disabled={busy}
-                        onChange={() =>
-                          toggle(c.id, 'comp_eligible', !!c.comp_eligible)
-                        }
-                      />
-                    </td>
-                    <td className="py-2">
-                      <input
-                        type="checkbox"
-                        checked={!!c.is_active}
-                        disabled={busy}
-                        onChange={() =>
-                          toggle(c.id, 'is_active', !!c.is_active)
-                        }
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+  const openAdd = () => {
+    setFormError(null);
+    setAddOpen(true);
+  };
 
-          <div className="mt-3 space-y-1 text-[11px] text-slate-500">
-            <div>
-              ↔ linked to an existing CRM lead source — configured once,
-              reconcilable in reporting
-            </div>
-            <div className="text-amber-300">
-              ⚠ Manual channels are self-reported. Compensation eligibility is
-              off by default and must be enabled deliberately.
-            </div>
-          </div>
-        </Panel>
+  const q = search.trim().toLowerCase();
+  const rows = channels.filter(
+    (c) =>
+      (!filters.source || c.actuals_source === filters.source) &&
+      (!filters.active || String(!!c.is_active) === filters.active) &&
+      (!q || (c.label || '').toLowerCase().includes(q)),
+  );
+
+  return (
+    <>
+    <ListPageTemplate
+      trail={[{ label: 'Targets', to: '/crm/targets' }]}
+      title="Touchpoint Channels"
+      count={channels.length}
+      headerSecondaryActions={[
+        <Button key="import" variant="secondary" onClick={importSources} disabled={busy}>
+          Import from Lead Sources
+        </Button>,
+      ]}
+      primaryAction={(
+        <Button variant="primary" onClick={openAdd}>
+          <Plus size={16} aria-hidden="true" /> Add channel
+        </Button>
       )}
-    </div>
+      search={<SearchInput value={search} onChange={setSearch} placeholder="Search channels…" />}
+      filterConfig={{
+        fields: [
+          { key: 'source', label: 'Source', type: 'select', options: [
+            { value: 'auto', label: 'Auto' },
+            { value: 'manual', label: 'Manual' },
+          ] },
+          { key: 'active', label: 'Active', type: 'select', options: [
+            { value: 'true', label: 'Active' },
+            { value: 'false', label: 'Inactive' },
+          ] },
+        ],
+        values: filters,
+        onChange: setFilters,
+        onClear: () => setFilters({ source: '', active: '' }),
+      }}
+      loading={loading}
+      isEmpty={!loading && (!!error || !channels.length)}
+      empty={
+        error ? (
+          <ErrorState error={error} onRetry={load} />
+        ) : (
+          <EmptyState
+            icon={Radio}
+            title="No channels configured"
+            description="Import your lead sources or add a channel to start tracking touchpoints."
+            action={{ label: 'Add channel', onClick: openAdd }}
+          />
+        )
+      }
+      isFilteredEmpty={!loading && channels.length > 0 && !rows.length}
+      onClearFilters={() => { setFilters({ source: '', active: '' }); setSearch(''); }}
+      footer={(
+        <div className="space-y-1 text-xs text-fg-muted">
+          <div>
+            ↔ linked to an existing CRM lead source — configured once,
+            reconcilable in reporting
+          </div>
+          <div className="text-warning">
+            ⚠ Manual channels are self-reported. Compensation eligibility is
+            off by default and must be enabled deliberately.
+          </div>
+        </div>
+      )}
+    >
+      {notice && <Alert variant="success">{notice}</Alert>}
+      <DataTable
+        columns={columns}
+        rows={rows}
+        rowKey={(c: any) => c.id}
+      />
+    </ListPageTemplate>
+
+      <Modal
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        title="Add a channel"
+        size="md"
+        dismissible={!busy}
+        footer={(
+          <>
+            <Button variant="secondary" onClick={() => setAddOpen(false)} disabled={busy}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={addChannel}
+              disabled={busy || !label.trim() || !value.trim()}
+            >
+              Add channel
+            </Button>
+          </>
+        )}
+      >
+        <div className="space-y-nb-3">
+          {formError && <div className="text-sm text-danger">{formError}</div>}
+          <TextField
+            name="channel_label"
+            label="Label"
+            value={label}
+            onChange={(e: any) => setLabel(e.target.value)}
+            placeholder="Site Visit"
+          />
+          <TextField
+            name="channel_key"
+            label="Key"
+            value={value}
+            onChange={(e: any) => setValue(e.target.value)}
+            placeholder="site_visit"
+          />
+          <Select
+            name="channel_actuals"
+            label="Actuals"
+            value={actualsSource}
+            onChange={(e: any) => setActualsSource(e.target.value as any)}
+            options={[
+              { value: 'manual', label: 'Manual (rep logs it)' },
+              { value: 'auto', label: 'Auto (system emits it)' },
+            ]}
+          />
+          {actualsSource === 'auto' && (
+            <div className="text-xs text-warning">
+              Auto channels need an emitter binding — configure it via the API
+              until the binding picker ships.
+            </div>
+          )}
+        </div>
+      </Modal>
+    </>
   );
 }

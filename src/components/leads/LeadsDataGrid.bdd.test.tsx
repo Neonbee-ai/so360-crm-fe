@@ -239,7 +239,7 @@ describe('LeadsDataGrid — row selection', () => {
       />,
     );
     // Select header checkbox (select all)
-    const headerSelectArea = document.querySelector('.sticky.z-30.bg-slate-900');
+    const headerSelectArea = document.querySelector('.sticky.z-30.bg-surface-sunken');
     if (headerSelectArea) {
       fireEvent.click(headerSelectArea);
       expect(screen.queryByText(/selected/i)).toBeDefined();
@@ -514,12 +514,12 @@ describe('LeadsDataGrid — lead count display', () => {
   it('shows correct lead count in toolbar', () => {
     const leads = [makeLead(), makeLead({ id: 'l2', company_name: 'Beta' })];
     render(<LeadsDataGrid leads={leads} context={buildContext()} onRowClick={vi.fn()} />);
-    expect(screen.getByText('2 leads')).toBeDefined();
+    expect(screen.queryByText('2 leads')).toBeNull(); // count lives in the page header only
   });
 
   it('shows singular form for one lead', () => {
     render(<LeadsDataGrid leads={[makeLead()]} context={buildContext()} onRowClick={vi.fn()} />);
-    expect(screen.getByText('1 lead')).toBeDefined();
+    expect(screen.queryByText('1 lead')).toBeNull();
   });
 });
 
@@ -572,5 +572,57 @@ describe('LeadsDataGrid — group by', () => {
     pickGroup('No grouping');
     expect(document.querySelector('[data-testid^="lead-group-"]')).toBeNull();
     expect(screen.getByText('Acme Corp')).toBeDefined();
+  });
+});
+
+describe('LeadsDataGrid — compact controls slot (Comb toolbarEnd)', () => {
+  it('Given a controls slot / When rendered / Then group, density and columns controls portal into it, compact', () => {
+    const slot = document.createElement('div');
+    document.body.appendChild(slot);
+    render(<LeadsDataGrid leads={[makeLead()]} context={buildContext()} onRowClick={vi.fn()} controlsSlot={slot} />);
+    const bar = within(slot).getByTestId('leads-grid-controls');
+    expect(within(bar).getByRole('button', { name: /group by/i })).toBeInTheDocument();
+    expect(within(bar).getByRole('button', { name: /row density/i })).toBeInTheDocument();
+    expect(within(bar).getByRole('button', { name: /customize columns/i })).toBeInTheDocument();
+    slot.remove();
+  });
+
+  it('Given no controls slot / When rendered / Then the controls are not portalled', () => {
+    render(<LeadsDataGrid leads={[makeLead()]} context={buildContext()} onRowClick={vi.fn()} />);
+    expect(screen.queryByTestId('leads-grid-controls')).not.toBeInTheDocument();
+  });
+});
+
+describe('LeadsDataGrid — header and inline editors (Comb M3)', () => {
+  it('Given sortable columns / When rendered / Then headers are quiet text buttons, not bordered Button pills', () => {
+    render(<LeadsDataGrid leads={[makeLead()]} context={buildContext()} onRowClick={vi.fn()} />);
+    const sort = screen.getByTestId('sort-company_name');
+    expect(sort.className).not.toMatch(/\bborder\b/);
+    expect(sort.className).not.toContain('font-bold');
+    expect(sort.className).toContain('text-nb-title-sm');
+    expect(sort.className).toContain('hover:bg-fg/state-hover');
+    expect(sort).toHaveAttribute('aria-sort', 'none');
+  });
+
+  it('Given a sortable header / When clicked / Then aria-sort reflects the direction', () => {
+    render(<LeadsDataGrid leads={[makeLead()]} context={buildContext()} onRowClick={vi.fn()} />);
+    fireEvent.click(screen.getByTestId('sort-company_name'));
+    expect(screen.getByTestId('sort-company_name')).toHaveAttribute('aria-sort', 'ascending');
+  });
+});
+
+describe('Given lead rating is enabled (ratings in context)', () => {
+  const ratings = [{ id: 'r1', label: 'Hot', color_token: 'danger' }];
+
+  it('When the column manager opens Then a Rating column is offered', () => {
+    render(<LeadsDataGrid leads={[makeLead({ rating_category_id: 'r1' })]} context={buildContext({ ratings })} onRowClick={vi.fn()} />);
+    fireEvent.click(screen.getByText('Columns'));
+    expect(screen.getAllByText('Rating').length).toBeGreaterThan(0);
+  });
+
+  it('When ratings are absent Then no Rating column is offered', () => {
+    render(<LeadsDataGrid leads={[makeLead()]} context={buildContext()} onRowClick={vi.fn()} />);
+    fireEvent.click(screen.getByText('Columns'));
+    expect(screen.queryByText('Rating')).toBeNull();
   });
 });

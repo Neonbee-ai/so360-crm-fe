@@ -4,6 +4,12 @@ import { vi, describe, test, expect, beforeEach } from 'vitest';
 import PartnerDetailPage from './PartnerDetailPage';
 import { toast } from '@so360/design-system';
 
+const dlFlag = vi.hoisted(() => ({ on: false }));
+
+vi.mock('../components/customFields/PartnerDlCustomFields', () => ({
+  PartnerDlCustomFields: ({ corePartnerId }: any) => <div data-testid="partner-dl-stub">{String(corePartnerId)}</div>,
+}));
+
 // ── service mocks ─────────────────────────────────────────────────────────────
 const mockPartnersGetOne = vi.fn();
 const mockPartnersUpdate = vi.fn();
@@ -41,19 +47,20 @@ vi.mock('react-router-dom', () => ({
 }));
 
 vi.mock('@so360/shell-context', () => ({
+  useDatasetSchema: () => ({ fields: [], isLoading: false, error: null }),
   useShellBridge: () => ({
     tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee',
     orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
     userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
     effectiveFlagsLoaded: true,
-    isFeatureEnabled: vi.fn().mockReturnValue(true),
+    isFeatureEnabled: vi.fn((k: string) => (k === 'submodule:crm:dl_custom_fields' ? dlFlag.on : true)),
   }),
   useShell: () => ({
     tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee',
     orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
     userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
     isModuleEnabled: () => true,
-    isFeatureEnabled: () => true,
+    isFeatureEnabled: (k: string) => (k === 'submodule:crm:dl_custom_fields' ? dlFlag.on : true),
     isFeatureHidden: () => false,
   }),
   useBusinessSettings: () => ({
@@ -82,7 +89,7 @@ vi.mock('../hooks/useShellBridge', () => ({
     orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
     userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
     effectiveFlagsLoaded: true,
-    isFeatureEnabled: vi.fn().mockReturnValue(true),
+    isFeatureEnabled: vi.fn((k: string) => (k === 'submodule:crm:dl_custom_fields' ? dlFlag.on : true)),
   }),
 }));
 
@@ -117,6 +124,7 @@ const mockCommissions = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  dlFlag.on = false;
   mockPartnersGetOne.mockResolvedValue(mockPartner);
   mockPartnerTypesGetAll.mockResolvedValue([{ value: 'reseller', label: 'Reseller' }]);
   mockGetUsers.mockResolvedValue([]);
@@ -138,14 +146,14 @@ describe('Given PartnerDetailPage — overview tab', () => {
   test('Given partner loaded / When rendered / Then shows the universal Back link', async () => {
     render(<PartnerDetailPage />);
     await waitFor(() => {
-      expect(screen.getAllByText('Back')[0]).toBeInTheDocument();
+      expect(screen.getAllByLabelText('Back to Partners')[0]).toBeInTheDocument();
     });
   });
 
   test('Given partner loaded / When Back is clicked / Then it navigates to /crm/partners, not the dashboard', async () => {
     render(<PartnerDetailPage />);
-    await waitFor(() => expect(screen.getAllByText('Back')[0]).toBeInTheDocument());
-    fireEvent.click(screen.getAllByText('Back')[0]);
+    await waitFor(() => expect(screen.getAllByLabelText('Back to Partners')[0]).toBeInTheDocument());
+    fireEvent.click(screen.getAllByLabelText('Back to Partners')[0]);
     expect(mockNavigate).toHaveBeenCalledWith('/crm/partners');
   });
 
@@ -159,7 +167,7 @@ describe('Given PartnerDetailPage — overview tab', () => {
   test('Given overview tab / When rendered / Then "Royalty Rate" label appears in details section', async () => {
     render(<PartnerDetailPage />);
     await waitFor(() => {
-      expect(screen.getByText('Royalty Rate')).toBeInTheDocument();
+      expect(screen.getByText('Royalty rate')).toBeInTheDocument();
     });
   });
 
@@ -173,28 +181,28 @@ describe('Given PartnerDetailPage — overview tab', () => {
 });
 
 describe('Given PartnerDetailPage — Royalties tab', () => {
-  test('Given tabs rendered / When checking tab labels / Then tab button says "Royalties" not "Commissions"', async () => {
+  test('Given tabs rendered / When checking tab labels / Then tab says "Royalties" not "Commissions"', async () => {
     render(<PartnerDetailPage />);
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Royalties' })).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: 'Commissions' })).not.toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: 'Royalties' })).toBeInTheDocument();
+      expect(screen.queryByRole('tab', { name: 'Commissions' })).not.toBeInTheDocument();
     });
   });
 
   test('Given Royalties tab / When clicked / Then fetches and shows royalty summary cards', async () => {
     render(<PartnerDetailPage />);
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Royalties' })).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: 'Royalties' }));
+    await waitFor(() => expect(screen.getByRole('tab', { name: 'Royalties' })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('tab', { name: 'Royalties' }));
     await waitFor(() => {
       expect(mockPartnersGetCommissions).toHaveBeenCalledWith('partner-1');
-      expect(screen.getByText('Total Earned')).toBeInTheDocument();
+      expect(screen.getByText('Total earned')).toBeInTheDocument();
     });
   });
 
   test('Given Royalties tab open / When table header rendered / Then shows "Royalty" column not "Commission"', async () => {
     render(<PartnerDetailPage />);
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Royalties' })).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: 'Royalties' }));
+    await waitFor(() => expect(screen.getByRole('tab', { name: 'Royalties' })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('tab', { name: 'Royalties' }));
     await waitFor(() => {
       expect(screen.getByRole('columnheader', { name: /^Royalty$/i })).toBeInTheDocument();
       expect(screen.queryByRole('columnheader', { name: /^Commission$/i })).not.toBeInTheDocument();
@@ -204,18 +212,18 @@ describe('Given PartnerDetailPage — Royalties tab', () => {
   test('Given Royalties tab / When no royalties exist / Then shows "No royalties yet" empty state', async () => {
     mockPartnersGetCommissions.mockResolvedValue({ summary: { total_earned: 0, pending: 0, paid: 0 }, commissions: [] });
     render(<PartnerDetailPage />);
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Royalties' })).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: 'Royalties' }));
+    await waitFor(() => expect(screen.getByRole('tab', { name: 'Royalties' })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('tab', { name: 'Royalties' }));
     await waitFor(() => {
-      expect(screen.getByText('No royalties yet. Royalties are created automatically when a referred deal is won.')).toBeInTheDocument();
+      expect(screen.getByText('Royalties are created automatically when a referred deal is won.')).toBeInTheDocument();
     });
   });
 
   test('Given pending royalty / When Approve clicked / Then shows "Royalty approved" toast', async () => {
     vi.spyOn(toast, 'success').mockReturnValue('toast-id');
     render(<PartnerDetailPage />);
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Royalties' })).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: 'Royalties' }));
+    await waitFor(() => expect(screen.getByRole('tab', { name: 'Royalties' })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('tab', { name: 'Royalties' }));
     await waitFor(() => expect(screen.getByText('Approve')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Approve'));
     await waitFor(() => {
@@ -230,8 +238,8 @@ describe('Given PartnerDetailPage — Royalties tab', () => {
       commissions: [{ id: 'c3', deal_id: 'deal-3', deal: { name: 'Deal 3' }, deal_amount: 10000, commission_rate: 10, commission_amount: 1000, status: 'approved', payment_ref: null }],
     });
     render(<PartnerDetailPage />);
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Royalties' })).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: 'Royalties' }));
+    await waitFor(() => expect(screen.getByRole('tab', { name: 'Royalties' })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('tab', { name: 'Royalties' }));
     await waitFor(() => expect(screen.getByText('Mark Paid')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Mark Paid'));
     await waitFor(() => {
@@ -246,8 +254,8 @@ describe('Given PartnerDetailPage — Royalties tab', () => {
       commissions: [{ id: 'c3', deal_id: 'deal-3', deal: { name: 'Deal 3' }, deal_amount: 10000, commission_rate: 10, commission_amount: 1000, status: 'approved', payment_ref: null }],
     });
     render(<PartnerDetailPage />);
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Royalties' })).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: 'Royalties' }));
+    await waitFor(() => expect(screen.getByRole('tab', { name: 'Royalties' })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('tab', { name: 'Royalties' }));
     await waitFor(() => expect(screen.getByText('Mark Paid')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Mark Paid'));
     await waitFor(() => expect(screen.getByText('Mark Royalty as Paid')).toBeInTheDocument());
@@ -299,5 +307,20 @@ describe('Given PartnerDetailPage — royalty rate display', () => {
     await waitFor(() => {
       expect(screen.getByText('15%')).toBeInTheDocument();
     });
+  });
+});
+
+describe('Given PartnerDetailPage — data-layer custom fields', () => {
+  test('Given the flag is on / When overview loads / Then the core.partner panel renders with core_partner_id', async () => {
+    dlFlag.on = true;
+    mockPartnersGetOne.mockResolvedValue({ ...mockPartner, core_partner_id: 'core-9' });
+    render(<PartnerDetailPage />);
+    await waitFor(() => expect(screen.getByTestId('partner-dl-stub').textContent).toBe('core-9'));
+  });
+
+  test('Given the flag is off / When overview loads / Then no data-layer panel renders', async () => {
+    render(<PartnerDetailPage />);
+    await waitFor(() => expect(screen.getByText('Ravi Shankar')).toBeInTheDocument());
+    expect(screen.queryByTestId('partner-dl-stub')).toBeNull();
   });
 });

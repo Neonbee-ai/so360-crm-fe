@@ -1,29 +1,28 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
-import { Search, Globe, Smartphone, ShoppingCart, UserPlus, ChevronUp, ChevronDown, ChevronsUpDown, Mail, Phone, Calendar, Store, Building2, CreditCard, Shield, CheckCircle2, Tag, GitMerge } from 'lucide-react';
+import { Globe, Smartphone, ShoppingCart, UserPlus, Mail, Phone, Calendar, Store, Building2, CreditCard, Shield, CheckCircle2, GitMerge } from 'lucide-react';
 import { useShellBridge, useSandboxLimit } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import { crmService } from '../services/crmService';
-import { Table } from '../components/common/Table';
-import { SummaryMetricChips } from '../components/common/SummaryMetricChips';
+import { ListPageTemplate, Pagination, DataTable, SearchInput, type DataTableColumn, type FilterValues, type ListFilterConfig } from '@so360/design-system';
 
 type SortField = 'contact_name' | 'email' | 'channel' | 'created_at';
 type SortDirection = 'asc' | 'desc' | null;
 
 const CHANNEL_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
-    storefront_web: { label: 'Web', color: 'bg-blue-500/10 text-blue-400 border-blue-500/20', icon: Globe },
-    storefront_mobile: { label: 'Mobile', color: 'bg-purple-500/10 text-purple-400 border-purple-500/20', icon: Smartphone },
-    pos: { label: 'POS', color: 'bg-amber-500/10 text-amber-400 border-amber-500/20', icon: ShoppingCart },
-    manual: { label: 'Manual', color: 'bg-slate-500/10 text-slate-400 border-slate-500/20', icon: UserPlus },
+    storefront_web: { label: 'Web', color: 'bg-primary/10 text-primary border-primary/20', icon: Globe },
+    storefront_mobile: { label: 'Mobile', color: 'bg-primary/10 text-primary border-primary/20', icon: Smartphone },
+    pos: { label: 'POS', color: 'bg-warning/10 text-warning border-warning/20', icon: ShoppingCart },
+    manual: { label: 'Manual', color: 'bg-fg-muted/10 text-fg-subtle border-line', icon: UserPlus },
 };
 
 const ACQUISITION_SOURCE_CONFIG: Record<string, { label: string; color: string }> = {
-    storefront_registration: { label: 'Registration', color: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
-    guest_checkout: { label: 'Guest Checkout', color: 'bg-teal-500/10 text-teal-400 border-teal-500/20' },
-    pos_inline: { label: 'POS', color: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
-    manual_entry: { label: 'Manual', color: 'bg-slate-500/10 text-slate-400 border-slate-500/20' },
-    lead_promotion: { label: 'Promoted', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
+    storefront_registration: { label: 'Registration', color: 'bg-primary/10 text-primary border-primary/20' },
+    guest_checkout: { label: 'Guest Checkout', color: 'bg-info/10 text-info border-info/20' },
+    pos_inline: { label: 'POS', color: 'bg-warning/10 text-warning border-warning/20' },
+    manual_entry: { label: 'Manual', color: 'bg-fg-muted/10 text-fg-subtle border-line' },
+    lead_promotion: { label: 'Promoted', color: 'bg-success/10 text-success border-success/20' },
 };
 
 const CustomersPage = () => {
@@ -33,19 +32,11 @@ const CustomersPage = () => {
     const shell = useShellBridge();
     const { isSandboxMode, sandboxEntryLimit, isLimited } = useSandboxLimit();
 
-    // Feature-flag-driven KPI visibility
-    // Guard on effectiveFlagsLoaded to prevent "visible then snaps hidden" flicker
-    const flagsReady     = shell?.effectiveFlagsLoaded ?? false;
-    const showModelSplit = flagsReady && (shell?.isFeatureEnabled ? shell.isFeatureEnabled('action:crm:customers:show_model_split') : false);
-    const showWeb        = flagsReady && (shell?.isFeatureEnabled ? shell.isFeatureEnabled('action:crm:customers:kpi_channel_web') : true);
-    const showMobile     = flagsReady && (shell?.isFeatureEnabled ? shell.isFeatureEnabled('action:crm:customers:kpi_channel_mobile') : true);
-    const showOffline    = flagsReady && (shell?.isFeatureEnabled ? shell.isFeatureEnabled('action:crm:customers:kpi_channel_offline') : true);
     const [customers, setCustomers] = useState<any[]>([]);
     const [stats, setStats] = useState<any>({});
     const [partners, setPartners] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [activeSegmentName, setActiveSegmentName] = useState<string | null>(null);
 
     // Search / channel / category already round-trip through the URL (see the
     // location.search effect below), so history restores them on its own —
@@ -70,7 +61,6 @@ const CustomersPage = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const segmentId = queryParams.get('segmentId');
             const q = queryParams.get('q') || undefined;
             const channel = queryParams.get('channel') || undefined;
             const category = queryParams.get('category') || undefined;
@@ -81,23 +71,12 @@ const CustomersPage = () => {
 
             let customersData: any[] = [];
 
-            if (segmentId) {
-                const resolved = await crmService.getCustomerSegmentCustomers(segmentId);
-                customersData = Array.isArray(resolved?.customers) ? resolved.customers : [];
-                setActiveSegmentName(
-                    queryParams.get('segmentName') ||
-                    resolved?.segment?.name ||
-                    'Segment',
-                );
-            } else {
-                customersData = await crmService.getCustomers({
-                    ...(q ? { q } : {}),
-                    ...(channel ? { channel } : {}),
-                    ...(category ? { category } : {}),
-                    ...(customerIds.length > 0 ? { customer_ids: customerIds } : {}),
-                });
-                setActiveSegmentName(null);
-            }
+            customersData = await crmService.getCustomers({
+                ...(q ? { q } : {}),
+                ...(channel ? { channel } : {}),
+                ...(category ? { category } : {}),
+                ...(customerIds.length > 0 ? { customer_ids: customerIds } : {}),
+            });
 
             setCustomers(customersData || []);
         } catch (err: any) {
@@ -127,34 +106,6 @@ const CustomersPage = () => {
         });
         return () => { cancelled = true; };
     }, []);
-
-    const toggleSort = (field: SortField) => {
-        if (sortField === field) {
-            if (sortDirection === 'asc') setSortDirection('desc');
-            else if (sortDirection === 'desc') { setSortField(null); setSortDirection(null); }
-            else setSortDirection('asc');
-        } else {
-            setSortField(field);
-            setSortDirection('asc');
-        }
-    };
-
-    const SortIcon = ({ field }: { field: SortField }) => {
-        if (sortField !== field) return <ChevronsUpDown size={14} className="text-slate-600" />;
-        if (sortDirection === 'asc') return <ChevronUp size={14} className="text-blue-400" />;
-        if (sortDirection === 'desc') return <ChevronDown size={14} className="text-blue-400" />;
-        return <ChevronsUpDown size={14} className="text-slate-600" />;
-    };
-
-    const SortableHeader = ({ label, field }: { label: string; field: SortField }) => (
-        <button
-            onClick={() => toggleSort(field)}
-            className="flex items-center gap-1 hover:text-slate-50 transition-colors cursor-pointer"
-        >
-            {label}
-            <SortIcon field={field} />
-        </button>
-    );
 
     const filteredCustomers = useMemo(() => {
         let result = customers.filter((c) => {
@@ -218,20 +169,20 @@ const CustomersPage = () => {
     const CategoryBadge = ({ category }: { category: string }) => {
         if (category === 'b2b') {
             return (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-success/10 text-success border border-success/20">
                     <Building2 size={11} /> B2B
                 </span>
             );
         }
         return (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-slate-500/10 text-slate-500 border border-slate-500/20">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-fg-muted/10 text-fg-muted border border-line">
                 B2C
             </span>
         );
     };
 
     const AcquisitionBadge = ({ source }: { source: string }) => {
-        const config = ACQUISITION_SOURCE_CONFIG[source] || { label: source || '-', color: 'bg-slate-500/10 text-slate-500 border-slate-500/20' };
+        const config = ACQUISITION_SOURCE_CONFIG[source] || { label: source || '-', color: 'bg-fg-muted/10 text-fg-muted border-line' };
         return (
             <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${config.color}`}>
                 {config.label}
@@ -239,77 +190,77 @@ const CustomersPage = () => {
         );
     };
 
-    const columns = [
+    const columns: DataTableColumn<any>[] = [
         {
-            header: <SortableHeader label="Name" field="contact_name" />,
-            accessor: (c: any) => (
+            key: 'contact_name', header: 'Name', sortable: true,
+            render: (c: any) => (
                 <div className="flex items-center gap-2">
                     <div className="flex flex-col gap-0.5">
                         <div className="flex items-center gap-2">
-                            <span className="font-semibold text-slate-50">{c.contact_name}</span>
+                            <span className="font-semibold text-fg">{c.contact_name}</span>
                             <CategoryBadge category={c.customer_category || 'b2c'} />
                         </div>
                         {c.company_name && c.company_name !== c.contact_name && (
-                            <span className="text-xs text-slate-500">{c.company_name}</span>
+                            <span className="text-xs text-fg-muted">{c.company_name}</span>
                         )}
                     </div>
                 </div>
             ),
         },
         {
-            header: <SortableHeader label="Email" field="email" />,
-            accessor: (c: any) => (
-                <div className="flex flex-col gap-1 text-slate-400">
+            key: 'email', header: 'Email', sortable: true,
+            render: (c: any) => (
+                <div className="flex flex-col gap-1 text-fg-subtle">
                     <span className="flex items-center gap-1.5"><Mail size={14} /> {c.email}</span>
                     {c.phone && <span className="flex items-center gap-1.5"><Phone size={14} /> {c.phone}</span>}
                 </div>
             ),
         },
-        ...(categoryFilter !== 'b2c' ? [
+        ...(categoryFilter !== 'b2c' ? ([
             {
-                header: 'Tax ID',
-                accessor: (c: any) =>
+                key: 'tax_id', header: 'Tax ID',
+                render: (c: any) =>
                     c.customer_category === 'b2c' ? null :
                     c.tax_id ? (
                         <div className="flex items-center gap-1.5 text-sm">
-                            <span className="text-slate-300 font-mono text-xs">{c.tax_id}</span>
-                            {c.tax_id_verified && <CheckCircle2 size={14} className="text-emerald-400" />}
+                            <span className="text-fg-subtle font-mono text-xs">{c.tax_id}</span>
+                            {c.tax_id_verified && <CheckCircle2 size={14} className="text-success" />}
                         </div>
                     ) : (
-                        <span className="text-slate-600 text-sm">-</span>
+                        <span className="text-fg-muted text-sm">-</span>
                     ),
             },
             {
-                header: 'Credit Limit',
-                accessor: (c: any) => {
+                key: 'credit_limit', header: 'Credit Limit', align: 'right',
+                render: (c: any) => {
                     if (c.customer_category === 'b2c') return null;
                     const limit = parseFloat(c.credit_limit);
                     return limit > 0 ? (
-                        <span className="flex items-center gap-1.5 text-slate-300 text-sm">
+                        <span className="flex items-center gap-1.5 text-fg-subtle text-sm">
                             <CreditCard size={14} />
                             {limit.toLocaleString()}
                         </span>
                     ) : (
-                        <span className="text-slate-600 text-sm">-</span>
+                        <span className="text-fg-muted text-sm">-</span>
                     );
                 },
             },
-        ] : []),
+        ] as DataTableColumn<any>[]) : []),
         {
-            header: <SortableHeader label="Channel" field="channel" />,
-            accessor: (c: any) => <ChannelBadge channel={c.channel} />,
+            key: 'channel', header: 'Channel', sortable: true,
+            render: (c: any) => <ChannelBadge channel={c.channel} />,
         },
         {
-            header: 'Source',
-            accessor: (c: any) => <AcquisitionBadge source={c.acquisition_source} />,
+            key: 'acquisition_source', header: 'Source',
+            render: (c: any) => <AcquisitionBadge source={c.acquisition_source} />,
         },
         {
-            header: 'Referred By',
-            accessor: (c: any) => {
-                if (!c.referred_by) return <span className="text-slate-600 text-sm">—</span>;
+            key: 'referred_by', header: 'Referred By',
+            render: (c: any) => {
+                if (!c.referred_by) return <span className="text-fg-muted text-sm">—</span>;
                 const partner = partners.find((p: any) => p.id === c.referred_by);
                 return (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-violet-500/10 text-violet-400 border border-violet-500/20">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary border border-primary/20">
                         <GitMerge size={11} />
                         {partner?.company_name || c.referred_by}
                     </span>
@@ -317,9 +268,9 @@ const CustomersPage = () => {
             },
         },
         {
-            header: <SortableHeader label="Joined" field="created_at" />,
-            accessor: (c: any) => (
-                <span className="text-slate-400 text-sm flex items-center gap-1.5">
+            key: 'created_at', header: 'Joined', sortable: true,
+            render: (c: any) => (
+                <span className="text-fg-subtle text-sm flex items-center gap-1.5">
                     <Calendar size={14} />
                     {formatters.formatDate(c.created_at)}
                 </span>
@@ -327,131 +278,88 @@ const CustomersPage = () => {
         },
     ];
 
+    const filterConfig: ListFilterConfig = {
+        fields: [
+            { key: 'channel', label: 'Channel', type: 'select', quick: true, options: [
+                { value: 'storefront_web', label: 'Web', count: stats.storefront_web || 0 },
+                { value: 'storefront_mobile', label: 'Mobile', count: stats.storefront_mobile || 0 },
+                { value: 'pos', label: 'POS', count: stats.pos || 0 },
+                { value: 'manual', label: 'Manual', count: stats.manual || 0 },
+            ] },
+            { key: 'category', label: 'Category', type: 'select', quick: true, options: [
+                { value: 'b2b', label: 'B2B', count: stats.b2b_count || 0 },
+                { value: 'b2c', label: 'B2C', count: stats.b2c_count || 0 },
+            ] },
+        ],
+        values: {
+            ...(channelFilter !== 'All' ? { channel: channelFilter } : {}),
+            ...(categoryFilter !== 'All' ? { category: categoryFilter } : {}),
+        } as FilterValues,
+        onChange: (next: FilterValues) => {
+            setChannelFilter((next.channel as string) || 'All');
+            setCategoryFilter((next.category as string) || 'All');
+        },
+        onClear: () => {
+            setSearchTerm('');
+            setChannelFilter('All');
+            setCategoryFilter('All');
+            navigate('/crm/customers');
+        },
+    };
+
     return (
-        <div className="p-8" ref={listAnchorRef}>
-            <header className="mb-8">
-                <h1 className="text-3xl font-bold text-slate-50 tracking-tight">Customers</h1>
-                <p className="text-slate-300 mt-1">Customers from Storefront, POS, guest checkout, and promoted leads</p>
-            </header>
-
-            {/* Summary chips — gated by feature flags; standardized with Leads & Accounts */}
-            <SummaryMetricChips
-                className="mb-6"
-                chips={[
-                    { key: 'total', label: 'Total', count: stats.total || 0, active: channelFilter === 'All' && categoryFilter === 'All', onClick: () => { setChannelFilter('All'); setCategoryFilter('All'); } },
-                    ...(showModelSplit ? [
-                        { key: 'b2b', label: 'B2B', count: stats.b2b_count || 0, active: categoryFilter === 'b2b', onClick: () => setCategoryFilter(categoryFilter === 'b2b' ? 'All' : 'b2b') },
-                        { key: 'b2c', label: 'B2C', count: stats.b2c_count || 0, active: categoryFilter === 'b2c', onClick: () => setCategoryFilter(categoryFilter === 'b2c' ? 'All' : 'b2c') },
-                    ] : []),
-                    ...(showWeb ? [
-                        { key: 'web', label: 'Web', count: stats.storefront_web || 0, active: channelFilter === 'storefront_web', onClick: () => setChannelFilter(channelFilter === 'storefront_web' ? 'All' : 'storefront_web') },
-                    ] : []),
-                    ...(showMobile ? [
-                        { key: 'mobile', label: 'Mobile', count: stats.storefront_mobile || 0, active: channelFilter === 'storefront_mobile', onClick: () => setChannelFilter(channelFilter === 'storefront_mobile' ? 'All' : 'storefront_mobile') },
-                    ] : []),
-                    ...(showOffline ? [
-                        { key: 'pos', label: 'POS', count: stats.pos || 0, active: channelFilter === 'pos', onClick: () => setChannelFilter(channelFilter === 'pos' ? 'All' : 'pos') },
-                        { key: 'manual', label: 'Manual', count: stats.manual || 0, active: channelFilter === 'manual', onClick: () => setChannelFilter(channelFilter === 'manual' ? 'All' : 'manual') },
-                    ] : []),
-                ]}
-            />
-
-            {/* Filters */}
-            <div className="flex flex-wrap items-center gap-3 mb-6 bg-slate-900/50 p-4 rounded-xl border border-slate-800">
-                {activeSegmentName && (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border bg-blue-500/10 text-blue-400 border-blue-500/20">
-                        <Tag size={12} />
-                        Segment: {activeSegmentName}
-                    </span>
-                )}
-                <div className="flex-1 min-w-[200px] relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
-                    <input
-                        type="text"
-                        placeholder="Search customers by name, email, phone..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 text-slate-200 pl-10 pr-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                    />
-                </div>
-                <select
-                    value={channelFilter}
-                    onChange={(e) => setChannelFilter(e.target.value)}
-                    className="bg-slate-950 border border-slate-800 text-slate-300 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                >
-                    <option value="All">All Channels</option>
-                    <option value="storefront_web">Web</option>
-                    <option value="storefront_mobile">Mobile</option>
-                    <option value="pos">POS</option>
-                    <option value="manual">Manual</option>
-                </select>
-                <select
-                    value={categoryFilter}
-                    onChange={(e) => setCategoryFilter(e.target.value)}
-                    className="bg-slate-950 border border-slate-800 text-slate-300 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                >
-                    <option value="All">All Categories</option>
-                    <option value="b2b">B2B</option>
-                    <option value="b2c">B2C</option>
-                </select>
-                {(activeSegmentName || searchTerm || channelFilter !== 'All' || categoryFilter !== 'All') && (
-                    <button
-                        onClick={() => {
-                            setSearchTerm('');
-                            setChannelFilter('All');
-                            setCategoryFilter('All');
-                            navigate('/crm/customers');
-                        }}
-                        className="text-xs text-rose-400 hover:text-rose-300 underline"
-                    >
-                        Clear Filters
-                    </button>
-                )}
-            </div>
-
+        <ListPageTemplate
+            trail={[]}
+            title="Customers"
+            description="Customers from Storefront, POS, guest checkout, and promoted leads"
+            search={
+                <SearchInput
+                    placeholder="Search customers by name, email, phone..."
+                    value={searchTerm}
+                    onChange={setSearchTerm}
+                />
+            }
+            filterConfig={filterConfig}
+            pagination={sandboxLimitedCustomers.length > 0 ? (
+                <Pagination
+                    className="w-full"
+                    currentPage={currentPage}
+                    totalPages={totalPages || 1}
+                    totalItems={sandboxLimitedCustomers.length}
+                    pageSize={pageSize}
+                    pageSizeOptions={[10, 25, 50, 100]}
+                    onPageChange={setCurrentPage}
+                    onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
+                />
+            ) : undefined}
+        >
+            <div ref={listAnchorRef}>
             {/* Sandbox limit notice */}
             {isSandboxMode && isLimited(filteredCustomers.length) && (
-                <div className="mb-4 px-4 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-400 text-sm flex items-center gap-2">
+                <div className="mb-4 px-4 py-2.5 bg-warning/10 border border-warning/30 rounded-lg text-warning text-sm flex items-center gap-2">
                     <span className="font-semibold">Sandbox mode:</span>
                     showing {sandboxEntryLimit} of {filteredCustomers.length} customers — full list visible in production.
                 </div>
             )}
 
             {/* Table */}
-            <Table
-                data={paginatedCustomers}
+            <DataTable
+                name="customers"
+                data-testid="customers-table"
+                rows={paginatedCustomers}
+                rowKey={(c: any) => c.id}
                 columns={columns}
-                isLoading={isLoading}
-                onRowClick={(customer) => navigate(`../customers/${customer.id}`)}
-                emptyMessage={error || 'No customers found. Customers appear here when they register via Storefront, POS, guest checkout, or are promoted from Leads.'}
+                loading={isLoading}
+                onRowClick={(customer: any) => navigate(`../customers/${customer.id}`)}
+                getRowProps={(c: any) => ({ 'data-testid': `customer-row-${c.id}` })}
+                sortKey={sortField ?? undefined}
+                sortDir={sortDirection ?? undefined}
+                onSortChange={(key: string, dir: 'asc' | 'desc') => { setSortField(key as SortField); setSortDirection(dir); }}
+                emptyState={error || 'No customers found. Customers appear here when they register via Storefront, POS, guest checkout, or are promoted from Leads.'}
             />
 
-            {/* Pagination */}
-            {sandboxLimitedCustomers.length > 0 && (
-                <div className="flex items-center justify-between mt-4 px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-lg">
-                    <div className="flex items-center gap-2 text-sm text-slate-400">
-                        <span>Show</span>
-                        <select
-                            value={pageSize}
-                            onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
-                            className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200"
-                        >
-                            {[10, 25, 50, 100].map((size) => (
-                                <option key={size} value={size}>{size}</option>
-                            ))}
-                        </select>
-                        <span>of {sandboxLimitedCustomers.length} customers</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="px-3 py-1 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed">First</button>
-                        <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed">Prev</button>
-                        <span className="px-3 py-1 text-slate-300">Page {currentPage} of {totalPages}</span>
-                        <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-3 py-1 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
-                        <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} className="px-3 py-1 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed">Last</button>
-                    </div>
-                </div>
-            )}
-        </div>
+            </div>
+        </ListPageTemplate>
     );
 };
 

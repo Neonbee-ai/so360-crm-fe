@@ -33,7 +33,7 @@ vi.mock('../../utils/formatters', () => ({
         formatDateTime: (d: string) => `T:${d}`,
     }),
 }));
-vi.mock('@so360/design-system', () => ({ toast: toasts }));
+vi.mock('@so360/design-system', async (importOriginal) => ({ ...(await importOriginal<any>()), toast: toasts }));
 
 import DealCommissionPanel from './DealCommissionPanel';
 

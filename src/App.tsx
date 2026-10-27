@@ -1,10 +1,11 @@
 import React, { Suspense, lazy, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useShellBridge } from '@so360/shell-context';
-import { FeatureRoute } from '@so360/design-system';
+import { CombScope, FeatureRoute, PortalProvider, Button } from '@so360/design-system';
 import { CrossLinkProvider } from '@so360/cross-link';
 import { crmService } from './services/crmService';
 import { salesTargetService } from './services/salesTargetService';
+import { CrmScope, crmPortalRoot } from './utils/crmScope';
 
 // Synchronizes Shell Context with CRM Service
 const CrmShellInitializer = ({ children }: { children: React.ReactNode }) => {
@@ -43,8 +44,8 @@ const CrmShellInitializer = ({ children }: { children: React.ReactNode }) => {
 
     if (!isSynced) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[400px] text-slate-400 gap-4">
-                <div className="w-8 h-8 border-2 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
+            <div className="flex flex-col items-center justify-center min-h-[400px] text-fg-subtle gap-4">
+                <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
                 <p className="text-sm font-medium animate-pulse">Connecting to shell context...</p>
             </div>
         );
@@ -76,16 +77,12 @@ const UpgradeLocked = () => {
     return (
         <div className="flex flex-col items-center justify-center min-h-[400px] gap-4 text-center px-6">
             <div>
-                <h2 className="text-lg font-semibold text-slate-100">This feature is part of a higher plan</h2>
-                <p className="text-sm text-slate-400 mt-1">Upgrade your plan to unlock it.</p>
+                <h2 className="text-lg font-semibold text-fg">This feature is part of a higher plan</h2>
+                <p className="text-sm text-fg-subtle mt-1">Upgrade your plan to unlock it.</p>
             </div>
-            <button
-                type="button"
-                onClick={() => navigate('/org/billing')}
-                className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-colors"
-            >
+            <Button type="button" onClick={() => navigate('/org/billing')}>
                 Upgrade plan
-            </button>
+            </Button>
         </div>
     );
 };
@@ -93,8 +90,8 @@ const UpgradeLocked = () => {
 // Route-level panel shown when a feature is `disabled` (admin turned it off — no upgrade path).
 const FeatureUnavailable = () => (
     <div className="flex flex-col items-center justify-center min-h-[400px] gap-2 text-center px-6">
-        <h2 className="text-lg font-semibold text-slate-100">Feature unavailable</h2>
-        <p className="text-sm text-slate-400">This feature has been turned off for your organization.</p>
+        <h2 className="text-lg font-semibold text-fg">Feature unavailable</h2>
+        <p className="text-sm text-fg-subtle">This feature has been turned off for your organization.</p>
     </div>
 );
 
@@ -135,24 +132,12 @@ const PermissionGuard = ({ permission, children }: { permission: string | string
     if (allowed) return <>{children}</>;
     return (
         <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-            <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">You don&apos;t have access to this page</h2>
-            <p className="mt-2 max-w-md text-sm text-slate-600 dark:text-slate-400">
+            <h2 className="text-lg font-semibold text-fg">You don&apos;t have access to this page</h2>
+            <p className="mt-2 max-w-md text-sm text-fg-muted">
                 Your role doesn&apos;t include permission for this page. Ask an administrator if you need it.
             </p>
         </div>
     );
-};
-
-// Guards a route behind a module enablement check — redirects to dashboard when disabled
-const ModuleGuard = ({ moduleId, children }: { moduleId: string; children: React.ReactNode }) => {
-    const shell = useShellBridge();
-    const navigate = useNavigate();
-    const enabled = shell?.isModuleEnabled ? shell.isModuleEnabled(moduleId) : true;
-    useEffect(() => {
-        if (shell && !enabled) navigate('/crm/dashboard', { replace: true });
-    }, [enabled, shell, navigate]);
-    if (!shell || !enabled) return null;
-    return <>{children}</>;
 };
 
 // Lazy load pages for performance
@@ -171,18 +156,8 @@ const IcpListPage = lazy(() => import('./pages/IcpListPage'));
 const IcpFormPage = lazy(() => import('./pages/IcpFormPage'));
 const SettingsRoute = () => {
     const navigate = useNavigate();
-    return <SettingsPage onOpenIcps={() => navigate('/crm/settings/icps')} />;
+    return <SettingsPage onOpenIcps={() => navigate('/crm/settings/icps')} onOpenDataSettings={() => navigate('/settings/data')} />;
 };
-const MarketingOverviewPage = lazy(() => import('./pages/MarketingOverviewPage'));
-const MarketingAbandonedCartsPage = lazy(() => import('./pages/MarketingAbandonedCartsPage'));
-const MarketingCampaignsPage = lazy(() => import('./pages/MarketingCampaignsPage'));
-const MarketingSegmentsPage = lazy(() => import('./pages/MarketingSegmentsPage'));
-const MarketingCampaignDetailPage = lazy(() => import('./pages/MarketingCampaignDetailPage'));
-const MarketingAbandonedCartDetailPage = lazy(() => import('./pages/MarketingAbandonedCartDetailPage'));
-const MarketingNewsletterPage = lazy(() => import('./pages/MarketingNewsletterPage'));
-const MarketingCouponsPage = lazy(() => import('./pages/MarketingCouponsPage'));
-const MarketingReviewsPage = lazy(() => import('./pages/MarketingReviewsPage'));
-const MarketingWishlistPage = lazy(() => import('./pages/MarketingWishlistPage'));
 const PartnersPage = lazy(() => import('./pages/PartnersPage'));
 const PartnerDetailPage = lazy(() => import('./pages/PartnerDetailPage'));
 // Kept from the original Sales Target Engine: this is the only UI that can
@@ -205,14 +180,22 @@ const CommissionReportPage = lazy(() => import('./pages/CommissionReportPage'));
 const SalesAnalyticsPage = lazy(() => import('./pages/SalesAnalyticsPage'));
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
+    const navigate = useNavigate();
     return (
-        <div className="min-h-full bg-slate-950 text-slate-100">
-            <main className="w-full">
-                <Suspense fallback={<div className="p-8 text-slate-400">Loading module...</div>}>
-                    {children}
-                </Suspense>
-            </main>
-        </div>
+        <CrmScope>
+            <CombScope module="crm" root={{ label: 'CRM', to: '/crm/dashboard' }} navigate={(to) => navigate(to)}>
+            {/* DS overlays (Modal/Drawer/Toast/dialogs) portal into the scoped root so they get CRM's utilities */}
+            <PortalProvider container={crmPortalRoot()}>
+                <div className="min-h-full bg-bg text-fg">
+                    <main className="w-full">
+                        <Suspense fallback={<div className="p-8 text-fg-subtle">Loading module...</div>}>
+                            {children}
+                        </Suspense>
+                    </main>
+                </div>
+            </PortalProvider>
+            </CombScope>
+        </CrmScope>
     );
 };
 
@@ -260,16 +243,6 @@ const App = () => {
                     <Route path="targets/reviews" element={<PermissionGuard permission='sales_targets.read'><FlagGuard flagKey="submodule:crm:sales_reviews"><SalesReviewsPage /></FlagGuard></PermissionGuard>} />
                     <Route path="targets/templates" element={<PermissionGuard permission={['sales_targets.create','sales_targets.assign']}><FlagGuard flagKey="action:crm:targets:manage"><TargetTemplatesPage /></FlagGuard></PermissionGuard>} />
                     <Route path="targets/compensation" element={<PermissionGuard permission={['sales_targets.create','sales_targets.view_team']}><FlagGuard flagKey="action:crm:targets:compensation"><CompensationPage /></FlagGuard></PermissionGuard>} />
-                    <Route path="marketing/overview" element={<PermissionGuard permission='marketing.read'><ModuleGuard moduleId="dailystore"><MarketingOverviewPage /></ModuleGuard></PermissionGuard>} />
-                    <Route path="marketing/abandoned-carts" element={<PermissionGuard permission='marketing.read'><ModuleGuard moduleId="dailystore"><MarketingAbandonedCartsPage /></ModuleGuard></PermissionGuard>} />
-                    <Route path="marketing/abandoned-carts/:cartId" element={<PermissionGuard permission='marketing.read'><ModuleGuard moduleId="dailystore"><MarketingAbandonedCartDetailPage /></ModuleGuard></PermissionGuard>} />
-                    <Route path="marketing/campaigns" element={<PermissionGuard permission='marketing.read'><ModuleGuard moduleId="dailystore"><MarketingCampaignsPage /></ModuleGuard></PermissionGuard>} />
-                    <Route path="marketing/campaigns/:campaignId" element={<PermissionGuard permission='marketing.read'><ModuleGuard moduleId="dailystore"><MarketingCampaignDetailPage /></ModuleGuard></PermissionGuard>} />
-                    <Route path="marketing/segments" element={<PermissionGuard permission='marketing.read'><ModuleGuard moduleId="dailystore"><MarketingSegmentsPage /></ModuleGuard></PermissionGuard>} />
-                    <Route path="marketing/newsletter" element={<PermissionGuard permission='marketing.read'><ModuleGuard moduleId="dailystore"><MarketingNewsletterPage /></ModuleGuard></PermissionGuard>} />
-                    <Route path="marketing/coupons" element={<PermissionGuard permission='marketing.read'><ModuleGuard moduleId="dailystore"><MarketingCouponsPage /></ModuleGuard></PermissionGuard>} />
-                    <Route path="marketing/reviews" element={<PermissionGuard permission='marketing.read'><ModuleGuard moduleId="dailystore"><MarketingReviewsPage /></ModuleGuard></PermissionGuard>} />
-                    <Route path="marketing/wishlist" element={<PermissionGuard permission='marketing.read'><ModuleGuard moduleId="dailystore"><MarketingWishlistPage /></ModuleGuard></PermissionGuard>} />
                 </Routes>
                 </CrossLinkBridge>
             </CrmShellInitializer>

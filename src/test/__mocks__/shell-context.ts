@@ -32,3 +32,5 @@ export const buildQuotaExceededDetail = (error: any): unknown => {
   const data = error?.response?.data ?? {};
   return data?.resolution ?? data;
 };
+
+export const useDatasetSchema = (_code?: string) => ({ fields: [] as any[], isLoading: false, error: null });

@@ -75,7 +75,9 @@ vi.mock('@so360/formatters', () => ({
   }),
 }));
 
-vi.mock('@so360/design-system', () => ({
+vi.mock('@so360/design-system', async () => ({
+  ...(await import('../test/__mocks__/design-system')),
+  useConfirm: () => [vi.fn(async () => true), null],
   toast: {
     success: vi.fn(),
     error: vi.fn(),
@@ -439,13 +441,12 @@ describe('CRM Quote Approval Workflow BDD Specifications', () => {
 
       await waitFor(() => {
         expect(screen.getByText('All Quotes')).toBeInTheDocument();
-        expect(screen.getByText('Approvals')).toBeInTheDocument();
-        // Pending count badge = 1
-        expect(screen.getByTestId('approvals-pending-badge')).toHaveTextContent('1');
+        // Pending count rides in the Approvals view label: "Approvals (1)"
+        expect(screen.getByRole('radio', { name: 'Approvals (1)' })).toBeInTheDocument();
       });
 
-      // Switch to Approvals tab
-      fireEvent.click(screen.getByText('Approvals'));
+      // Switch to Approvals view
+      fireEvent.click(screen.getByRole('radio', { name: 'Approvals (1)' }));
 
       await waitFor(() => {
         expect(screen.getByText('Enterprise License')).toBeInTheDocument();
@@ -473,8 +474,7 @@ describe('CRM Quote Approval Workflow BDD Specifications', () => {
 
       render(<QuotesPage />);
 
-      await waitFor(() => screen.getByText('Approvals'));
-      fireEvent.click(screen.getByText('Approvals'));
+      fireEvent.click(await screen.findByRole('radio', { name: /^Approvals/ }));
 
       await waitFor(() => screen.getByRole('button', { name: /^approve$/i }));
       fireEvent.click(screen.getByRole('button', { name: /^approve$/i }));
