@@ -2,6 +2,7 @@ import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, Ac
 import { createRequestCache } from './requestCache';
 import { notifyQuotaExceeded } from './quotaExceeded';
 import { plainErrorText } from '../utils/apiErrorMessage';
+import { isUuid } from '../utils/fieldPresentation';
 
 // Lead/Deal detail pages and the dashboard each fetch CRM settings (8 parallel
 // requests) and the user list on mount. Both are org-static within a session,
@@ -1882,6 +1883,9 @@ export const crmService = {
     getDealsByLeadId: async (leadId: string): Promise<Deal[]> => {
         // Filter server-side (backend GET /deals honors lead_id) instead of
         // downloading the whole org dataset and filtering in the browser.
+        // A non-UUID id (mistyped / placeholder route) can never match a row and
+        // the BE answers 400; return empty without issuing the request.
+        if (!isUuid(leadId)) return [];
         return dealsApi.getAll({ lead_id: leadId });
     },
 
@@ -1930,12 +1934,14 @@ export const crmService = {
     async getTasksByLeadId(leadId: string): Promise<Task[]> {
         // Filter server-side (backend GET /tasks honors lead_id) instead of
         // downloading the whole org dataset and filtering in the browser.
+        if (!isUuid(leadId)) return [];
         return tasksApi.getAll({ lead_id: leadId });
     },
 
     async getTasksByDealId(dealId: string): Promise<Task[]> {
         // Filter server-side (backend GET /tasks honors deal_id) instead of
         // downloading the whole org dataset and filtering in the browser.
+        if (!isUuid(dealId)) return [];
         return tasksApi.getAll({ deal_id: dealId });
     },
 
