@@ -114,6 +114,10 @@ vi.mock('../components/customFields/DlCustomFieldsPanel', () => ({
   DlCustomFieldsPanel: ({ recordId }: any) => <div data-testid="dl-custom-fields-panel">DL fields for {recordId}</div>,
 }));
 
+vi.mock('../components/customFields/PartnerDlCustomFields', () => ({
+  PartnerDlCustomFields: ({ corePartnerId }: any) => <div data-testid="partner-dl-custom-fields-panel">Partner fields for {corePartnerId}</div>,
+}));
+
 const mockNavigate = vi.fn();
 let mockPathname = '/crm/leads/lead-1';
 vi.mock('react-router-dom', () => ({
@@ -824,6 +828,37 @@ describe('LeadDetailPage', () => {
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
       expect(screen.queryByRole('tab', { name: 'Additional Info' })).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Given a CRM customer linked to a Core partner and the Data Layer flag is ON', () => {
+    const flagOn = () => mockUseShellBridge.mockImplementation(() => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
+
+    it('When /crm/customers/:id opens / Then the core.partner custom fields of the linked partner are shown', async () => {
+      flagOn();
+      mockPathname = '/crm/customers/lead-1';
+      mockGetLeadById.mockResolvedValue(makeLead({ core_partner_id: 'core-p-1' }));
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      expect(await screen.findByText('Partner fields for core-p-1')).toBeInTheDocument();
+    });
+
+    it('When the customer has no Core link / Then no partner panel is shown', async () => {
+      flagOn();
+      mockPathname = '/crm/customers/lead-1';
+      mockGetLeadById.mockResolvedValue(makeLead({ core_partner_id: null }));
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      expect(screen.queryByTestId('partner-dl-custom-fields-panel')).not.toBeInTheDocument();
+    });
+
+    it('When a lead (not customer) route opens / Then the partner panel is not shown', async () => {
+      flagOn();
+      mockPathname = '/crm/leads/lead-1';
+      mockGetLeadById.mockResolvedValue(makeLead({ core_partner_id: 'core-p-1' }));
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      expect(screen.queryByTestId('partner-dl-custom-fields-panel')).not.toBeInTheDocument();
     });
   });
 

@@ -20,6 +20,7 @@ import { validatePhone } from '../utils/phoneValidation';
 import { validateFirstNameRequired, validateLastName } from '../utils/leadFieldValidation';
 import { describeApiError } from '../utils/apiErrorMessage';
 import { DlCustomFieldsPanel, DL_CUSTOM_FIELDS_FLAG } from '../components/customFields/DlCustomFieldsPanel';
+import { PartnerDlCustomFields } from '../components/customFields/PartnerDlCustomFields';
 import { Lead, Deal, Task, Activity, ActivityType, CustomFieldDefinition, LeadScoringRule, User, Attachment, Note, SourceTypeOption } from '../types/crm';
 import { useCrmFeatureFlag } from '../hooks/useCrmFeatureFlag';
 import { ContactFeedPanel } from '../components/ContactFeedPanel';
@@ -1406,6 +1407,13 @@ const LeadDetailPage = () => {
                                 save={(values, version) => crmService.updateLeadCustomFields(lead.id, values, version)}
                                 reload={fetchLeadData}
                             />
+                        </div>
+                    )}
+                    {/* A CRM customer IS its Core partner (mirrored on create, linked by core_partner_id): the custom fields
+                        defined on the partner master (core.partner) show on the customer record too (Salesforce Account / HubSpot Company). */}
+                    {dlCustomFields && isCustomerDetailRoute && lead.core_partner_id && (
+                        <div data-testid="customer-partner-dl-custom-fields">
+                            <PartnerDlCustomFields corePartnerId={lead.core_partner_id} />
                         </div>
                     )}
                     </div>
