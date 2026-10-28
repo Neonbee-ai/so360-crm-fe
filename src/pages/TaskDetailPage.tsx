@@ -190,10 +190,10 @@ const TaskDetailPage = () => {
 
     if (!task) {
         return (
-            <div className="py-12 text-center text-fg-muted">
-                <p>Task not found.</p>
-                <Button variant="secondary" className="mt-4" onClick={() => navigate('/crm/tasks')}>Back to Tasks</Button>
-            </div>
+            // Comb root (data-comb-path) so readiness checks settle on a bad/missing id instead of spinning.
+            <DetailPageTemplate title="Task not found" trail={[{ label: 'Tasks', to: '/crm/tasks' }]}>
+                <EmptyState title="Task not found." action={{ label: 'Back to Tasks', onClick: () => navigate('/crm/tasks') }} />
+            </DetailPageTemplate>
         );
     }
 

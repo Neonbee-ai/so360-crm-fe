@@ -577,10 +577,10 @@ const DealDetailPage = () => {
 
     if (!deal) {
         return (
-            <div className="py-12 text-center text-fg-muted">
-                <p>Deal not found.</p>
-                <Button variant="secondary" onClick={() => navigate('/crm/pipeline')}>Back to Pipeline</Button>
-            </div>
+            // Comb root (data-comb-path) so readiness checks settle on a bad/missing id instead of spinning.
+            <DetailPageTemplate title="Deal not found" trail={[{ label: 'Pipeline', to: '/crm/pipeline' }]}>
+                <EmptyState title="Deal not found." action={{ label: 'Back to Pipeline', onClick: () => navigate('/crm/pipeline') }} />
+            </DetailPageTemplate>
         );
     }
 

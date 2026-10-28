@@ -118,6 +118,13 @@ describe('TaskDetailPage', () => {
       fireEvent.click(screen.getByText('Back to Tasks'));
       expect(mockNavigate).toHaveBeenCalledWith('/crm/tasks');
     });
+
+    it('When rendered / Then the not-found state renders inside a Comb root so the page settles', async () => {
+      mockGetTaskById.mockResolvedValue(null);
+      const { container } = render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('Task not found.')).toBeInTheDocument());
+      expect(container.querySelector('[data-comb-path]')).not.toBeNull();
+    });
   });
 
   describe('Given task is loaded', () => {
