@@ -289,11 +289,14 @@ const DealDetailPage = () => {
         fetchData();
     }, [id]);
 
+    // Only call Fulfillment when the org has the module (a Starter tenant would 403); a 403 just hides the panel.
+    const isFulfillmentEnabled = !!isModuleEnabled?.('fulfillment');
     useEffect(() => {
+        if (!isFulfillmentEnabled) { setFulfillmentOrder(null); return; }
         crmService.getFulfillmentOrderByDeal(id)
             .then(order => setFulfillmentOrder(order))
-            .catch(() => {});
-    }, [id]);
+            .catch(() => setFulfillmentOrder(null));
+    }, [id, isFulfillmentEnabled]);
 
     // Close the stage popover on an outside click or Escape — mirrors StageStatusSelect's
     // interaction pattern. Only wired up while the popover is actually open.
