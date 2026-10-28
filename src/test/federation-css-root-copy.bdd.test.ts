@@ -1,9 +1,8 @@
-// @vitest-environment node
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { describe, it, expect } from 'vitest';
-import { federationCssRootCopy } from '../../vite.config';
+import { federationCssRootCopy } from '../../vite-plugins/federation-css-root-copy';
 
 describe('Feature: federation CSS is served at the path the shell requests', () => {
   const run = (dist: string) => (federationCssRootCopy(dist).closeBundle as () => void)();
