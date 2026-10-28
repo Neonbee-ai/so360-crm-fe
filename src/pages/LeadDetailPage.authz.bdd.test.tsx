@@ -175,6 +175,26 @@ describe('Given LeadDetailPage and a lead that genuinely does not exist', () => 
   });
 });
 
+describe('Given LeadDetailPage opened with a malformed or unknown id (API answers 400)', () => {
+  test('When the lead fetch rejects with 400 / Then a settled not-found page with a way back is shown', async () => {
+    const bad = Object.assign(new Error('Validation failed (uuid is expected)'), { status: 400 });
+    mockCrmService.getLeadById.mockRejectedValueOnce(bad);
+    mockCrmService.getDealsByLeadId.mockRejectedValueOnce(bad);
+    mockCrmService.getTasksByLeadId.mockRejectedValueOnce(bad);
+    mockCrmService.getDocumentsByLeadId.mockRejectedValueOnce(bad);
+
+    const { container } = render(<LeadDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/lead not found/i)).toBeTruthy();
+    });
+    expect(screen.getByRole('button', { name: /back to leads/i })).toBeTruthy();
+    expect(screen.queryByText(/permission to view this lead/i)).toBeNull();
+    expect(screen.queryByText(/loading lead workspace/i)).toBeNull();
+    expect(container.querySelector('[data-comb-path]')).not.toBeNull();
+  });
+});
+
 describe('Given LeadDetailPage where only a SUPPORTING call is denied', () => {
   // Each of these used to take the whole page down with "Lead not found."
   const supporting: Array<[string, keyof typeof mockCrmService]> = [

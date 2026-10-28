@@ -423,20 +423,27 @@ const LeadDetailPage = () => {
 
     if (accessDenied) {
         return (
-            <EmptyState
-                title="You don't have permission to view this lead."
-                description="Ask an administrator to grant your role access to CRM leads."
-                action={{ label: backLabel, onClick: () => navigate(backRoute) }}
-            />
+            // Comb root (data-comb-path) so readiness checks settle instead of spinning.
+            <DetailPageTemplate title="Access denied" trail={detailTrail}>
+                <EmptyState
+                    title="You don't have permission to view this lead."
+                    description="Ask an administrator to grant your role access to CRM leads."
+                    action={{ label: backLabel, onClick: () => navigate(backRoute) }}
+                />
+            </DetailPageTemplate>
         );
     }
 
     if (!lead) {
         return (
-            <EmptyState
-                title="Lead not found."
-                action={{ label: backLabel, onClick: () => navigate(backRoute) }}
-            />
+            // Comb root (data-comb-path): a 400/404 (bad or missing id) must render a settled
+            // not-found page, not leave readiness checks waiting on a spinner.
+            <DetailPageTemplate title="Lead not found" trail={detailTrail}>
+                <EmptyState
+                    title="Lead not found."
+                    action={{ label: backLabel, onClick: () => navigate(backRoute) }}
+                />
+            </DetailPageTemplate>
         );
     }
 
