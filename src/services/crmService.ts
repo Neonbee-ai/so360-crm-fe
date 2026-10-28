@@ -1406,7 +1406,8 @@ export const partnersApi = {
      * partner links to it by `core_partner_id`; Core owns the data-layer values.
      */
     getCore: async (corePartnerId: string) => {
-        return coreClient.get<any>(`/v1/partners/${corePartnerId}`);
+        // GET /v1/partners/:org_id is Core's org LIST route — the record lives at details/:id (AutoQA r152).
+        return coreClient.get<any>(`/v1/partners/details/${corePartnerId}`);
     },
     /** Save core.partner custom fields through Core's partner update (409 on stale version, 503 when validation is down). */
     updateCoreCustomFields: async (corePartnerId: string, customFields: Record<string, unknown>, version?: number | null) => {
