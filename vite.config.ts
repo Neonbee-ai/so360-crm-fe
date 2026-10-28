@@ -3,6 +3,9 @@ import react from '@vitejs/plugin-react';
 import federation from '@originjs/vite-plugin-federation';
 import path from 'path';
 
+
+import { federationCssRootCopy } from './vite-plugins/federation-css-root-copy';
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   return {
@@ -17,6 +20,7 @@ export default defineConfig(({ mode }) => {
         },
     },
     plugins: [
+      federationCssRootCopy(),
         react({
             jsxRuntime: 'automatic',
         }),
