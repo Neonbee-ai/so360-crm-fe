@@ -30,6 +30,8 @@ export default function TouchpointChannelsPage() {
 
   const [addOpen, setAddOpen] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [labelError, setLabelError] = useState<string | undefined>(undefined);
+  const [keyError, setKeyError] = useState<string | undefined>(undefined);
   const [label, setLabel] = useState('');
   const [value, setValue] = useState('');
   const [actualsSource, setActualsSource] = useState<'auto' | 'manual'>(
@@ -71,7 +73,11 @@ export default function TouchpointChannelsPage() {
   };
 
   const addChannel = async () => {
-    if (!label.trim() || !value.trim()) return;
+    const lErr = label.trim() ? undefined : 'Label is required.';
+    const kErr = value.trim() ? undefined : 'Key is required.';
+    setLabelError(lErr);
+    setKeyError(kErr);
+    if (lErr || kErr) return;
     const key = value.trim().toLowerCase().replace(/\s+/g, '_');
 
     // `crm_touchpoint_channels` has UNIQUE (org_id, value), and provisioning
@@ -172,6 +178,8 @@ export default function TouchpointChannelsPage() {
 
   const openAdd = () => {
     setFormError(null);
+    setLabelError(undefined);
+    setKeyError(undefined);
     setAddOpen(true);
   };
 
@@ -266,7 +274,7 @@ export default function TouchpointChannelsPage() {
             <Button
               variant="primary"
               onClick={addChannel}
-              disabled={busy || !label.trim() || !value.trim()}
+              disabled={busy}
             >
               Add channel
             </Button>
@@ -279,14 +287,16 @@ export default function TouchpointChannelsPage() {
             name="channel_label"
             label="Label"
             value={label}
-            onChange={(e: any) => setLabel(e.target.value)}
+            error={labelError}
+            onChange={(e: any) => { setLabel(e.target.value); setLabelError(undefined); }}
             placeholder="Site Visit"
           />
           <TextField
             name="channel_key"
             label="Key"
             value={value}
-            onChange={(e: any) => setValue(e.target.value)}
+            error={keyError}
+            onChange={(e: any) => { setValue(e.target.value); setKeyError(undefined); }}
             placeholder="site_visit"
           />
           <Select
