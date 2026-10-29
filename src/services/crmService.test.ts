@@ -1641,6 +1641,23 @@ describe('Given leadsApi additional', () => {
     expect(body.status).toBe('qualified');
   });
 
+  it('When stage names are given / Then getStatusCounts maps to BE statuses, drops paging/status and keys by stage', async () => {
+    mockFetchSuccess({ counts: { new: 4, proposal_sent: 2 } });
+    const out = await leadsApi.getStatusCounts(['New', 'Proposal Sent', 'Lost'], { q: 'x', status: 'New', skip: 5, take: 10 });
+    expect(out).toEqual({ New: 4, 'Proposal Sent': 2, Lost: 0 });
+    const url = String(fetchMock.mock.calls[fetchMock.mock.calls.length - 1][0]);
+    expect(url).toContain('/leads/status-counts');
+    expect(decodeURIComponent(url)).toContain('statuses=new,proposal_sent,Lost');
+    expect(url).not.toContain('skip=');
+    expect(url).not.toContain('status=New');
+  });
+
+  it('When no stages / Then getStatusCounts returns {} without a request', async () => {
+    const before = fetchMock.mock.calls.length;
+    expect(await leadsApi.getStatusCounts([])).toEqual({});
+    expect(fetchMock.mock.calls.length).toBe(before);
+  });
+
   it('When action / Then getStats fetches lead stats', async () => {
     mockFetchSuccess({ stats: [{ status: 'NEW', count: 5 }] });
     const result = await leadsApi.getStats();

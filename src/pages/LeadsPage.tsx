@@ -269,6 +269,21 @@ const LeadsPage = () => {
     return () => { cancelled = true; };
   }, [leadsQuery, skip, take, reloadKey]);
 
+  // Per-status facet counts: same filters as the list minus status, so each number is what
+  // picking that status would show. Failures just hide the counts.
+  const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
+  const stageNamesKey = leadStages.map((st) => st.name).join('|');
+  useEffect(() => {
+    if (!stageNamesKey) return;
+    let cancelled = false;
+    const { status: _status, ...facetQuery } = leadsQuery as Record<string, any>;
+    crmService
+      .getLeadStatusCounts(stageNamesKey.split('|'), facetQuery)
+      .then((c) => { if (!cancelled) setStatusCounts(c); })
+      .catch(() => { if (!cancelled) setStatusCounts({}); });
+    return () => { cancelled = true; };
+  }, [leadsQuery, stageNamesKey, reloadKey]);
+
   const handleApplyAdvancedFilter = useCallback((tree: FilterGroup | null) => {
     setCurrentPage(1);
     if (tree) {
@@ -619,7 +634,7 @@ const LeadsPage = () => {
 
   const leadFilterConfig: ListFilterConfig = {
     fields: [
-      { key: 'status', label: 'Status', type: 'select', quick: true, options: leadStages.map((st) => ({ value: st.name, label: st.name })) },
+      { key: 'status', label: 'Status', type: 'select', quick: true, options: leadStages.map((st) => ({ value: st.name, label: st.name, ...(st.name in statusCounts ? { count: statusCounts[st.name] } : {}) })) },
       { key: 'owner', label: 'Owner', type: 'select', quick: true, options: [{ value: UNASSIGNED_OWNER, label: 'Unassigned' }, ...users.map((u) => ({ value: u.id, label: u.full_name }))] },
       {
         key: 'dateRange', label: 'Date range', type: 'select', quick: true,

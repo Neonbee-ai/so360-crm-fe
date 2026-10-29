@@ -22,6 +22,7 @@ const mockViewsDuplicate = vi.fn();
 const mockViewsSetDefault = vi.fn();
 const mockGetLeadsPaged = vi.fn();
 const mockGetLeadStats = vi.fn();
+const mockGetLeadStatusCounts = vi.fn();
 
 const mockExportLeads = vi.fn();
 vi.mock('../services/exportService', async (importActual) => ({
@@ -34,6 +35,7 @@ vi.mock('../services/crmService', () => ({
     getLeads: (...a: any[]) => mockGetLeads(...a),
     getLeadsPaged: (...a: any[]) => mockGetLeadsPaged(...a),
     getLeadStats: (...a: any[]) => mockGetLeadStats(...a),
+    getLeadStatusCounts: (...a: any[]) => mockGetLeadStatusCounts(...a),
     getSettings: (...a: any[]) => mockGetSettings(...a),
     getUsers: (...a: any[]) => mockGetUsers(...a),
     getPartners: (...a: any[]) => mockGetPartners(...a),
@@ -219,6 +221,7 @@ beforeEach(async () => {
   mockBulkTagLeads.mockResolvedValue({ requested: 1, updated: ['l1'], failed: [] });
   // Emulates the server: mockGetLeads is the dataset; owner/unassigned/advanced filters and skip/take apply here.
   mockGetLeadStats.mockResolvedValue({ total: 3 });
+  mockGetLeadStatusCounts.mockResolvedValue({});
   mockGetLeadsPaged.mockImplementation(async (p: any) => {
     const all = await mockGetLeads();
     let rows: any[] = all;
@@ -245,6 +248,14 @@ describe('LeadsPage', () => {
         expect(screen.getByTestId('lead-row-l2')).toBeInTheDocument();
         expect(screen.getByTestId('lead-row-l3')).toBeInTheDocument();
       });
+    });
+
+    it('When the page renders / Then per-status counts are requested for the lead stages without a status filter', async () => {
+      render(<LeadsPage />);
+      await waitFor(() => expect(mockGetLeadStatusCounts).toHaveBeenCalled());
+      const [stages, query] = mockGetLeadStatusCounts.mock.calls[0];
+      expect(stages.length).toBeGreaterThan(0);
+      expect(query).not.toHaveProperty('status');
     });
 
     it('When searching by contact name / Then filters leads matching the search term', async () => {

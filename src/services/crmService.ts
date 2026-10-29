@@ -699,6 +699,26 @@ export const leadsApi = {
     },
 
     /**
+     * GET /leads/status-counts - per-status facet counts under the current list filters
+     * (status itself excluded). Keys of the result are the FE stage names passed in.
+     */
+    getStatusCounts: async (
+        stageNames: string[],
+        params: Record<string, any> = {},
+    ): Promise<Record<string, number>> => {
+        if (stageNames.length === 0) return {};
+        const beOf = (n: string) => STATUS_MAP_FE_TO_BE[n] ?? n;
+        const { skip: _s, take: _t, status: _st, meta: _m, ...rest } = params as any;
+        const res = await apiClient.get<{ counts: Record<string, number> }>('/leads/status-counts', {
+            ...rest,
+            statuses: stageNames.map(beOf).join(','),
+        });
+        const out: Record<string, number> = {};
+        for (const n of stageNames) out[n] = res?.counts?.[beOf(n)] ?? 0;
+        return out;
+    },
+
+    /**
      * POST /leads/bulk/update — apply a patch (owner/status/source/campaign/
      * priority) to many leads. Returns { requested, updated, failed }.
      */
@@ -1615,6 +1635,9 @@ export const crmService = {
     }): Promise<{ data: Lead[]; total: number | null }> => {
         return leadsApi.getPaged(params);
     },
+
+    getLeadStatusCounts: async (stageNames: string[], params: Record<string, any> = {}): Promise<Record<string, number>> =>
+        leadsApi.getStatusCounts(stageNames, params),
 
     // Org-wide lead/contact counts (`total` + per-status), independent of list filters
     getLeadStats: async (): Promise<any> => leadsApi.getStats(),
