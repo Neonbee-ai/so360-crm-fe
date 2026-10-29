@@ -901,6 +901,16 @@ describe('LeadDetailPage', () => {
     });
   });
 
+  describe('Given the lead record loads but supporting calls are still pending', () => {
+    it('When partners and users have not answered / Then the lead workspace renders without waiting for them', async () => {
+      mockGetPartners.mockReturnValue(new Promise(() => {}));
+      mockGetUsers.mockReturnValue(new Promise(() => {}));
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getAllByText('John Doe').length).toBeGreaterThan(0));
+      expect(screen.queryByText('Loading lead workspace...')).not.toBeInTheDocument();
+    });
+  });
+
   describe('Given the lead is not found', () => {
     it('When API returns null / Then shows not found state', async () => {
       mockGetLeadById.mockResolvedValue(null);

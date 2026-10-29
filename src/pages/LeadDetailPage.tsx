@@ -326,58 +326,70 @@ const LeadDetailPage = () => {
     // Resolves true when the lead was loaded, false when that load failed (the
     // failure is still handled/logged here). Existing callers ignore the result.
     const fetchLeadData = useCallback(async (): Promise<boolean> => {
-        try {
-            // Only the lead itself is critical. Everything else is supporting
-            // detail and degrades to an empty value.
-            //
-            // These nine calls used to share one Promise.all with no per-call
-            // catch, so a single 403 on any ONE of them — permitted or not —
-            // rejected the whole batch, left `lead` null, and rendered
-            // "Lead not found." A user who could read the lead perfectly well was
-            // told it did not exist because, say, they lacked partner access.
-            const [leadData, [dealsData, tasksData, settingsData, usersData, activitiesResult, partnersData, fetchedSourceTypes, documentsData]] = await Promise.all([
-                // Critical: a failure here is the page's failure.
-                crmService.getLeadById(id),
-                // Supporting detail: each degrades independently.
-                Promise.all([
-                    crmService.getDealsByLeadId(id).catch(() => [] as any[]),
-                    crmService.getTasksByLeadId(id).catch(() => [] as any[]),
-                    crmService.getSettings().catch(() => ({} as any)),
-                    crmService.getUsers().catch(() => [] as any[]),
-                    crmService.getActivitiesByLeadIdPaginated(id, INITIAL_ACTIVITY_LOAD, 0)
-                        .catch(() => ({ data: [] as any[], total: 0 })),
-                    crmService.getPartners().catch(() => [] as any[]),
-                    settingsApi.sourceTypes.getAll().catch(() => [] as any[]),
-                    crmService.getDocumentsByLeadId(id).catch(() => [] as any[]),
-                ]),
-            ]);
+        // Only the lead itself is critical. Everything else is supporting
+        // detail and degrades to an empty value (a 403 on partners must never
+        // turn into "Lead not found").
+        //
+        // The page loader is released as soon as the lead record arrives; the
+        // supporting panels fill in when their calls land (HubSpot/Salesforce
+        // record pages behave the same). Gating the whole page on all nine
+        // calls kept the spinner up for 3-11s on orgs with many users/partners.
+        // The promise still resolves only after the supporting data is set, so
+        // callers that await a reload see the complete record.
+        const supporting = Promise.all([
+            crmService.getDealsByLeadId(id).catch(() => [] as any[]),
+            crmService.getTasksByLeadId(id).catch(() => [] as any[]),
+            crmService.getSettings().catch(() => ({} as any)),
+            crmService.getUsers().catch(() => [] as any[]),
+            crmService.getActivitiesByLeadIdPaginated(id, INITIAL_ACTIVITY_LOAD, 0)
+                .catch(() => ({ data: [] as any[], total: 0 })),
+            crmService.getPartners().catch(() => [] as any[]),
+            settingsApi.sourceTypes.getAll().catch(() => [] as any[]),
+            crmService.getDocumentsByLeadId(id).catch(() => [] as any[]),
+        ]);
 
-            setAccessDenied(false);
-            setLead(leadData || null);
-            if (leadData) {
-                setLead({ ...leadData, activities: activitiesResult.data, documents: documentsData });
-            }
-            setActivityTotal(activitiesResult.total);
-            setAssociatedDeals(dealsData);
-            setAssociatedTasks(tasksData);
-            setCustomFieldDefs(settingsData?.lead_custom_fields || []);
-            setScoringRules(settingsData.lead_scoring || []);
-            setScoreCategories(settingsData.score_categories || []);
-            setLeadStages(settingsData.lead_stages || []);
-            setAllUsers(usersData);
-            setPartners(partnersData);
-            setSourceTypes(fetchedSourceTypes);
-            return true;
+        let leadData: any;
+        try {
+            leadData = await crmService.getLeadById(id);
         } catch (error) {
             console.error('Failed to fetch lead data', error);
             // Report a permission failure as a permission failure. Reusing the
             // "not found" state for this sent users hunting for a deleted record
             // instead of asking an administrator for access.
             setAccessDenied((error as { status?: number })?.status === 403);
-            return false;
-        } finally {
             setIsLoading(false);
+            return false;
         }
+
+        setAccessDenied(false);
+        // On a refresh keep the already-loaded activities/documents so those
+        // panels do not flash empty while the supporting calls are in flight.
+        setLead((prev: any) => (leadData
+            ? {
+                ...leadData,
+                activities: prev?.id === leadData.id ? prev.activities : undefined,
+                documents: prev?.id === leadData.id ? prev.documents : undefined,
+            }
+            : null));
+        setIsLoading(false);
+
+        const [dealsData, tasksData, settingsData, usersData, activitiesResult, partnersData, fetchedSourceTypes, documentsData] = await supporting;
+        if (leadData) {
+            setLead((prev: any) => (prev && prev.id === leadData.id
+                ? { ...prev, activities: activitiesResult.data, documents: documentsData }
+                : prev));
+        }
+        setActivityTotal(activitiesResult.total);
+        setAssociatedDeals(dealsData);
+        setAssociatedTasks(tasksData);
+        setCustomFieldDefs(settingsData?.lead_custom_fields || []);
+        setScoringRules(settingsData?.lead_scoring || []);
+        setScoreCategories(settingsData?.score_categories || []);
+        setLeadStages(settingsData?.lead_stages || []);
+        setAllUsers(usersData);
+        setPartners(partnersData);
+        setSourceTypes(fetchedSourceTypes);
+        return true;
     }, [id]);
 
     const handleRecalculateScore = useCallback(async () => {
