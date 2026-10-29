@@ -134,3 +134,22 @@ describe('Given LeadsPage', () => {
     });
   });
 });
+
+describe('Given the leads list answers before settings and users', () => {
+  it('When settings and users are still pending Then the leads grid renders without waiting', async () => {
+    mockGetLeads.mockResolvedValue([{ id: 'l1', company_name: 'Acme' }]);
+    mockGetSettings.mockImplementation(() => new Promise(() => {}));
+    mockGetUsers.mockImplementation(() => new Promise(() => {}));
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getAllByTestId('lead-row')).toHaveLength(1));
+  });
+
+  it('When settings or users fail Then the leads still render and no page error shows', async () => {
+    mockGetLeads.mockResolvedValue([{ id: 'l1', company_name: 'Acme' }]);
+    mockGetSettings.mockRejectedValue(new Error('settings down'));
+    mockGetUsers.mockRejectedValue(new Error('users down'));
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getAllByTestId('lead-row')).toHaveLength(1));
+    expect(screen.queryByText(/settings down|users down/)).not.toBeInTheDocument();
+  });
+});

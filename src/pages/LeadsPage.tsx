@@ -251,27 +251,32 @@ const LeadsPage = () => {
       const params = new URLSearchParams(location.search);
       const q = params.get('q') ?? undefined;
 
-      const [leadsData, settingsData, usersData] = await Promise.all([
-        crmService.getLeads({ ...(q ? { q } : {}) }),
-        crmService.getSettings(),
-        crmService.getUsers(),
-      ]);
+      // Only the leads list holds the page spinner. Settings (9 reads) and users load
+      // alongside and fill stage/source/owner columns when they land, so the grid
+      // shows as soon as the leads answer instead of after the slowest of ~12 calls.
+      crmService.getSettings()
+        .then((settingsData: any) => {
+          setLeadStages(settingsData?.lead_stages ?? []);
+          setLeadSources(
+            (settingsData?.lead_sources ?? [])
+              .filter((s: any) => s && !s.archived)
+              .map((s: any) => s.name)
+              .filter(Boolean),
+          );
+          setCustomFields(
+            (settingsData?.lead_custom_fields ?? []).map((cf: any) => ({
+              id: cf.id,
+              label: cf.label,
+            })),
+          );
+        })
+        .catch((err: any) => console.warn('Lead settings unavailable', err));
+      crmService.getUsers()
+        .then((usersData: any) => setUsers(usersData))
+        .catch((err: any) => console.warn('Lead owners unavailable', err));
 
+      const leadsData = await crmService.getLeads({ ...(q ? { q } : {}) });
       setLeads(leadsData);
-      setLeadStages(settingsData?.lead_stages ?? []);
-      setLeadSources(
-        (settingsData?.lead_sources ?? [])
-          .filter((s: any) => s && !s.archived)
-          .map((s: any) => s.name)
-          .filter(Boolean),
-      );
-      setCustomFields(
-        (settingsData?.lead_custom_fields ?? []).map((cf: any) => ({
-          id: cf.id,
-          label: cf.label,
-        })),
-      );
-      setUsers(usersData);
       if (q) setFilter('search', q);
     } catch (err: any) {
       console.error('Failed to fetch initial data', err);
