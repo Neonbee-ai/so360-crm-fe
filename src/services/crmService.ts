@@ -683,6 +683,12 @@ export const leadsApi = {
         sort?: string;
         filter?: string;
         fields?: string;
+        owner_id?: string;
+        created_by?: string;
+        rating_id?: string;
+        date_range?: string;
+        start_date?: string;
+        end_date?: string;
     }): Promise<{ data: Lead[]; total: number | null }> => {
         const apiParams: Record<string, any> = { ...params, meta: 'true' };
         if (params.status && STATUS_MAP_FE_TO_BE[params.status]) {
@@ -1604,9 +1610,14 @@ export const crmService = {
     getLeadsPaged: async (params: {
         skip?: number; take?: number; q?: string; status?: string; source?: string;
         sort?: string; filter?: string; fields?: string;
+        owner_id?: string; created_by?: string; rating_id?: string;
+        date_range?: string; start_date?: string; end_date?: string;
     }): Promise<{ data: Lead[]; total: number | null }> => {
         return leadsApi.getPaged(params);
     },
+
+    // Org-wide lead/contact counts (`total` + per-status), independent of list filters
+    getLeadStats: async (): Promise<any> => leadsApi.getStats(),
 
     // Bulk lead operations
     bulkUpdateLeads: (ids: string[], patch: Record<string, any>) => leadsApi.bulkUpdate(ids, patch),

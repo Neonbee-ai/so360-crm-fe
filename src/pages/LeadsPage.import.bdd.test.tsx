@@ -11,6 +11,8 @@ const mockGetPartners = vi.fn();
 vi.mock('../services/crmService', () => ({
   crmService: {
     getLeads: (...a: any[]) => mockGetLeads(...a),
+    getLeadsPaged: async (...a: any[]) => { const d = await mockGetLeads(...a); return { data: d, total: d.length }; },
+    getLeadStats: async () => ({ total: 0 }),
     getSettings: (...a: any[]) => mockGetSettings(...a),
     getUsers: (...a: any[]) => mockGetUsers(...a),
     getPartners: (...a: any[]) => mockGetPartners(...a),

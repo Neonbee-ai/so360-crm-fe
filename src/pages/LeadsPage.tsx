@@ -27,6 +27,7 @@ import { LeadsDataGrid, GridContext } from '../components/leads/LeadsDataGrid';
 import { LeadDetailPanel } from '../components/leads/LeadDetailPanel';
 import LeadFilterBuilder from '../components/leads/LeadFilterBuilder';
 import { countActiveRules, type FilterGroup } from '../components/leads/leadFilterModel';
+import { buildLeadsQuery, DEFAULT_FILTERS, UNASSIGNED_OWNER, type FilterState } from './leadsListQuery';
 import { leadsToCsv, downloadCsv } from '../components/leads/leadsCsv';
 import { useNotify, useActivity, useShellBridge, useQuota, useSandboxLimit } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
@@ -40,30 +41,8 @@ import type { FilterValues, ListFilterConfig } from '@so360/design-system';
 
 // ─── Saved views (lightweight local version) ──────────────────────────────────
 
-interface FilterState {
-  search: string;
-  status: string;
-  owner: string;
-  creator: string;
-  rating: string;
-  dateRange: string;
-  customDateStart: string;
-  customDateEnd: string;
-}
 
-/** Sentinel owner-filter value for the Unassigned view (leads with no owner). */
-const UNASSIGNED_OWNER = '__unassigned__';
 
-const DEFAULT_FILTERS: FilterState = {
-  search: '',
-  status: 'All',
-  owner: 'All',
-  creator: 'All',
-  rating: 'All',
-  dateRange: 'All',
-  customDateStart: '',
-  customDateEnd: '',
-};
 
 const SAVED_VIEWS_KEY = 'crm_leads_saved_views_v1';
 
@@ -108,48 +87,6 @@ function mapBeView(v: {
   };
 }
 
-// ─── Date range helper ────────────────────────────────────────────────────────
-
-function isDateInRange(
-  dateString: string,
-  filter: string,
-  customStart: string,
-  customEnd: string,
-): boolean {
-  if (filter === 'All') return true;
-  const date = new Date(dateString);
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const startOfWeek = new Date(today);
-  startOfWeek.setDate(today.getDate() - today.getDay());
-  const startOfLastWeek = new Date(startOfWeek);
-  startOfLastWeek.setDate(startOfWeek.getDate() - 7);
-  const endOfLastWeek = new Date(startOfLastWeek);
-  endOfLastWeek.setDate(startOfLastWeek.getDate() + 6);
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
-
-  switch (filter) {
-    case 'Today': return date >= today;
-    case 'Yesterday': return date >= yesterday && date < today;
-    case 'This Week': return date >= startOfWeek;
-    case 'Last Week': return date >= startOfLastWeek && date <= endOfLastWeek;
-    case 'This Month': return date >= startOfMonth;
-    case 'Last Month': return date >= startOfLastMonth && date <= endOfLastMonth;
-    case 'Custom':
-      if (customStart && customEnd) {
-        const end = new Date(customEnd);
-        end.setHours(23, 59, 59, 999);
-        return date >= new Date(customStart) && date <= end;
-      }
-      return true;
-    default: return true;
-  }
-}
-
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const LeadsPage = () => {
@@ -178,6 +115,12 @@ const LeadsPage = () => {
 
   // Data
   const [leads, setLeads] = useState<Lead[]>([]);
+  // Server-side paging: `leads` is ONLY the current page; `total` is the filtered row count
+  // (X-Total-Count) and `contactsTotal` the unfiltered org count used for the quota gate.
+  const [total, setTotal] = useState<number>(0);
+  const [contactsTotal, setContactsTotal] = useState<number | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  const reloadLeads = useCallback(() => setReloadKey((k) => k + 1), []);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [leadStages, setLeadStages] = useState<{ id: string; name: string }[]>([]);
@@ -245,8 +188,6 @@ const LeadsPage = () => {
 
   // Fetch
   const fetchInitialData = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
     try {
       const params = new URLSearchParams(location.search);
       const q = params.get('q') ?? undefined;
@@ -275,14 +216,15 @@ const LeadsPage = () => {
         .then((usersData: any) => setUsers(usersData))
         .catch((err: any) => console.warn('Lead owners unavailable', err));
 
-      const leadsData = await crmService.getLeads({ ...(q ? { q } : {}) });
-      setLeads(leadsData);
+      crmService.getLeadStats()
+        .then((st: any) => setContactsTotal(typeof st?.total === 'number' ? st.total : null))
+        .catch(() => setContactsTotal(null));
+
+      // The page of leads itself is fetched server-side by the paging effect below.
       if (q) setFilter('search', q);
     } catch (err: any) {
       console.error('Failed to fetch initial data', err);
       setError(err.message ?? 'Failed to initialize page');
-    } finally {
-      setIsLoading(false);
     }
   }, [location.search, setFilter]);
 
@@ -290,29 +232,42 @@ const LeadsPage = () => {
     fetchInitialData();
   }, [fetchInitialData]);
 
-  // Advanced server-side filter: whenever a non-null tree is applied, refetch the
-  // leads list through the paged endpoint with the serialized filter. Clearing
-  // the tree (Apply with nothing complete) re-runs the normal initial fetch.
+  // Server-side paging: filters, search, owner/creator/rating, date range and the advanced tree
+  // are all resolved by GET /leads?meta=true; only the visible page crosses the wire.
+  const [debouncedSearch, setDebouncedSearch] = useState(filters.search);
   useEffect(() => {
-    if (!advancedFilter) return;
+    const t = setTimeout(() => setDebouncedSearch(filters.search), 300);
+    return () => clearTimeout(t);
+  }, [filters.search]);
+
+  const leadsQuery = useMemo(
+    () => buildLeadsQuery({ ...filters, search: debouncedSearch }, advancedFilter),
+    [filters.status, filters.owner, filters.creator, filters.rating, filters.dateRange,
+      filters.customDateStart, filters.customDateEnd, debouncedSearch, advancedFilter],
+  );
+  // Sandbox shows at most `sandboxEntryLimit` rows overall: cap the window, not the page size.
+  const skip = (currentPage - 1) * pageSize;
+  const take = isSandboxMode ? Math.max(0, Math.min(pageSize, sandboxEntryLimit - skip)) : pageSize;
+
+  useEffect(() => {
     let cancelled = false;
     (async () => {
       setIsLoading(true);
       setError(null);
       try {
-        const { data } = await crmService.getLeadsPaged({
-          filter: JSON.stringify(advancedFilter),
-          take: 1000,
-        });
-        if (!cancelled) setLeads(data);
+        if (take === 0) { if (!cancelled) setLeads([]); return; }
+        const res = await crmService.getLeadsPaged({ ...leadsQuery, skip, take });
+        if (cancelled) return;
+        setLeads(res.data);
+        setTotal(res.total ?? res.data.length);
       } catch (err: any) {
-        if (!cancelled) setError(err?.message ?? 'Failed to apply advanced filters');
+        if (!cancelled) setError(err?.message ?? 'Failed to load leads');
       } finally {
         if (!cancelled) setIsLoading(false);
       }
     })();
     return () => { cancelled = true; };
-  }, [advancedFilter]);
+  }, [leadsQuery, skip, take, reloadKey]);
 
   const handleApplyAdvancedFilter = useCallback((tree: FilterGroup | null) => {
     setCurrentPage(1);
@@ -321,54 +276,13 @@ const LeadsPage = () => {
     } else if (advancedFilter) {
       // Cleared an active advanced filter — fall back to the standard list.
       setAdvancedFilter(null);
-      fetchInitialData();
     }
-  }, [advancedFilter, fetchInitialData]);
+  }, [advancedFilter]);
 
-  // Filtering
-  const filteredLeads = useMemo(() => {
-    return leads.filter((lead) => {
-      const fullName = lead.first_name
-        ? [lead.first_name, lead.last_name].filter(Boolean).join(' ')
-        : (lead.contact_name ?? '');
-      const q = filters.search.toLowerCase();
-      if (q) {
-        const hit =
-          (lead.company_name ?? '').toLowerCase().includes(q) ||
-          fullName.toLowerCase().includes(q) ||
-          (lead.contact_email ?? '').toLowerCase().includes(q) ||
-          (lead.phone ?? '').includes(q) ||
-          (lead.source ?? '').toLowerCase().includes(q);
-        if (!hit) return false;
-      }
-      if (filters.status !== 'All' && lead.status !== filters.status) return false;
-      if (filters.owner === UNASSIGNED_OWNER) { if (lead.owner?.id) return false; }
-      else if (filters.owner !== 'All' && lead.owner?.id !== filters.owner) return false;
-      if (filters.creator !== 'All' && lead.creator?.id !== filters.creator) return false;
-      if (filters.rating !== 'All' && lead.rating_category_id !== filters.rating) return false;
-      if (!isDateInRange(lead.created_at, filters.dateRange, filters.customDateStart, filters.customDateEnd)) return false;
-      return true;
-    });
-  }, [leads, filters]);
-
-  // Status counts shown on the Status filter options — computed off the full unpaginated
-  // list so they reflect totals regardless of the active filter/search state.
-  const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const lead of leads) counts[lead.status] = (counts[lead.status] ?? 0) + 1;
-    return counts;
-  }, [leads]);
-
-  const sandboxLeads = useMemo(
-    () => (isSandboxMode ? filteredLeads.slice(0, sandboxEntryLimit) : filteredLeads),
-    [filteredLeads, isSandboxMode, sandboxEntryLimit],
-  );
-
-  const totalPages = Math.ceil(sandboxLeads.length / pageSize);
-  const paginatedLeads = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return sandboxLeads.slice(start, start + pageSize);
-  }, [sandboxLeads, currentPage, pageSize]);
+  // Filtering/paging happen on the server; `leads` already is the filtered page.
+  const sandboxTotal = isSandboxMode ? Math.min(total, sandboxEntryLimit) : total;
+  const totalPages = Math.ceil(sandboxTotal / pageSize);
+  const paginatedLeads = leads;
 
   useEffect(() => { setCurrentPage(1); }, [filters]);
 
@@ -705,7 +619,7 @@ const LeadsPage = () => {
 
   const leadFilterConfig: ListFilterConfig = {
     fields: [
-      { key: 'status', label: 'Status', type: 'select', quick: true, options: leadStages.map((st) => ({ value: st.name, label: st.name, count: statusCounts[st.name] ?? 0 })) },
+      { key: 'status', label: 'Status', type: 'select', quick: true, options: leadStages.map((st) => ({ value: st.name, label: st.name })) },
       { key: 'owner', label: 'Owner', type: 'select', quick: true, options: [{ value: UNASSIGNED_OWNER, label: 'Unassigned' }, ...users.map((u) => ({ value: u.id, label: u.full_name }))] },
       {
         key: 'dateRange', label: 'Date range', type: 'select', quick: true,
@@ -751,21 +665,22 @@ const LeadsPage = () => {
   };
 
   const hasLeads = leads.length > 0;
-  const isFilteredEmpty = !isLoading && !error && hasLeads && sandboxLeads.length === 0 && hasActiveFilters;
-  const isTrulyEmpty = !isLoading && !error && !hasLeads;
+  const anyFilter = hasActiveFilters || !!advancedFilter;
+  const isFilteredEmpty = !isLoading && !error && !hasLeads && anyFilter;
+  const isTrulyEmpty = !isLoading && !error && !hasLeads && !anyFilter;
 
   return (
     <div ref={listAnchorRef}>
       <ListPageTemplate
         trail={[]}
         title="Leads & Accounts"
-        count={leads.length}
+        count={total}
         primaryAction={
           canCreateLead ? (
             <QuotaGate
               quotaKey="max_contacts"
               moduleCode="crm"
-              used={leads.length}
+              used={contactsTotal ?? total}
               limit={quotaData?.limit ?? 0}
               isUnlimited={quotaData?.is_unlimited}
               disableOnExceeded
@@ -824,11 +739,11 @@ const LeadsPage = () => {
         isFilteredEmpty={isFilteredEmpty}
         onClearFilters={clearFilters}
         pagination={
-          sandboxLeads.length > 0 ? (
+          sandboxTotal > 0 ? (
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages || 1}
-              totalItems={sandboxLeads.length}
+              totalItems={sandboxTotal}
               pageSize={pageSize}
               pageSizeOptions={[25, 50, 100, 250]}
               onPageChange={setCurrentPage}
@@ -838,10 +753,10 @@ const LeadsPage = () => {
         }
       >
         {/* Sandbox notice */}
-        {isSandboxMode && isLimited(filteredLeads.length) && (
+        {isSandboxMode && isLimited(total) && (
           <div className="mb-3 flex items-center gap-2 rounded-nb border border-warning/25 bg-warning/10 px-4 py-2 text-sm text-warning">
             <span className="font-semibold">Sandbox:</span>
-            <span>Showing {sandboxEntryLimit} of {filteredLeads.length} leads. Switch to Production to view all records.</span>
+            <span>Showing {sandboxEntryLimit} of {total} leads. Switch to Production to view all records.</span>
           </div>
         )}
 
@@ -936,14 +851,14 @@ const LeadsPage = () => {
       <CreateLeadModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSuccess={fetchInitialData}
+        onSuccess={reloadLeads}
         existingLeads={leads.map((l) => l.company_name)}
       />
       {canImportLeads && (
         <ImportHub
           isOpen={isImportOpen}
           onClose={() => setIsImportOpen(false)}
-          onImported={fetchInitialData}
+          onImported={reloadLeads}
         />
       )}
 

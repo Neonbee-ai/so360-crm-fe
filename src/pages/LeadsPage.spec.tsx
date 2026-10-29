@@ -6,6 +6,8 @@ import LeadsPage from './LeadsPage';
 const mockCrmService = vi.hoisted(() => ({
   deleteLead: vi.fn(),
   getLeads: vi.fn(),
+  getLeadsPaged: vi.fn(),
+  getLeadStats: vi.fn(),
   getSettings: vi.fn(),
   getUsers: vi.fn(),
   getPartners: vi.fn(),
@@ -74,6 +76,8 @@ describe('Given LeadsPage — Lead Management', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockCrmService.getLeads.mockResolvedValue(mockLeads);
+    mockCrmService.getLeadsPaged.mockResolvedValue({ data: mockLeads, total: mockLeads.length });
+    mockCrmService.getLeadStats.mockResolvedValue({ total: mockLeads.length });
     mockCrmService.getSettings.mockResolvedValue({ lead_stages: [], lead_custom_fields: [] });
     mockCrmService.getUsers.mockResolvedValue([]);
     mockCrmService.getPartners.mockResolvedValue([]);
@@ -148,6 +152,7 @@ describe('Given LeadsPage — Lead Management', () => {
 
   test('Given empty leads list / When no leads / Then shows empty state', async () => {
     mockCrmService.getLeads.mockResolvedValueOnce([]);
+    mockCrmService.getLeadsPaged.mockResolvedValueOnce({ data: [], total: 0 });
     render(<LeadsPage />);
     await waitFor(() => {
       expect(screen.queryAllByText(/no leads|empty|lead/i).length).toBeGreaterThan(0);
