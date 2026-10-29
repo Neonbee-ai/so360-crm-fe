@@ -285,6 +285,7 @@ export default function TouchpointChannelsPage() {
           {formError && <div className="text-sm text-danger">{formError}</div>}
           <TextField
             name="channel_label"
+            maxLength={100}
             label="Label"
             value={label}
             error={labelError}
@@ -293,6 +294,7 @@ export default function TouchpointChannelsPage() {
           />
           <TextField
             name="channel_key"
+            maxLength={64}
             label="Key"
             value={value}
             error={keyError}

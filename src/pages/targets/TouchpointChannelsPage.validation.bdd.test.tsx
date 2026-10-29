@@ -31,6 +31,12 @@ describe('Feature: add-channel form validates inline', () => {
     await screen.findByLabelText('Label');
   };
 
+  it('Given the form is open / When rendered / Then label and key cap their length', async () => {
+    await openForm();
+    expect(screen.getByLabelText('Label')).toHaveAttribute('maxlength', '100');
+    expect(screen.getByLabelText('Key')).toHaveAttribute('maxlength', '64');
+  });
+
   it('Given whitespace-only label and key / When Add channel is pressed / Then required errors show and nothing is saved', async () => {
     await openForm();
     fireEvent.change(screen.getByLabelText('Label'), { target: { value: '   ' } });
