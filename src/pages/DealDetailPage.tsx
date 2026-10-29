@@ -162,15 +162,30 @@ const DealDetailPage = () => {
             if (deal) setIsRefreshing(true);
             else setIsLoading(true);
 
-            const [dealData, settingsData, usersData, tasksData, activitiesData, notesData, docsData] = await Promise.all([
+            // Only the deal itself is required to render the record. Side panels
+            // (tasks/notes/docs/activities/settings/users) degrade to empty on
+            // failure instead of rejecting the whole load — one flaky side call
+            // used to blank the page to "Deal not found".
+            const settled = <T,>(r: PromiseSettledResult<T>, fallback: T): T => {
+                if (r.status === 'fulfilled') return r.value ?? fallback;
+                console.warn('[DealDetail] side panel failed to load', r.reason);
+                return fallback;
+            };
+            const [dealData, settingsRes, usersRes, tasksRes, activitiesRes, notesRes, docsRes] = await Promise.all([
                 crmService.getDealById(id),
-                crmService.getSettings(),
-                crmService.getUsers(),
-                crmService.getTasksByDealId(id),
-                crmService.getActivitiesByDealId(id),
-                crmService.getNotesByDealId(id),
-                crmService.getDocumentsByDealId(id)
+                Promise.allSettled([crmService.getSettings()]).then(([r]) => r),
+                Promise.allSettled([crmService.getUsers()]).then(([r]) => r),
+                Promise.allSettled([crmService.getTasksByDealId(id)]).then(([r]) => r),
+                Promise.allSettled([crmService.getActivitiesByDealId(id)]).then(([r]) => r),
+                Promise.allSettled([crmService.getNotesByDealId(id)]).then(([r]) => r),
+                Promise.allSettled([crmService.getDocumentsByDealId(id)]).then(([r]) => r),
             ]);
+            const settingsData = settled<any>(settingsRes, null);
+            const usersData = settled<User[]>(usersRes, []);
+            const tasksData = settled<Task[]>(tasksRes, []);
+            const activitiesData = settled<Activity[]>(activitiesRes, []);
+            const notesData = settled<Note[]>(notesRes, []);
+            const docsData = settled<Attachment[]>(docsRes, []);
 
             if (dealData) {
                 // Set deal with nested data merged in
