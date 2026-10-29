@@ -81,7 +81,7 @@ const EstimatorSettingsPage: React.FC = () => {
                                 <NumberInput label="Term (months)" name={`p-term-${i}`} min={0} value={p.term_months} onChange={(v) => patchProduct(i, { term_months: v ?? 0 })} />
                                 <NumberInput label="Down %" name={`p-down-${i}`} min={0} value={p.down_payment_pct} onChange={(v) => patchProduct(i, { down_payment_pct: v ?? 0 })} />
                                 <NumberInput label="Fee %" name={`p-fee-${i}`} min={0} value={p.dealer_fee_pct} onChange={(v) => patchProduct(i, { dealer_fee_pct: v ?? 0 })} />
-                                <Switch label="Active" checked={p.is_active} onChange={(v: any) => patchProduct(i, { is_active: typeof v === 'boolean' ? v : !!v?.target?.checked })} />
+                                <Switch label="Active" name={`est-product-active-${i}`} checked={p.is_active} onCheckedChange={(v: boolean) => patchProduct(i, { is_active: v })} />
                                 <Button type="button" size="sm" variant="secondary" onClick={() => setS({ ...s, finance_products: s.finance_products.filter((_, k) => k !== i) })}>Remove</Button>
                             </div>
                         ))}
@@ -99,8 +99,8 @@ const EstimatorSettingsPage: React.FC = () => {
                                     options={[{ value: 'percent', label: 'Percent of price' }, { value: 'per_kw', label: 'Per kW' }, { value: 'fixed', label: 'Fixed amount' }]} />
                                 <NumberInput label="Value" name={`r-value-${i}`} min={0} value={r.value} onChange={(v) => patchRule(i, { value: v ?? 0 })} data-testid={`estimator-rule-value-${i}`} />
                                 <NumberInput label="Cap" name={`r-cap-${i}`} min={0} value={r.cap ?? null} onChange={(v) => patchRule(i, { cap: v })} />
-                                <Switch label="Before tax" checked={r.applies_before_tax} onChange={(v: any) => patchRule(i, { applies_before_tax: typeof v === 'boolean' ? v : !!v?.target?.checked })} />
-                                <Switch label="Active" checked={r.is_active} onChange={(v: any) => patchRule(i, { is_active: typeof v === 'boolean' ? v : !!v?.target?.checked })} />
+                                <Switch label="Before tax" name={`est-rule-before-tax-${i}`} checked={r.applies_before_tax} onCheckedChange={(v: boolean) => patchRule(i, { applies_before_tax: v })} />
+                                <Switch label="Active" name={`est-rule-active-${i}`} checked={r.is_active} onCheckedChange={(v: boolean) => patchRule(i, { is_active: v })} />
                                 <Button type="button" size="sm" variant="secondary" onClick={() => setS({ ...s, incentive_rules: s.incentive_rules.filter((_, k) => k !== i) })}>Remove</Button>
                             </div>
                         ))}
@@ -109,8 +109,8 @@ const EstimatorSettingsPage: React.FC = () => {
 
                 <Card title="Production estimate">
                     <div className="flex flex-wrap items-end gap-nb-2">
-                        <Switch label="Enabled" checked={s.production.enabled} data-testid="estimator-production-enabled"
-                            onChange={(v: any) => setS({ ...s, production: { ...s.production, enabled: typeof v === 'boolean' ? v : !!v?.target?.checked } })} />
+                        <Switch label="Enabled" name="est-production-enabled" checked={s.production.enabled} data-testid="estimator-production-enabled"
+                            onCheckedChange={(v: boolean) => setS({ ...s, production: { ...s.production, enabled: v } })} />
                         <NumberInput label="Yield (kWh per kW per year)" name="prod-yield" min={0} value={s.production.specific_yield_kwh_per_kw_year} onChange={(v) => setS({ ...s, production: { ...s.production, specific_yield_kwh_per_kw_year: v ?? 0 } })} />
                         <NumberInput label="Degradation % / year" name="prod-deg" min={0} value={s.production.degradation_pct_per_year} onChange={(v) => setS({ ...s, production: { ...s.production, degradation_pct_per_year: v ?? 0 } })} />
                         <NumberInput label="Tariff per kWh" name="prod-tariff" min={0} value={s.production.tariff_per_kwh} onChange={(v) => setS({ ...s, production: { ...s.production, tariff_per_kwh: v ?? 0 } })} data-testid="estimator-tariff" />

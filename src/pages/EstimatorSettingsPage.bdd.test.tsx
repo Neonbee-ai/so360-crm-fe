@@ -20,7 +20,7 @@ vi.mock('@so360/design-system', () => ({
   Card: ({ children, actions }: any) => <section>{actions}{children}</section>,
   Button: ({ children, ...p }: any) => <button {...p}>{children}</button>,
   Spinner: () => <span>loading</span>,
-  Switch: ({ checked, onChange, ...p }: any) => <input type="checkbox" data-testid={p['data-testid']} checked={checked} onChange={(e) => onChange(e.target.checked)} />,
+  Switch: ({ checked, onCheckedChange, ...p }: any) => <input type="checkbox" data-testid={p['data-testid']} checked={checked} onChange={(e) => onCheckedChange(e.target.checked)} />,
   TextField: ({ value, onChange, ...p }: any) => <input data-testid={p['data-testid']} value={value} onChange={onChange} />,
   NumberInput: ({ value, onChange, ...p }: any) => <input data-testid={p['data-testid']} value={value ?? ''} onChange={(e) => onChange(Number(e.target.value))} />,
   Select: ({ options, value, onChange, ...p }: any) => (
