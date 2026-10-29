@@ -1,3 +1,4 @@
+import { canDownloadQuotePdf, downloadQuotePdf } from '../utils/quotePdfDownload';
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -386,6 +387,14 @@ const QuotesPage = () => {
         }
     };
 
+    const handleDownloadPdf = async (quote: Quote) => {
+        try {
+            await downloadQuotePdf(quote);
+        } catch (err: any) {
+            toast.error(err?.message || 'Unable to download the quote PDF.');
+        }
+    };
+
     // Print quotation directly from table
     const handlePrintQuote = async (quote: Quote) => {
         try {
@@ -588,6 +597,9 @@ const QuotesPage = () => {
                                 { label: 'Convert to Order', onSelect: () => handleStatusAction(quote, 'convert') },
                             ] : []),
                             { label: 'Print Quote', onSelect: () => handlePrintQuote(quote) },
+                            ...(canDownloadQuotePdf(shell) ? [
+                                { label: 'Download PDF', onSelect: () => handleDownloadPdf(quote) },
+                            ] : []),
                             ...(canCreateQuote && quote.status === 'draft' ? [
                                 { label: 'Delete Quote', danger: true, onSelect: () => setShowDeleteConfirm(quote.id) },
                             ] : []),

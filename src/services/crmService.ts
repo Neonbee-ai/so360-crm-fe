@@ -2613,6 +2613,11 @@ export const crmService = {
         );
     },
 
+    /** Server-rendered quotation PDF (GET /quotes/:id/pdf) as a Blob. */
+    async getQuotePdf(quoteId: string): Promise<{ blob: Blob; filename: string | null }> {
+        return apiClient.getBlob(`/quotes/${quoteId}/pdf`);
+    },
+
     async deleteQuote(quoteId: string): Promise<void> {
         return apiClient.delete(`/quotes/${quoteId}`);
     },

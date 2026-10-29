@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Save, Send, CheckCircle, XCircle, FileText, Plus, Trash2, Edit2, Package, Printer, RotateCcw, Clock, Users, ShieldAlert } from 'lucide-react';
+import { canDownloadQuotePdf, downloadQuotePdf } from '../utils/quotePdfDownload';
 import { Modal } from '../components/common/Modal';
 import { crmService } from '../services/crmService';
 import { toast, getErrorMessage, useConfirm, DetailPageTemplate, Button, Card, Badge, Alert, TextField, Textarea, Select, DataTable, IconButton, type DataTableColumn, type BadgeTone, Grid, GridItem, EmptyState } from '@so360/design-system';
@@ -475,6 +476,13 @@ const QuoteDetailPage = () => {
         sellerState: (currentOrg as any)?.billing_address?.state,
         sellerCountry: (currentOrg as any)?.billing_address?.country,
     });
+    const handleDownloadPdf = async () => {
+        try {
+            await downloadQuotePdf(quote);
+        } catch (err: any) {
+            toast.error(getErrorMessage(err) || 'Unable to download the quote PDF.');
+        }
+    };
     const handlePrint = () => shell?.printDocument?.('sales_quote', buildDocData());
 
     // Header actions: one primary (first available by priority), at most 2
@@ -514,6 +522,7 @@ const QuoteDetailPage = () => {
         ...(canApproveQuote && canApprove ? [{ label: 'Reject', danger: true, onSelect: () => setShowRejectModal(true) }] : []),
         ...(!isEditing && layoutsOn ? [{ label: 'Preview Quote', onSelect: () => setShowPreview(true) }] : []),
         ...(!isEditing ? [{ label: 'Print Quote', onSelect: handlePrint }] : []),
+        ...(!isEditing && canDownloadQuotePdf(shell) ? [{ label: 'Download PDF', onSelect: handleDownloadPdf }] : []),
     ];
 
     return (
