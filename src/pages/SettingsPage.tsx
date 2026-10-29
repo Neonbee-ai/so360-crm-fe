@@ -88,9 +88,10 @@ const BLANK_RULE: Partial<LeadScoringRule> = {
     priority: 0,
 };
 
-const SettingsPage = ({ onOpenIcps, onOpenDataSettings }: { onOpenIcps?: () => void; onOpenDataSettings?: () => void } = {}) => {
+const SettingsPage = ({ onOpenIcps, onOpenDataSettings, onOpenEstimator }: { onOpenIcps?: () => void; onOpenDataSettings?: () => void; onOpenEstimator?: () => void } = {}) => {
     const shell = useShellBridge();
     const icpEnabled = useCrmFeatureFlag('submodule:crm:icp_manager');
+    const estimatorEnabled = useCrmFeatureFlag('submodule:crm:proposal_estimator');
     const canWriteSettings = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('submodule:crm:settings') ?? true);
     const dlCustomFields = useCrmFeatureFlag(DL_CUSTOM_FIELDS_FLAG);
     const assignmentEnabled = useCrmFeatureFlag(RE_FLAGS.LEAD_ASSIGNMENT);
@@ -519,10 +520,13 @@ const SettingsPage = ({ onOpenIcps, onOpenDataSettings }: { onOpenIcps?: () => v
             trail={[]}
             title="CRM Settings"
             description="Configure your workspace and custom data points"
-            primaryAction={(canWriteSettings || (icpEnabled && onOpenIcps)) ? (
+            primaryAction={(canWriteSettings || (icpEnabled && onOpenIcps) || (estimatorEnabled && onOpenEstimator)) ? (
                 <div className="flex items-center gap-nb-2">
                     {icpEnabled && onOpenIcps && (
                         <Button variant="secondary" onClick={onOpenIcps} data-testid="settings-open-icps">Ideal customers</Button>
+                    )}
+                    {estimatorEnabled && onOpenEstimator && (
+                        <Button variant="secondary" onClick={onOpenEstimator} data-testid="settings-open-estimator">Estimator</Button>
                     )}
                     {canWriteSettings && (<>
                     {isDirty && !isSaving && (

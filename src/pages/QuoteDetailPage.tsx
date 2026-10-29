@@ -17,6 +17,7 @@ import { PriceListSelect } from '../components/PriceListSelect';
 import { QuotePreviewModal } from '../components/QuotePreviewModal';
 import { quoteLinePreTaxAmount, quoteTotals } from '../utils/quoteLineAmounts';
 import { describeReason } from '../services/salesConfigService';
+import { ProposalEstimatorPanel } from '../components/estimator/ProposalEstimatorPanel';
 import { QuoteApprovalModal } from '../components/quotes/QuoteApprovalModal';
 import { QuoteApprovalHistory, ApprovalRequestRecord } from '../components/quotes/QuoteApprovalHistory';
 
@@ -1010,6 +1011,8 @@ const QuoteDetailPage = () => {
                             </div>
                         </div>
                     </Card>
+
+                    <ProposalEstimatorPanel price={totals.grandTotal} formatCurrency={formatCurrency} />
 
                     {/* Approval History Audit Trail */}
                     <QuoteApprovalHistory
