@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Save, Send, CheckCircle, XCircle, FileText, Plus, Trash2, Edit2, Package, Printer, RotateCcw, Clock, Users, ShieldAlert } from 'lucide-react';
+import { Save, Send, CheckCircle, XCircle, FileText, Plus, Trash2, Edit2, Package, Printer, RotateCcw, Clock, Users, ShieldAlert, Download } from 'lucide-react';
 import { canDownloadQuotePdf, downloadQuotePdf } from '../utils/quotePdfDownload';
 import { Modal } from '../components/common/Modal';
 import { crmService } from '../services/crmService';
@@ -513,6 +513,8 @@ const QuoteDetailPage = () => {
         ...(canCreateQuote && canEdit && !isEditing ? [{ label: 'Edit', onSelect: () => setIsEditing(true), icon: <Edit2 className="w-4 h-4" /> }] : []),
         ...(canWithdraw && !isEditing ? [{ label: 'Withdraw Request', onSelect: () => setShowWithdrawModal(true), icon: <RotateCcw className="w-4 h-4" /> }] : []),
         ...(!isEditing && primaryKey !== 'email' ? [{ label: 'Email to Customer', onSelect: openSendModal, icon: <Send className="w-4 h-4" /> }] : []),
+        // Download PDF is a header action (ServiceTitan/Procore show it visibly); it only drops to overflow when both slots are taken.
+        ...(!isEditing && canDownloadQuotePdf(shell) ? [{ label: 'Download PDF', onSelect: handleDownloadPdf, icon: <Download className="w-4 h-4" /> }] : []),
     ];
     const secondaryActions = secondaryCandidates.slice(0, 2).map(c => (
         <Button key={c.label} variant="secondary" onClick={c.onSelect}>{c.icon}{c.label}</Button>
@@ -522,7 +524,6 @@ const QuoteDetailPage = () => {
         ...(canApproveQuote && canApprove ? [{ label: 'Reject', danger: true, onSelect: () => setShowRejectModal(true) }] : []),
         ...(!isEditing && layoutsOn ? [{ label: 'Preview Quote', onSelect: () => setShowPreview(true) }] : []),
         ...(!isEditing ? [{ label: 'Print Quote', onSelect: handlePrint }] : []),
-        ...(!isEditing && canDownloadQuotePdf(shell) ? [{ label: 'Download PDF', onSelect: handleDownloadPdf }] : []),
     ];
 
     return (

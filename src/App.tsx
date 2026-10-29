@@ -223,6 +223,9 @@ const App = () => {
                     <Route path="customers/:id" element={<PermissionGuard permission={['companies.read', 'contacts.read']}><LeadDetailPage /></PermissionGuard>} />
                     <Route path="pipeline" element={<PermissionGuard permission='deals.read'><FlagGuard flagKey="submodule:crm:pipeline"><PipelinePage /></FlagGuard></PermissionGuard>} />
                     <Route path="deal/:id" element={<PermissionGuard permission='deals.read'><FlagGuard flagKey="submodule:crm:pipeline"><DealDetailPage /></FlagGuard></PermissionGuard>} />
+                    {/* Plural aliases: /crm/deals and /crm/deals/:id are the REST-style URLs users and links expect */}
+                    <Route path="deals" element={<Navigate to="../pipeline" replace />} />
+                    <Route path="deals/:id" element={<PermissionGuard permission='deals.read'><FlagGuard flagKey="submodule:crm:pipeline"><DealDetailPage /></FlagGuard></PermissionGuard>} />
                     <Route path="tasks" element={<PermissionGuard permission='crm_tasks.read'><FlagGuard flagKey="submodule:crm:tasks"><TasksPage /></FlagGuard></PermissionGuard>} />
                     <Route path="tasks/:id" element={<PermissionGuard permission='crm_tasks.read'><FlagGuard flagKey="submodule:crm:tasks"><TaskDetailPage /></FlagGuard></PermissionGuard>} />
                     <Route path="quotes" element={<PermissionGuard permission='quotes.read'><FlagGuard flagKey="submodule:crm:quotes"><QuotesPage /></FlagGuard></PermissionGuard>} />
