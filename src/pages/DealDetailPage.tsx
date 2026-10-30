@@ -1159,7 +1159,7 @@ const DealDetailPage = () => {
                                                             </span>
                                                         </div>
                                                     </div>
-                                                    <div className="absolute right-3 top-3 opacity-0 group-hover:opacity-100 transition-all flex gap-1">
+                                                    <div className="shrink-0 flex items-center gap-nb-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-all">
                                                         <IconButton label="Edit task" variant="ghost" icon={<Edit2 size={14} />} onClick={() => setEditingTask(task)} />
                                                         <IconButton label="Delete task" variant="ghost" icon={<Trash2 size={14} />} onClick={async () => {
                                                                 if (await confirm({ title: 'Delete?', message: 'Delete task?', intent: 'danger', confirmLabel: 'Delete' })) {

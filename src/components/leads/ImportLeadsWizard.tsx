@@ -111,8 +111,8 @@ export const ImportLeadsWizard: React.FC<Props> = ({ isOpen, onClose, onImported
 
     return (
         <Modal isOpen={isOpen} onClose={close} title="Import leads" size="xl">
-            <div className="space-y-5" data-testid="import-leads-wizard">
-                <ol className="flex items-center gap-2 text-xs font-semibold" aria-label="Import steps">
+            <div className="space-y-nb-6" data-testid="import-leads-wizard">
+                <ol className="flex flex-wrap items-center gap-nb-2 pb-nb-2 text-xs font-semibold" aria-label="Import steps">
                     {STEPS.map((s, i) => (
                         <li
                             key={s.key}

@@ -178,10 +178,10 @@ const RecordImportFlow: React.FC<FlowProps> = ({ kind, onBack, onClose, onImport
     const stepIndex = STEPS.findIndex((s) => s.key === step);
 
     return (
-        <div className="space-y-5" data-testid={`record-import-${kind}`}>
+        <div className="space-y-nb-6" data-testid={`record-import-${kind}`}>
             <div className="flex items-center justify-between gap-2">
                 <h3 className="text-sm font-bold text-fg">{config.title}</h3>
-                <ol className="flex items-center gap-2 text-xs font-semibold" aria-label="Import steps">
+                <ol className="flex flex-wrap items-center gap-nb-2 pb-nb-2 text-xs font-semibold" aria-label="Import steps">
                     {STEPS.map((s, i) => (
                         <li
                             key={s.key}

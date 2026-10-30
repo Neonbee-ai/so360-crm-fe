@@ -182,12 +182,12 @@ function AddProductModal({ onClose, onAdd, existingItemIds, unitBooking = false 
                                 {query.trim() ? 'No products match your search' : 'No products in inventory'}
                             </p>
                         )}
-                        <div ref={listRef} onScroll={handleScroll} className="space-y-2 max-h-64 overflow-y-auto">
+                        <div ref={listRef} onScroll={handleScroll} className="divide-y divide-line max-h-[60vh] overflow-y-auto">
                             {!error && visibleItems.map(item => {
                                 const alreadyAdded = existingItemIds.has(item.id);
                                 const stock = item.available_stock;
                                 return (
-                                    <Button variant="secondary" size="sm" className="w-full min-w-0 !text-left !h-auto !justify-start" key={item.id} onClick={() => !alreadyAdded && setSelected(item)} disabled={alreadyAdded} title={alreadyAdded ? 'Already added to this record' : undefined}>
+                                    <Button variant="ghost" size="sm" className="w-full min-w-0 !text-left !h-auto !justify-start !rounded-none !px-nb-3 !py-nb-2 hover:bg-fg/state-hover" key={item.id} onClick={() => !alreadyAdded && setSelected(item)} disabled={alreadyAdded} title={alreadyAdded ? 'Already added to this record' : undefined}>
                                         <div className="flex w-full min-w-0 items-center justify-between gap-3">
                                             <div className="min-w-0 flex-1">
                                                 <p className="text-xs font-medium text-fg group-hover:text-primary transition-colors truncate">{item.name}</p>

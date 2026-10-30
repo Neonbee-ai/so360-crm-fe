@@ -14,7 +14,7 @@ import {
 import { crmService, activitiesApi, settingsApi } from '../services/crmService';
 import { PartnerSearchDropdown } from '../components/common/PartnerSearchDropdown';
 import { useCRMFormatters } from '../utils/formatters';
-import { isTaskLocked, TASK_LOCKED_HINT } from '../utils/taskUtils';
+import { isTaskLocked } from '../utils/taskUtils';
 import { validateEmailRequired } from '../utils/emailValidation';
 import { validatePhone } from '../utils/phoneValidation';
 import { validateFirstNameRequired, validateLastName } from '../utils/leadFieldValidation';
@@ -1756,10 +1756,10 @@ const LeadDetailPage = () => {
                                                     <div className="flex-1 min-w-0">
                                                         <Link to={`/crm/tasks/${task.id}`} className="block group/link">
                                                             <div className="flex justify-between items-start gap-2">
-                                                                <h4 className={`text-sm font-medium text-fg leading-tight truncate group-hover/link:text-primary transition-colors ${task.status === 'DONE' ? 'line-through text-fg-muted' : ''}`}>
+                                                                <h4 className={`min-w-0 flex-1 text-sm font-medium text-fg leading-tight truncate group-hover/link:text-primary transition-colors ${task.status === 'DONE' ? 'line-through text-fg-muted' : ''}`}>
                                                                     {task.title || 'Untitled task'}
                                                                 </h4>
-                                                                <div className="flex items-center gap-2">
+                                                                <div className="flex items-center gap-2 shrink-0">
                                                                     {overdue && (
                                                                         <Badge tone="danger" size="sm" data-testid={`overdue-badge-${task.id}`}>Overdue</Badge>
                                                                     )}
@@ -1836,12 +1836,11 @@ const LeadDetailPage = () => {
                                                             )}
                                                         </div>
                                                     </div>
-                                                    <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                                                    <div className="shrink-0 flex items-center gap-nb-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                                                         <IconButton label="Edit Task" variant="ghost" icon={<Edit2 size={12} />}
                                                             onClick={() => !isTaskLocked(task.status) && setEditingTask(task)}
                                                             disabled={isTaskLocked(task.status)}
-                                                            title={isTaskLocked(task.status) ? TASK_LOCKED_HINT : 'Edit task'}
-/>
+                                                        />
                                                     </div>
                                                 </div>
                                             );
