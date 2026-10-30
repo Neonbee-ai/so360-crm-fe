@@ -150,7 +150,7 @@ export const ImportLeadsWizard: React.FC<Props> = ({ isOpen, onClose, onImported
                         <p className="text-sm text-fg-subtle">
                             {preview.total_rows} row{preview.total_rows === 1 ? '' : 's'} in <span className="text-fg">{file?.name}</span>. Match each column to a lead field.
                         </p>
-                        <div className="space-y-2 max-h-[45vh] overflow-y-auto pr-1">
+                        <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
                             {preview.headers.map((header) => (
                                 <Grid columns={2} gap="md" className="items-center" key={header}  data-testid="import-mapping-row">
                                     <div className="min-w-0">

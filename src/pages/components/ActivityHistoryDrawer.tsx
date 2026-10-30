@@ -4,6 +4,7 @@ import { useEntityTimeline } from './timeline/useEntityTimeline';
 import TimelineEventCard from './timeline/TimelineEventCard';
 import TimelineSummaryBanner from './timeline/TimelineSummaryBanner';
 import { activitiesApi } from '../../services/crmService';
+import { PromptDialog } from '../../components/PromptDialog';
 import { useConfirm, Button, Drawer, SearchInput, ListFilters, type ListFilterConfig, type FilterValues } from '@so360/design-system';
 
 interface Props {
@@ -39,6 +40,7 @@ export const TYPE_FILTERS: { key: string; label: string }[] = [
  */
 const ActivityHistoryDrawer: React.FC<Props> = ({ isOpen, onClose, entityType, entityId }) => {
     const [confirm, confirmDialog] = useConfirm();
+    const [editActivity, setEditActivity] = useState<null | { id: string; relatedId?: string | null; description: string }>(null);
     const timeline = useEntityTimeline({ entityType, entityId, pageSize: 50 });
 
     useEffect(() => {
@@ -73,6 +75,19 @@ const ActivityHistoryDrawer: React.FC<Props> = ({ isOpen, onClose, entityType, e
     return (
         <>
             {confirmDialog}
+            <PromptDialog
+                open={!!editActivity}
+                title="Edit activity"
+                fields={[{ name: 'notes', label: 'Activity notes', initialValue: editActivity?.description ?? '', multiline: true }]}
+                onSubmit={async (v) => {
+                    if (editActivity?.relatedId) {
+                        await activitiesApi.update(editActivity.relatedId, { notes: v.notes });
+                        timeline.updateEventDescription(editActivity.id, v.notes);
+                    }
+                    setEditActivity(null);
+                }}
+                onClose={() => setEditActivity(null)}
+            />
             <Drawer
                 isOpen={isOpen}
                 onClose={onClose}
@@ -129,13 +144,7 @@ const ActivityHistoryDrawer: React.FC<Props> = ({ isOpen, onClose, entityType, e
                                     event={event}
                                     isPinned={timeline.pinnedIds.has(event.id)}
                                     onTogglePin={timeline.togglePin}
-                                    onEdit={async (e) => {
-                                        const newNotes = prompt('Edit activity notes:', e.description);
-                                        if (newNotes !== null && e.related_id) {
-                                            await activitiesApi.update(e.related_id, { notes: newNotes });
-                                            timeline.updateEventDescription(e.id, newNotes);
-                                        }
-                                    }}
+                                    onEdit={(e) => setEditActivity({ id: e.id, relatedId: e.related_id, description: e.description })}
                                     onDelete={async (e) => {
                                         if (await confirm({ title: 'Delete?', message: 'Delete this activity?', intent: 'danger', confirmLabel: 'Delete' }) && e.related_id) {
                                             await activitiesApi.delete(e.related_id);

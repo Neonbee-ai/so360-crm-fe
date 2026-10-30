@@ -12,6 +12,7 @@ import {
     Trash2, File, Download, UploadCloud, FileIcon, Eye, Package, ShieldCheck, Search, GitMerge
 } from 'lucide-react';
 import { crmService, activitiesApi, settingsApi } from '../services/crmService';
+import { PromptDialog } from '../components/PromptDialog';
 import { PartnerSearchDropdown } from '../components/common/PartnerSearchDropdown';
 import { useCRMFormatters } from '../utils/formatters';
 import { isTaskLocked } from '../utils/taskUtils';
@@ -194,6 +195,7 @@ const LeadDetailPage = () => {
     const backLabel = isCustomerDetailRoute ? 'Back to Customers' : 'Back to Leads';
     const backRoute = isCustomerDetailRoute ? '/crm/customers' : '/crm/leads';
     const [lead, setLead] = useState<Lead | null>(null);
+    const [editActivity, setEditActivity] = useState<null | { id: string; relatedId?: string | null; description: string }>(null);
     const [isMergeOpen, setIsMergeOpen] = useState(false);
     const [saveDuplicate, setSaveDuplicate] = useState<DuplicateLeadInfo | null>(null);
     const [associatedDeals, setAssociatedDeals] = useState<Deal[]>([]);
@@ -624,6 +626,19 @@ const LeadDetailPage = () => {
     return (
         <>
             {confirmDialog}
+            <PromptDialog
+                open={!!editActivity}
+                title="Edit activity"
+                fields={[{ name: 'notes', label: 'Activity notes', initialValue: editActivity?.description ?? '', multiline: true }]}
+                onSubmit={async (v) => {
+                    if (editActivity?.relatedId) {
+                        await activitiesApi.update(editActivity.relatedId, { notes: v.notes });
+                        entityTimeline.updateEventDescription(editActivity.id, v.notes);
+                    }
+                    setEditActivity(null);
+                }}
+                onClose={() => setEditActivity(null)}
+            />
             <DetailPageTemplate
                 trail={detailTrail}
                 title={getLeadDisplayName(lead)}
@@ -1507,13 +1522,7 @@ const LeadDetailPage = () => {
                                                     event={event}
                                                     isPinned={entityTimeline.pinnedIds.has(event.id)}
                                                     onTogglePin={entityTimeline.togglePin}
-                                                    onEdit={async (e) => {
-                                                        const newNotes = prompt('Edit activity notes:', e.description);
-                                                        if (newNotes !== null && e.related_id) {
-                                                            await activitiesApi.update(e.related_id, { notes: newNotes });
-                                                            entityTimeline.updateEventDescription(e.id, newNotes);
-                                                        }
-                                                    }}
+                                                    onEdit={(e) => setEditActivity({ id: e.id, relatedId: e.related_id, description: e.description })}
                                                     onDelete={async (e) => {
                                                         if (await confirm({ title: 'Delete?', message: 'Delete this activity?', intent: 'danger', confirmLabel: 'Delete' }) && e.related_id) {
                                                             await activitiesApi.delete(e.related_id);
@@ -1903,7 +1912,7 @@ const LeadDetailPage = () => {
                                                     </div>
                                                     <div className="flex gap-2">
                                                         {doc.dmsDocumentId ? (
-                                                            <IconButton label="View" variant="ghost" icon={<Eye size={16} />}
+                                                            <IconButton label="Open document" title="View" variant="ghost" icon={<Eye size={16} />}
                                                                 onClick={() => { void openLeadDocument(doc); }}
                                                                 
 />

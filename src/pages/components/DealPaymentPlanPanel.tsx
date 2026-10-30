@@ -226,7 +226,7 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
                     <div className="flex flex-wrap items-end gap-3">
                         {templates.length > 0 ? (
                             <>
-                                <div className="min-w-[16rem]">
+                                <div className="min-w-64">
                                     <label htmlFor="pp-template" className="block text-xs font-semibold text-fg-muted mb-1.5">Project plan</label>
                                     <Select id="pp-template" name="pp-template" value={templateId} options={templates.map((t) => ({ value: t.id, label: `${t.name}${t.is_default ? ' (default)' : ''}` }))} onChange={(e) => setTemplateId(e.target.value)} />
                                 </div>

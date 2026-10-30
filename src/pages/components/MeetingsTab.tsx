@@ -3,6 +3,7 @@ import { Calendar, Plus, Loader2, MapPin, CheckCircle2, XCircle, Clock } from 'l
 import { meetingsApi } from '../../services/crmService';
 import { Meeting } from '../../types/crm';
 import MeetingModal from './MeetingModal';
+import { PromptDialog } from '../../components/PromptDialog';
 import { useConfirm, Button, Badge, EmptyState, IconButton } from '@so360/design-system';
 
 interface Props {
@@ -30,6 +31,7 @@ const MeetingsTab: React.FC<Props> = ({ leadId, dealId }) => {
     const [showModal, setShowModal] = useState(false);
     const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);
     const [completingId, setCompletingId] = useState<string | null>(null);
+    const [completeTarget, setCompleteTarget] = useState<Meeting | null>(null);
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -49,9 +51,7 @@ const MeetingsTab: React.FC<Props> = ({ leadId, dealId }) => {
         load();
     };
 
-    const handleComplete = async (meeting: Meeting) => {
-        const outcome = prompt('Meeting outcome:') || undefined;
-        const nextSteps = prompt('Next steps:') || undefined;
+    const handleComplete = async (meeting: Meeting, outcome?: string, nextSteps?: string) => {
         setCompletingId(meeting.id);
         try {
             await meetingsApi.complete(meeting.id, outcome, nextSteps);
@@ -64,6 +64,21 @@ const MeetingsTab: React.FC<Props> = ({ leadId, dealId }) => {
     return (
         <div className="space-y-4">
             {confirmDialog}
+            <PromptDialog
+                open={!!completeTarget}
+                title="Complete meeting"
+                submitLabel="Complete"
+                fields={[
+                    { name: 'outcome', label: 'Meeting outcome', multiline: true },
+                    { name: 'nextSteps', label: 'Next steps', multiline: true },
+                ]}
+                onSubmit={async (v) => {
+                    const m = completeTarget;
+                    setCompleteTarget(null);
+                    if (m) await handleComplete(m, v.outcome || undefined, v.nextSteps || undefined);
+                }}
+                onClose={() => setCompleteTarget(null)}
+            />
             <div className="flex items-center justify-between">
                 <p className="text-xs font-medium text-fg-muted">Meetings</p>
                 <Button variant="primary" onClick={() => { setEditingMeeting(null); setShowModal(true); }}>
@@ -93,7 +108,7 @@ const MeetingsTab: React.FC<Props> = ({ leadId, dealId }) => {
                                 </div>
                                 {m.status === 'upcoming' && (
                                     <div className="flex items-center gap-1 shrink-0">
-                                        <IconButton label="Mark completed" title="Mark completed" icon={<CheckCircle2 size={14} />} onClick={() => handleComplete(m)} disabled={completingId === m.id} />
+                                        <IconButton label="Mark completed" title="Mark completed" icon={<CheckCircle2 size={14} />} onClick={() => setCompleteTarget(m)} disabled={completingId === m.id} />
                                         <IconButton label="Cancel" title="Cancel" icon={<XCircle size={14} />} onClick={() => handleCancel(m)} />
                                     </div>
                                 )}

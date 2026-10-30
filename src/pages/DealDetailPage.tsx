@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { eventBus } from '@so360/event-bus';
+import { PromptDialog } from '../components/PromptDialog';
 import NeuraAiSummaryCard from './components/NeuraAiSummaryCard';
 import { useActivity, useShell } from '@so360/shell-context';
 import {
@@ -107,6 +108,7 @@ const DealDetailPage = () => {
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [isUploading, setIsUploading] = useState(false);
     const [newNoteContent, setNewNoteContent] = useState('');
+    const [editPrompt, setEditPrompt] = useState<null | { title: string; label: string; initial: string; multiline?: boolean; onSave: (v: string) => Promise<void> }>(null);
 
     // Edit state for summary fields (separate from deal to avoid direct mutation)
     const [editedValue, setEditedValue] = useState<number | null>(null);
@@ -993,6 +995,13 @@ const DealDetailPage = () => {
             )}
         >
             {confirmDialog}
+            <PromptDialog
+                open={!!editPrompt}
+                title={editPrompt?.title ?? ''}
+                fields={[{ name: 'value', label: editPrompt?.label ?? '', initialValue: editPrompt?.initial ?? '', multiline: editPrompt?.multiline, required: true }]}
+                onSubmit={async (v) => { await editPrompt?.onSave(v.value); setEditPrompt(null); }}
+                onClose={() => setEditPrompt(null)}
+            />
 
             <div className="flex flex-col gap-nb-3">
                 <Card title="Deal lifecycle">
@@ -1043,13 +1052,7 @@ const DealDetailPage = () => {
                                                         <div className="flex items-center gap-2">
                                                             {ev.type === 'Activity' && (
                                                                 <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                                                                    <IconButton label="Edit activity" variant="ghost" icon={<Edit2 size={12} />} onClick={async () => {
-                                                                            const newNotes = prompt('Edit activity notes:', ev.description);
-                                                                            if (newNotes !== null) {
-                                                                                await activitiesApi.update(ev.id, { notes: newNotes });
-                                                                                fetchData();
-                                                                            }
-                                                                        }} />
+                                                                    <IconButton label="Edit activity" variant="ghost" icon={<Edit2 size={12} />} onClick={() => setEditPrompt({ title: 'Edit activity', label: 'Activity notes', initial: ev.description, multiline: true, onSave: async (v) => { await activitiesApi.update(ev.id, { notes: v }); fetchData(); } })} />
                                                                     <IconButton label="Delete activity" variant="ghost" icon={<Trash2 size={12} />} onClick={async () => {
                                                                             if (await confirm({ title: 'Delete?', message: 'Delete this activity?', intent: 'danger', confirmLabel: 'Delete' })) {
                                                                                 await activitiesApi.delete(ev.id);
@@ -1086,13 +1089,7 @@ const DealDetailPage = () => {
                                         {deal.notes.map(note => (
                                             <div key={note.id} className="text-sm border-l-2 border-warning/30 pl-4 py-1 group relative">
                                                 <div className="absolute right-0 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                                                    <IconButton label="Edit note" variant="ghost" icon={<Edit2 size={12} />} onClick={async () => {
-                                                            const content = prompt('Edit note:', note.content);
-                                                            if (content) {
-                                                                await crmService.updateNote(note.id, content);
-                                                                fetchData();
-                                                            }
-                                                        }} />
+                                                    <IconButton label="Edit note" variant="ghost" icon={<Edit2 size={12} />} onClick={() => setEditPrompt({ title: 'Edit note', label: 'Note', initial: note.content, multiline: true, onSave: async (v) => { await crmService.updateNote(note.id, v); fetchData(); } })} />
                                                     <IconButton label="Delete note" variant="ghost" icon={<Trash2 size={12} />} onClick={async () => {
                                                             if (await confirm({ title: 'Delete?', message: 'Delete note?', intent: 'danger', confirmLabel: 'Delete' })) {
                                                                 await crmService.deleteNote(note.id);

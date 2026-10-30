@@ -182,7 +182,7 @@ function AddProductModal({ onClose, onAdd, existingItemIds, unitBooking = false 
                                 {query.trim() ? 'No products match your search' : 'No products in inventory'}
                             </p>
                         )}
-                        <div ref={listRef} onScroll={handleScroll} className="divide-y divide-line max-h-[60vh] overflow-y-auto">
+                        <div ref={listRef} onScroll={handleScroll} className="divide-y divide-line max-h-96 overflow-y-auto">
                             {!error && visibleItems.map(item => {
                                 const alreadyAdded = existingItemIds.has(item.id);
                                 const stock = item.available_stock;

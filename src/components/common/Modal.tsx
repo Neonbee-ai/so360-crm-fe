@@ -21,7 +21,7 @@ interface ModalProps {
 }
 
 /** Thin wrapper over the DS Modal (portals into the CRM scope root via PortalProvider). */
-export const Modal = ({
+export const Modal = ({ // comb-exception: thin adapter over the DS Modal (isOpen API); renaming would churn ~10 importers
     isOpen,
     onClose,
     title,

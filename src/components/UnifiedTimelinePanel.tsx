@@ -297,7 +297,7 @@ const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
                         </div>
                         <div className="flex gap-1 opacity-0 group-hover/doc:opacity-100 transition-opacity">
                             {onDocumentView && (
-                                <IconButton label="View" title="View" icon={<Eye size={12} />} onClick={() => onDocumentView(doc)} />
+                                <IconButton label="Open document" title="View document" icon={<Eye size={12} />} onClick={() => onDocumentView(doc)} />
                             )}
                             {onDocumentDownload && (
                                 <IconButton label="Download" title="Download" icon={<Download size={12} />} onClick={() => onDocumentDownload(doc)} />

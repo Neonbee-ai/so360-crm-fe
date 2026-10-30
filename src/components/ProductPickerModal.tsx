@@ -118,7 +118,7 @@ export const ProductPickerModal = ({ isOpen, onClose, onSelect }: ProductPickerM
                 </div>
 
                 {/* Results */}
-                <div className="min-h-[200px] max-h-[420px] overflow-y-auto -mx-2 px-2">
+                <div className="min-h-48 max-h-96 overflow-y-auto -mx-2 px-2">
                     {isLoading && (
                         <div className="space-y-2 pt-2">
                             {[...Array(4)].map((_, i) => (

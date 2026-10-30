@@ -9,7 +9,7 @@ import { CrmScope, crmPortalRoot } from './utils/crmScope';
 
 // Synchronizes Shell Context with CRM Service
 const CrmNotFound = () => (
-    <div className="flex flex-col items-center justify-center min-h-[40vh] text-center" data-testid="crm-not-found">
+    <div className="flex flex-col items-center justify-center min-h-96 text-center" data-testid="crm-not-found">
         <h1 className="text-2xl font-bold mb-2">Page Not Found</h1>
         <p className="text-fg-muted max-w-md mb-6">The page you are looking for doesn't exist or has been moved.</p>
         <Link to="/crm/dashboard" className="underline">Back to CRM</Link>
@@ -52,7 +52,7 @@ const CrmShellInitializer = ({ children }: { children: React.ReactNode }) => {
 
     if (!isSynced) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[400px] text-fg-subtle gap-4">
+            <div className="flex flex-col items-center justify-center min-h-96 text-fg-subtle gap-4">
                 <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
                 <p className="text-sm font-medium animate-pulse">Connecting to shell context...</p>
             </div>
@@ -83,7 +83,7 @@ const CrossLinkBridge = ({ children }: { children: React.ReactNode }) => {
 const UpgradeLocked = () => {
     const navigate = useNavigate();
     return (
-        <div className="flex flex-col items-center justify-center min-h-[400px] gap-4 text-center px-6">
+        <div className="flex flex-col items-center justify-center min-h-96 gap-4 text-center px-6">
             <div>
                 <h2 className="text-lg font-semibold text-fg">This feature is part of a higher plan</h2>
                 <p className="text-sm text-fg-subtle mt-1">Upgrade your plan to unlock it.</p>
@@ -97,7 +97,7 @@ const UpgradeLocked = () => {
 
 // Route-level panel shown when a feature is `disabled` (admin turned it off — no upgrade path).
 const FeatureUnavailable = () => (
-    <div className="flex flex-col items-center justify-center min-h-[400px] gap-2 text-center px-6">
+    <div className="flex flex-col items-center justify-center min-h-96 gap-2 text-center px-6">
         <h2 className="text-lg font-semibold text-fg">Feature unavailable</h2>
         <p className="text-sm text-fg-subtle">This feature has been turned off for your organization.</p>
     </div>

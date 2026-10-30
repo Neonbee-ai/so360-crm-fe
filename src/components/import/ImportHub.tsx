@@ -233,7 +233,7 @@ const RecordImportFlow: React.FC<FlowProps> = ({ kind, onBack, onClose, onImport
                     <p className="text-sm text-fg-subtle">
                         {plural(parsed.rows.length, ['row', 'rows'])} in <span className="text-fg">{fileName}</span>. Match each column to a field.
                     </p>
-                    <div className="space-y-2 max-h-[45vh] overflow-y-auto pr-1">
+                    <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
                         {parsed.headers.map((header) => (
                             <Grid key={header} columns={2} gap="md" className="items-center" data-testid="import-mapping-row">
                                 <div className="min-w-0">

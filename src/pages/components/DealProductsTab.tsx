@@ -143,7 +143,7 @@ function AddProductModal({ dealId, leadId, onClose, onAdd, onImportFromLead, uni
                         ) : leadProducts.length === 0 ? (
                             <p className="text-center text-fg-muted text-xs py-8 font-bold">No products on lead</p>
                         ) : (
-                            <div className="divide-y divide-line max-h-[60vh] overflow-y-auto mb-4">
+                            <div className="divide-y divide-line max-h-96 overflow-y-auto mb-4">
                                 {leadProducts.map(lp => (
                                     <div key={lp.id} className="flex items-center gap-3 px-nb-3 py-nb-2 hover:bg-fg/state-hover transition-colors">
                                         <Checkbox
@@ -198,7 +198,7 @@ function AddProductModal({ dealId, leadId, onClose, onAdd, onImportFromLead, uni
                                 {!loading && !hasCriteria && (
                                     <p className="text-center text-fg-muted text-xs py-8 italic">Start typing to search inventory…</p>
                                 )}
-                                <div className="divide-y divide-line max-h-[60vh] overflow-y-auto">
+                                <div className="divide-y divide-line max-h-96 overflow-y-auto">
                                     {visibleItems.map(item => (
                                         <Button variant="ghost" size="sm" className="w-full min-w-0 !text-left !h-auto !justify-start !rounded-none !px-nb-3 !py-nb-2 hover:bg-fg/state-hover" key={item.id} onClick={() => setSelected(item)}>
                                             <div className="flex w-full min-w-0 items-center justify-between gap-3">
