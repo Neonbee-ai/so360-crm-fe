@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Search, Loader2, ChevronDown } from 'lucide-react';
 import { useEntityTimeline } from './timeline/useEntityTimeline';
 import TimelineEventCard from './timeline/TimelineEventCard';
