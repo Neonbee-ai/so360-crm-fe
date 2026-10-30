@@ -167,15 +167,6 @@ const PipelinePage = () => {
     const confirmWin = (body: WinDealBody) => finishClose(() => dealCloseService.win(closeModal!.deal.id, body));
     const confirmLose = (body: LoseDealBody) => finishClose(() => dealCloseService.lose(closeModal!.deal.id, body));
 
-    if (isInitialLoading) {
-        return (
-            <div className="h-full flex items-center justify-center text-fg-muted gap-3">
-                <Loader2 className="animate-spin" />
-                <span>Loading pipeline...</span>
-            </div>
-        );
-    }
-
     return (
         <ListPageTemplate
             trail={[]}
@@ -210,12 +201,19 @@ const PipelinePage = () => {
                 style={{ height: boardHeight }}
                 className={`transition-opacity duration-300 ${isFiltering ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}
             >
+                {isInitialLoading ? (
+                    <div className="flex h-full items-center justify-center gap-3 text-fg-muted" data-testid="pipeline-loading">
+                        <Loader2 className="animate-spin" size={16} aria-hidden="true" />
+                        <span>Loading pipeline...</span>
+                    </div>
+                ) : (
                 <KanbanBoard
                     deals={deals}
                     stages={stages}
                     onDealClick={(deal) => navigate(`../deal/${deal.id}`)}
                     onStageChange={handleStageChange}
                 />
+                )}
             </div>
 
             <StageTransitionModal

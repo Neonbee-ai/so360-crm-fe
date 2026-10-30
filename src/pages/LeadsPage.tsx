@@ -738,7 +738,7 @@ const LeadsPage = () => {
         toolbarEnd={
           <div ref={setGridControlsSlot} className="flex shrink-0 items-center" data-slot="grid-controls" />
         }
-        loading={isLoading && !hasLeads}
+        loading={false}
         isEmpty={isTrulyEmpty}
         empty={
           canCreateLead ? (

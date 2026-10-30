@@ -152,10 +152,10 @@ const PermissionGuard = ({ permission, children }: { permission: string | string
 // Landing pages are eager: a lazy chunk adds a download round trip before the page's first API call.
 import DashboardPage from './pages/DashboardPage';
 import LeadsPage from './pages/LeadsPage';
+import PipelinePage from './pages/PipelinePage';
 
 // Lazy load the remaining pages for performance
 const LeadDetailPage = lazy(() => import('./pages/LeadDetailPage'));
-const PipelinePage = lazy(() => import('./pages/PipelinePage'));
 const DealDetailPage = lazy(() => import('./pages/DealDetailPage'));
 const TasksPage = lazy(() => import('./pages/TasksPage'));
 const TaskDetailPage = lazy(() => import('./pages/TaskDetailPage'));
