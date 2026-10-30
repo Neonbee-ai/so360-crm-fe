@@ -334,6 +334,8 @@ class ApiClient {
                 throw apiError;
             }
 
+            // 204 / empty 200 (e.g. no saved grid prefs yet) is "no content", not a parse error.
+            if (!text.trim()) return null as T;
             try {
                 return JSON.parse(text);
             } catch (e) {
