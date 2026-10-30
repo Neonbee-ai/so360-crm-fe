@@ -300,7 +300,7 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
                     role="listbox"
                     id={listId}
                     aria-label="Projects"
-                    className="absolute z-menu top-full mt-1 w-full bg-surface border border-line rounded-xl shadow-xl overflow-hidden"
+                    className="absolute z-menu top-full mt-1 w-full bg-surface border border-line rounded-xl shadow-overlay overflow-hidden"
                     data-testid="project-select-list"
                 >
                     <div className="max-h-56 overflow-y-auto">

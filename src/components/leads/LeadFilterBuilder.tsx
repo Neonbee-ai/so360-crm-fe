@@ -231,7 +231,7 @@ export default function LeadFilterBuilder({ value, onApply, onClose }: LeadFilte
   const activeCount = countActiveRules(tree);
 
   return (
-    <div className="w-full max-w-2xl bg-surface border border-line rounded-lg shadow-2xl flex flex-col max-h-[80vh]">
+    <div className="w-full max-w-2xl bg-surface border border-line rounded-lg shadow-overlay flex flex-col max-h-[80vh]">
       <div className="flex items-center justify-between px-4 py-3 border-b border-line">
         <div className="flex items-center gap-2 text-fg font-semibold">
           <FilterIcon size={16} className="text-primary" />

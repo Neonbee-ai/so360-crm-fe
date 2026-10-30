@@ -258,7 +258,7 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
 
             {/* Candidate Dropdown */}
             {dropdownOpen && (
-              <div className="bg-bg border border-line rounded-lg shadow-xl max-h-52 overflow-y-auto z-menu mt-1 divide-y divide-line">
+              <div className="bg-bg border border-line rounded-lg shadow-overlay max-h-52 overflow-y-auto z-menu mt-1 divide-y divide-line">
                 {isLoading ? (
                   <div className="p-4 flex items-center justify-center gap-2 text-fg-subtle text-sm">
                     <Loader2 className="w-4 h-4 animate-spin text-warning" />

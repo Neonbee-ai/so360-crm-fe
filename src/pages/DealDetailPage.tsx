@@ -641,7 +641,7 @@ const DealDetailPage = () => {
                                     <div
                                         role="listbox"
                                         data-testid="deal-stage-list"
-                                        className="absolute z-menu top-full left-0 mt-1 min-w-40 bg-surface border border-line rounded-nb shadow-xl overflow-hidden"
+                                        className="absolute z-menu top-full left-0 mt-1 min-w-40 bg-surface border border-line rounded-nb shadow-overlay overflow-hidden"
                                     >
                                         {dealStages.map(s => {
                                             const isCurrent = s.id === (deal.stage_id || deal.stage);

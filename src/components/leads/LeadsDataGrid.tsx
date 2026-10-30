@@ -758,7 +758,7 @@ function BulkActionsBar({ count, actions, selectedIds, onClear }: BulkActionsBar
   ];
 
   return (
-    <div data-testid="bulk-actions-bar" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-menu flex items-center gap-3 px-5 py-3 bg-surface-raised border border-line rounded-2xl shadow-2xl shadow-black/40">
+    <div data-testid="bulk-actions-bar" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-menu flex items-center gap-3 px-5 py-3 bg-surface-raised border border-line rounded-2xl shadow-overlay">
       <span className="text-sm text-fg font-semibold">{count} selected</span>
       <div className="w-px h-5 bg-surface-high" />
       {visible.map((action) =>
@@ -836,7 +836,7 @@ function ContextMenu({ lead, x, y, canDelete, onOpen, onDelete, onClose, onNavig
   return (
     <div
       ref={ref}
-      className="fixed z-menu bg-surface border border-line rounded-xl shadow-2xl py-1.5 min-w-44"
+      className="fixed z-menu bg-surface border border-line rounded-xl shadow-overlay py-1.5 min-w-44"
       style={{ left: Math.min(x, window.innerWidth - 200), top: Math.min(y, window.innerHeight - 300) }}
     >
       {menuItems.map((item) => (
@@ -1342,7 +1342,7 @@ export function LeadsDataGrid({
             {showGroupMenu && (
               <div
                 data-testid="group-by-menu"
-                className="absolute right-0 top-full mt-1.5 z-menu bg-surface border border-line rounded-xl shadow-xl py-1 min-w-40"
+                className="absolute right-0 top-full mt-1.5 z-menu bg-surface border border-line rounded-xl shadow-overlay py-1 min-w-40"
               >
                 {GROUP_BY_OPTIONS.map((o) => (
                   <Button variant={groupBy === o.key ? 'primary' : 'secondary'} size="sm" className="w-full !justify-start" key={o.key} onClick={() => { setGroupBy(o.key); setCollapsedGroups(new Set()); setShowGroupMenu(false); }}>
@@ -1361,7 +1361,7 @@ export function LeadsDataGrid({
               <span className="sr-only capitalize">{density}</span>
             </Button>
             {showDensityMenu && (
-              <div className="absolute right-0 top-full mt-1.5 z-menu bg-surface border border-line rounded-xl shadow-xl py-1 min-w-36">
+              <div className="absolute right-0 top-full mt-1.5 z-menu bg-surface border border-line rounded-xl shadow-overlay py-1 min-w-36">
                 {(['compact', 'comfortable', 'spacious'] as GridDensity[]).map((d) => (
                   <Button variant={density === d ? 'primary' : 'secondary'} size="sm" className="w-full !justify-start" key={d} onClick={() => { setDensity(d); setShowDensityMenu(false); }}>
                     {density === d && <Check size={12} />}
@@ -1399,7 +1399,7 @@ export function LeadsDataGrid({
             {showGroupMenu && (
               <div
                 data-testid="group-by-menu"
-                className="absolute right-0 top-full mt-1.5 z-menu bg-surface border border-line rounded-xl shadow-xl py-1 min-w-40"
+                className="absolute right-0 top-full mt-1.5 z-menu bg-surface border border-line rounded-xl shadow-overlay py-1 min-w-40"
               >
                 {GROUP_BY_OPTIONS.map((o) => (
                   <Button variant={groupBy === o.key ? 'primary' : 'secondary'} size="sm" className="w-full !justify-start" key={o.key} onClick={() => { setGroupBy(o.key); setCollapsedGroups(new Set()); setShowGroupMenu(false); }}>
@@ -1418,7 +1418,7 @@ export function LeadsDataGrid({
               <span className="capitalize">{density}</span>
             </Button>
             {showDensityMenu && (
-              <div className="absolute right-0 top-full mt-1.5 z-menu bg-surface border border-line rounded-xl shadow-xl py-1 min-w-36">
+              <div className="absolute right-0 top-full mt-1.5 z-menu bg-surface border border-line rounded-xl shadow-overlay py-1 min-w-36">
                 {(['compact', 'comfortable', 'spacious'] as GridDensity[]).map((d) => (
                   <Button variant={density === d ? 'primary' : 'secondary'} size="sm" className="w-full !justify-start" key={d} onClick={() => { setDensity(d); setShowDensityMenu(false); }}>
                     {density === d && <Check size={12} />}

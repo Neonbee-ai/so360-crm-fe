@@ -1017,7 +1017,7 @@ const QuotesPage = () => {
                                             <ChevronDown className={`ml-2 h-4 w-4 text-fg-subtle shrink-0 transition-transform ${dealDropdownOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
                                         </Button>
                                         {dealDropdownOpen && (
-                                            <div className="absolute z-menu mt-1 w-full bg-surface-raised border border-line rounded-lg shadow-xl overflow-hidden">
+                                            <div className="absolute z-menu mt-1 w-full bg-surface-raised border border-line rounded-lg shadow-overlay overflow-hidden">
                                                 <div className="p-2 border-b border-line">
                                                     <div className="relative">
                                                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-fg-muted" />

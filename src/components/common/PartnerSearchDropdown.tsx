@@ -124,7 +124,7 @@ export const PartnerSearchDropdown: React.FC<PartnerSearchDropdownProps> = ({
             {isOpen && (
                 <div
                     role="listbox"
-                    className="absolute z-menu top-full mt-1 w-full bg-surface border border-line rounded-lg shadow-xl overflow-hidden"
+                    className="absolute z-menu top-full mt-1 w-full bg-surface border border-line rounded-lg shadow-overlay overflow-hidden"
                     data-testid="partner-dropdown-list"
                 >
                     <div className="max-h-48 overflow-y-auto">

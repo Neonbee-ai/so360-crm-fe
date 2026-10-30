@@ -342,7 +342,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                         error={companyError || undefined}
                                     />
                                     {customerDropdownOpen && customerResults.length > 0 && (
-                                        <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-line rounded-nb-lg shadow-xl z-menu overflow-hidden">
+                                        <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-line rounded-nb-lg shadow-overlay z-menu overflow-hidden">
                                             {customerResults.map(c => (
                                                 <Button variant="secondary" size="sm" className="w-full !text-left !h-auto !justify-start" key={c.id} type="button" onClick={() => {
                                                         const selectedName = c.company_name || c.contact_name || c.name || '';

@@ -389,7 +389,7 @@ const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
                 /* Timeline */
                 <div className="space-y-3 relative">
                     {/* Vertical line */}
-                    <div className="absolute left-6 top-0 bottom-0 w-px bg-gradient-to-b from-surface-sunken to-surface-sunken" />
+                    <div className="absolute left-6 top-0 bottom-0 w-px bg-surface-sunken" />
 
                     {sortedItems.map((item) => (
                         <div

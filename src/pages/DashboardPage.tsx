@@ -483,7 +483,7 @@ const DashboardPage = () => {
                         )}
                         {teamStats.map((stat: any, index: number) => (
                             <div key={stat.user.id} className="flex items-center gap-4 py-3 group">
-                                <div className={`w-8 h-8 flex items-center justify-center rounded-lg font-semibold text-xs ${index === 0 ? 'bg-warning text-primary-fg shadow-lg shadow-warning/20' :
+                                <div className={`w-8 h-8 flex items-center justify-center rounded-lg font-semibold text-xs ${index === 0 ? 'bg-warning text-primary-fg' :
                                     index === 1 ? 'bg-fg-muted/40 text-fg-subtle' :
                                         index === 2 ? 'bg-fg-muted/25 text-fg-subtle' :
                                             'bg-transparent text-fg-subtle'
