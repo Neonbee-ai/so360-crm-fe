@@ -11,7 +11,7 @@ import { CrmScope, crmPortalRoot } from './utils/crmScope';
 const CrmNotFound = () => (
     <div className="flex flex-col items-center justify-center min-h-[40vh] text-center" data-testid="crm-not-found">
         <h1 className="text-2xl font-bold mb-2">Page Not Found</h1>
-        <p className="text-slate-500 max-w-md mb-6">The page you are looking for doesn't exist or has been moved.</p>
+        <p className="text-fg-muted max-w-md mb-6">The page you are looking for doesn't exist or has been moved.</p>
         <Link to="/crm/dashboard" className="underline">Back to CRM</Link>
     </div>
 );
