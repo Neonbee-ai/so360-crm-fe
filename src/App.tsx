@@ -1,7 +1,7 @@
 import React, { Suspense, lazy, useEffect } from 'react';
 import { Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
 import { useShellBridge } from '@so360/shell-context';
-import { CombScope, FeatureRoute, PortalProvider, Button } from '@so360/design-system';
+import { CombScope, FeatureRoute, PortalProvider, Button, LoadingState } from '@so360/design-system';
 import { CrossLinkProvider } from '@so360/cross-link';
 import { crmService } from './services/crmService';
 import { salesTargetService } from './services/salesTargetService';
@@ -132,7 +132,8 @@ const FlagGuard = ({ flagKey, children }: { flagKey: string; children: React.Rea
 // wildcard-aware via the shell bridge, matching the backend resolver exactly.
 const PermissionGuard = ({ permission, children }: { permission: string | string[]; children: React.ReactNode }) => {
     const shell = useShellBridge();
-    if (!shell || !shell.permissionsLoaded) return null;
+    // Withhold the page (fail-closed) but show progress, never a blank screen.
+    if (!shell || !shell.permissionsLoaded) return <LoadingState />;
     const codes = Array.isArray(permission) ? permission : [permission];
     const allowed = shell.hasAnyPermission
         ? shell.hasAnyPermission(...codes)
