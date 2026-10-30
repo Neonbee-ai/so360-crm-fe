@@ -149,9 +149,11 @@ const PermissionGuard = ({ permission, children }: { permission: string | string
     );
 };
 
-// Lazy load pages for performance
-const DashboardPage = lazy(() => import('./pages/DashboardPage'));
-const LeadsPage = lazy(() => import('./pages/LeadsPage'));
+// Landing pages are eager: a lazy chunk adds a download round trip before the page's first API call.
+import DashboardPage from './pages/DashboardPage';
+import LeadsPage from './pages/LeadsPage';
+
+// Lazy load the remaining pages for performance
 const LeadDetailPage = lazy(() => import('./pages/LeadDetailPage'));
 const PipelinePage = lazy(() => import('./pages/PipelinePage'));
 const DealDetailPage = lazy(() => import('./pages/DealDetailPage'));
