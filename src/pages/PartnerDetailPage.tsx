@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { partnersApi, settingsApi, crmService } from '../services/crmService';
 import { validatePhone } from '../utils/phoneValidation';
-import { toast, Grid, GridItem, Skeleton, Badge, type BadgeTone } from '@so360/design-system';
+import { toast, Grid, GridItem, Skeleton, type BadgeTone } from '@so360/design-system';
 import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import { useBusinessSettings, useShell } from '@so360/shell-context';
 import NeuraAiSummaryCard from './components/NeuraAiSummaryCard';
