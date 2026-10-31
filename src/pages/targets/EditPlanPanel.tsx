@@ -1,4 +1,4 @@
-import { Button, TextField, Select, Drawer } from '@so360/design-system';
+import { Button, TextField, Select, Drawer, Skeleton } from '@so360/design-system';
 import React, { useEffect, useState } from 'react';
 import { targetPlanService } from '../../services/targetPlanService';
 import { planPeriods } from './planShape';
@@ -122,7 +122,7 @@ export default function EditPlanPanel({
       {notice && <div className="mb-2 text-sm text-success">{notice}</div>}
 
       {!plan ? (
-        <div className="text-sm text-fg-subtle">Loading plan…</div>
+        <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4"><Skeleton variant="rect" /><Skeleton variant="text" lines={3} /><span className="sr-only">Loading plan…</span></div>
       ) : (
         <div className="space-y-4">
           <div className="flex flex-wrap items-end gap-3">

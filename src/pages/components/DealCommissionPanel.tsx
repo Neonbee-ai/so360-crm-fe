@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ChevronDown, ChevronUp, History, Loader2, Pencil, RefreshCw, Save, X } from 'lucide-react';
-import { toast, Button, TextField, NumberInput, Grid, GridItem } from '@so360/design-system';
+import { toast, Button, TextField, NumberInput, Grid, GridItem, Skeleton, Badge, type BadgeTone } from '@so360/design-system';
 import {
     commissionsService,
     legalTransitions,
@@ -18,12 +18,12 @@ import { useCRMFormatters } from '../../utils/formatters';
 import { describeApiError } from '../../utils/apiErrorMessage';
 
 
-const STATUS_CHIP: Record<CommissionStatus, string> = {
-    pending: 'bg-warning/10 text-warning border-warning/30',
-    approved: 'bg-info/10 text-info border-info/30',
-    payable: 'bg-primary/10 text-primary border-primary/30',
-    paid: 'bg-success/10 text-success border-success/30',
-    cancelled: 'bg-fg-muted/10 text-fg-subtle border-line',
+const STATUS_CHIP: Record<CommissionStatus, BadgeTone> = {
+    pending: 'warning',
+    approved: 'info',
+    payable: 'primary',
+    paid: 'success',
+    cancelled: 'neutral',
 };
 
 const statusName = (s: string | null) =>
@@ -87,9 +87,7 @@ const DealCommissionPanel: React.FC<Props> = ({ dealId }) => {
 
     if (loading) {
         return (
-            <div className="p-8 flex items-center gap-2 text-fg-subtle text-sm" role="status">
-                <Loader2 className="animate-spin" size={16} /> Loading commissions…
-            </div>
+            <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4"><Skeleton variant="rect" /><Skeleton variant="text" lines={3} /><span className="sr-only">Loading commissions…</span></div>
         );
     }
     if (loadError) {
@@ -168,9 +166,9 @@ const DealCommissionPanel: React.FC<Props> = ({ dealId }) => {
                                         <p className="text-xs font-semibold text-fg-muted">{PARTICIPANT_LABELS[l.participant_type]}</p>
                                         <p className="text-sm font-bold text-fg">{l.name || '—'}</p>
                                     </div>
-                                    <span className={`px-2 py-0.5 rounded-full border text-xs font-semibold ${STATUS_CHIP[l.status]}`}>
+                                    <Badge tone={STATUS_CHIP[l.status]} size="sm" shape="pill">
                                         {COMMISSION_STATUS_LABELS[l.status]}
-                                    </span>
+                                    </Badge>
                                 </div>
                                 <Grid gap="md" className="text-xs">
                                     <GridItem span={3}><dl><dt className="text-fg-muted">Basis</dt><dd className="font-bold text-fg">{money(l.basis_amount)}</dd></dl></GridItem>

@@ -5,7 +5,7 @@ import TimelineEventCard from './timeline/TimelineEventCard';
 import TimelineSummaryBanner from './timeline/TimelineSummaryBanner';
 import { activitiesApi } from '../../services/crmService';
 import { PromptDialog } from '../../components/PromptDialog';
-import { useConfirm, Button, Drawer, SearchInput, ListFilters, type ListFilterConfig, type FilterValues } from '@so360/design-system';
+import { useConfirm, Button, Drawer, SearchInput, ListFilters, type ListFilterConfig, type FilterValues, Skeleton } from '@so360/design-system';
 
 interface Props {
     isOpen: boolean;
@@ -120,10 +120,7 @@ const ActivityHistoryDrawer: React.FC<Props> = ({ isOpen, onClose, entityType, e
                 {/* Timeline */}
                 <div>
                     {timeline.loading ? (
-                        <div className="flex items-center justify-center gap-2 py-16 text-fg-muted">
-                            <Loader2 size={16} className="animate-spin" />
-                            <span className="text-xs">Loading history…</span>
-                        </div>
+                        <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4"><Skeleton variant="rect" /><Skeleton variant="text" lines={3} /><span className="sr-only">Loading history…</span></div>
                     ) : timeline.events.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-16 text-fg-muted px-6 text-center">
                             <Search size={32} className="mb-3 text-fg" />

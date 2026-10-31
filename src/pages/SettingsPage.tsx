@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { crmService, settingsApi } from '../services/crmService';
 import { CRMSettings, SourceTypeOption, LeadScoringRule, ScoreCategory } from '../types/crm';
 import { Save, AlertCircle, Edit2, Archive, Plus, Trash2, Loader2, Zap, Trophy, ShieldCheck, ToggleLeft, ToggleRight, X, Check, RefreshCw } from 'lucide-react';
-import { Banner, toast, SettingsPageTemplate, Button, IconButton, TextField, Select, Card, ColorPicker, Grid, GridItem } from '@so360/design-system';
+import { Banner, toast, SettingsPageTemplate, Button, IconButton, TextField, Select, Card, ColorPicker, Grid, GridItem, Skeleton, Badge } from '@so360/design-system';
 import { StageStatusSelect } from '../components/common/StageStatusSelect';
 import { useShellBridge } from '@so360/shell-context';
 import DealNamingSettingsTab from './components/settings/DealNamingSettingsTab';
@@ -508,9 +508,10 @@ const SettingsPage = ({ onOpenIcps, onOpenDataSettings, onOpenEstimator }: { onO
 
     if (isLoading || !settings) {
         return (
-            <div className="h-full flex items-center justify-center text-fg-muted gap-3">
-                <Loader2 className="animate-spin" />
-                <span>Loading settings...</span>
+            <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4">
+                <Skeleton variant="rect" />
+                <Skeleton variant="text" lines={3} />
+                <span className="sr-only">Loading settings...</span>
             </div>
         );
     }
@@ -938,7 +939,7 @@ const SettingsPage = ({ onOpenIcps, onOpenDataSettings, onOpenEstimator }: { onO
                                             <span className="ml-2 text-xs font-semibold text-fg-muted">{option.value}</span>
                                         </div>
                                         {option.is_system && (
-                                            <span className="text-xs font-semibold bg-primary/10 text-primary border border-line px-2 py-0.5 rounded-full">System</span>
+                                            <Badge tone="primary" size="sm" shape="pill">System</Badge>
                                         )}
                                         {canWriteSettings && (
                                             <div className="flex items-center gap-2">

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { stakeholderApi } from '../../services/crmService';
 import { StakeholderActivitySummary as SummaryType } from '../../types/crm';
-import { CountUp, Grid } from '@so360/design-system';
+import { Grid } from '@so360/design-system';
 
 interface Props {
     stakeholderId: string;
@@ -49,7 +49,7 @@ const StakeholderActivitySummary: React.FC<Props> = ({ stakeholderId }) => {
                 </div>
                 <div className="bg-surface-sunken border border-line rounded-nb p-2.5">
                     <p className="text-fg-muted font-medium">Open Tasks</p>
-                    <p className="text-fg mt-0.5"><CountUp value={summary.open_tasks} /></p>
+                    <p className="text-fg mt-0.5">{summary.open_tasks}</p>
                 </div>
             </Grid>
 

@@ -11,7 +11,7 @@ import { usePersistedState, useListScrollRestore } from '../hooks/useListViewSta
 import { Quote, QuoteStatus, Deal } from '../types/crm';
 import { useBusinessSettings, useActivity, useShellBridge, useQuota, useSandboxLimit } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
-import { QuotaGate, CrossLinkChip, SegmentedControl, toast, ListPageTemplate, Button, Pagination, DataTable, SearchInput, Menu, Alert, EmptyState, TextField, Textarea, Link, StatusBadge, type BadgeTone, type DataTableColumn, type FilterValues, type ListFilterConfig } from '@so360/design-system';
+import { QuotaGate, CrossLinkChip, SegmentedControl, toast, ListPageTemplate, Button, Pagination, DataTable, SearchInput, Menu, Alert, EmptyState, TextField, Textarea, Link, StatusBadge, type BadgeTone, type DataTableColumn, type FilterValues, type ListFilterConfig, Badge } from '@so360/design-system';
 import { quotesToCsv, downloadCsv } from '../components/quotes/quotesCsv';
 import { quoteToDocumentData } from '../utils/quoteToDocumentData';
 import ExportMenu from '../components/ExportMenu';
@@ -719,20 +719,12 @@ const QuotesPage = () => {
                 return (
                     <div className="flex flex-wrap gap-1 max-w-xs">
                         {others.map((o: any, idx: number) => {
-                            const badgeColor =
-                                o.status === 'approved'
-                                    ? 'bg-success/10 text-success border-success/30'
-                                    : o.status === 'rejected'
-                                    ? 'bg-danger/10 text-danger border-danger/30'
-                                    : 'bg-surface-raised text-fg-subtle border-line';
+                            const badgeTone: BadgeTone = o.status === 'approved' ? 'success' : o.status === 'rejected' ? 'danger' : 'neutral';
                             return (
-                                <span
-                                    key={o.id || idx}
-                                    className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border ${badgeColor}`}
-                                >
+                                <Badge key={o.id || idx} tone={badgeTone} size="sm" shape="pill">
                                     <span>{o.approver_name || o.approver_email || 'Approver'}</span>
                                     <span className="text-xs font-bold opacity-75">({o.status})</span>
-                                </span>
+                                </Badge>
                             );
                         })}
                     </div>

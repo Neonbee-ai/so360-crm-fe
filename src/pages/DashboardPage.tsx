@@ -6,7 +6,7 @@ import {
     Calendar, Loader2, ShoppingBag, Package, LayoutDashboard
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { CrossLinkChip, DashboardPageTemplate, KpiCard, CountUp, Card, SegmentedControl, Grid, GridItem, Button, EmptyState, Progress } from '@so360/design-system';
+import { CrossLinkChip, DashboardPageTemplate, KpiCard, Card, SegmentedControl, Grid, GridItem, Button, EmptyState, Progress, Skeleton, Badge } from '@so360/design-system';
 import { useBusinessSettings, useShell } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import REWidgets from '../components/dashboard/REWidgets';
@@ -132,9 +132,10 @@ const DashboardPage = () => {
 
     if (isLoading) {
         return (
-            <div className="h-full flex items-center justify-center text-fg-muted gap-3">
-                <Loader2 className="animate-spin" />
-                <span>Loading insights...</span>
+            <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4">
+                <Skeleton variant="rect" />
+                <Skeleton variant="text" lines={3} />
+                <span className="sr-only">Loading insights...</span>
             </div>
         );
     }
@@ -228,82 +229,39 @@ const DashboardPage = () => {
                         <h2 className="text-xs font-semibold text-fg-subtle">
                             Commerce Performance
                         </h2>
-                        <span className="text-xs font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded border border-primary/20">
-                            DailyStore
-                        </span>
+                        <Badge tone="primary" size="sm">DailyStore</Badge>
                         {isCommerceLoading && <Loader2 size={12} className="animate-spin text-fg-muted ml-auto" />}
                     </div>
 
-                    <Grid columns={5} gap="md">
-                        {/* 1. Ecommerce Revenue */}
-                        <div className="border-l border-line pl-4">
-                            <div className="relative">
-                                <div className="flex items-center gap-2 mb-3 text-primary">
-                                    <div className="p-1.5 bg-primary/10 rounded-lg"><DollarSign size={16} /></div>
-                                    <span className="text-xs font-semibold text-fg-muted">Revenue</span>
-                                </div>
-                                <h3 className="text-2xl font-semibold text-fg">
-                                    <CountUp value={formatCurrency(commerceKPIs?.revenue ?? 0)} />
-                                </h3>
-                                <p className="text-xs text-fg-muted mt-1 font-medium">Recognized (paid)</p>
-                            </div>
-                        </div>
-
-                        {/* 2. Orders Count */}
-                        <div className="border-l border-line pl-4">
-                            <div className="relative">
-                                <div className="flex items-center gap-2 mb-3 text-info">
-                                    <div className="p-1.5 bg-info/10 rounded-lg"><Package size={16} /></div>
-                                    <span className="text-xs font-semibold text-fg-muted">Orders</span>
-                                </div>
-                                <h3 className="text-2xl font-semibold text-fg">
-                                    {(commerceKPIs?.orderCount ?? 0).toLocaleString()}
-                                </h3>
-                                <p className="text-xs text-fg-muted mt-1 font-medium">Total orders placed</p>
-                            </div>
-                        </div>
-
-                        {/* 3. AOV */}
-                        <div className="border-l border-line pl-4">
-                            <div className="relative">
-                                <div className="flex items-center gap-2 mb-3 text-primary">
-                                    <div className="p-1.5 bg-primary/10 rounded-lg"><BarChart3 size={16} /></div>
-                                    <span className="text-xs font-semibold text-fg-muted">AOV</span>
-                                </div>
-                                <h3 className="text-2xl font-semibold text-fg">
-                                    {formatCurrency(commerceKPIs?.aov ?? 0)}
-                                </h3>
-                                <p className="text-xs text-fg-muted mt-1 font-medium">Avg order value</p>
-                            </div>
-                        </div>
-
-                        {/* 4. Repeat Purchase % */}
-                        <div className="border-l border-line pl-4">
-                            <div className="relative">
-                                <div className="flex items-center gap-2 mb-3 text-success">
-                                    <div className="p-1.5 bg-success/10 rounded-lg"><Users size={16} /></div>
-                                    <span className="text-xs font-semibold text-fg-muted">Repeat</span>
-                                </div>
-                                <h3 className="text-2xl font-semibold text-fg">
-                                    {(commerceKPIs?.repeatPurchaseRate ?? 0).toFixed(1)}%
-                                </h3>
-                                <p className="text-xs text-fg-muted mt-1 font-medium">Repeat purchase rate</p>
-                            </div>
-                        </div>
-
-                        {/* 5. Refund % */}
-                        <div className="border-l border-line pl-4">
-                            <div className="relative">
-                                <div className="flex items-center gap-2 mb-3 text-danger">
-                                    <div className="p-1.5 bg-danger/10 rounded-lg"><TrendingUp size={16} className="rotate-180" /></div>
-                                    <span className="text-xs font-semibold text-fg-muted">Refund</span>
-                                </div>
-                                <h3 className="text-2xl font-semibold text-fg">
-                                    {(commerceKPIs?.refundRate ?? 0).toFixed(1)}%
-                                </h3>
-                                <p className="text-xs text-fg-muted mt-1 font-medium">Refund rate</p>
-                            </div>
-                        </div>
+                    <Grid columns={4} gap="md">
+                        <KpiCard
+                            label="Revenue"
+                            icon={DollarSign}
+                            value={formatCurrency(commerceKPIs?.revenue ?? 0)}
+                            hint="Recognized (paid)"
+                            loading={isCommerceLoading && !commerceKPIs}
+                        />
+                        <KpiCard
+                            label="Orders"
+                            icon={Package}
+                            value={(commerceKPIs?.orderCount ?? 0).toLocaleString()}
+                            hint="Total orders placed"
+                            loading={isCommerceLoading && !commerceKPIs}
+                        />
+                        <KpiCard
+                            label="AOV"
+                            icon={BarChart3}
+                            value={formatCurrency(commerceKPIs?.aov ?? 0)}
+                            hint="Avg order value"
+                            loading={isCommerceLoading && !commerceKPIs}
+                        />
+                        <KpiCard
+                            label="Repeat"
+                            icon={Users}
+                            value={`${(commerceKPIs?.repeatPurchaseRate ?? 0).toFixed(1)}%`}
+                            hint={`Repeat purchase rate · Refund ${(commerceKPIs?.refundRate ?? 0).toFixed(1)}%`}
+                            loading={isCommerceLoading && !commerceKPIs}
+                        />
                     </Grid>
 
                     {/* Orders Distribution chart */}

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Edit2, Loader2, Plus, Receipt, Save, Trash2, X } from 'lucide-react';
-import { toast, Button, IconButton, TextField, NumberInput, DatePicker, Select, DataTable, Grid, GridItem } from '@so360/design-system';
+import { toast, Button, IconButton, TextField, NumberInput, DatePicker, Select, DataTable, Grid, GridItem, Skeleton, Badge, type BadgeTone } from '@so360/design-system';
 import type { DataTableColumn } from '@so360/design-system';
 import {
     paymentScheduleService,
@@ -31,12 +31,12 @@ export const BILLING_MODE_LABELS: Record<BillingMode, string> = {
     schedule_only: 'Schedule only (no invoices)',
 };
 
-const STATUS_CHIP: Record<ScheduleLineStatus, string> = {
-    due: 'bg-warning/10 text-warning border-warning/30',
-    invoiced: 'bg-info/10 text-info border-info/30',
-    paid: 'bg-success/10 text-success border-success/30',
-    bounced: 'bg-danger/10 text-danger border-danger/30',
-    cancelled: 'bg-fg-muted/10 text-fg-subtle border-line',
+const STATUS_CHIP: Record<ScheduleLineStatus, BadgeTone> = {
+    due: 'warning',
+    invoiced: 'info',
+    paid: 'success',
+    bounced: 'danger',
+    cancelled: 'neutral',
 };
 
 const MODE_VALUES: readonly string[] = PAYMENT_MODES.map((m) => m.value);
@@ -144,9 +144,7 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
 
     if (loading) {
         return (
-            <div className="p-8 flex items-center gap-2 text-fg-subtle text-sm" role="status">
-                <Loader2 className="animate-spin" size={16} /> Loading payment plan…
-            </div>
+            <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4"><Skeleton variant="rect" /><Skeleton variant="text" lines={3} /><span className="sr-only">Loading payment plan…</span></div>
         );
     }
     if (loadError || !data) {
@@ -379,9 +377,9 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
                                 }}
                             />
                         ) : (
-                            <span className={`inline-block px-2 py-0.5 rounded-full border text-xs font-semibold ${STATUS_CHIP[l.status]}`}>
+                            <Badge tone={STATUS_CHIP[l.status]} size="sm" shape="pill">
                                 {statusLabel(l.status)}
-                            </span>
+                            </Badge>
                         )}
                         {l.invoice_id && !d && <p className="text-xs text-fg-muted mt-1">Invoice raised</p>}
                     </>

@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-    Mail, Phone, Edit2, Loader2, Check, X,
+    Mail, Phone, Edit2, Check, X,
     MapPin, Percent, Users, User,
 } from 'lucide-react';
 import { partnersApi, settingsApi, crmService } from '../services/crmService';
 import { validatePhone } from '../utils/phoneValidation';
-import { toast, Grid, GridItem } from '@so360/design-system';
+import { toast, Grid, GridItem, Skeleton, Badge, type BadgeTone } from '@so360/design-system';
 import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import { useBusinessSettings, useShell } from '@so360/shell-context';
 import NeuraAiSummaryCard from './components/NeuraAiSummaryCard';
@@ -19,16 +19,16 @@ import { useCrmFeatureFlag } from '../hooks/useCrmFeatureFlag';
 
 type TabType = 'overview' | 'deals' | 'commissions' | 'activity';
 
-const GRADING_CONFIG: Record<string, { label: string; color: string }> = {
-    low:  { label: 'Low',  color: 'bg-fg-muted/10 text-fg-subtle border-line' },
-    mid:  { label: 'Mid',  color: 'bg-info/10 text-info border-info/20' },
-    high: { label: 'High', color: 'bg-success/10 text-success border-success/20' },
+const GRADING_CONFIG: Record<string, { label: string; tone: BadgeTone }> = {
+    low:  { label: 'Low',  tone: 'neutral' },
+    mid:  { label: 'Mid',  tone: 'info' },
+    high: { label: 'High', tone: 'success' },
 };
 
-const COMMISSION_STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-    pending:  { label: 'Pending',  color: 'bg-warning/10 text-warning border-warning/20' },
-    approved: { label: 'Approved', color: 'bg-info/10 text-info border-info/20' },
-    paid:     { label: 'Paid',     color: 'bg-success/10 text-success border-success/20' },
+const COMMISSION_STATUS_CONFIG: Record<string, { label: string; tone: BadgeTone }> = {
+    pending:  { label: 'Pending',  tone: 'warning' },
+    approved: { label: 'Approved', tone: 'info' },
+    paid:     { label: 'Paid',     tone: 'success' },
 };
 
 const AREA_OPTIONS = ['South India', 'North India', 'Central India', 'East India', 'West India'];
@@ -245,9 +245,10 @@ const PartnerDetailPage = () => {
 
     if (isLoading) {
         return (
-            <div className="h-full flex items-center justify-center text-fg-muted gap-3 py-12">
-                <Loader2 className="animate-spin" />
-                <span>Loading partner...</span>
+            <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4">
+                <Skeleton variant="rect" />
+                <Skeleton variant="text" lines={3} />
+                <span className="sr-only">Loading partner...</span>
             </div>
         );
     }
@@ -286,9 +287,9 @@ const PartnerDetailPage = () => {
                 <>
                     <Badge size="sm" tone="info">{getTypeLabel(partner.partner_type)}</Badge>
                     {gradingCfg && (
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${gradingCfg.color}`}>
+                        <Badge tone={gradingCfg.tone} size="sm">
                             {gradingCfg.label}
-                        </span>
+                        </Badge>
                     )}
                 </>
             }
@@ -496,9 +497,9 @@ const PartnerDetailPage = () => {
                                         <dt className={fieldLabelCls}>Architect grading</dt>
                                         <dd className="mt-1">
                                             {gradingCfg ? (
-                                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${gradingCfg.color}`}>
+                                                <Badge tone={gradingCfg.tone} size="sm">
                                                     {gradingCfg.label}
-                                                </span>
+                                                </Badge>
                                             ) : <span className="text-fg-muted text-sm">—</span>}
                                         </dd>
                                     </dl></GridItem>
@@ -621,7 +622,7 @@ const PartnerDetailPage = () => {
                             </Card>
                         </>
                     ) : (
-                        <div className="flex items-center gap-3 text-fg-muted p-nb-4"><Loader2 className="animate-spin" /> Loading deals...</div>
+                        <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4"><Skeleton variant="rect" /><Skeleton variant="text" lines={3} /><span className="sr-only">Loading deals...</span></div>
                     )}
                 </div>
             )}
@@ -648,9 +649,9 @@ const PartnerDetailPage = () => {
                                             { key: 'status', header: 'Status', render: (c: any) => {
                                                 const statusCfg = COMMISSION_STATUS_CONFIG[c.status] || COMMISSION_STATUS_CONFIG.pending;
                                                 return (
-                                                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${statusCfg.color}`}>
+                                                    <Badge tone={statusCfg.tone} size="sm">
                                                         {statusCfg.label}
-                                                    </span>
+                                                    </Badge>
                                                 );
                                             } },
                                             { key: 'actions', header: 'Actions', render: (c: any) => (
@@ -687,7 +688,7 @@ const PartnerDetailPage = () => {
                             </Card>
                         </>
                     ) : (
-                        <div className="flex items-center gap-3 text-fg-muted p-nb-4"><Loader2 className="animate-spin" /> Loading royalties...</div>
+                        <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4"><Skeleton variant="rect" /><Skeleton variant="text" lines={3} /><span className="sr-only">Loading royalties...</span></div>
                     )}
                 </div>
             )}

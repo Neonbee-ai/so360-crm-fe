@@ -8,7 +8,7 @@ import { Loader2, Plus } from 'lucide-react';
 import { StageTransitionModal } from '../components/kanban/StageTransitionModal';
 import { DealCloseModal } from '../components/kanban/DealCloseModal';
 import { dealCloseService, stageKind, LoseDealBody, WinDealBody } from '../services/salesConfigService';
-import { toast, ListPageTemplate, Button, SearchInput } from '@so360/design-system';
+import { toast, ListPageTemplate, Button, SearchInput, Skeleton } from '@so360/design-system';
 import CreateDealModal from '../pages/components/CreateDealModal';
 
 import { useDealFilterConfig } from '../pages/components/DealFilters';
@@ -202,10 +202,11 @@ const PipelinePage = () => {
                 className={`transition-opacity duration-300 ${isFiltering ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}
             >
                 {isInitialLoading ? (
-                    <div className="flex h-full items-center justify-center gap-3 text-fg-muted" data-testid="pipeline-loading">
-                        <Loader2 className="animate-spin" size={16} aria-hidden="true" />
-                        <span>Loading pipeline...</span>
-                    </div>
+                    <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4" data-testid="pipeline-loading">
+                <Skeleton variant="rect" />
+                <Skeleton variant="text" lines={3} />
+                <span className="sr-only">Loading pipeline...</span>
+            </div>
                 ) : (
                 <KanbanBoard
                     deals={deals}

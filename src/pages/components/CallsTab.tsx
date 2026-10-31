@@ -4,7 +4,7 @@ import {
     Trash2, FileText, Clock,
 } from 'lucide-react';
 import { crmService } from '../../services/crmService';
-import { useConfirm, Button, Badge, EmptyState, IconButton, Select, DateTimePicker, NumberInput, TextField, Textarea, FileUpload, Grid, GridItem } from '@so360/design-system';
+import { useConfirm, Button, Badge, EmptyState, IconButton, Select, DateTimePicker, NumberInput, TextField, Textarea, FileUpload, Grid, GridItem, Skeleton } from '@so360/design-system';
 import { Modal } from '../../components/common/Modal';
 
 interface Props {
@@ -302,9 +302,10 @@ export default function CallsTab({ leadId, dealId }: Props) {
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center py-12 text-fg-muted gap-3">
-                <Loader2 size={20} className="animate-spin" />
-                <span className="text-sm font-medium">Loading calls...</span>
+            <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4">
+                <Skeleton variant="rect" />
+                <Skeleton variant="text" lines={3} />
+                <span className="sr-only">Loading calls...</span>
             </div>
         );
     }

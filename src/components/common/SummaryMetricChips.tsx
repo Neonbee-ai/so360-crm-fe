@@ -1,4 +1,4 @@
-import { Button, CountUp } from '@so360/design-system';
+import { Button } from '@so360/design-system';
 import React from 'react';
 
 export interface SummaryMetricChip {
@@ -33,7 +33,7 @@ export const SummaryMetricChips: React.FC<SummaryMetricChipsProps> = ({ chips, c
                     disabled={!chip.onClick}
                     data-testid={`summary-metric-chip-${chip.key}`}
                 >
-                    <CountUp value={chip.count} /> {chip.label}
+                    {chip.count} {chip.label}
                 </Button>
             ))}
         </div>
