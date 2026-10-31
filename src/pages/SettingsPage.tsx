@@ -1,3 +1,4 @@
+import { insertOpenStage } from '../utils/dealStageOrder';
 import React, { useState, useEffect, useRef } from 'react';
 import { crmService, settingsApi } from '../services/crmService';
 import { CRMSettings, SourceTypeOption, LeadScoringRule, ScoreCategory } from '../types/crm';
@@ -88,7 +89,7 @@ const BLANK_RULE: Partial<LeadScoringRule> = {
     priority: 0,
 };
 
-const SettingsPage = ({ onOpenIcps, onOpenDataSettings }: { onOpenIcps?: () => void; onOpenDataSettings?: () => void } = {}) => {
+const SettingsPage = ({ onOpenIcps, onOpenDataSettings, onOpenFlow }: { onOpenIcps?: () => void; onOpenDataSettings?: () => void; onOpenFlow?: () => void } = {}) => {
     const shell = useShellBridge();
     const icpEnabled = useCrmFeatureFlag('submodule:crm:icp_manager');
     const canWriteSettings = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('submodule:crm:settings') ?? true);
@@ -391,7 +392,7 @@ const SettingsPage = ({ onOpenIcps, onOpenDataSettings }: { onOpenIcps?: () => v
         };
         setSettings({
             ...settings,
-            deal_stages: [...settings.deal_stages, newStage]
+            deal_stages: insertOpenStage(settings.deal_stages, newStage)
         });
     };
 
@@ -620,7 +621,13 @@ const SettingsPage = ({ onOpenIcps, onOpenDataSettings }: { onOpenIcps?: () => v
 
                 {activeTab === 'lead-stages' && (
                     <Card title="Lead Lifecycle Stages" padding="none">
-                        <p className="px-nb-4 pt-nb-3 text-xs text-fg-muted">Managed in the Flow module — edit the CRM lead workflow to change these stages</p>
+                        <Banner
+                            variant="info"
+                            data-testid="crm-lead-stages-flow-banner"
+                            action={onOpenFlow ? { label: 'Open in Flow', onClick: onOpenFlow } : undefined}
+                        >
+                            Lead stages are managed in the Flow module. To add or change a stage, edit the CRM lead workflow in Flow.
+                        </Banner>
                         <div className="p-6">
                             <div className="space-y-3">
                                 {settings.lead_stages.map((stage, idx) => (
