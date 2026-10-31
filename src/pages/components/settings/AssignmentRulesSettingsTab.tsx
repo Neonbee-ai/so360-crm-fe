@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronUp, ChevronDown, Edit2, Trash2, Plus, Loader2, ToggleLeft, ToggleRight, X } from 'lucide-react';
-import { toast, DepartmentSelector, UserSelector, useConfirm, Card, Button, IconButton, TextField, NumberInput, Select, Checkbox, Grid, GridItem } from '@so360/design-system';
+import { toast, DepartmentSelector, UserSelector, useConfirm, Card, Button, IconButton, TextField, NumberInput, Select, Checkbox, SegmentedControl, Grid, GridItem } from '@so360/design-system';
 import { useShellBridge } from '@so360/shell-context';
 import {
     assignmentRulesService,
@@ -288,22 +288,17 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
 
             <div>
                 <span className={LABEL_CLS}>Assign to</span>
-                <div className="flex gap-1 bg-surface-sunken p-1 rounded-nb border border-line w-fit mb-3" role="radiogroup" aria-label="Assign to">
-                    {(['users', 'department'] as const).map((t) => {
-                        const on = draft.pool_source !== 'project_assigned' && draft.target_type === t;
-                        return (
-                            <Button variant={on ? "primary" : "secondary"} size="sm" key={t} type="button" role="radio" aria-checked={on} onClick={() => setDraft((d) => ({
-                                    ...d,
-                                    target_type: t,
-                                    ...(d.pool_source === 'project_assigned' ? { pool_source: null } : {}),
-                                }))}>
-                                {t === 'users' ? 'People' : 'Department'}
-                            </Button>
-                        );
-                    })}
-                    <Button variant={draft.pool_source === 'project_assigned' ? 'primary' : 'secondary'} size="sm" type="button" role="radio" aria-checked={draft.pool_source === 'project_assigned'} onClick={() => setDraft((d) => ({ ...d, pool_source: 'project_assigned', target_type: 'users', target_user_ids: [] }))}>
-                        Project agents
-                    </Button>
+                <div className="mb-3">
+                <SegmentedControl aria-label="Assign to"
+                    value={draft.pool_source === 'project_assigned' ? 'project_assigned' : draft.target_type === 'department' ? 'department' : 'users'}
+                    onChange={(v: string) => setDraft((d) => v === 'project_assigned'
+                        ? { ...d, pool_source: 'project_assigned', target_type: 'users', target_user_ids: [] }
+                        : { ...d, target_type: v as 'users' | 'department', ...(d.pool_source === 'project_assigned' ? { pool_source: null } : {}) })}
+                    options={[
+                        { value: 'users', label: 'People' },
+                        { value: 'department', label: 'Department' },
+                        { value: 'project_assigned', label: 'Project agents' },
+                    ]} />
                 </div>
                 {draft.pool_source === 'project_assigned' ? (
                     <p className="text-xs text-fg-subtle">The pool is the agents (and team members) allocated to the lead's project.</p>

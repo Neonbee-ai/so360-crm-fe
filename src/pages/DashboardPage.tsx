@@ -6,7 +6,7 @@ import {
     Calendar, Loader2, ShoppingBag, Package, LayoutDashboard
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { CrossLinkChip, DashboardPageTemplate, KpiCard, Card, SegmentedControl, Grid, GridItem, Button, EmptyState, Progress } from '@so360/design-system';
+import { CrossLinkChip, DashboardPageTemplate, KpiCard, CountUp, Card, SegmentedControl, Grid, GridItem, Button, EmptyState, Progress } from '@so360/design-system';
 import { useBusinessSettings, useShell } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import REWidgets from '../components/dashboard/REWidgets';
@@ -243,7 +243,7 @@ const DashboardPage = () => {
                                     <span className="text-xs font-semibold text-fg-muted">Revenue</span>
                                 </div>
                                 <h3 className="text-2xl font-semibold text-fg">
-                                    {formatCurrency(commerceKPIs?.revenue ?? 0)}
+                                    <CountUp value={formatCurrency(commerceKPIs?.revenue ?? 0)} />
                                 </h3>
                                 <p className="text-xs text-fg-muted mt-1 font-medium">Recognized (paid)</p>
                             </div>

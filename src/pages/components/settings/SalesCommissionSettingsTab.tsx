@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Loader2, Plus, Save, Trash2 } from 'lucide-react';
-import { toast, UserSelector, Card, Button, IconButton, TextField, NumberInput, Select, Checkbox, DataTable, Grid, GridItem } from '@so360/design-system';
+import { toast, UserSelector, Card, Button, IconButton, TextField, NumberInput, Select, Checkbox, DataTable, SegmentedControl, Grid, GridItem } from '@so360/design-system';
 import type { DataTableColumn } from '@so360/design-system';
 import { useShellBridge } from '@so360/shell-context';
 import {
@@ -309,13 +309,10 @@ const SalesCommissionSettingsTab: React.FC<Props> = ({ canWrite }) => {
             {allocationOn && (
                 <Card title="Unit visibility">
                   <div className={CARD_BODY_CLS}>
-                    <div className="flex gap-1 bg-surface-sunken p-1 rounded-nb border border-line w-fit" role="radiogroup" aria-label="Agents can book">
-                        {([['all', 'Any available unit'], ['assigned_only', 'Only units allocated to them']] as const).map(([v, label]) => (
-                            <Button variant={draft.unit_visibility === v ? "primary" : "secondary"} size="sm" key={v} type="button" role="radio" aria-checked={draft.unit_visibility === v} disabled={ro} onClick={() => set({ unit_visibility: v as UnitVisibility })}>
-                                {label}
-                            </Button>
-                        ))}
-                    </div>
+                    <SegmentedControl aria-label="Agents can book" value={draft.unit_visibility} onChange={(v: string) => { if (!ro) set({ unit_visibility: v as UnitVisibility }); }} options={[
+                        { value: 'all', label: 'Any available unit', disabled: ro },
+                        { value: 'assigned_only', label: 'Only units allocated to them', disabled: ro },
+                    ]} />
                     <p className="text-xs text-fg-muted">Managers can always see and book every unit.</p>
                   </div>
                 </Card>

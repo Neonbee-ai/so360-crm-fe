@@ -415,3 +415,7 @@ export const Banner = ({ children, action, 'data-testid': testId }: any) =>
     action ? React.createElement('button', { type: 'button', onClick: action.onClick }, action.label) : null);
 export const CustomFieldsPanel = ({ title, fields = [], 'data-testid': testId }: any) =>
   React.createElement('section', { 'aria-label': title, 'data-testid': testId ?? 'cf-panel-stub' }, fields.map((f: any) => f.field_key).join(','));
+
+export const CountUp = ({ value }: any) => React.createElement(React.Fragment, null, value);
+export const useCountUp = (v: number) => v;
+export const KpiGrid = ({ children }: any) => React.createElement('div', null, children);

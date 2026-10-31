@@ -4,7 +4,7 @@ import { Save, Send, CheckCircle, XCircle, FileText, Plus, Trash2, Edit2, Packag
 import { canDownloadQuotePdf, downloadQuotePdf } from '../utils/quotePdfDownload';
 import { Modal } from '../components/common/Modal';
 import { crmService } from '../services/crmService';
-import { toast, getErrorMessage, useConfirm, DetailPageTemplate, Button, Card, Badge, Alert, TextField, Textarea, Select, DataTable, IconButton, type DataTableColumn, type BadgeTone, Grid, GridItem, EmptyState } from '@so360/design-system';
+import { toast, getErrorMessage, useConfirm, DetailPageTemplate, Button, Card, Badge, Alert, TextField, Textarea, Select, DataTable, IconButton, type DataTableColumn, type BadgeTone, Grid, GridItem, EmptyState, CountUp } from '@so360/design-system';
 import { Quote, QuoteLine, QuoteStatus, ProductPickerSelection, Lead } from '../types/crm';
 import { INCOTERMS_2020, INCOTERM_LABELS } from '../utils/incoterms';
 import { useBusinessSettings, useActivity, useShellBridge, useOrganization } from '@so360/shell-context';
@@ -547,7 +547,7 @@ const QuoteDetailPage = () => {
                             <div className="space-y-4">
                                 <div>
                                     <span className="text-sm text-fg-subtle">Grand Total</span>
-                                    <p className="text-2xl font-bold text-fg">{formatCurrency(totals.grandTotal)}</p>
+                                    <p className="text-2xl font-bold text-fg"><CountUp value={formatCurrency(totals.grandTotal)} /></p>
                                 </div>
                                 <Grid gap="md" className="pt-4 border-t border-line">
                                     <GridItem span={{ md: 4, lg: 6 }}><div>
