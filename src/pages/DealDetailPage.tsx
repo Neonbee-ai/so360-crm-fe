@@ -755,9 +755,7 @@ const DealDetailPage = () => {
                                                     <span className="text-xs font-bold text-fg-muted">· {deal.owner_person.department_name}</span>
                                                 )}
                                                 {deal.owner_person.status !== 'active' && (
-                                                    <span className="text-xs text-warning border border-warning/40 rounded-nb px-1.5 py-0.5">
-                                                        Inactive
-                                                    </span>
+                                                    <Badge size="sm" tone="warning">Inactive</Badge>
                                                 )}
                                             </div>
                                         ) : (
@@ -887,16 +885,15 @@ const DealDetailPage = () => {
 
                                 <div className="flex justify-between items-center py-2 border-t border-line">
                                     <span className="text-xs font-medium text-fg-muted ">Status</span>
-                                    <span className={`px-2 py-0.5 rounded text-xs font-medium  ${
-                                        invoiceStatus.status === 'paid' ? 'bg-success/10 text-success border border-success/20' :
-                                        invoiceStatus.status === 'sent' || invoiceStatus.status === 'pending' ? 'bg-info/10 text-info border border-info/20' :
-                                        invoiceStatus.status === 'overdue' ? 'bg-danger/10 text-danger border border-danger/20' :
-                                        invoiceStatus.status === 'draft' ? 'bg-fg-muted/10 text-fg-subtle border border-line' :
-                                        invoiceStatus.status === 'partially_paid' ? 'bg-warning/10 text-warning border border-warning/20' :
-                                        'bg-fg-muted/10 text-fg-subtle border border-line'
-                                    }`}>
+                                    <Badge size="sm" tone={
+                                        invoiceStatus.status === 'paid' ? 'success' :
+                                        invoiceStatus.status === 'sent' || invoiceStatus.status === 'pending' ? 'info' :
+                                        invoiceStatus.status === 'overdue' ? 'danger' :
+                                        invoiceStatus.status === 'partially_paid' ? 'warning' :
+                                        'neutral'
+                                    }>
                                         {invoiceStatus.status === 'partially_paid' ? 'Partial' : invoiceStatus.status || 'Unknown'}
-                                    </span>
+                                    </Badge>
                                 </div>
 
                                 {invoiceStatus.total != null && (
@@ -950,20 +947,19 @@ const DealDetailPage = () => {
                         const fo = fulfillmentOrder;
                         const lastShipment = fo.fulfillment_shipments?.[0];
                         const lastEvent = lastShipment?.fulfillment_shipment_events?.[0];
-                        const statusColor =
-                            fo.status === 'delivered' ? 'text-success bg-success/10 border-success/20' :
-                            fo.status === 'out_for_delivery' ? 'text-success bg-success/10 border-success/20' :
-                            fo.status === 'in_transit' ? 'text-info bg-info/10 border-info/20' :
-                            fo.status === 'delivery_failed' ? 'text-danger bg-danger/10 border-danger/20' :
-                            'text-fg-subtle bg-fg-muted/10 border-line';
+                        const statusTone: 'success' | 'info' | 'danger' | 'neutral' =
+                            fo.status === 'delivered' || fo.status === 'out_for_delivery' ? 'success' :
+                            fo.status === 'in_transit' ? 'info' :
+                            fo.status === 'delivery_failed' ? 'danger' :
+                            'neutral';
                         return (
                             <Card title="Fulfillment Tracking">
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between">
                                         <span className="text-xs font-medium text-fg-muted ">Status</span>
-                                        <span className={`px-2 py-0.5 rounded text-xs font-medium  border ${statusColor}`}>
+                                        <Badge size="sm" tone={statusTone}>
                                             {fo.status?.replace(/_/g, ' ') || 'pending'}
-                                        </span>
+                                        </Badge>
                                     </div>
                                     {lastShipment?.tracking_number && (
                                         <div className="flex items-center justify-between py-2 border-t border-line">
@@ -1061,9 +1057,9 @@ const DealDetailPage = () => {
                                                                         }} />
                                                                 </div>
                                                             )}
-                                                            <span className="text-xs bg-surface-raised text-fg-muted px-2 py-0.5 rounded font-semibold">
+                                                            <Badge size="sm" tone="neutral">
                                                                 {formatters.formatDateTime(ev.date)}
-                                                            </span>
+                                                            </Badge>
                                                         </div>
                                                     </div>
                                                     <p className="text-fg-subtle text-sm leading-relaxed">{ev.description}</p>

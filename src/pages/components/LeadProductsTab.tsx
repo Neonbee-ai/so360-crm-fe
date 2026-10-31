@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Button, Badge, EmptyState, IconButton, TextField, NumberInput, Select } from '@so360/design-system';
+import { Button, Badge, EmptyState, IconButton, TextField, NumberInput, Select, Skeleton } from '@so360/design-system';
 import { Modal } from '../../components/common/Modal';
-import { Package, Plus, Trash2, Loader2, Search, AlertCircle, Check, Sparkles } from 'lucide-react';
+import { Package, Plus, Trash2, Search, AlertCircle, Check, Sparkles } from 'lucide-react';
 import { crmService } from '../../services/crmService';
 import { describeApiError } from '../../utils/apiErrorMessage';
 import { LeadProduct, ProductInterestStatus, InventoryItem } from '../../types/crm';
@@ -162,9 +162,7 @@ function AddProductModal({ onClose, onAdd, existingItemIds, unitBooking = false 
                             />
                         )}
                         {loading && (
-                            <div className="flex items-center justify-center py-8">
-                                <Loader2 size={20} className="animate-spin text-primary" />
-                            </div>
+                            <div className="py-nb-4"><Skeleton variant="text" lines={3} /></div>
                         )}
                         {!loading && error && (
                             <div className="flex flex-col items-center gap-3 py-8 text-center">
@@ -211,9 +209,7 @@ function AddProductModal({ onClose, onAdd, existingItemIds, unitBooking = false 
                                 );
                             })}
                             {loadingMore && (
-                                <div className="flex items-center justify-center py-3">
-                                    <Loader2 size={14} className="animate-spin text-primary" />
-                                </div>
+                                <div className="py-nb-2"><Skeleton variant="text" /></div>
                             )}
                         </div>
                     </>
@@ -380,9 +376,7 @@ export default function LeadProductsTab({ leadId, onStatsChange }: Props) {
 
             {/* Product list */}
             {loading ? (
-                <div className="flex justify-center py-12">
-                    <Loader2 size={24} className="animate-spin text-primary" />
-                </div>
+                <div className="py-nb-4"><Skeleton variant="rect" /></div>
             ) : loadError ? (
                 <div role="alert" className="flex flex-col items-center gap-3 py-8 text-center">
                     <AlertCircle size={24} className="text-danger" />

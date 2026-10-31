@@ -1037,9 +1037,9 @@ const SettingsPage = ({ onOpenIcps, onOpenDataSettings, onOpenEstimator }: { onO
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2 mb-0.5">
                                                     <span className="text-sm font-bold text-fg truncate">{rule.name}</span>
-                                                    <span className={`text-xs font-semibold px-1.5 py-0.5 rounded shrink-0 ${rule.rule_type === 'source' ? 'bg-primary/10 text-primary' : rule.rule_type === 'activity' ? 'bg-info/10 text-info' : 'bg-warning/10 text-warning'}`}>
+                                                    <Badge size="sm" tone={rule.rule_type === 'source' ? 'primary' : rule.rule_type === 'activity' ? 'info' : 'warning'}>
                                                         {rule.rule_type === 'source' ? 'Source' : rule.rule_type === 'activity' ? 'Activity' : 'Field'}
-                                                    </span>
+                                                    </Badge>
                                                 </div>
                                                 <p className="text-xs text-fg-muted font-bold truncate">
                                                     {getTargetLabel(rule)} — {getRuleConditionLabel(rule)}

@@ -127,6 +127,20 @@ function statusColor(status: string) {
   return STATUS_COLORS[status] ?? 'bg-fg-muted/10 text-fg-subtle border-line';
 }
 
+const STATUS_TONES: Record<string, BadgeTone> = {
+  New: 'primary',
+  Contacted: 'info',
+  Qualified: 'primary',
+  'Proposal Sent': 'warning',
+  Negotiation: 'warning',
+  Converted: 'success',
+  Lost: 'danger',
+};
+
+function statusTone(status: string): BadgeTone {
+  return STATUS_TONES[status] ?? 'neutral';
+}
+
 function initials(name: string) {
   return name
     .split(' ')
@@ -298,9 +312,9 @@ const COL_DEFS: ColDef[] = [
               options={ctx.leadStages.map((stage) => ({ value: stage.id, label: stage.name }))}
             />
           ) : (
-            <span className={`px-2 py-1 rounded-full text-xs font-medium border ${color}`}>
+            <Badge size="sm" tone={statusTone(lead.status)}>
               {lead.status}
-            </span>
+            </Badge>
           )}
         </div>
       );
@@ -323,7 +337,7 @@ const COL_DEFS: ColDef[] = [
               className="w-6 h-6 rounded-full object-cover shrink-0"
             />
           ) : (
-            <div className="w-6 h-6 rounded-full bg-line text-fg-subtle flex items-center justify-center text-xs font-bold shrink-0">
+            <div className="w-6 h-6 rounded-full bg-line text-fg flex items-center justify-center text-xs font-bold shrink-0">
               {ownerName !== '—' ? initials(ownerName) : '?'}
             </div>
           )}
@@ -551,17 +565,14 @@ const COL_DEFS: ColDef[] = [
       return tags.length > 0 ? (
         <div className="flex flex-wrap gap-1">
           {tags.slice(0, 3).map((tag) => (
-            <span
-              key={tag}
-              className="px-1.5 py-0.5 rounded text-xs font-medium bg-line text-fg-subtle"
-            >
+            <Badge key={tag} size="sm" tone="neutral">
               {tag}
-            </span>
+            </Badge>
           ))}
           {tags.length > 3 && (
-            <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-surface-raised text-fg-subtle">
+            <Badge size="sm" tone="neutral" variant="muted">
               +{tags.length - 3}
-            </span>
+            </Badge>
           )}
         </div>
       ) : (
@@ -576,19 +587,15 @@ const COL_DEFS: ColDef[] = [
     minWidth: 90,
     render: (lead) => {
       const h = computeLeadHealth(lead);
-      const pill: Record<string, string> = {
-        hot: 'bg-success/15 text-success',
-        warm: 'bg-warning/15 text-warning',
-        cold: 'bg-danger/15 text-danger',
-      };
-      const dot: Record<string, string> = {
-        hot: 'bg-success', warm: 'bg-warning', cold: 'bg-danger',
+      const tone: Record<string, BadgeTone> = {
+        hot: 'success',
+        warm: 'warning',
+        cold: 'danger',
       };
       return (
-        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${pill[h.level]}`}>
-          <span className={`w-1.5 h-1.5 rounded-full ${dot[h.level]}`} />
+        <Badge size="sm" dot tone={tone[h.level] ?? 'neutral'}>
           {h.label}
-        </span>
+        </Badge>
       );
     },
   },
@@ -1565,9 +1572,9 @@ export function LeadsDataGrid({
                         <ChevronDown size={14} className="text-fg-subtle" />
                       )}
                       <span className="font-semibold">{g.label}</span>
-                      <span className="text-xs text-fg-muted bg-surface-raised rounded-full px-2 py-0.5">
+                      <Badge size="sm" tone="neutral" shape="pill">
                         {g.count}
-                      </span>
+                      </Badge>
                     </Button>
                     {!isCollapsed && g.leads.map((l) => renderRow(l))}
                   </div>

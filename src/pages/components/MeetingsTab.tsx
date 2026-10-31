@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Calendar, Plus, Loader2, MapPin, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { Calendar, Plus, MapPin, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { meetingsApi } from '../../services/crmService';
 import { Meeting } from '../../types/crm';
 import MeetingModal from './MeetingModal';
 import { PromptDialog } from '../../components/PromptDialog';
-import { useConfirm, Button, Badge, EmptyState, IconButton } from '@so360/design-system';
+import { useConfirm, Button, Badge, EmptyState, IconButton, Skeleton } from '@so360/design-system';
 
 interface Props {
     leadId?: string;
@@ -87,7 +87,7 @@ const MeetingsTab: React.FC<Props> = ({ leadId, dealId }) => {
             </div>
 
             {loading ? (
-                <div className="flex justify-center py-10 text-fg-muted"><Loader2 size={20} className="animate-spin" /></div>
+                <div className="py-nb-4"><Skeleton variant="text" lines={3} /></div>
             ) : meetings.length === 0 ? (
                 <EmptyState icon={Calendar} title="No meetings scheduled yet" />
             ) : (

@@ -36,7 +36,7 @@ export default function IcpFitCard({ meta }: { meta?: Record<string, any> | null
 
   return (
     <div data-testid="icp-fit-card">
-      <Card title="ICP fit" actions={<Badge tone={BAND_TONE[band]} data-testid="icp-fit-band">{FIT_BAND_LABELS[band]}</Badge>}>
+      <Card title="ICP fit" actions={<Badge tone={BAND_TONE[band]} data-testid="badge-icp-fit-band">{FIT_BAND_LABELS[band]}</Badge>}>
         <p className="text-3xl font-bold text-fg" data-testid="icp-fit-score">{`${score} / 100`}</p>
         {meta?.icp_name && <p className="mt-1 text-xs text-fg-muted" data-testid="icp-fit-name">{String(meta.icp_name)}</p>}
         {criteria.length > 0 && (

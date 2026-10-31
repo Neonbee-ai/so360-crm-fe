@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronUp, ChevronDown, Edit2, Trash2, Plus, Loader2, ToggleLeft, ToggleRight, X } from 'lucide-react';
-import { toast, DepartmentSelector, UserSelector, useConfirm, Card, Button, IconButton, TextField, NumberInput, Select, Checkbox, SegmentedControl, Grid, GridItem } from '@so360/design-system';
+import { toast, DepartmentSelector, UserSelector, useConfirm, Card, Button, IconButton, TextField, NumberInput, Select, Checkbox, SegmentedControl, Grid, GridItem, Skeleton } from '@so360/design-system';
 import { useShellBridge } from '@so360/shell-context';
 import {
     assignmentRulesService,
@@ -396,7 +396,7 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                 {editor}
 
                 {loading ? (
-                    <div className="p-10 flex justify-center text-fg-muted"><Loader2 size={20} className="animate-spin" /></div>
+                    <div className="p-nb-4"><Skeleton variant="text" lines={3} /></div>
                 ) : loadError ? (
                     <p role="alert" className="p-6 text-sm font-bold text-danger">{loadError}</p>
                 ) : rules.length === 0 ? (

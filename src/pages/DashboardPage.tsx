@@ -267,7 +267,7 @@ const DashboardPage = () => {
                     {/* Orders Distribution chart */}
                     {commerceKPIs?.orderChartData && commerceKPIs.orderChartData.values.length > 0 && (
                         <div className="mt-6 border-t border-line pt-6">
-                            <div className="flex justify-between items-center mb-6">
+                            <div className="flex flex-wrap justify-between items-center gap-nb-2 mb-6">
                                 <div>
                                     <h3 className="text-base font-semibold text-fg">Orders Distribution</h3>
                                     <p className="text-xs text-fg-muted font-bold mt-1">Order volume by period</p>
@@ -277,7 +277,7 @@ const DashboardPage = () => {
                                 </div>
                             </div>
 
-                            <div className="h-48 flex items-end justify-between gap-2 px-4 relative">
+                            <div className="h-48 flex items-end justify-between gap-2 px-4 relative min-w-0 overflow-x-clip">
                                 {/* Grid lines */}
                                 <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-40">
                                     <div className="w-full h-px bg-fg-muted/40 border-t border-dashed border-line" />
@@ -383,7 +383,7 @@ const DashboardPage = () => {
                 {/* Revenue Chart */}
                 <GridItem span={showLeads ? { lg: 8 } : 'full'}>
                 <Card title="Revenue Performance" className="min-w-0">
-                    <div className="flex justify-between items-center mb-8">
+                    <div className="flex flex-wrap justify-between items-center gap-nb-2 mb-8">
                         <div>
                             <p className="text-xs text-fg-muted font-bold mt-1">Monthly Revenue Distribution</p>
                         </div>
@@ -394,7 +394,7 @@ const DashboardPage = () => {
                         </div>
                     </div>
 
-                    <div className="h-64 flex items-end justify-between gap-2 px-4 relative">
+                    <div className="h-64 flex items-end justify-between gap-2 px-4 relative min-w-0 overflow-x-clip">
                         {/* Grid lines */}
                         <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-20">
                             <div className="w-full h-px bg-line border-t border-dashed" />
@@ -483,7 +483,7 @@ const DashboardPage = () => {
                 full-width band of empty cards. */}
             {showPipeline && teamStats.length > 0 && <Card title="Performance Analytics" className="relative overflow-hidden">
                 <div className="relative">
-                    <div className="flex justify-between items-center mb-6">
+                    <div className="flex flex-wrap justify-between items-center gap-nb-2 mb-6">
                         <div>
                             <p className="text-xs text-fg-muted font-bold mt-1">Activity vs. Conversion Efficiency</p>
                         </div>
@@ -573,13 +573,15 @@ const DashboardPage = () => {
                     variant="secondary"
                     onClick={() => setShowCustomize(true)}
                     aria-label="Customize dashboard"
+                    leadingIcon={<LayoutDashboard size={14} />}
+                    className="whitespace-nowrap"
                 >
-                    <LayoutDashboard size={14} /> Customize
+                    Customize
                 </Button>
             ) : undefined}
             kpis={kpisVisible && showPipeline ? widgetNodes.kpis : undefined}
             filters={
-                <>
+                <div className="max-w-full min-w-0 overflow-x-auto">
                 <SegmentedControl
                     aria-label="Dashboard period"
                     size="sm"
@@ -592,7 +594,7 @@ const DashboardPage = () => {
                         { value: 'weekly', label: 'Weekly' },
                     ]}
                 />
-                </>
+                </div>
             }
             primary={
                 <>

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { partnersApi, settingsApi, crmService } from '../services/crmService';
-import { ListPageTemplate, Pagination, Button, DataTable, SearchInput, TextField, Select, type DataTableColumn, type FilterValues, type ListFilterConfig, Grid, GridItem, ChipGroup } from '@so360/design-system';
+import { ListPageTemplate, Pagination, Button, DataTable, SearchInput, TextField, Select, type DataTableColumn, type FilterValues, type ListFilterConfig, Grid, GridItem, ChipGroup, Badge, type BadgeTone } from '@so360/design-system';
 import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
 import { validatePhone } from '../utils/phoneValidation';
 import {
@@ -26,10 +26,10 @@ import { Modal } from '../components/common/Modal';
 type SortField = 'contact_name' | 'partner_type' | 'grading' | 'total_deals' | 'total_deal_value';
 type SortDirection = 'asc' | 'desc' | null;
 
-const GRADING_CONFIG: Record<string, { label: string; color: string }> = {
-    low:  { label: 'Low',  color: 'bg-fg-muted/10 text-fg-subtle border-line' },
-    mid:  { label: 'Mid',  color: 'bg-info/10 text-info border-info/20' },
-    high: { label: 'High', color: 'bg-success/10 text-success border-success/20' },
+const GRADING_CONFIG: Record<string, { label: string; tone: BadgeTone }> = {
+    low:  { label: 'Low',  tone: 'neutral' },
+    mid:  { label: 'Mid',  tone: 'info' },
+    high: { label: 'High', tone: 'success' },
 };
 
 const AREA_OPTIONS = ['South India', 'North India', 'Central India', 'East India', 'West India'];
@@ -396,9 +396,9 @@ const PartnersPage = () => {
         if (!grading) return <span className="text-fg-muted text-sm">-</span>;
         const config = GRADING_CONFIG[grading] || GRADING_CONFIG.low;
         return (
-            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${config.color}`}>
+            <Badge size="sm" tone={config.tone}>
                 {config.label}
-            </span>
+            </Badge>
         );
     };
 
@@ -420,9 +420,9 @@ const PartnersPage = () => {
         {
             key: 'partner_type', header: 'Type', sortable: true,
             render: (p: any) => (
-                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border bg-info/10 text-info border-info/20">
+                <Badge size="sm" tone="info">
                     {getPartnerTypeLabel(p.partner_type)}
-                </span>
+                </Badge>
             ),
         },
         {

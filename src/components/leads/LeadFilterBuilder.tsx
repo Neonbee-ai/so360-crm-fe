@@ -13,7 +13,7 @@
  */
 import { useState } from 'react';
 import { Plus, Trash2, X, FolderPlus, Filter as FilterIcon } from 'lucide-react';
-import { Select, TextField, Button, IconButton } from '@so360/design-system';
+import { Badge, Select, TextField, Button, IconButton } from '@so360/design-system';
 import {
   FILTERABLE_FIELDS,
   getField,
@@ -237,7 +237,7 @@ export default function LeadFilterBuilder({ value, onApply, onClose }: LeadFilte
           <FilterIcon size={16} className="text-primary" />
           Advanced Filters
           {activeCount > 0 && (
-            <span className="text-xs bg-primary text-primary-fg rounded-full px-2 py-0.5">{activeCount}</span>
+            <Badge size="sm" tone="primary" variant="solid" shape="pill">{activeCount}</Badge>
           )}
         </div>
         <IconButton label="Close" icon={<X size={18} />} onClick={onClose} />

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, SlidersHorizontal, List, Loader2, Users } from 'lucide-react';
+import { Plus, Users } from 'lucide-react';
 import { stakeholderApi } from '../../services/crmService';
 import { Stakeholder, Deal } from '../../types/crm';
 import StakeholderCard from './StakeholderCard';
@@ -8,7 +8,7 @@ import StakeholderHierarchyTree from './StakeholderHierarchyTree';
 import StakeholderQuickActions from './StakeholderQuickActions';
 import StakeholderActivitySummary from './StakeholderActivitySummary';
 import StakeholderDealLinker from './StakeholderDealLinker';
-import { useConfirm, Button, SearchInput, ListFilters, type ListFilterConfig, type FilterValues, IconButton } from '@so360/design-system';
+import { useConfirm, Button, SearchInput, ListFilters, type ListFilterConfig, type FilterValues, Skeleton, SegmentedControl } from '@so360/design-system';
 
 interface Props {
     leadId: string;
@@ -83,17 +83,23 @@ const StakeholdersTab: React.FC<Props> = ({ leadId, deals, onSwitchToNotes, onSw
                     />
                 </div>
                 <ListFilters {...filterConfig} />
-                <div className="flex items-center gap-1 bg-surface border border-line rounded-nb p-1">
-                    <IconButton label="List view" icon={<List size={14} />} onClick={() => setView('list')} aria-pressed={view === 'list'} />
-                    <IconButton label="Hierarchy view" icon={<SlidersHorizontal size={14} />} onClick={() => setView('hierarchy')} aria-pressed={view === 'hierarchy'} />
-                </div>
+                <SegmentedControl
+                    aria-label="Stakeholder view"
+                    size="sm"
+                    value={view}
+                    onChange={(v) => setView(v as typeof view)}
+                    options={[
+                        { value: 'list', label: 'List' },
+                        { value: 'hierarchy', label: 'Hierarchy' },
+                    ]}
+                />
                 <Button type="button" size="sm" onClick={() => setEditingStakeholder(null)}>
                     <Plus size={14} /> Add Stakeholder
                 </Button>
             </div>
 
             {loading ? (
-                <div className="flex justify-center py-10 text-fg-muted"><Loader2 size={20} className="animate-spin" /></div>
+                <div className="py-nb-4"><Skeleton variant="text" lines={3} /></div>
             ) : stakeholders.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10 text-fg-muted">
                     <Users size={24} className="mb-2" />

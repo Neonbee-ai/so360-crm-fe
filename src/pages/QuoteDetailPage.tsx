@@ -743,9 +743,9 @@ const QuoteDetailPage = () => {
                                                     <span className="flex-1 min-w-0">
                                                         <span className="text-fg truncate block">{line.item_name}</span>
                                                         <span className="flex items-center gap-1 mt-0.5">
-                                                            <span className="text-xs px-1.5 py-0.5 bg-fg-muted/20 text-fg-subtle rounded">{line.sku}</span>
+                                                            <Badge size="sm" tone="neutral">{line.sku}</Badge>
                                                             {line.sub_sku && line.sub_sku !== 'NIL' && (
-                                                                <span className="text-xs px-1.5 py-0.5 bg-primary/50 text-primary rounded">{line.sub_sku}</span>
+                                                                <Badge size="sm" tone="primary">{line.sub_sku}</Badge>
                                                             )}
                                                         </span>
                                                     </span>
@@ -770,9 +770,9 @@ const QuoteDetailPage = () => {
                                                 <span className="text-fg block">{line.description}</span>
                                                 {line.sku && (
                                                     <span className="flex items-center gap-1 mt-0.5">
-                                                        <span className="text-xs px-1.5 py-0.5 bg-fg-muted/20 text-fg-subtle rounded">{line.sku}</span>
+                                                        <Badge size="sm" tone="neutral">{line.sku}</Badge>
                                                         {line.sub_sku && line.sub_sku !== 'NIL' && (
-                                                            <span className="text-xs px-1.5 py-0.5 bg-primary/40 text-primary rounded">{line.sub_sku}</span>
+                                                            <Badge size="sm" tone="primary">{line.sub_sku}</Badge>
                                                         )}
                                                     </span>
                                                 )}

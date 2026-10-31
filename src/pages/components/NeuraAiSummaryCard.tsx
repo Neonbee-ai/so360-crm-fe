@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Card, IconButton } from '@so360/design-system';
-import { RefreshCw, AlertCircle, Loader2 } from 'lucide-react';
+import { Card, IconButton, Skeleton } from '@so360/design-system';
+import { RefreshCw, AlertCircle } from 'lucide-react';
 import { neuraAiService, inboxIntegrationApi, NeuraEntityRef } from '../../services/crmService';
 
 interface Props {
@@ -124,8 +124,8 @@ const NeuraAiSummaryCard: React.FC<Props> = ({ leadId, leadLabel, isInboxEnabled
             }
         >
             {isLoading && !summary ? (
-                <div className="flex items-center gap-2 text-fg-muted py-4">
-                    <Loader2 size={14} className="animate-spin" />
+                <div role="status" aria-busy="true" className="space-y-nb-2 text-fg-muted py-4">
+                    <Skeleton variant="text" lines={3} />
                     <span className="text-xs">Neura AI is reviewing this {isDeal ? 'deal' : isPartner ? 'partner' : 'lead'}…</span>
                 </div>
             ) : error && !summary ? (

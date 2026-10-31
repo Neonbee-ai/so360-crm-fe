@@ -572,9 +572,9 @@ const QuotesPage = () => {
                     return (
                         <div className="flex items-center gap-1.5 whitespace-nowrap">
                             <span className="text-danger/80 line-through text-xs">{formatDate(quote.valid_until)}</span>
-                            <span className="px-1.5 py-0.5 rounded text-xs font-bold  bg-danger/10 text-danger border border-danger/20">
+                            <Badge size="sm" tone="danger">
                                 Expired
-                            </span>
+                            </Badge>
                         </div>
                     );
                 }
@@ -582,9 +582,9 @@ const QuotesPage = () => {
                     return (
                         <div className="flex items-center gap-1.5 whitespace-nowrap">
                             <span className="text-warning text-xs font-medium">{formatDate(quote.valid_until)}</span>
-                            <span className="px-1.5 py-0.5 rounded text-xs font-bold  bg-warning/10 text-warning border border-warning/20">
+                            <Badge size="sm" tone="warning">
                                 Soon
-                            </span>
+                            </Badge>
                         </div>
                     );
                 }
@@ -737,25 +737,25 @@ const QuotesPage = () => {
             render: (item: any) => {
                 if (item.approver_status === 'approved') {
                     return (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-success/10 text-success border border-success/30">
+                        <Badge size="sm" tone="success">
                             <Check className="w-3 h-3" />
                             Approved
-                        </span>
+                        </Badge>
                     );
                 }
                 if (item.approver_status === 'rejected') {
                     return (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-danger/10 text-danger border border-danger/30">
+                        <Badge size="sm" tone="danger">
                             <X className="w-3 h-3" />
                             Rejected
-                        </span>
+                        </Badge>
                     );
                 }
                 return (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-warning/10 text-warning border border-warning/30">
+                    <Badge size="sm" tone="warning">
                         <Clock className="w-3 h-3" />
                         Pending
-                    </span>
+                    </Badge>
                 );
             },
         },

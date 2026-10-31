@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Building2, Check, Loader2, Plus, Share2 } from 'lucide-react';
-import { toast, Button, IconButton } from '@so360/design-system';
+import { toast, Badge, Button, IconButton, type BadgeTone } from '@so360/design-system';
 import { useCRMFormatters } from '../../utils/formatters';
 import {
     matchingUnitsService,
@@ -18,10 +18,10 @@ interface Props {
     onAttach: (unit: MatchingUnit) => Promise<void> | void;
 }
 
-const scoreTone = (score: number) =>
-    score >= 75 ? 'text-success bg-success-container border-success/30'
-        : score >= 50 ? 'text-warning bg-warning-container border-warning/30'
-            : 'text-fg-subtle bg-surface-raised border-line';
+const scoreTone = (score: number): BadgeTone =>
+    score >= 75 ? 'success'
+        : score >= 50 ? 'warning'
+            : 'neutral';
 
 /**
  * Property matching (A9): units that fit the lead's budget / bedrooms /
@@ -97,12 +97,13 @@ export const MatchingUnitsPanel: React.FC<Props> = ({ entity, id, existingItemId
                                             {[u.project, u.tower ? `Tower ${u.tower}` : null].filter(Boolean).join(' · ')}
                                         </span>
                                     )}
-                                    <span
-                                        className={`text-xs font-semibold px-1.5 py-0.5 rounded border ${scoreTone(u.score)}`}
+                                    <Badge
+                                        size="sm"
+                                        tone={scoreTone(u.score)}
                                         title="Match score"
                                     >
                                         {Math.round(u.score)}% match
-                                    </span>
+                                    </Badge>
                                 </div>
                                 <p className="text-xs text-fg-subtle mt-0.5">
                                     {[

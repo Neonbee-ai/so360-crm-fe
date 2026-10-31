@@ -1,6 +1,7 @@
 import React from 'react';
 import { Deal } from '../../types/crm';
 import { Calendar, TrendingUp, Lock } from 'lucide-react';
+import { Badge } from '@so360/design-system';
 import { useCRMFormatters } from '../../utils/formatters';
 
 interface KanbanStage {
@@ -161,9 +162,9 @@ export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: Kanba
                                 style={{ color: accentColor }}
                             >
                                 {stage.name}
-                                <span className="text-xs bg-fg-muted/20 text-fg-muted px-2 py-0.5 rounded-full font-semibold">
+                                <Badge size="sm" tone="neutral" shape="pill">
                                     {stageDeals.length}
-                                </span>
+                                </Badge>
                                 {stage.is_terminal && (
                                     <Lock size={11} className="text-fg-muted" />
                                 )}
@@ -224,9 +225,9 @@ export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: Kanba
                                                 <span className="text-xs font-semibold text-fg">{formatters.formatCurrency(deal.value)}</span>
                                             </div>
                                         </div>
-                                        <span className="text-xs text-fg-muted font-bold flex items-center gap-1 bg-fg-muted/10 px-1.5 py-0.5 rounded">
+                                        <Badge size="sm" tone="neutral">
                                             <Calendar size={10} className="text-fg-muted" /> {deal.expected_close_date}
-                                        </span>
+                                        </Badge>
                                     </div>
                                 </div>
                             ))}

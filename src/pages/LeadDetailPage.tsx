@@ -28,7 +28,7 @@ import { ContactFeedPanel } from '../components/ContactFeedPanel';
 import { S2S_FLAGS } from '../services/coreS2sService';
 import MaintenanceTab from './components/MaintenanceTab';
 import { MAINTENANCE_TAB_FLAG, withMaintenanceTab } from '../services/maintenanceTabService';
-import { toast, useConfirm, DetailPageTemplate, Button, IconButton, Tabs, TextField, Select, Checkbox, Badge, Card, ConfirmDialog, EmptyState, FileUpload, Grid, GridItem } from '@so360/design-system';
+import { toast, useConfirm, DetailPageTemplate, Button, IconButton, Tabs, TextField, Select, Checkbox, Badge, Card, ConfirmDialog, EmptyState, FileUpload, Grid, GridItem, Skeleton } from '@so360/design-system';
 import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import { Trophy, Zap, Info, TrendingUp, RefreshCw, Check } from 'lucide-react';
 import CreateDealModal from './components/CreateDealModal';
@@ -1370,8 +1370,8 @@ const LeadDetailPage = () => {
                                             </div>
                                         )}
 
-                                        <div className="flex items-center gap-4 text-fg-subtle text-opacity-50">
-                                            <div className="size-10 rounded-nb bg-surface-raised flex items-center justify-center text-warning opacity-50">
+                                        <div className="flex items-center gap-4 text-fg">
+                                            <div className="size-10 rounded-nb bg-surface-raised flex items-center justify-center text-warning">
                                                 <Calendar size={18} />
                                             </div>
                                             <div className="flex flex-col">
@@ -1510,9 +1510,7 @@ const LeadDetailPage = () => {
                                     {/* Timeline */}
                                     <div className="space-y-3 relative">
                                         {entityTimeline.loading ? (
-                                            <div className="flex items-center justify-center py-8 text-fg-muted">
-                                                <Loader2 size={18} className="animate-spin" />
-                                            </div>
+                                            <div className="py-nb-4"><Skeleton variant="text" lines={3} /></div>
                                         ) : timelineEvents.length === 0 ? (
                                             <EmptyState title="No activities logged yet" description="Activities appear here automatically when users interact with this record." />
                                         ) : (

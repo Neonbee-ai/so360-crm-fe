@@ -1,11 +1,11 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import {
     Clock, MessageCircle, CheckCircle2, File, ChevronDown,
-    Edit2, Trash2, Download, Eye, Loader2, Plus, UploadCloud,
+    Edit2, Trash2, Download, Eye, Plus, UploadCloud,
     FileIcon, ExternalLink
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { EmptyState, ListFilters, type ListFilterConfig, type FilterValues, Button, IconButton } from '@so360/design-system';
+import { Badge, EmptyState, ListFilters, type ListFilterConfig, type FilterValues, Button, IconButton, Skeleton, type BadgeTone } from '@so360/design-system';
 import { Activity, Note, Task, Attachment } from '../types/crm';
 import { useCRMFormatters } from '../utils/formatters';
 import { useConfirm } from '@so360/design-system';
@@ -164,18 +164,17 @@ const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
         }
     };
 
-    const getStatusBadgeColor = (status?: string) => {
-        if (!status) return '';
-        switch (status.toUpperCase()) {
+    const getStatusBadgeTone = (status?: string): BadgeTone => {
+        switch ((status ?? '').toUpperCase()) {
             case 'DONE':
             case 'COMPLETED':
-                return 'bg-success/10 text-success border-success/20';
+                return 'success';
             case 'OPEN':
-                return 'bg-warning/10 text-warning border-warning/20';
+                return 'warning';
             case 'IN_PROGRESS':
-                return 'bg-primary/10 text-primary border-primary/20';
+                return 'primary';
             default:
-                return 'bg-surface-raised text-fg-subtle border-line';
+                return 'neutral';
         }
     };
 
@@ -263,13 +262,9 @@ const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
                                     {task.title}
                                 </p>
                             </div>
-                            <span
-                                className={`px-2 py-0.5 rounded text-xs font-medium border shrink-0 ${getStatusBadgeColor(
- task.status
- )}`}
-                            >
+                            <Badge size="sm" tone={getStatusBadgeTone(task.status)}>
                                 {task.status}
-                            </span>
+                            </Badge>
                         </div>
                         {task.description && (
                             <p className="text-xs text-fg-subtle mt-1 ml-7 line-clamp-1">
@@ -318,9 +313,7 @@ const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center py-12 text-fg-muted">
-                <Loader2 size={20} className="animate-spin" />
-            </div>
+            <div className="py-nb-4"><Skeleton variant="text" lines={4} /></div>
         );
     }
 
@@ -417,13 +410,9 @@ const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
                                                     item.type.slice(1)}
                                             </span>
                                             {item.status && (
-                                                <span
-                                                    className={`px-1.5 py-0.5 rounded text-xs font-medium border ${getStatusBadgeColor(
- item.status
- )}`}
-                                                >
+                                                <Badge size="sm" tone={getStatusBadgeTone(item.status)}>
                                                     {item.status}
-                                                </span>
+                                                </Badge>
                                             )}
                                         </div>
                                         <span className="text-xs text-fg-subtle font-medium">
