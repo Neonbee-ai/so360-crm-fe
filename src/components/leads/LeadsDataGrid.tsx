@@ -1219,6 +1219,8 @@ export function LeadsDataGrid({
     return (
       <div
         key={lead.id}
+        role="row"
+        aria-selected={isSelected}
         className={`flex border-b border-line cursor-pointer transition-colors group/row ${
           virtualize && !grouped ? 'overflow-hidden' : ''
         } ${
@@ -1241,6 +1243,7 @@ export function LeadsDataGrid({
             return (
               <div
                 key="select"
+                role="gridcell"
                 className={`flex items-center justify-center shrink-0 sticky z-10 ${cellPy} ${
                   isSelected ? 'bg-primary-container' : isHovered ? 'bg-surface-high' : 'bg-bg'
                 }`}
@@ -1262,6 +1265,7 @@ export function LeadsDataGrid({
             return (
               <div
                 key="actions"
+                role="gridcell"
                 className={`flex items-center justify-center shrink-0 ${cellPy}`}
                 style={{ width: col.width }}
                 onClick={(e) => e.stopPropagation()}
@@ -1281,6 +1285,7 @@ export function LeadsDataGrid({
           return (
             <div
               key={col.key}
+              role="gridcell"
               className={`flex items-center shrink-0 px-3 overflow-hidden ${cellPy} ${
                 canEditCell ? 'cursor-text' : ''
               } ${
@@ -1464,11 +1469,18 @@ export function LeadsDataGrid({
         tabIndex={0}
         role="grid"
         aria-label="Leads"
+        aria-rowcount={sortedLeads.length + 1}
+        aria-colcount={orderedCols.length}
+        data-comb="table"
+        data-comb-id="leads"
+        data-comb-state="ready"
         onKeyDown={handleGridKeyDown}
       >
         <div style={{ minWidth: `${totalWidth}px` }}>
           {/* Header */}
           <div
+            role="row"
+            data-testid="leads-grid-header-row"
             className="flex sticky top-0 z-toolbar bg-surface border-b border-line"
             style={{ minWidth: `${totalWidth}px` }}
           >
@@ -1481,6 +1493,8 @@ export function LeadsDataGrid({
                 return (
                   <div
                     key="select"
+                    role="columnheader"
+                    aria-label="Select"
                     className="flex items-center justify-center shrink-0 sticky bg-surface z-toolbar"
                     style={{ width: col.width, left: colLeftOffsets['select'] }}
                   >
@@ -1497,13 +1511,15 @@ export function LeadsDataGrid({
 
               if (col.key === 'actions') {
                 return (
-                  <div key="actions" className="shrink-0" style={{ width: col.width }} />
+                  <div key="actions" role="columnheader" aria-label="Actions" className="shrink-0" style={{ width: col.width }} />
                 );
               }
 
               return (
                 <div
                   key={col.key}
+                  role="columnheader"
+                  aria-sort={sortState ? (sortState.direction === 'asc' ? 'ascending' : 'descending') : undefined}
                   className={`relative flex items-center group px-3 text-nb-title-sm text-fg-muted select-none shrink-0 py-3 ${
                     col.pinned ? 'sticky z-toolbar bg-surface' : ''
                   }`}
