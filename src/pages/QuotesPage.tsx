@@ -9,6 +9,7 @@ import { crmService } from '../services/crmService';
 import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
 import { Quote, QuoteStatus, Deal } from '../types/crm';
 import { useBusinessSettings, useActivity, useShellBridge, useQuota, useSandboxLimit } from '@so360/shell-context';
+import { canReadQuota } from '../utils/quotaAccess';
 import { useFormatters } from '@so360/formatters';
 import { QuotaGate, CrossLinkChip, SegmentedControl, toast, ListPageTemplate, Button, Pagination, DataTable, SearchInput, Menu, Alert, EmptyState, TextField, Textarea, type DataTableColumn, type FilterValues, type ListFilterConfig } from '@so360/design-system';
 import { quotesToCsv, downloadCsv } from '../components/quotes/quotesCsv';
@@ -90,7 +91,7 @@ const QuotesPage = () => {
     const shell = useShellBridge();
     const canCreateQuote = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('quotes.create') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:quotes:create') ?? true);
     const quotaChecks = useMemo(() => [{ module_code: 'crm', quota_key: 'max_quotes' }], []);
-    const { getQuota } = useQuota({ checks: quotaChecks, orgId: shell?.currentOrg?.id || '' });
+    const { getQuota } = useQuota({ checks: quotaChecks, orgId: shell?.currentOrg?.id || '', enabled: canReadQuota(shell) });
     const quotaData = getQuota('max_quotes');
     const { isSandboxMode, sandboxEntryLimit, isLimited } = useSandboxLimit();
 

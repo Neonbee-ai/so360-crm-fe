@@ -29,6 +29,7 @@ import LeadFilterBuilder from '../components/leads/LeadFilterBuilder';
 import { countActiveRules, type FilterGroup } from '../components/leads/leadFilterModel';
 import { leadsToCsv, downloadCsv } from '../components/leads/leadsCsv';
 import { useNotify, useActivity, useShellBridge, useQuota, useSandboxLimit } from '@so360/shell-context';
+import { canReadQuota } from '../utils/quotaAccess';
 import { useCRMFormatters } from '../utils/formatters';
 import { describeApiError } from '../utils/apiErrorMessage';
 import { publishLeadsChanged } from '../utils/leadEvents';
@@ -173,7 +174,7 @@ const LeadsPage = () => {
   const canExportLeads = useCanExport('leads.export', RE_FLAGS.DATA_EXPORT);
   const { isSandboxMode, sandboxEntryLimit, isLimited } = useSandboxLimit();
   const quotaChecks = useMemo(() => [{ module_code: 'crm', quota_key: 'max_contacts' }], []);
-  const { getQuota } = useQuota({ checks: quotaChecks, orgId: shell?.currentOrg?.id || '' });
+  const { getQuota } = useQuota({ checks: quotaChecks, orgId: shell?.currentOrg?.id || '', enabled: canReadQuota(shell) });
   const quotaData = getQuota('max_contacts');
 
   // Data
