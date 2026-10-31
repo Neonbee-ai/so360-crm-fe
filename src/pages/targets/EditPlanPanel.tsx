@@ -198,8 +198,8 @@ export default function EditPlanPanel({
               <div className="mb-2 text-sm text-fg-subtle">Period targets</div>
               <div className="space-y-2">
                 {periods.map((pr) => (
-                  <div key={pr.id} className="flex items-center gap-2">
-                    <span className="w-64 shrink-0 text-xs text-fg-subtle">
+                  <div key={pr.id} className="flex flex-wrap items-center gap-2">
+                    <span className="w-64 max-w-full min-w-0 text-xs text-fg-subtle">
                       <span className="text-fg-subtle">{pr.lineLabel}</span>{' '}
                       {pr.period_start} → {pr.period_end}
                     </span>

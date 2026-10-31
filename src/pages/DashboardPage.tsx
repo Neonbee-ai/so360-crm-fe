@@ -343,7 +343,7 @@ const DashboardPage = () => {
                 </div>
                 <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
                     {reminders.length > 0 ? reminders.map((task: any) => (
-                        <div key={task.id} className="flex-shrink-0 w-72 flex flex-col gap-2">
+                        <div key={task.id} className="flex-shrink-0 w-72 max-w-full flex flex-col gap-2">
                         <Link
                             to={`../tasks/${task.id}`}
                             className="bg-surface-sunken p-4 rounded-nb hover:bg-surface-raised transition-all group"
@@ -465,7 +465,7 @@ const DashboardPage = () => {
                                     {index + 1}
                                 </div>
 
-                                <div className="w-10 h-10 rounded-full bg-fg-muted/30 flex items-center justify-center overflow-hidden border border-line">
+                                <div className="w-10 h-10 shrink-0 rounded-full bg-fg-muted/30 flex items-center justify-center overflow-hidden border border-line">
                                     {stat.user.avatar_url ? (
                                         <img src={stat.user.avatar_url} alt={stat.user.full_name} className="w-full h-full object-cover" />
                                     ) : (
@@ -482,7 +482,7 @@ const DashboardPage = () => {
                                     </div>
                                 </div>
 
-                                <div className="text-right">
+                                <div className="text-right shrink-0">
                                     <span className="block text-sm font-semibold text-success">{formatCurrency(stat.revenue)}</span>
                                 </div>
                             </div>
@@ -510,10 +510,10 @@ const DashboardPage = () => {
                           <GridItem key={stat.user.id} span={{ md: 4, lg: 3 }}>
                             <div className="border-t border-line pt-4 hover:border-line transition-all shadow-sm">
                                 <div className="flex items-center gap-3 mb-6">
-                                    <div className="w-8 h-8 rounded-full bg-fg-muted/30 flex items-center justify-center overflow-hidden">
+                                    <div className="w-8 h-8 shrink-0 rounded-full bg-fg-muted/30 flex items-center justify-center overflow-hidden">
                                         {stat.user.avatar_url ? <img src={stat.user.avatar_url} /> : stat.user.full_name.charAt(0)}
                                     </div>
-                                    <div className="flex flex-col">
+                                    <div className="flex flex-col min-w-0 break-words">
                                         <span className="text-xs font-bold text-fg">{stat.user.full_name}</span>
                                         <span className="text-xs font-semibold text-fg-muted">{stat.user.role || 'Sales Rep'}</span>
                                     </div>

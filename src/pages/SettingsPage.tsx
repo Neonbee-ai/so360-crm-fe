@@ -1251,7 +1251,7 @@ function ScoringRuleForm({
             </Grid>
 
             {/* Row 3: Points + Active + Actions */}
-            <div className="flex items-end gap-4">
+            <div className="flex flex-wrap items-end gap-4">
                 <div className="w-32">
                     <label className={labelCls}>Score Points</label>
                     <TextField

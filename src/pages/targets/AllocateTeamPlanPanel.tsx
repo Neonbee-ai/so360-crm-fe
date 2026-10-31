@@ -141,7 +141,7 @@ export default function AllocateTeamPlanPanel({
           <div className="space-y-2">
             {rows.map((r, i) => (
               <div key={r.key} className="flex flex-wrap items-center gap-2">
-                <div className="min-w-64">
+                <div className="w-64 max-w-full min-w-0">
                   <PeopleSelector
                     clearable
                     loadOptions={loadDirectoryPeople}
