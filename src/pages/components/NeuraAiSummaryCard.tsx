@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Card, IconButton, Skeleton } from '@so360/design-system';
+import { Button, Card, IconButton, Skeleton } from '@so360/design-system';
 import { RefreshCw, AlertCircle } from 'lucide-react';
 import { neuraAiService, inboxIntegrationApi, NeuraEntityRef } from '../../services/crmService';
 
@@ -107,12 +107,19 @@ const NeuraAiSummaryCard: React.FC<Props> = ({ leadId, leadLabel, isInboxEnabled
         }
     }, [leadId, leadLabel, isInboxEnabled]); // eslint-disable-line react-hooks/exhaustive-deps
 
+    // On page entry only a cached summary is shown; generating one is an
+    // explicit action (Salesforce Einstein "Summarize" / HubSpot "Generate
+    // summary"). Auto-firing the LLM on mount held an aria-busy skeleton on
+    // every fresh record page for ~14s (AutoQA r18) and spent an LLM call per
+    // view. Runs only when the viewed lead changes.
     useEffect(() => {
-        fetchSummary();
-        // Refetch only when the viewed lead changes, not on every render —
-        // fetchSummary is intentionally excluded so a manual Refresh click
-        // (which reruns the same callback) doesn't also retrigger this effect.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        setError(null);
+        let cachedText: string | null = null;
+        try {
+            const cached = JSON.parse(sessionStorage.getItem(summaryCacheKey(leadId)) || 'null');
+            if (cached?.text && Date.now() - cached.at < SUMMARY_TTL_MS) cachedText = cached.text;
+        } catch { /* cache unreadable — wait for an explicit Generate */ }
+        setSummary(cachedText);
     }, [leadId]);
 
     return (
@@ -135,7 +142,12 @@ const NeuraAiSummaryCard: React.FC<Props> = ({ leadId, leadLabel, isInboxEnabled
                 </div>
             ) : summary ? (
                 <p className="text-xs text-fg-subtle leading-relaxed whitespace-pre-wrap">{summary}</p>
-            ) : null}
+            ) : (
+                <div className="flex items-center justify-between gap-nb-2 py-nb-1">
+                    <span className="text-xs text-fg-muted">Get a quick AI summary of this {isDeal ? 'deal' : isPartner ? 'partner' : 'lead'}.</span>
+                    <Button variant="secondary" onClick={() => fetchSummary(true)}>Generate summary</Button>
+                </div>
+            )}
         </Card>
     );
 };
