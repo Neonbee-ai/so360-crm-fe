@@ -157,10 +157,9 @@ export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: Kanba
                         {/* Stage Header — a non-scrolling flex item, so it stays put while
                             the drop zone below it scrolls independently. */}
                         <div className="flex-shrink-0 flex items-center justify-between px-2">
-                            <h3
-                                className="font-semibold text-fg flex items-center gap-2 text-sm"
-                                style={{ color: accentColor }}
-                            >
+                            {/* Stage colour lives on the drop zone's top border; the
+                                header text stays text-fg so it meets 4.5:1 contrast. */}
+                            <h3 className="font-semibold text-fg flex items-center gap-2 text-sm">
                                 {stage.name}
                                 <Badge size="sm" tone="neutral" shape="pill">
                                     {stageDeals.length}
