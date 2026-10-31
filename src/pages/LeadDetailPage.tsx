@@ -28,7 +28,7 @@ import { ContactFeedPanel } from '../components/ContactFeedPanel';
 import { S2S_FLAGS } from '../services/coreS2sService';
 import MaintenanceTab from './components/MaintenanceTab';
 import { MAINTENANCE_TAB_FLAG, withMaintenanceTab } from '../services/maintenanceTabService';
-import { toast, useConfirm, DetailPageTemplate, Button, IconButton, Tabs, TextField, Select, Checkbox, Badge, Card, ConfirmDialog, EmptyState, FileUpload, Grid, GridItem, Skeleton } from '@so360/design-system';
+import { toast, useConfirm, DetailPageTemplate, Button, IconButton, Tabs, TextField, Select, Checkbox, Badge, Card, ConfirmDialog, CountUp, EmptyState, FileUpload, Grid, GridItem, Skeleton } from '@so360/design-system';
 import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import { Trophy, Zap, Info, TrendingUp, RefreshCw, Check } from 'lucide-react';
 import CreateDealModal from './components/CreateDealModal';
@@ -939,7 +939,7 @@ const LeadDetailPage = () => {
                                 return (
                                     <>
                                         <div className="flex items-baseline gap-nb-2">
-                                            <span className="text-3xl font-semibold text-fg">{engagementScore}</span>
+                                            <span className="text-3xl font-semibold text-fg"><CountUp value={engagementScore} /></span>
                                             <span className="text-xs text-fg-muted">Engagement / 100</span>
                                         </div>
                                         <div className="mt-nb-3 h-1.5 w-full overflow-hidden rounded-full bg-surface-raised">
@@ -964,7 +964,7 @@ const LeadDetailPage = () => {
                             })() : (
                                 <>
                                     <div className="flex items-baseline gap-nb-2">
-                                        <span className="text-3xl font-semibold text-fg">{score}</span>
+                                        <span className="text-3xl font-semibold text-fg"><CountUp value={score} /></span>
                                         <span className="text-xs text-fg-muted">Score</span>
                                         {(scoreCategory as any).color_token ? (
                                             <span className="ml-auto" data-testid="lead-rating-badge">

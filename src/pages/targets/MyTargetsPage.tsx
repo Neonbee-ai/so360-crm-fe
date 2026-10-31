@@ -20,7 +20,7 @@ import {
   isUnlinkedProfileError,
   statusText,
 } from './targetUi';
-import { DashboardPageTemplate, Badge, Progress, Card, Grid, GridItem } from '@so360/design-system';
+import { DashboardPageTemplate, Badge, Progress, Card, CountUp, Grid, GridItem } from '@so360/design-system';
 
 /**
  * Per-metric detail view.
@@ -170,7 +170,7 @@ function MetricCard({
 
       <div className="mt-2 flex items-baseline gap-2">
         <span className="text-2xl font-semibold text-fg">
-          {formatValue(metric.actual, metric.unit, currency)}
+          <CountUp value={formatValue(metric.actual, metric.unit, currency)} />
         </span>
         <span className="text-sm text-fg-muted">
           of {formatValue(metric.target, metric.unit, currency)}
