@@ -174,7 +174,13 @@ const QuoteDetailPage = () => {
             setQuote(data);
             setCustomer(null);
             fetchApprovalHistory(id!);
-            if (data.customer_id) {
+            if (data.customer !== undefined) {
+                // crm-be resolves the linked customer server-side (null when the
+                // quote has none or the customer lead was deleted), so the page
+                // never requests a lead that no longer exists.
+                setCustomer((data.customer as Lead | null) ?? null);
+            } else if (data.customer_id) {
+                // Older crm-be without the embed: resolve the customer here.
                 crmService
                     .getLeadById(data.customer_id)
                     .then((c) => setCustomer(c ?? null))
