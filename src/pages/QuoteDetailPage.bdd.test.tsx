@@ -230,6 +230,18 @@ describe('QuoteDetailPage', () => {
     });
   });
 
+  describe('Given a quote line with a very long description', () => {
+    const longText = 'AQA-' + 'x'.repeat(300);
+    it('When rendered read-only / Then the description wraps inside a capped column so Amount stays fully visible', async () => {
+      mockGetQuoteById.mockResolvedValue({ ...quoteData, lines: [{ id: 'ql9', description: longText, quantity: 1, unit_price: 10, line_total: 10 }] });
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText(longText));
+      const wrap = screen.getAllByTestId('quote-line-description')[0];
+      expect(wrap).toHaveClass('min-w-0', 'max-w-[28rem]');
+      expect(screen.getByText(longText)).toHaveClass('whitespace-normal', '[overflow-wrap:anywhere]');
+    });
+  });
+
   describe('Given a quote in Pending Approval status', () => {
     it('When rendered / Then shows Approve and Reject buttons', async () => {
       mockGetQuoteById.mockResolvedValue({ ...quoteData, status: 'pending_approval' });

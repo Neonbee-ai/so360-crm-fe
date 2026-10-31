@@ -774,8 +774,8 @@ const QuoteDetailPage = () => {
                                             {line.item_image_url && (
                                                 <img src={line.item_image_url} alt="" className="w-8 h-8 rounded object-cover flex-shrink-0 mt-0.5" />
                                             )}
-                                            <div className="min-w-0">
-                                                <span className="text-fg block">{line.description}</span>
+                                            <div className="min-w-0 max-w-[28rem]" data-testid="quote-line-description">
+                                                <span className="text-fg block whitespace-normal [overflow-wrap:anywhere]">{line.description}</span>
                                                 {line.sku && (
                                                     <span className="flex items-center gap-1 mt-0.5">
                                                         <Badge size="sm" tone="neutral">{line.sku}</Badge>
