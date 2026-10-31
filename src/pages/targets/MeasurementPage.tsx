@@ -69,7 +69,8 @@ export default function MeasurementPage() {
     </div>
   );
 
-  if (loading) {
+  // Busy only when there is no data yet; a period change keeps previous figures.
+  if (loading && !data) {
     return (
       <DashboardPageTemplate title="Measurement" filters={header} trail={[{ label: 'Targets', to: '/crm/targets' }]}>
       <div className="space-y-4">

@@ -166,9 +166,9 @@ describe('UnifiedTimelinePanel', () => {
                     </Wrapper>
                 );
 
-                // Then - show loading spinner (check for animate-spin class or SVG)
-                const spinner = container.querySelector('.animate-spin');
-                expect(spinner).toBeInTheDocument();
+                // Then - show a loading skeleton
+                const skeleton = container.querySelector('[data-testid="skeleton"]');
+                expect(skeleton).toBeInTheDocument();
             });
         });
     });
@@ -368,8 +368,8 @@ describe('UnifiedTimelinePanel', () => {
 
                 const item = container.querySelector('[data-testid*="task-task-1"]');
                 expect(item).toBeInTheDocument();
-                // Check for yellow badge color classes
-                const badges = item?.querySelectorAll('[class*="bg-warning"]');
+                // DS Badge carries the tone
+                const badges = item?.querySelectorAll('[data-tone="warning"]');
                 expect(badges && badges.length > 0).toBe(true);
             });
 
@@ -389,8 +389,8 @@ describe('UnifiedTimelinePanel', () => {
 
                 const item = container.querySelector('[data-testid*="task-task-1"]');
                 expect(item).toBeInTheDocument();
-                // Check for green badge color classes
-                const badges = item?.querySelectorAll('[class*="bg-success"]');
+                // DS Badge carries the tone
+                const badges = item?.querySelectorAll('[data-tone="success"]');
                 expect(badges && badges.length > 0).toBe(true);
             });
 
@@ -410,8 +410,8 @@ describe('UnifiedTimelinePanel', () => {
 
                 const item = container.querySelector('[data-testid*="task-task-1"]');
                 expect(item).toBeInTheDocument();
-                // Check for blue badge color classes
-                const badges = item?.querySelectorAll('[class*="bg-primary"]');
+                // DS Badge carries the tone
+                const badges = item?.querySelectorAll('[data-tone="primary"]');
                 expect(badges && badges.length > 0).toBe(true);
             });
         });

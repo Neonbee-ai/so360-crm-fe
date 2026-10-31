@@ -31,7 +31,7 @@ export const DealLifecycleStepper: React.FC<DealLifecycleStepperProps> = ({ stag
         return (
             <div className="flex items-center gap-3 p-4 bg-danger/10 rounded-lg border border-danger/20">
                 <XCircle className="w-5 h-5 text-danger" />
-                <span className="text-danger font-medium">Deal Lost</span>
+                <span className="text-fg font-medium">Deal Lost</span>
             </div>
         );
     }
@@ -47,7 +47,7 @@ export const DealLifecycleStepper: React.FC<DealLifecycleStepperProps> = ({ stag
     const currentIndex = forwardStages.findIndex(s => s.id === resolvedId);
 
     return (
-        <div className="flex items-center gap-0">
+        <div className="flex items-center gap-0 max-w-full min-w-0 overflow-x-auto pb-1">
             {forwardStages.map((stage, index) => {
                 const isCompleted = currentIndex > index;
                 const isCurrent = currentIndex === index;
@@ -56,7 +56,7 @@ export const DealLifecycleStepper: React.FC<DealLifecycleStepperProps> = ({ stag
 
                 return (
                     <React.Fragment key={stage.id}>
-                        <div className="flex flex-col items-center">
+                        <div className="flex flex-col items-center shrink-0">
                             <div className={`flex items-center justify-center w-8 h-8 rounded-full transition-all ${
                                 isCompleted ? (isTerminalWon ? 'bg-success text-primary-fg' : 'bg-info text-primary-fg') :
                                 isCurrent ? (isWonType(stage) ? 'bg-success/20 border-2 border-success text-success' : 'bg-info/20 border-2 border-info text-info') :
@@ -64,7 +64,7 @@ export const DealLifecycleStepper: React.FC<DealLifecycleStepperProps> = ({ stag
                             }`}>
                                 {isCompleted ? <CheckCircle className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
                             </div>
-                            <span className={`text-xs mt-2 text-center w-16 truncate ${
+                            <span className={`text-xs mt-2 text-center min-w-16 px-1 whitespace-nowrap ${
                                 isCompleted || isCurrent ? (isWonType(stage) ? 'text-success' : 'text-info') : 'text-fg-subtle'
                             }`} title={stage.name}>
                                 {stage.name}

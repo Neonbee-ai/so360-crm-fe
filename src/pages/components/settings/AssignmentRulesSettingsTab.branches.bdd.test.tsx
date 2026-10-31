@@ -76,7 +76,7 @@ const rule = (over: Partial<AssignmentRule> & Record<string, unknown> = {}): Ass
 
 const renderTab = async (canWrite = true) => {
     const view = render(<AssignmentRulesSettingsTab canWrite={canWrite} />);
-    await waitFor(() => expect(screen.queryByTestId('icon-Loader2')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByTestId('skeleton')).not.toBeInTheDocument());
     return view;
 };
 
@@ -102,10 +102,10 @@ beforeEach(() => {
 });
 
 describe('Given the rules list is still loading', () => {
-    it('When list has not settled / Then a spinner shows and no list or empty state', () => {
+    it('When list has not settled / Then a skeleton shows and no list or empty state', () => {
         svc.list.mockReturnValueOnce(new Promise(() => {}));
         render(<AssignmentRulesSettingsTab canWrite />);
-        expect(screen.getByTestId('icon-Loader2')).toBeInTheDocument();
+        expect(screen.getAllByTestId('skeleton').length).toBeGreaterThan(0);
         expect(screen.queryByRole('list', { name: 'Assignment rules' })).not.toBeInTheDocument();
         expect(screen.queryByText(/No rules yet/)).not.toBeInTheDocument();
     });

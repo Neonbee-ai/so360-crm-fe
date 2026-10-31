@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
 import { stakeholderApi } from '../../services/crmService';
 import { StakeholderActivitySummary as SummaryType } from '../../types/crm';
-import { Grid } from '@so360/design-system';
+import { Grid, Skeleton } from '@so360/design-system';
 
 interface Props {
     stakeholderId: string;
@@ -27,7 +26,7 @@ const StakeholderActivitySummary: React.FC<Props> = ({ stakeholderId }) => {
     }, [stakeholderId]);
 
     if (loading) {
-        return <div className="flex justify-center py-6 text-fg-muted"><Loader2 size={16} className="animate-spin" /></div>;
+        return <div className="py-nb-3"><Skeleton variant="text" lines={2} /></div>;
     }
 
     if (!summary) return null;

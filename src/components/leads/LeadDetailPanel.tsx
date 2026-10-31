@@ -18,9 +18,8 @@ import {
   Briefcase,
   Megaphone,
   ShieldCheck,
-  Loader2,
 } from 'lucide-react';
-import { Card, EmptyState, Tabs, Button, Drawer, Select } from '@so360/design-system';
+import { Badge, Card, EmptyState, Tabs, Button, Drawer, Select, Skeleton, type BadgeTone } from '@so360/design-system';
 import { Lead, Activity as ActivityType, Deal, Task, TASK_PRIORITY_STYLES, User as CrmUser, SourceTypeOption, CustomFieldDefinition } from '../../types/crm';
 import { crmService, settingsApi } from '../../services/crmService';
 import { DlCustomFieldsPanel, DL_CUSTOM_FIELDS_FLAG } from '../customFields/DlCustomFieldsPanel';
@@ -79,14 +78,14 @@ function overdueDays(task: Task): number | null {
   return diff > 0 ? diff : null;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  New: 'bg-info/10 text-primary border-primary/20',
-  Contacted: 'bg-info/10 text-info border-info/20',
-  Qualified: 'bg-primary/10 text-primary border-primary/20',
-  'Proposal Sent': 'bg-warning/10 text-warning border-warning/20',
-  Negotiation: 'bg-warning/10 text-warning border-warning/20',
-  Converted: 'bg-success/10 text-success border-success/20',
-  Lost: 'bg-danger/10 text-danger border-danger/20',
+const STATUS_TONES: Record<string, BadgeTone> = {
+  New: 'primary',
+  Contacted: 'info',
+  Qualified: 'primary',
+  'Proposal Sent': 'warning',
+  Negotiation: 'warning',
+  Converted: 'success',
+  Lost: 'danger',
 };
 
 const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
@@ -279,7 +278,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
 
   const score = lead?.auto_score ?? 0;
   const sc = scoreColor(score);
-  const statusColor = lead ? (STATUS_COLORS[lead.status] ?? 'bg-fg-muted/10 text-fg-subtle border-line') : '';
+  const statusTone: BadgeTone = lead ? (STATUS_TONES[lead.status] ?? 'neutral') : 'neutral';
 
   // Resolve owner via the freshly-fetched users list first — lead.owner may
   // carry a stale "Unknown User" placeholder if it was mapped before the
@@ -316,9 +315,9 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
             <div className="pb-4 border-b border-line">
             {/* Status + score row */}
               <div className="flex items-center gap-3">
-                <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${statusColor}`}>
+                <Badge size="sm" tone={statusTone}>
                   {lead.status}
-                </span>
+                </Badge>
                 {lead.source && (
                   <span className="text-xs text-fg-muted">{sourceLabel}</span>
                 )}
@@ -524,9 +523,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                 <div className="px-5 py-4">
                   <Card title="Activity">
                   {timeline.loading ? (
-                    <div className="flex items-center justify-center py-10 text-fg-muted">
-                      <Loader2 size={20} className="animate-spin" />
-                    </div>
+                    <div className="py-nb-4"><Skeleton variant="text" lines={3} /></div>
                   ) : timeline.error ? (
                     /* A failed load must never masquerade as "no activity". */
                     <EmptyState icon={Activity} title="Couldn't load activity." action={{ label: 'Retry', onClick: () => timeline.refetch() }} />
@@ -558,9 +555,9 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                                 )}
                                 <div className="flex items-center gap-2 mt-1">
                                   {event.module && (
-                                    <span className="text-xs text-fg-muted bg-surface-raised rounded px-1.5 py-0.5">
+                                    <Badge size="sm" tone="neutral">
                                       {event.module}
-                                    </span>
+                                    </Badge>
                                   )}
                                   {event.actor_name && (
                                     <span className="text-xs text-fg-muted">by {event.actor_name}</span>
@@ -589,9 +586,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                 <div className="px-5 py-4">
                   <Card title="Deals">
                   {dealsLoading || deals === null ? (
-                    <div className="flex items-center justify-center py-10 text-fg-muted">
-                      <Loader2 size={20} className="animate-spin" />
-                    </div>
+                    <div className="py-nb-4"><Skeleton variant="text" lines={3} /></div>
                   ) : deals.length === 0 ? (
                     <EmptyState icon={Briefcase} title="No deals linked to this lead" />
                   ) : (
@@ -605,9 +600,9 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                             </span>
                           </div>
                           <div className="flex items-center gap-2 mt-1.5">
-                            <span className="text-xs text-fg-muted bg-surface-raised rounded px-1.5 py-0.5">
+                            <Badge size="sm" tone="neutral">
                               {deal.stage}
-                            </span>
+                            </Badge>
                             {deal.expected_close_date && (
                               <span className="text-xs text-fg-muted">
                                 Close {formatters.formatDate(deal.expected_close_date)}
@@ -629,9 +624,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                 <div className="px-5 py-4">
                   <Card title="Tasks">
                   {tasksLoading || tasks === null ? (
-                    <div className="flex items-center justify-center py-10 text-fg-muted">
-                      <Loader2 size={20} className="animate-spin" />
-                    </div>
+                    <div className="py-nb-4"><Skeleton variant="text" lines={3} /></div>
                   ) : tasks.length === 0 ? (
                     <EmptyState icon={CheckSquare} title="No tasks for this lead" />
                   ) : (
@@ -665,9 +658,9 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                                   {task.title}
                                 </p>
                                 {overdue !== null && (
-                                  <span className="shrink-0 text-xs font-semibold text-danger bg-danger/10 border border-danger/20 rounded px-1.5 py-0.5">
+                                  <Badge size="sm" tone="danger">
                                     Overdue {overdue}d
-                                  </span>
+                                  </Badge>
                                 )}
                               </div>
 
@@ -685,9 +678,9 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                                   </span>
                                 )}
                                 {task.type && (
-                                  <span className="text-xs text-fg-muted bg-surface-raised rounded px-1.5 py-0.5">
+                                  <Badge size="sm" tone="neutral">
                                     {String(task.type).replace(/_/g, ' ').toLowerCase()}
-                                  </span>
+                                  </Badge>
                                 )}
                                 {task.assigned_to?.full_name && (
                                   <span className="text-xs text-fg-muted">{task.assigned_to.full_name}</span>
@@ -770,9 +763,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                 <div className="px-5 py-4">
                   <Card title="Audit trail">
                   {activitiesLoading || activities === null ? (
-                    <div className="flex items-center justify-center py-10 text-fg-muted">
-                      <Loader2 size={20} className="animate-spin" />
-                    </div>
+                    <div className="py-nb-4"><Skeleton variant="text" lines={3} /></div>
                   ) : auditActivities.length === 0 ? (
                     <EmptyState icon={ShieldCheck} title="No audit events recorded" />
                   ) : (

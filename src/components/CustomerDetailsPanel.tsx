@@ -8,7 +8,7 @@ import { crmService } from '../services/crmService';
 import { useCRMFormatters } from '../utils/formatters';
 import { parseUtcDate } from '../utils/datetime';
 import { useBusinessSettings } from '@so360/shell-context';
-import { Button, TextField, Select, Textarea, Checkbox, Grid, GridItem } from '@so360/design-system';
+import { Button, TextField, Select, Textarea, Checkbox, Grid, GridItem, Skeleton } from '@so360/design-system';
 
 interface Partner {
     id: string;
@@ -510,9 +510,7 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                 </div>
 
                 {isLoadingProfile ? (
-                    <div className="flex items-center gap-2 text-xs text-fg-muted">
-                        <Loader2 size={12} className="animate-spin" /> Loading profile…
-                    </div>
+                    <div role="status" aria-busy="true"><Skeleton variant="text" lines={3} /><span className="sr-only">Loading profile…</span></div>
                 ) : !isEditingProfile ? (
                     /* ── View mode ── */
                     <div className="space-y-2">
@@ -656,9 +654,7 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                 </span>
 
                 {isLoadingInvoices ? (
-                    <div className="flex items-center gap-2 text-xs text-fg-muted">
-                        <Loader2 size={12} className="animate-spin" /> Loading invoices…
-                    </div>
+                    <div role="status" aria-busy="true"><Skeleton variant="text" lines={2} /><span className="sr-only">Loading invoices…</span></div>
                 ) : invoiceCount === 0 ? (
                     <div className="text-xs text-fg-muted">No invoices for this customer yet.</div>
                 ) : (

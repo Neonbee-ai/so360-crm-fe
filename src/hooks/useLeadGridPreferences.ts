@@ -90,6 +90,9 @@ export function useLeadGridPreferences() {
   // so we never push a save before we've had a chance to pull.
   const [hydrated, setHydrated] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Last layout known to match the backend. Seeded at mount from local state
+  // and replaced by the remote layout on hydration.
+  const syncedRef = useRef<string>(JSON.stringify({ columns: prefs.columns, density: prefs.density }));
 
   useEffect(() => {
     try {
@@ -112,7 +115,11 @@ export function useLeadGridPreferences() {
         if (!cancelled && rp && Array.isArray(rp.columns) && rp.columns.length) {
           const keys = new Set(rp.columns.map((c) => c.key));
           const merged = [...rp.columns, ...DEFAULT_COLUMNS.filter((c) => !keys.has(c.key))];
-          setPrefs((prev) => ({ ...prev, columns: merged, density: rp.density ?? prev.density }));
+          setPrefs((prev) => {
+            const next = { ...prev, columns: merged, density: rp.density ?? prev.density };
+            syncedRef.current = JSON.stringify({ columns: next.columns, density: next.density });
+            return next;
+          });
         }
       } catch {
         /* keep localStorage-backed state */
@@ -126,10 +133,16 @@ export function useLeadGridPreferences() {
   // Debounced push of the column layout to the backend after user changes, so a
   // burst of resize/reorder events collapses into a single write. Fire-and-forget
   // — a failure never disrupts the UI (localStorage is authoritative locally).
+  // Only user changes are pushed: a layout equal to the synced one is skipped,
+  // so a plain page load never issues a PUT (AutoQA read-only runs flagged the
+  // on-load write as a failed request on every visit).
   useEffect(() => {
     if (!hydrated) return;
+    const payload = JSON.stringify({ columns: prefs.columns, density: prefs.density });
     if (saveTimer.current) clearTimeout(saveTimer.current);
+    if (payload === syncedRef.current) return;
     saveTimer.current = setTimeout(() => {
+      syncedRef.current = payload;
       crmService.gridColumns
         .save({ columns: prefs.columns, density: prefs.density }, 'lead')
         .catch(() => { /* offline — localStorage keeps the layout */ });

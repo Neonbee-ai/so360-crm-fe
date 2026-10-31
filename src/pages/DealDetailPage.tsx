@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { eventBus } from '@so360/event-bus';
+import { PromptDialog } from '../components/PromptDialog';
 import NeuraAiSummaryCard from './components/NeuraAiSummaryCard';
 import { useActivity, useShell } from '@so360/shell-context';
 import {
@@ -107,6 +108,7 @@ const DealDetailPage = () => {
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [isUploading, setIsUploading] = useState(false);
     const [newNoteContent, setNewNoteContent] = useState('');
+    const [editPrompt, setEditPrompt] = useState<null | { title: string; label: string; initial: string; multiline?: boolean; onSave: (v: string) => Promise<void> }>(null);
 
     // Edit state for summary fields (separate from deal to avoid direct mutation)
     const [editedValue, setEditedValue] = useState<number | null>(null);
@@ -162,15 +164,30 @@ const DealDetailPage = () => {
             if (deal) setIsRefreshing(true);
             else setIsLoading(true);
 
-            const [dealData, settingsData, usersData, tasksData, activitiesData, notesData, docsData] = await Promise.all([
+            // Only the deal itself is required to render the record. Side panels
+            // (tasks/notes/docs/activities/settings/users) degrade to empty on
+            // failure instead of rejecting the whole load — one flaky side call
+            // used to blank the page to "Deal not found".
+            const settled = <T,>(r: PromiseSettledResult<T>, fallback: T): T => {
+                if (r.status === 'fulfilled') return r.value ?? fallback;
+                console.warn('[DealDetail] side panel failed to load', r.reason);
+                return fallback;
+            };
+            const [dealData, settingsRes, usersRes, tasksRes, activitiesRes, notesRes, docsRes] = await Promise.all([
                 crmService.getDealById(id),
-                crmService.getSettings(),
-                crmService.getUsers(),
-                crmService.getTasksByDealId(id),
-                crmService.getActivitiesByDealId(id),
-                crmService.getNotesByDealId(id),
-                crmService.getDocumentsByDealId(id)
+                Promise.allSettled([crmService.getSettings()]).then(([r]) => r),
+                Promise.allSettled([crmService.getUsers()]).then(([r]) => r),
+                Promise.allSettled([crmService.getTasksByDealId(id)]).then(([r]) => r),
+                Promise.allSettled([crmService.getActivitiesByDealId(id)]).then(([r]) => r),
+                Promise.allSettled([crmService.getNotesByDealId(id)]).then(([r]) => r),
+                Promise.allSettled([crmService.getDocumentsByDealId(id)]).then(([r]) => r),
             ]);
+            const settingsData = settled<any>(settingsRes, null);
+            const usersData = settled<User[]>(usersRes, []);
+            const tasksData = settled<Task[]>(tasksRes, []);
+            const activitiesData = settled<Activity[]>(activitiesRes, []);
+            const notesData = settled<Note[]>(notesRes, []);
+            const docsData = settled<Attachment[]>(docsRes, []);
 
             if (dealData) {
                 // Set deal with nested data merged in
@@ -289,11 +306,14 @@ const DealDetailPage = () => {
         fetchData();
     }, [id]);
 
+    // Only call Fulfillment when the org has the module (a Starter tenant would 403); a 403 just hides the panel.
+    const isFulfillmentEnabled = !!isModuleEnabled?.('fulfillment');
     useEffect(() => {
+        if (!isFulfillmentEnabled) { setFulfillmentOrder(null); return; }
         crmService.getFulfillmentOrderByDeal(id)
             .then(order => setFulfillmentOrder(order))
-            .catch(() => {});
-    }, [id]);
+            .catch(() => setFulfillmentOrder(null));
+    }, [id, isFulfillmentEnabled]);
 
     // Close the stage popover on an outside click or Escape — mirrors StageStatusSelect's
     // interaction pattern. Only wired up while the popover is actually open.
@@ -577,10 +597,10 @@ const DealDetailPage = () => {
 
     if (!deal) {
         return (
-            <div className="py-12 text-center text-fg-muted">
-                <p>Deal not found.</p>
-                <Button variant="secondary" onClick={() => navigate('/crm/pipeline')}>Back to Pipeline</Button>
-            </div>
+            // Comb root (data-comb-path) so readiness checks settle on a bad/missing id instead of spinning.
+            <DetailPageTemplate title="Deal not found" trail={[{ label: 'Pipeline', to: '/crm/pipeline' }]}>
+                <EmptyState title="Deal not found." action={{ label: 'Back to Pipeline', onClick: () => navigate('/crm/pipeline') }} />
+            </DetailPageTemplate>
         );
     }
 
@@ -623,7 +643,7 @@ const DealDetailPage = () => {
                                     <div
                                         role="listbox"
                                         data-testid="deal-stage-list"
-                                        className="absolute z-menu top-full left-0 mt-1 min-w-40 bg-surface border border-line rounded-nb shadow-xl overflow-hidden"
+                                        className="absolute z-menu top-full left-0 mt-1 min-w-40 bg-surface border border-line rounded-nb shadow-overlay overflow-hidden"
                                     >
                                         {dealStages.map(s => {
                                             const isCurrent = s.id === (deal.stage_id || deal.stage);
@@ -735,9 +755,7 @@ const DealDetailPage = () => {
                                                     <span className="text-xs font-bold text-fg-muted">· {deal.owner_person.department_name}</span>
                                                 )}
                                                 {deal.owner_person.status !== 'active' && (
-                                                    <span className="text-xs text-warning border border-warning/40 rounded-nb px-1.5 py-0.5">
-                                                        Inactive
-                                                    </span>
+                                                    <Badge size="sm" tone="warning">Inactive</Badge>
                                                 )}
                                             </div>
                                         ) : (
@@ -867,16 +885,15 @@ const DealDetailPage = () => {
 
                                 <div className="flex justify-between items-center py-2 border-t border-line">
                                     <span className="text-xs font-medium text-fg-muted ">Status</span>
-                                    <span className={`px-2 py-0.5 rounded text-xs font-medium  ${
-                                        invoiceStatus.status === 'paid' ? 'bg-success/10 text-success border border-success/20' :
-                                        invoiceStatus.status === 'sent' || invoiceStatus.status === 'pending' ? 'bg-info/10 text-info border border-info/20' :
-                                        invoiceStatus.status === 'overdue' ? 'bg-danger/10 text-danger border border-danger/20' :
-                                        invoiceStatus.status === 'draft' ? 'bg-fg-muted/10 text-fg-subtle border border-line' :
-                                        invoiceStatus.status === 'partially_paid' ? 'bg-warning/10 text-warning border border-warning/20' :
-                                        'bg-fg-muted/10 text-fg-subtle border border-line'
-                                    }`}>
+                                    <Badge size="sm" tone={
+                                        invoiceStatus.status === 'paid' ? 'success' :
+                                        invoiceStatus.status === 'sent' || invoiceStatus.status === 'pending' ? 'info' :
+                                        invoiceStatus.status === 'overdue' ? 'danger' :
+                                        invoiceStatus.status === 'partially_paid' ? 'warning' :
+                                        'neutral'
+                                    }>
                                         {invoiceStatus.status === 'partially_paid' ? 'Partial' : invoiceStatus.status || 'Unknown'}
-                                    </span>
+                                    </Badge>
                                 </div>
 
                                 {invoiceStatus.total != null && (
@@ -930,20 +947,19 @@ const DealDetailPage = () => {
                         const fo = fulfillmentOrder;
                         const lastShipment = fo.fulfillment_shipments?.[0];
                         const lastEvent = lastShipment?.fulfillment_shipment_events?.[0];
-                        const statusColor =
-                            fo.status === 'delivered' ? 'text-success bg-success/10 border-success/20' :
-                            fo.status === 'out_for_delivery' ? 'text-success bg-success/10 border-success/20' :
-                            fo.status === 'in_transit' ? 'text-info bg-info/10 border-info/20' :
-                            fo.status === 'delivery_failed' ? 'text-danger bg-danger/10 border-danger/20' :
-                            'text-fg-subtle bg-fg-muted/10 border-line';
+                        const statusTone: 'success' | 'info' | 'danger' | 'neutral' =
+                            fo.status === 'delivered' || fo.status === 'out_for_delivery' ? 'success' :
+                            fo.status === 'in_transit' ? 'info' :
+                            fo.status === 'delivery_failed' ? 'danger' :
+                            'neutral';
                         return (
                             <Card title="Fulfillment Tracking">
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between">
                                         <span className="text-xs font-medium text-fg-muted ">Status</span>
-                                        <span className={`px-2 py-0.5 rounded text-xs font-medium  border ${statusColor}`}>
+                                        <Badge size="sm" tone={statusTone}>
                                             {fo.status?.replace(/_/g, ' ') || 'pending'}
-                                        </span>
+                                        </Badge>
                                     </div>
                                     {lastShipment?.tracking_number && (
                                         <div className="flex items-center justify-between py-2 border-t border-line">
@@ -975,6 +991,13 @@ const DealDetailPage = () => {
             )}
         >
             {confirmDialog}
+            <PromptDialog
+                open={!!editPrompt}
+                title={editPrompt?.title ?? ''}
+                fields={[{ name: 'value', label: editPrompt?.label ?? '', initialValue: editPrompt?.initial ?? '', multiline: editPrompt?.multiline, required: true }]}
+                onSubmit={async (v) => { await editPrompt?.onSave(v.value); setEditPrompt(null); }}
+                onClose={() => setEditPrompt(null)}
+            />
 
             <div className="flex flex-col gap-nb-3">
                 <Card title="Deal lifecycle">
@@ -1025,13 +1048,7 @@ const DealDetailPage = () => {
                                                         <div className="flex items-center gap-2">
                                                             {ev.type === 'Activity' && (
                                                                 <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                                                                    <IconButton label="Edit activity" variant="ghost" icon={<Edit2 size={12} />} onClick={async () => {
-                                                                            const newNotes = prompt('Edit activity notes:', ev.description);
-                                                                            if (newNotes !== null) {
-                                                                                await activitiesApi.update(ev.id, { notes: newNotes });
-                                                                                fetchData();
-                                                                            }
-                                                                        }} />
+                                                                    <IconButton label="Edit activity" variant="ghost" icon={<Edit2 size={12} />} onClick={() => setEditPrompt({ title: 'Edit activity', label: 'Activity notes', initial: ev.description, multiline: true, onSave: async (v) => { await activitiesApi.update(ev.id, { notes: v }); fetchData(); } })} />
                                                                     <IconButton label="Delete activity" variant="ghost" icon={<Trash2 size={12} />} onClick={async () => {
                                                                             if (await confirm({ title: 'Delete?', message: 'Delete this activity?', intent: 'danger', confirmLabel: 'Delete' })) {
                                                                                 await activitiesApi.delete(ev.id);
@@ -1040,9 +1057,9 @@ const DealDetailPage = () => {
                                                                         }} />
                                                                 </div>
                                                             )}
-                                                            <span className="text-xs bg-surface-raised text-fg-muted px-2 py-0.5 rounded font-semibold">
+                                                            <Badge size="sm" tone="neutral">
                                                                 {formatters.formatDateTime(ev.date)}
-                                                            </span>
+                                                            </Badge>
                                                         </div>
                                                     </div>
                                                     <p className="text-fg-subtle text-sm leading-relaxed">{ev.description}</p>
@@ -1068,13 +1085,7 @@ const DealDetailPage = () => {
                                         {deal.notes.map(note => (
                                             <div key={note.id} className="text-sm border-l-2 border-warning/30 pl-4 py-1 group relative">
                                                 <div className="absolute right-0 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                                                    <IconButton label="Edit note" variant="ghost" icon={<Edit2 size={12} />} onClick={async () => {
-                                                            const content = prompt('Edit note:', note.content);
-                                                            if (content) {
-                                                                await crmService.updateNote(note.id, content);
-                                                                fetchData();
-                                                            }
-                                                        }} />
+                                                    <IconButton label="Edit note" variant="ghost" icon={<Edit2 size={12} />} onClick={() => setEditPrompt({ title: 'Edit note', label: 'Note', initial: note.content, multiline: true, onSave: async (v) => { await crmService.updateNote(note.id, v); fetchData(); } })} />
                                                     <IconButton label="Delete note" variant="ghost" icon={<Trash2 size={12} />} onClick={async () => {
                                                             if (await confirm({ title: 'Delete?', message: 'Delete note?', intent: 'danger', confirmLabel: 'Delete' })) {
                                                                 await crmService.deleteNote(note.id);
@@ -1141,7 +1152,7 @@ const DealDetailPage = () => {
                                                             </span>
                                                         </div>
                                                     </div>
-                                                    <div className="absolute right-3 top-3 opacity-0 group-hover:opacity-100 transition-all flex gap-1">
+                                                    <div className="shrink-0 flex items-center gap-nb-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-all">
                                                         <IconButton label="Edit task" variant="ghost" icon={<Edit2 size={14} />} onClick={() => setEditingTask(task)} />
                                                         <IconButton label="Delete task" variant="ghost" icon={<Trash2 size={14} />} onClick={async () => {
                                                                 if (await confirm({ title: 'Delete?', message: 'Delete task?', intent: 'danger', confirmLabel: 'Delete' })) {

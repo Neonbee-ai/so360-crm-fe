@@ -372,6 +372,8 @@ export interface Quote {
     deal_id: string;
     deal?: Deal;
     customer_id?: string;
+    /** Linked customer's party summary, embedded by GET /quotes/:id; null when none or deleted. */
+    customer?: Pick<Lead, 'id' | 'company_name' | 'contact_name' | 'contact_email' | 'phone' | 'tax_id'> | null;
     customer_name?: string;
     title?: string;
     status: QuoteStatus;

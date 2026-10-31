@@ -1,13 +1,22 @@
 import React, { Suspense, lazy, useEffect } from 'react';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
 import { useShellBridge } from '@so360/shell-context';
-import { CombScope, FeatureRoute, PortalProvider, Button } from '@so360/design-system';
+import { CombScope, FeatureRoute, PortalProvider, Button, Skeleton } from '@so360/design-system';
 import { CrossLinkProvider } from '@so360/cross-link';
 import { crmService } from './services/crmService';
 import { salesTargetService } from './services/salesTargetService';
 import { CrmScope, crmPortalRoot } from './utils/crmScope';
+import { preloadRouteChunk } from './utils/routePreload';
 
 // Synchronizes Shell Context with CRM Service
+const CrmNotFound = () => (
+    <div className="flex flex-col items-center justify-center min-h-96 text-center" data-testid="crm-not-found">
+        <h1 className="text-2xl font-bold mb-2">Page Not Found</h1>
+        <p className="text-fg-muted max-w-md mb-6">The page you are looking for doesn't exist or has been moved.</p>
+        <Link to="/crm/dashboard" className="underline">Back to CRM</Link>
+    </div>
+);
+
 const CrmShellInitializer = ({ children }: { children: React.ReactNode }) => {
     // Access context directly to avoid throwing if provider is missing
     const shell = useShellBridge();
@@ -44,9 +53,10 @@ const CrmShellInitializer = ({ children }: { children: React.ReactNode }) => {
 
     if (!isSynced) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[400px] text-fg-subtle gap-4">
-                <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
-                <p className="text-sm font-medium animate-pulse">Connecting to shell context...</p>
+            <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4">
+                <Skeleton variant="rect" />
+                <Skeleton variant="text" lines={3} />
+                <span className="sr-only">Connecting to shell context...</span>
             </div>
         );
     }
@@ -75,7 +85,7 @@ const CrossLinkBridge = ({ children }: { children: React.ReactNode }) => {
 const UpgradeLocked = () => {
     const navigate = useNavigate();
     return (
-        <div className="flex flex-col items-center justify-center min-h-[400px] gap-4 text-center px-6">
+        <div className="flex flex-col items-center justify-center min-h-96 gap-4 text-center px-6">
             <div>
                 <h2 className="text-lg font-semibold text-fg">This feature is part of a higher plan</h2>
                 <p className="text-sm text-fg-subtle mt-1">Upgrade your plan to unlock it.</p>
@@ -89,7 +99,7 @@ const UpgradeLocked = () => {
 
 // Route-level panel shown when a feature is `disabled` (admin turned it off — no upgrade path).
 const FeatureUnavailable = () => (
-    <div className="flex flex-col items-center justify-center min-h-[400px] gap-2 text-center px-6">
+    <div className="flex flex-col items-center justify-center min-h-96 gap-2 text-center px-6">
         <h2 className="text-lg font-semibold text-fg">Feature unavailable</h2>
         <p className="text-sm text-fg-subtle">This feature has been turned off for your organization.</p>
     </div>
@@ -124,7 +134,8 @@ const FlagGuard = ({ flagKey, children }: { flagKey: string; children: React.Rea
 // wildcard-aware via the shell bridge, matching the backend resolver exactly.
 const PermissionGuard = ({ permission, children }: { permission: string | string[]; children: React.ReactNode }) => {
     const shell = useShellBridge();
-    if (!shell || !shell.permissionsLoaded) return null;
+    // Withhold the page (fail-closed) but show progress, never a blank screen.
+    if (!shell || !shell.permissionsLoaded) return <Skeleton className="h-64 w-full" />;
     const codes = Array.isArray(permission) ? permission : [permission];
     const allowed = shell.hasAnyPermission
         ? shell.hasAnyPermission(...codes)
@@ -140,23 +151,36 @@ const PermissionGuard = ({ permission, children }: { permission: string | string
     );
 };
 
-// Lazy load pages for performance
-const DashboardPage = lazy(() => import('./pages/DashboardPage'));
-const LeadsPage = lazy(() => import('./pages/LeadsPage'));
-const LeadDetailPage = lazy(() => import('./pages/LeadDetailPage'));
-const PipelinePage = lazy(() => import('./pages/PipelinePage'));
-const DealDetailPage = lazy(() => import('./pages/DealDetailPage'));
+// Landing pages are eager: a lazy chunk adds a download round trip before the page's first API call.
+import DashboardPage from './pages/DashboardPage';
+import LeadsPage from './pages/LeadsPage';
+import PipelinePage from './pages/PipelinePage';
+
+// Lazy load the remaining pages for performance
+const loadLeadDetailPage = () => import('./pages/LeadDetailPage');
+const loadDealDetailPage = () => import('./pages/DealDetailPage');
+const LeadDetailPage = lazy(loadLeadDetailPage);
+const DealDetailPage = lazy(loadDealDetailPage);
+
+// Deep links to a detail page download its chunk while the Shell context syncs.
+if (typeof window !== 'undefined') {
+    preloadRouteChunk(window.location.pathname, [
+        { pattern: /\/leads\/[^/]+\/?$/, load: loadLeadDetailPage },
+        { pattern: /\/deals?\/[^/]+\/?$/, load: loadDealDetailPage },
+    ]);
+}
 const TasksPage = lazy(() => import('./pages/TasksPage'));
 const TaskDetailPage = lazy(() => import('./pages/TaskDetailPage'));
 const QuotesPage = lazy(() => import('./pages/QuotesPage'));
 const QuoteDetailPage = lazy(() => import('./pages/QuoteDetailPage'));
 const CustomersPage = lazy(() => import('./pages/CustomersPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const EstimatorSettingsPage = lazy(() => import('./pages/EstimatorSettingsPage'));
 const IcpListPage = lazy(() => import('./pages/IcpListPage'));
 const IcpFormPage = lazy(() => import('./pages/IcpFormPage'));
 const SettingsRoute = () => {
     const navigate = useNavigate();
-    return <SettingsPage onOpenIcps={() => navigate('/crm/settings/icps')} onOpenDataSettings={() => navigate('/settings/data')} />;
+    return <SettingsPage onOpenIcps={() => navigate('/crm/settings/icps')} onOpenDataSettings={() => navigate('/settings/data')} onOpenEstimator={() => navigate('/crm/settings/estimator')} />;
 };
 const PartnersPage = lazy(() => import('./pages/PartnersPage'));
 const PartnerDetailPage = lazy(() => import('./pages/PartnerDetailPage'));
@@ -188,7 +212,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             <PortalProvider container={crmPortalRoot()}>
                 <div className="min-h-full bg-bg text-fg">
                     <main className="w-full">
-                        <Suspense fallback={<div className="p-8 text-fg-subtle">Loading module...</div>}>
+                        <Suspense fallback={<div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4"><Skeleton variant="rect" /><Skeleton variant="text" lines={3} /><span className="sr-only">Loading module...</span></div>}>
                             {children}
                         </Suspense>
                     </main>
@@ -215,11 +239,15 @@ const App = () => {
                     <Route path="customers/:id" element={<PermissionGuard permission={['companies.read', 'contacts.read']}><LeadDetailPage /></PermissionGuard>} />
                     <Route path="pipeline" element={<PermissionGuard permission='deals.read'><FlagGuard flagKey="submodule:crm:pipeline"><PipelinePage /></FlagGuard></PermissionGuard>} />
                     <Route path="deal/:id" element={<PermissionGuard permission='deals.read'><FlagGuard flagKey="submodule:crm:pipeline"><DealDetailPage /></FlagGuard></PermissionGuard>} />
+                    {/* Plural aliases: /crm/deals and /crm/deals/:id are the REST-style URLs users and links expect */}
+                    <Route path="deals" element={<Navigate to="../pipeline" replace />} />
+                    <Route path="deals/:id" element={<PermissionGuard permission='deals.read'><FlagGuard flagKey="submodule:crm:pipeline"><DealDetailPage /></FlagGuard></PermissionGuard>} />
                     <Route path="tasks" element={<PermissionGuard permission='crm_tasks.read'><FlagGuard flagKey="submodule:crm:tasks"><TasksPage /></FlagGuard></PermissionGuard>} />
                     <Route path="tasks/:id" element={<PermissionGuard permission='crm_tasks.read'><FlagGuard flagKey="submodule:crm:tasks"><TaskDetailPage /></FlagGuard></PermissionGuard>} />
                     <Route path="quotes" element={<PermissionGuard permission='quotes.read'><FlagGuard flagKey="submodule:crm:quotes"><QuotesPage /></FlagGuard></PermissionGuard>} />
                     <Route path="quotes/:id" element={<PermissionGuard permission='quotes.read'><FlagGuard flagKey="submodule:crm:quotes"><QuoteDetailPage /></FlagGuard></PermissionGuard>} />
                     <Route path="settings" element={<PermissionGuard permission='crm_settings.read'><SettingsRoute /></PermissionGuard>} />
+                    <Route path="settings/estimator" element={<PermissionGuard permission='crm_settings.read'><FlagGuard flagKey="submodule:crm:proposal_estimator"><EstimatorSettingsPage /></FlagGuard></PermissionGuard>} />
                     <Route path="settings/icps" element={<PermissionGuard permission='linkedin_sync.read'><FlagGuard flagKey="submodule:crm:icp_manager"><IcpListPage /></FlagGuard></PermissionGuard>} />
                     <Route path="settings/icps/new" element={<PermissionGuard permission='linkedin_sync.create'><FlagGuard flagKey="submodule:crm:icp_manager"><IcpFormPage /></FlagGuard></PermissionGuard>} />
                     <Route path="settings/icps/:id" element={<PermissionGuard permission='linkedin_sync.update'><FlagGuard flagKey="submodule:crm:icp_manager"><IcpFormPage /></FlagGuard></PermissionGuard>} />
@@ -243,6 +271,7 @@ const App = () => {
                     <Route path="targets/reviews" element={<PermissionGuard permission='sales_targets.read'><FlagGuard flagKey="submodule:crm:sales_reviews"><SalesReviewsPage /></FlagGuard></PermissionGuard>} />
                     <Route path="targets/templates" element={<PermissionGuard permission={['sales_targets.create','sales_targets.assign']}><FlagGuard flagKey="action:crm:targets:manage"><TargetTemplatesPage /></FlagGuard></PermissionGuard>} />
                     <Route path="targets/compensation" element={<PermissionGuard permission={['sales_targets.create','sales_targets.view_team']}><FlagGuard flagKey="action:crm:targets:compensation"><CompensationPage /></FlagGuard></PermissionGuard>} />
+                    <Route path="*" element={<CrmNotFound />} />
                 </Routes>
                 </CrossLinkBridge>
             </CrmShellInitializer>

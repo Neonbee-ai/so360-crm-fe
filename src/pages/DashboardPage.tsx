@@ -6,7 +6,7 @@ import {
     Calendar, Loader2, ShoppingBag, Package, LayoutDashboard
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { CrossLinkChip, DashboardPageTemplate, KpiCard, Card, SegmentedControl, Grid, GridItem, Button, EmptyState, Progress } from '@so360/design-system';
+import { CrossLinkChip, DashboardPageTemplate, KpiCard, Card, SegmentedControl, Grid, GridItem, Button, EmptyState, Progress, Skeleton, Badge } from '@so360/design-system';
 import { useBusinessSettings, useShell } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import REWidgets from '../components/dashboard/REWidgets';
@@ -132,9 +132,10 @@ const DashboardPage = () => {
 
     if (isLoading) {
         return (
-            <div className="h-full flex items-center justify-center text-fg-muted gap-3">
-                <Loader2 className="animate-spin" />
-                <span>Loading insights...</span>
+            <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4">
+                <Skeleton variant="rect" />
+                <Skeleton variant="text" lines={3} />
+                <span className="sr-only">Loading insights...</span>
             </div>
         );
     }
@@ -172,46 +173,54 @@ const DashboardPage = () => {
         kpis: (
             <>
             {/* KPI Row */}
-            <Grid columns={4} gap="md">
+            <Grid gap="md">
                 {/* Deal Revenue — gated: deals are a B2B/Both concept */}
                 {showPipeline && (
-                    <KpiCard
-                        label="Deal Revenue"
-                        icon={DollarSign}
-                        value={<>{formatCurrency(financials.totalRevenue)}
-                            {financials.accountingRevenue != null ? (
-                                <span className="block mt-1 text-xs font-normal"><span className="text-fg-muted">Booked: </span><span className="text-success">{formatCurrency(financials.accountingRevenue)}</span></span>
-                            ) : (
-                                <span className="block mt-1 text-xs font-normal text-fg-muted">From won deals</span>
-                            )}</>}
-                    />
+                    <GridItem span={{ md: 4, lg: 3 }}>
+                        <KpiCard
+                            label="Deal Revenue"
+                            icon={DollarSign}
+                            value={<>{formatCurrency(financials.totalRevenue)}
+                                {financials.accountingRevenue != null ? (
+                                    <span className="block mt-1 text-xs font-normal"><span className="text-fg-muted">Booked: </span><span className="text-success">{formatCurrency(financials.accountingRevenue)}</span></span>
+                                ) : (
+                                    <span className="block mt-1 text-xs font-normal text-fg-muted">From won deals</span>
+                                )}</>}
+                        />
+                    </GridItem>
                 )}
 
                 {showPipeline && (
-                    <KpiCard
-                        label="Pipeline Value"
-                        icon={TrendingUp}
-                        value={<>{formatCurrency(financials.pipelineValue)}
-                            <span className="block mt-1 text-xs font-normal text-fg-muted">{counts.deals} Active Deals · Projected revenue</span></>}
-                    />
+                    <GridItem span={{ md: 4, lg: 3 }}>
+                        <KpiCard
+                            label="Pipeline Value"
+                            icon={TrendingUp}
+                            value={<>{formatCurrency(financials.pipelineValue)}
+                                <span className="block mt-1 text-xs font-normal text-fg-muted">{counts.deals} Active Deals · Projected revenue</span></>}
+                        />
+                    </GridItem>
                 )}
 
                 {showPipeline && (
-                    <KpiCard
-                        label="Win Rate"
-                        icon={BarChart3}
-                        value={<>{financials.winRate.toFixed(1)}%
-                            <span className="block mt-1 text-xs font-normal text-fg-muted">AVG Deal Closure</span></>}
-                    />
+                    <GridItem span={{ md: 4, lg: 3 }}>
+                        <KpiCard
+                            label="Win Rate"
+                            icon={BarChart3}
+                            value={<>{financials.winRate.toFixed(1)}%
+                                <span className="block mt-1 text-xs font-normal text-fg-muted">AVG Deal Closure</span></>}
+                        />
+                    </GridItem>
                 )}
 
                 {showPipeline && (
-                    <KpiCard
-                        label="Avg Deal Size"
-                        icon={Briefcase}
-                        value={<>{formatCurrency(financials.avgDealSize)}
-                            <span className="block mt-1 text-xs font-normal text-fg-muted">Per closed-won deal</span></>}
-                    />
+                    <GridItem span={{ md: 4, lg: 3 }}>
+                        <KpiCard
+                            label="Avg Deal Size"
+                            icon={Briefcase}
+                            value={<>{formatCurrency(financials.avgDealSize)}
+                                <span className="block mt-1 text-xs font-normal text-fg-muted">Per closed-won deal</span></>}
+                        />
+                    </GridItem>
                 )}
             </Grid>
             </>
@@ -228,88 +237,53 @@ const DashboardPage = () => {
                         <h2 className="text-xs font-semibold text-fg-subtle">
                             Commerce Performance
                         </h2>
-                        <span className="text-xs font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded border border-primary/20">
-                            DailyStore
-                        </span>
+                        <Badge tone="primary" size="sm">DailyStore</Badge>
                         {isCommerceLoading && <Loader2 size={12} className="animate-spin text-fg-muted ml-auto" />}
                     </div>
 
-                    <Grid columns={5} gap="md">
-                        {/* 1. Ecommerce Revenue */}
-                        <div className="border-l border-line pl-4">
-                            <div className="relative">
-                                <div className="flex items-center gap-2 mb-3 text-primary">
-                                    <div className="p-1.5 bg-primary/10 rounded-lg"><DollarSign size={16} /></div>
-                                    <span className="text-xs font-semibold text-fg-muted">Revenue</span>
-                                </div>
-                                <h3 className="text-2xl font-semibold text-fg">
-                                    {formatCurrency(commerceKPIs?.revenue ?? 0)}
-                                </h3>
-                                <p className="text-xs text-fg-muted mt-1 font-medium">Recognized (paid)</p>
-                            </div>
-                        </div>
-
-                        {/* 2. Orders Count */}
-                        <div className="border-l border-line pl-4">
-                            <div className="relative">
-                                <div className="flex items-center gap-2 mb-3 text-info">
-                                    <div className="p-1.5 bg-info/10 rounded-lg"><Package size={16} /></div>
-                                    <span className="text-xs font-semibold text-fg-muted">Orders</span>
-                                </div>
-                                <h3 className="text-2xl font-semibold text-fg">
-                                    {(commerceKPIs?.orderCount ?? 0).toLocaleString()}
-                                </h3>
-                                <p className="text-xs text-fg-muted mt-1 font-medium">Total orders placed</p>
-                            </div>
-                        </div>
-
-                        {/* 3. AOV */}
-                        <div className="border-l border-line pl-4">
-                            <div className="relative">
-                                <div className="flex items-center gap-2 mb-3 text-primary">
-                                    <div className="p-1.5 bg-primary/10 rounded-lg"><BarChart3 size={16} /></div>
-                                    <span className="text-xs font-semibold text-fg-muted">AOV</span>
-                                </div>
-                                <h3 className="text-2xl font-semibold text-fg">
-                                    {formatCurrency(commerceKPIs?.aov ?? 0)}
-                                </h3>
-                                <p className="text-xs text-fg-muted mt-1 font-medium">Avg order value</p>
-                            </div>
-                        </div>
-
-                        {/* 4. Repeat Purchase % */}
-                        <div className="border-l border-line pl-4">
-                            <div className="relative">
-                                <div className="flex items-center gap-2 mb-3 text-success">
-                                    <div className="p-1.5 bg-success/10 rounded-lg"><Users size={16} /></div>
-                                    <span className="text-xs font-semibold text-fg-muted">Repeat</span>
-                                </div>
-                                <h3 className="text-2xl font-semibold text-fg">
-                                    {(commerceKPIs?.repeatPurchaseRate ?? 0).toFixed(1)}%
-                                </h3>
-                                <p className="text-xs text-fg-muted mt-1 font-medium">Repeat purchase rate</p>
-                            </div>
-                        </div>
-
-                        {/* 5. Refund % */}
-                        <div className="border-l border-line pl-4">
-                            <div className="relative">
-                                <div className="flex items-center gap-2 mb-3 text-danger">
-                                    <div className="p-1.5 bg-danger/10 rounded-lg"><TrendingUp size={16} className="rotate-180" /></div>
-                                    <span className="text-xs font-semibold text-fg-muted">Refund</span>
-                                </div>
-                                <h3 className="text-2xl font-semibold text-fg">
-                                    {(commerceKPIs?.refundRate ?? 0).toFixed(1)}%
-                                </h3>
-                                <p className="text-xs text-fg-muted mt-1 font-medium">Refund rate</p>
-                            </div>
-                        </div>
+                    <Grid gap="md">
+                        <GridItem span={{ md: 4, lg: 3 }}>
+                            <KpiCard
+                                label="Revenue"
+                                icon={DollarSign}
+                                value={formatCurrency(commerceKPIs?.revenue ?? 0)}
+                                hint="Recognized (paid)"
+                                loading={isCommerceLoading && !commerceKPIs}
+                            />
+                        </GridItem>
+                        <GridItem span={{ md: 4, lg: 3 }}>
+                            <KpiCard
+                                label="Orders"
+                                icon={Package}
+                                value={(commerceKPIs?.orderCount ?? 0).toLocaleString()}
+                                hint="Total orders placed"
+                                loading={isCommerceLoading && !commerceKPIs}
+                            />
+                        </GridItem>
+                        <GridItem span={{ md: 4, lg: 3 }}>
+                            <KpiCard
+                                label="AOV"
+                                icon={BarChart3}
+                                value={formatCurrency(commerceKPIs?.aov ?? 0)}
+                                hint="Avg order value"
+                                loading={isCommerceLoading && !commerceKPIs}
+                            />
+                        </GridItem>
+                        <GridItem span={{ md: 4, lg: 3 }}>
+                            <KpiCard
+                                label="Repeat"
+                                icon={Users}
+                                value={`${(commerceKPIs?.repeatPurchaseRate ?? 0).toFixed(1)}%`}
+                                hint={`Repeat purchase rate · Refund ${(commerceKPIs?.refundRate ?? 0).toFixed(1)}%`}
+                                loading={isCommerceLoading && !commerceKPIs}
+                            />
+                        </GridItem>
                     </Grid>
 
                     {/* Orders Distribution chart */}
                     {commerceKPIs?.orderChartData && commerceKPIs.orderChartData.values.length > 0 && (
                         <div className="mt-6 border-t border-line pt-6">
-                            <div className="flex justify-between items-center mb-6">
+                            <div className="flex flex-wrap justify-between items-center gap-nb-2 mb-6">
                                 <div>
                                     <h3 className="text-base font-semibold text-fg">Orders Distribution</h3>
                                     <p className="text-xs text-fg-muted font-bold mt-1">Order volume by period</p>
@@ -319,7 +293,7 @@ const DashboardPage = () => {
                                 </div>
                             </div>
 
-                            <div className="h-48 flex items-end justify-between gap-2 px-4 relative">
+                            <div className="h-48 flex items-end justify-between gap-2 px-4 relative min-w-0 overflow-x-clip">
                                 {/* Grid lines */}
                                 <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-40">
                                     <div className="w-full h-px bg-fg-muted/40 border-t border-dashed border-line" />
@@ -369,7 +343,7 @@ const DashboardPage = () => {
                 </div>
                 <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
                     {reminders.length > 0 ? reminders.map((task: any) => (
-                        <div key={task.id} className="flex-shrink-0 w-72 flex flex-col gap-2">
+                        <div key={task.id} className="flex-shrink-0 w-72 max-w-full flex flex-col gap-2">
                         <Link
                             to={`../tasks/${task.id}`}
                             className="bg-surface-sunken p-4 rounded-nb hover:bg-surface-raised transition-all group"
@@ -425,7 +399,7 @@ const DashboardPage = () => {
                 {/* Revenue Chart */}
                 <GridItem span={showLeads ? { lg: 8 } : 'full'}>
                 <Card title="Revenue Performance" className="min-w-0">
-                    <div className="flex justify-between items-center mb-8">
+                    <div className="flex flex-wrap justify-between items-center gap-nb-2 mb-8">
                         <div>
                             <p className="text-xs text-fg-muted font-bold mt-1">Monthly Revenue Distribution</p>
                         </div>
@@ -436,7 +410,7 @@ const DashboardPage = () => {
                         </div>
                     </div>
 
-                    <div className="h-64 flex items-end justify-between gap-2 px-4 relative">
+                    <div className="h-64 flex items-end justify-between gap-2 px-4 relative min-w-0 overflow-x-clip">
                         {/* Grid lines */}
                         <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-20">
                             <div className="w-full h-px bg-line border-t border-dashed" />
@@ -483,7 +457,7 @@ const DashboardPage = () => {
                         )}
                         {teamStats.map((stat: any, index: number) => (
                             <div key={stat.user.id} className="flex items-center gap-4 py-3 group">
-                                <div className={`w-8 h-8 flex items-center justify-center rounded-lg font-semibold text-xs ${index === 0 ? 'bg-warning text-primary-fg shadow-lg shadow-warning/20' :
+                                <div className={`w-8 h-8 flex items-center justify-center rounded-lg font-semibold text-xs ${index === 0 ? 'bg-warning text-primary-fg' :
                                     index === 1 ? 'bg-fg-muted/40 text-fg-subtle' :
                                         index === 2 ? 'bg-fg-muted/25 text-fg-subtle' :
                                             'bg-transparent text-fg-subtle'
@@ -491,7 +465,7 @@ const DashboardPage = () => {
                                     {index + 1}
                                 </div>
 
-                                <div className="w-10 h-10 rounded-full bg-fg-muted/30 flex items-center justify-center overflow-hidden border border-line">
+                                <div className="w-10 h-10 shrink-0 rounded-full bg-fg-muted/30 flex items-center justify-center overflow-hidden border border-line">
                                     {stat.user.avatar_url ? (
                                         <img src={stat.user.avatar_url} alt={stat.user.full_name} className="w-full h-full object-cover" />
                                     ) : (
@@ -508,7 +482,7 @@ const DashboardPage = () => {
                                     </div>
                                 </div>
 
-                                <div className="text-right">
+                                <div className="text-right shrink-0">
                                     <span className="block text-sm font-semibold text-success">{formatCurrency(stat.revenue)}</span>
                                 </div>
                             </div>
@@ -525,7 +499,7 @@ const DashboardPage = () => {
                 full-width band of empty cards. */}
             {showPipeline && teamStats.length > 0 && <Card title="Performance Analytics" className="relative overflow-hidden">
                 <div className="relative">
-                    <div className="flex justify-between items-center mb-6">
+                    <div className="flex flex-wrap justify-between items-center gap-nb-2 mb-6">
                         <div>
                             <p className="text-xs text-fg-muted font-bold mt-1">Activity vs. Conversion Efficiency</p>
                         </div>
@@ -536,10 +510,10 @@ const DashboardPage = () => {
                           <GridItem key={stat.user.id} span={{ md: 4, lg: 3 }}>
                             <div className="border-t border-line pt-4 hover:border-line transition-all shadow-sm">
                                 <div className="flex items-center gap-3 mb-6">
-                                    <div className="w-8 h-8 rounded-full bg-fg-muted/30 flex items-center justify-center overflow-hidden">
+                                    <div className="w-8 h-8 shrink-0 rounded-full bg-fg-muted/30 flex items-center justify-center overflow-hidden">
                                         {stat.user.avatar_url ? <img src={stat.user.avatar_url} /> : stat.user.full_name.charAt(0)}
                                     </div>
-                                    <div className="flex flex-col">
+                                    <div className="flex flex-col min-w-0 break-words">
                                         <span className="text-xs font-bold text-fg">{stat.user.full_name}</span>
                                         <span className="text-xs font-semibold text-fg-muted">{stat.user.role || 'Sales Rep'}</span>
                                     </div>
@@ -615,13 +589,15 @@ const DashboardPage = () => {
                     variant="secondary"
                     onClick={() => setShowCustomize(true)}
                     aria-label="Customize dashboard"
+                    leadingIcon={<LayoutDashboard size={14} />}
+                    className="whitespace-nowrap max-sm:px-nb-2"
                 >
-                    <LayoutDashboard size={14} /> Customize
+                    <span className="max-sm:sr-only">Customize</span>
                 </Button>
             ) : undefined}
             kpis={kpisVisible && showPipeline ? widgetNodes.kpis : undefined}
             filters={
-                <>
+                <div className="max-w-full min-w-0 overflow-x-auto">
                 <SegmentedControl
                     aria-label="Dashboard period"
                     size="sm"
@@ -634,7 +610,7 @@ const DashboardPage = () => {
                         { value: 'weekly', label: 'Weekly' },
                     ]}
                 />
-                </>
+                </div>
             }
             primary={
                 <>

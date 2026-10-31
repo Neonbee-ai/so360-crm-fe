@@ -7,6 +7,7 @@ export * from './__mocks__/design-system';
 export const toast = { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() };
 
 export const Spinner = () => <span aria-label="Loading" />;
+export const Skeleton = (_p: Record<string, unknown>) => <div data-testid="skeleton" />;
 
 /** Row menu rendered flat (items always present) so specs can click actions without opening a popover. */
 export const Menu = ({ trigger, items = [] }: any) => (

@@ -488,6 +488,13 @@ describe('DealDetailPage', () => {
       await user.click(screen.getAllByText('Back to Pipeline')[0]);
       expect(mockNavigate).toHaveBeenCalledWith('/crm/pipeline');
     });
+
+    it('When API returns null / Then the not-found state renders inside a Comb root so the page settles', async () => {
+      mockGetDealById.mockResolvedValue(null);
+      const { container } = render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Deal not found.')).toBeInTheDocument());
+      expect(container.querySelector('[data-comb-path]')).not.toBeNull();
+    });
   });
 
   describe('Given a loaded deal / Then the universal Back control navigates to the pipeline list', () => {

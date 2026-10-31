@@ -3,7 +3,7 @@ import {
   TrendingUp, TrendingDown, AlertCircle, Clock, CheckCircle2,
   DollarSign, Zap, Activity, Calendar
 } from 'lucide-react';
-import { Badge, Card, Grid, GridItem } from '@so360/design-system';
+import { Badge, Card, CountUp, Grid, GridItem } from '@so360/design-system';
 import { Lead, Deal, Task } from '../types/crm';
 import { useCRMFormatters } from '../utils/formatters';
 
@@ -50,7 +50,7 @@ const KPICard: React.FC<KPICardProps> = ({ label, value, trend, icon }) => {
         <div className="p-2 bg-surface-raised rounded-nb">{icon}</div>
       </div>
       <div>
-        <div className="text-2xl font-medium text-fg leading-tight">{value}</div>
+        <div className="text-2xl font-medium text-fg leading-tight"><CountUp value={value} /></div>
         {trend && (
           <div className={`flex items-center gap-1 mt-2 text-xs font-medium ${trendColorClasses[trend.direction]}`}>
             {trend.direction === 'up' && <TrendingUp size={12} />}
