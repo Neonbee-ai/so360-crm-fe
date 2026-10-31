@@ -6,6 +6,7 @@ import { CrossLinkProvider } from '@so360/cross-link';
 import { crmService } from './services/crmService';
 import { salesTargetService } from './services/salesTargetService';
 import { CrmScope, crmPortalRoot } from './utils/crmScope';
+import { preloadRouteChunk } from './utils/routePreload';
 
 // Synchronizes Shell Context with CRM Service
 const CrmNotFound = () => (
@@ -156,8 +157,18 @@ import LeadsPage from './pages/LeadsPage';
 import PipelinePage from './pages/PipelinePage';
 
 // Lazy load the remaining pages for performance
-const LeadDetailPage = lazy(() => import('./pages/LeadDetailPage'));
-const DealDetailPage = lazy(() => import('./pages/DealDetailPage'));
+const loadLeadDetailPage = () => import('./pages/LeadDetailPage');
+const loadDealDetailPage = () => import('./pages/DealDetailPage');
+const LeadDetailPage = lazy(loadLeadDetailPage);
+const DealDetailPage = lazy(loadDealDetailPage);
+
+// Deep links to a detail page download its chunk while the Shell context syncs.
+if (typeof window !== 'undefined') {
+    preloadRouteChunk(window.location.pathname, [
+        { pattern: /\/leads\/[^/]+\/?$/, load: loadLeadDetailPage },
+        { pattern: /\/deals?\/[^/]+\/?$/, load: loadDealDetailPage },
+    ]);
+}
 const TasksPage = lazy(() => import('./pages/TasksPage'));
 const TaskDetailPage = lazy(() => import('./pages/TaskDetailPage'));
 const QuotesPage = lazy(() => import('./pages/QuotesPage'));
