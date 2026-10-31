@@ -2110,14 +2110,9 @@ export const crmService = {
             const stagesToUpdate = newStages.filter(s => !s.id.startsWith('st-'));
             const stagesToDelete = currentStages.filter(cs => !newStages.find(ns => ns.id === cs.id));
 
+            // Update/delete first, then create sequentially, so the BE's open-stage
+            // shift on create cannot race the explicit orders (Pulse ba71bf76).
             await Promise.all([
-                ...stagesToCreate.map(s => apiClient.post('/settings/pipeline-stages', {
-                    name: s.name,
-                    order: newStages.indexOf(s) + 1,
-                    color: '#3b82f6',
-                    type: s.type,
-                    probability: s.probability ?? null
-                })),
                 ...stagesToUpdate.map(s => apiClient.patch(`/settings/pipeline-stages/${s.id}`, {
                     name: s.name,
                     order: newStages.indexOf(s) + 1,
@@ -2126,6 +2121,15 @@ export const crmService = {
                 })),
                 ...stagesToDelete.map(s => apiClient.delete(`/settings/pipeline-stages/${s.id}`))
             ]);
+            for (const s of stagesToCreate) {
+                await apiClient.post('/settings/pipeline-stages', {
+                    name: s.name,
+                    order: newStages.indexOf(s) + 1,
+                    color: '#3b82f6',
+                    type: s.type,
+                    probability: s.probability ?? null
+                });
+            }
         } catch (error) {
             console.error('[CRM] Failed to save Pipeline Stages', error);
             failures.push('Pipeline Stages');
