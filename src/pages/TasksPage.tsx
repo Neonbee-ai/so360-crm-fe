@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CheckCircle2, Circle, AlertCircle, Calendar, Trash2, UserPlus, Building2, Plus, X } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { Task } from '../types/crm';
-import { ListPageTemplate, Pagination, Button, IconButton, SegmentedControl, DataTable, Select, SearchInput, toast, type DataTableColumn, type FilterValues, type ListFilterConfig } from '@so360/design-system';
+import { ListPageTemplate, Pagination, Button, IconButton, SegmentedControl, DataTable, Select, SearchInput, Badge, toast, type DataTableColumn, type FilterValues, type ListFilterConfig } from '@so360/design-system';
 import { useShell, useShellBridge, useSandboxLimit } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import { canCurrentUserBeAssigned, isTaskAssignedToUser, isTaskLocked, isTaskOverdue, TASK_LOCKED_HINT } from '../utils/taskUtils';
@@ -225,7 +225,7 @@ const TasksPage = () => {
                         }}
                     />
                     <div className="flex min-w-0 flex-col gap-0.5">
-                        <span className={`line-clamp-2 font-semibold ${task.status === 'DONE' ? 'text-fg-muted line-through' : 'text-fg'}`}>
+                        <span className={`line-clamp-1 font-semibold ${task.status === 'DONE' ? 'text-fg-muted line-through' : 'text-fg'}`}>
                             {task.title}
                         </span>
                     </div>
@@ -236,17 +236,24 @@ const TasksPage = () => {
             key: 'due_date',
             header: 'Due Date',
             sortable: true,
+            widthClassName: 'min-w-44 whitespace-nowrap',
             render: (task: Task) => {
                 const isOverdue = isTaskOverdue(task);
                 return (
-                    <div className={`flex items-center gap-2 text-xs font-medium whitespace-nowrap ${isOverdue ? 'text-danger' : 'text-fg-subtle'}`}>
-                        {isOverdue ? <AlertCircle size={14} className="shrink-0" /> : <Calendar size={14} className="shrink-0" />}
-                        <span>{formatters.formatDate(dueDateCalendarDay(task.due_date))}</span>
+                    <div className="flex flex-col items-start gap-1 whitespace-nowrap">
+                        <div className={`flex items-center gap-2 text-xs font-medium ${isOverdue ? 'text-danger' : 'text-fg-subtle'}`}>
+                            {isOverdue ? <AlertCircle size={14} className="shrink-0" /> : <Calendar size={14} className="shrink-0" />}
+                            <span>{formatters.formatDate(dueDateCalendarDay(task.due_date))}</span>
+                        </div>
                         {/* Only a task the user gave a time to shows one. */}
-                        {hasTimeComponent(task.due_date) && (
-                            <span className="text-fg-subtle">{formatters.formatDate(task.due_date, { hour: 'numeric', minute: '2-digit' })}</span>
+                        {(hasTimeComponent(task.due_date) || isOverdue) && (
+                            <div className="flex items-center gap-2 pl-6 text-xs">
+                                {hasTimeComponent(task.due_date) && (
+                                    <span className="text-fg-subtle">{formatters.formatDate(task.due_date, { hour: 'numeric', minute: '2-digit' })}</span>
+                                )}
+                                {isOverdue && <Badge size="sm" tone="danger">Overdue</Badge>}
+                            </div>
                         )}
-                        {isOverdue && <span className=" text-xs font-semibolder">Overdue</span>}
                     </div>
                 );
             }
@@ -255,6 +262,7 @@ const TasksPage = () => {
             key: 'associated_with',
             header: 'Associated With',
             sortable: true,
+            widthClassName: 'min-w-48',
             render: (task: Task) => {
                 const entity = task.deal
                     ? { label: task.deal.name || task.deal.company_name, sub: task.deal.company_name !== task.deal.name ? task.deal.company_name : null, type: 'deal' as const }
@@ -321,6 +329,7 @@ const TasksPage = () => {
             key: 'status',
             header: 'Status',
             sortable: true,
+            widthClassName: 'min-w-36',
             render: (task: Task) => (
                 <div onClick={(e) => e.stopPropagation()}>
                     <Select
