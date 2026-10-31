@@ -524,10 +524,10 @@ const SettingsPage = ({ onOpenIcps, onOpenDataSettings, onOpenEstimator }: { onO
             primaryAction={(canWriteSettings || (icpEnabled && onOpenIcps) || (estimatorEnabled && onOpenEstimator)) ? (
                 <div className="flex min-w-0 max-w-full flex-wrap items-center justify-end gap-nb-2 max-md:justify-start">
                     {icpEnabled && onOpenIcps && (
-                        <Button variant="secondary" onClick={onOpenIcps} data-testid="settings-open-icps">Ideal customers</Button>
+                        <Button variant="secondary" onClick={onOpenIcps} data-testid="settings-open-icps" className="max-md:min-w-0 max-md:whitespace-normal">Ideal customers</Button>
                     )}
                     {estimatorEnabled && onOpenEstimator && (
-                        <Button variant="secondary" onClick={onOpenEstimator} data-testid="settings-open-estimator">Estimator</Button>
+                        <Button variant="secondary" onClick={onOpenEstimator} data-testid="settings-open-estimator" className="max-md:min-w-0 max-md:whitespace-normal">Estimator</Button>
                     )}
                     {canWriteSettings && (<>
                     {isDirty && !isSaving && (

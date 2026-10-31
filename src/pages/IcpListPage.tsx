@@ -84,7 +84,7 @@ const IcpListPage: React.FC = () => {
             header: 'Name',
             render: (icp) => (
                 <>
-                    <span className="font-medium break-words">{icp.name}</span>{' '}
+                    <span className="font-medium min-w-0 [overflow-wrap:anywhere]">{icp.name}</span>{' '}
                     {icp.is_default && <Badge tone="primary" size="sm" data-testid="badge">Default</Badge>}
                 </>
             ),

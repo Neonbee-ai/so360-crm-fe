@@ -156,7 +156,7 @@ export default function TouchpointChannelsPage() {
 
   const columns: DataTableColumn<any>[] = [
     { key: 'channel', header: 'Channel', sortable: true, sortValue: (c) => c.label || '', render: (c) => (
-      <span className="text-fg break-words">
+      <span className="text-fg min-w-0 [overflow-wrap:anywhere]">
         {c.label}
         {c.linked_source_value && (
           <span className="ml-nb-2 text-xs text-fg-muted" title="Linked to an existing CRM lead source">
