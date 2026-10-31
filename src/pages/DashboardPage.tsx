@@ -6,7 +6,7 @@ import {
     Calendar, Loader2, ShoppingBag, Package, LayoutDashboard
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { CrossLinkChip, DashboardPageTemplate, KpiCard, Card, SegmentedControl, Grid, GridItem, KpiGrid, Button, EmptyState, Progress, Skeleton, Badge } from '@so360/design-system';
+import { CrossLinkChip, DashboardPageTemplate, KpiCard, Card, SegmentedControl, Grid, GridItem, Button, EmptyState, Progress, Skeleton, Badge } from '@so360/design-system';
 import { useBusinessSettings, useShell } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import REWidgets from '../components/dashboard/REWidgets';
@@ -173,48 +173,56 @@ const DashboardPage = () => {
         kpis: (
             <>
             {/* KPI Row */}
-            <KpiGrid>
+            <Grid gap="md">
                 {/* Deal Revenue — gated: deals are a B2B/Both concept */}
                 {showPipeline && (
-                    <KpiCard
-                        label="Deal Revenue"
-                        icon={DollarSign}
-                        value={<>{formatCurrency(financials.totalRevenue)}
-                            {financials.accountingRevenue != null ? (
-                                <span className="block mt-1 text-xs font-normal"><span className="text-fg-muted">Booked: </span><span className="text-success">{formatCurrency(financials.accountingRevenue)}</span></span>
-                            ) : (
-                                <span className="block mt-1 text-xs font-normal text-fg-muted">From won deals</span>
-                            )}</>}
-                    />
+                    <GridItem span={{ md: 4, lg: 3 }}>
+                        <KpiCard
+                            label="Deal Revenue"
+                            icon={DollarSign}
+                            value={<>{formatCurrency(financials.totalRevenue)}
+                                {financials.accountingRevenue != null ? (
+                                    <span className="block mt-1 text-xs font-normal"><span className="text-fg-muted">Booked: </span><span className="text-success">{formatCurrency(financials.accountingRevenue)}</span></span>
+                                ) : (
+                                    <span className="block mt-1 text-xs font-normal text-fg-muted">From won deals</span>
+                                )}</>}
+                        />
+                    </GridItem>
                 )}
 
                 {showPipeline && (
-                    <KpiCard
-                        label="Pipeline Value"
-                        icon={TrendingUp}
-                        value={<>{formatCurrency(financials.pipelineValue)}
-                            <span className="block mt-1 text-xs font-normal text-fg-muted">{counts.deals} Active Deals · Projected revenue</span></>}
-                    />
+                    <GridItem span={{ md: 4, lg: 3 }}>
+                        <KpiCard
+                            label="Pipeline Value"
+                            icon={TrendingUp}
+                            value={<>{formatCurrency(financials.pipelineValue)}
+                                <span className="block mt-1 text-xs font-normal text-fg-muted">{counts.deals} Active Deals · Projected revenue</span></>}
+                        />
+                    </GridItem>
                 )}
 
                 {showPipeline && (
-                    <KpiCard
-                        label="Win Rate"
-                        icon={BarChart3}
-                        value={<>{financials.winRate.toFixed(1)}%
-                            <span className="block mt-1 text-xs font-normal text-fg-muted">AVG Deal Closure</span></>}
-                    />
+                    <GridItem span={{ md: 4, lg: 3 }}>
+                        <KpiCard
+                            label="Win Rate"
+                            icon={BarChart3}
+                            value={<>{financials.winRate.toFixed(1)}%
+                                <span className="block mt-1 text-xs font-normal text-fg-muted">AVG Deal Closure</span></>}
+                        />
+                    </GridItem>
                 )}
 
                 {showPipeline && (
-                    <KpiCard
-                        label="Avg Deal Size"
-                        icon={Briefcase}
-                        value={<>{formatCurrency(financials.avgDealSize)}
-                            <span className="block mt-1 text-xs font-normal text-fg-muted">Per closed-won deal</span></>}
-                    />
+                    <GridItem span={{ md: 4, lg: 3 }}>
+                        <KpiCard
+                            label="Avg Deal Size"
+                            icon={Briefcase}
+                            value={<>{formatCurrency(financials.avgDealSize)}
+                                <span className="block mt-1 text-xs font-normal text-fg-muted">Per closed-won deal</span></>}
+                        />
+                    </GridItem>
                 )}
-            </KpiGrid>
+            </Grid>
             </>
         ),
         commerce: (
@@ -233,36 +241,44 @@ const DashboardPage = () => {
                         {isCommerceLoading && <Loader2 size={12} className="animate-spin text-fg-muted ml-auto" />}
                     </div>
 
-                    <KpiGrid>
-                        <KpiCard
-                            label="Revenue"
-                            icon={DollarSign}
-                            value={formatCurrency(commerceKPIs?.revenue ?? 0)}
-                            hint="Recognized (paid)"
-                            loading={isCommerceLoading && !commerceKPIs}
-                        />
-                        <KpiCard
-                            label="Orders"
-                            icon={Package}
-                            value={(commerceKPIs?.orderCount ?? 0).toLocaleString()}
-                            hint="Total orders placed"
-                            loading={isCommerceLoading && !commerceKPIs}
-                        />
-                        <KpiCard
-                            label="AOV"
-                            icon={BarChart3}
-                            value={formatCurrency(commerceKPIs?.aov ?? 0)}
-                            hint="Avg order value"
-                            loading={isCommerceLoading && !commerceKPIs}
-                        />
-                        <KpiCard
-                            label="Repeat"
-                            icon={Users}
-                            value={`${(commerceKPIs?.repeatPurchaseRate ?? 0).toFixed(1)}%`}
-                            hint={`Repeat purchase rate · Refund ${(commerceKPIs?.refundRate ?? 0).toFixed(1)}%`}
-                            loading={isCommerceLoading && !commerceKPIs}
-                        />
-                    </KpiGrid>
+                    <Grid gap="md">
+                        <GridItem span={{ md: 4, lg: 3 }}>
+                            <KpiCard
+                                label="Revenue"
+                                icon={DollarSign}
+                                value={formatCurrency(commerceKPIs?.revenue ?? 0)}
+                                hint="Recognized (paid)"
+                                loading={isCommerceLoading && !commerceKPIs}
+                            />
+                        </GridItem>
+                        <GridItem span={{ md: 4, lg: 3 }}>
+                            <KpiCard
+                                label="Orders"
+                                icon={Package}
+                                value={(commerceKPIs?.orderCount ?? 0).toLocaleString()}
+                                hint="Total orders placed"
+                                loading={isCommerceLoading && !commerceKPIs}
+                            />
+                        </GridItem>
+                        <GridItem span={{ md: 4, lg: 3 }}>
+                            <KpiCard
+                                label="AOV"
+                                icon={BarChart3}
+                                value={formatCurrency(commerceKPIs?.aov ?? 0)}
+                                hint="Avg order value"
+                                loading={isCommerceLoading && !commerceKPIs}
+                            />
+                        </GridItem>
+                        <GridItem span={{ md: 4, lg: 3 }}>
+                            <KpiCard
+                                label="Repeat"
+                                icon={Users}
+                                value={`${(commerceKPIs?.repeatPurchaseRate ?? 0).toFixed(1)}%`}
+                                hint={`Repeat purchase rate · Refund ${(commerceKPIs?.refundRate ?? 0).toFixed(1)}%`}
+                                loading={isCommerceLoading && !commerceKPIs}
+                            />
+                        </GridItem>
+                    </Grid>
 
                     {/* Orders Distribution chart */}
                     {commerceKPIs?.orderChartData && commerceKPIs.orderChartData.values.length > 0 && (
