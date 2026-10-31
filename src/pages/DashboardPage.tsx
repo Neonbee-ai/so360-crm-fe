@@ -590,9 +590,9 @@ const DashboardPage = () => {
                     onClick={() => setShowCustomize(true)}
                     aria-label="Customize dashboard"
                     leadingIcon={<LayoutDashboard size={14} />}
-                    className="whitespace-nowrap"
+                    className="whitespace-nowrap max-sm:px-nb-2"
                 >
-                    Customize
+                    <span className="max-sm:sr-only">Customize</span>
                 </Button>
             ) : undefined}
             kpis={kpisVisible && showPipeline ? widgetNodes.kpis : undefined}

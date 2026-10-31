@@ -338,6 +338,11 @@ const LeadDetailPage = () => {
         // calls kept the spinner up for 3-11s on orgs with many users/partners.
         // The promise still resolves only after the supporting data is set, so
         // callers that await a reload see the complete record.
+        // The lead request is issued FIRST so it takes the earliest browser
+        // connection slot: on HTTP/1.1 hosts (6 per origin) the slow users /
+        // partners lists otherwise queue ahead of it and hold the page spinner
+        // for 10-16s even though GET /leads/:id itself answers quickly.
+        const leadRequest = crmService.getLeadById(id);
         const supporting = Promise.all([
             crmService.getDealsByLeadId(id).catch(() => [] as any[]),
             crmService.getTasksByLeadId(id).catch(() => [] as any[]),
@@ -352,7 +357,7 @@ const LeadDetailPage = () => {
 
         let leadData: any;
         try {
-            leadData = await crmService.getLeadById(id);
+            leadData = await leadRequest;
         } catch (error) {
             console.error('Failed to fetch lead data', error);
             // Report a permission failure as a permission failure. Reusing the
@@ -1205,11 +1210,11 @@ const LeadDetailPage = () => {
                             {infoTab === 'profile' && (
                                 <Grid gap="md">
                                     <GridItem span={{ md: 4, lg: 6 }}><div className="space-y-6">
-                                        <div className="flex items-center gap-4 text-fg-subtle">
+                                        <div className="flex items-center gap-4 text-fg-subtle min-w-0">
                                             <div className="size-10 rounded-nb bg-surface-raised flex items-center justify-center text-fg-subtle">
                                                 <Users size={18} />
                                             </div>
-                                            <div className="flex flex-col flex-1">
+                                            <div className="flex flex-col flex-1 min-w-0 break-words">
                                                 <span className="text-xs font-medium text-fg-muted mb-0.5">First Name</span>
                                                 {isEditingInfo ? (
                                                     <TextField
@@ -1229,11 +1234,11 @@ const LeadDetailPage = () => {
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-4 text-fg-subtle">
+                                        <div className="flex items-center gap-4 text-fg-subtle min-w-0">
                                             <div className="size-10 rounded-nb bg-surface-raised flex items-center justify-center text-fg-subtle">
                                                 <Users size={18} />
                                             </div>
-                                            <div className="flex flex-col flex-1">
+                                            <div className="flex flex-col flex-1 min-w-0 break-words">
                                                 <span className="text-xs font-medium text-fg-muted mb-0.5">Last Name</span>
                                                 {isEditingInfo ? (
                                                     <TextField
@@ -1253,11 +1258,11 @@ const LeadDetailPage = () => {
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-4 text-fg-subtle">
+                                        <div className="flex items-center gap-4 text-fg-subtle min-w-0">
                                             <div className="size-10 rounded-nb bg-surface-raised flex items-center justify-center text-primary">
                                                 <Mail size={18} />
                                             </div>
-                                            <div className="flex flex-col flex-1">
+                                            <div className="flex flex-col flex-1 min-w-0 break-words">
                                                 <span className="text-xs font-medium text-fg-muted mb-0.5">Email</span>
                                                 {isEditingInfo ? (
                                                     <TextField
@@ -1280,11 +1285,11 @@ const LeadDetailPage = () => {
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-4 text-fg-subtle">
+                                        <div className="flex items-center gap-4 text-fg-subtle min-w-0">
                                             <div className="size-10 rounded-nb bg-surface-raised flex items-center justify-center text-primary">
                                                 <Phone size={18} />
                                             </div>
-                                            <div className="flex flex-col flex-1">
+                                            <div className="flex flex-col flex-1 min-w-0 break-words">
                                                 <span className="text-xs font-medium text-fg-muted mb-0.5">Phone</span>
                                                 {isEditingInfo ? (
                                                     <TextField
@@ -1315,11 +1320,11 @@ const LeadDetailPage = () => {
                                         </div>
                                     </div></GridItem>
                                     <GridItem span={{ md: 4, lg: 6 }}><div className="space-y-6">
-                                        <div className="flex items-center gap-4 text-fg-subtle">
+                                        <div className="flex items-center gap-4 text-fg-subtle min-w-0">
                                             <div className="size-10 rounded-nb bg-surface-raised flex items-center justify-center text-success">
                                                 <Tag size={18} />
                                             </div>
-                                            <div className="flex flex-col flex-1">
+                                            <div className="flex flex-col flex-1 min-w-0 break-words">
                                                 <span className="text-xs font-medium text-fg-muted mb-0.5">Source</span>
                                                 {isEditingInfo ? (
                                                     <Select
@@ -1336,11 +1341,11 @@ const LeadDetailPage = () => {
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center gap-4 text-fg-subtle">
+                                        <div className="flex items-center gap-4 text-fg-subtle min-w-0">
                                             <div className="size-10 rounded-nb bg-surface-raised flex items-center justify-center text-primary">
                                                 <Users size={18} />
                                             </div>
-                                            <div className="flex flex-col flex-1">
+                                            <div className="flex flex-col flex-1 min-w-0 break-words">
                                                 <span className="text-xs font-medium text-fg-muted mb-0.5">Referred By</span>
                                                 {isEditingInfo ? (
                                                     <PartnerSearchDropdown
@@ -1359,11 +1364,11 @@ const LeadDetailPage = () => {
                                         </div>
 
                                         {isEditingInfo && (
-                                            <div className="flex items-center gap-4 text-fg-subtle">
+                                            <div className="flex items-center gap-4 text-fg-subtle min-w-0">
                                                 <div className="size-10 rounded-nb bg-surface-raised flex items-center justify-center text-primary">
                                                     <Users size={18} />
                                                 </div>
-                                                <div className="flex flex-col flex-1">
+                                                <div className="flex flex-col flex-1 min-w-0 break-words">
                                                     <span className="text-xs font-medium text-fg-muted mb-0.5">Partner</span>
                                                     <Checkbox name="lead-is-partner" label="Mark as Partner" checked={lead.type === 'partner'} onChange={(e) => setLead({ ...lead, type: e.target.checked ? 'partner' : 'lead' })} />
                                                 </div>
@@ -1386,11 +1391,11 @@ const LeadDetailPage = () => {
                             {infoTab === 'additional' && !dlCustomFields && (
                                 <Grid gap="md">
                                     {customFieldDefs.map(field => (
-                                        <GridItem key={field.id} span={{ md: 4, lg: 6 }}>                                        <div className="flex items-center gap-4 text-fg-subtle">
+                                        <GridItem key={field.id} span={{ md: 4, lg: 6 }}>                                        <div className="flex items-center gap-4 text-fg-subtle min-w-0">
                                             <div className="size-10 rounded-nb bg-surface-raised flex items-center justify-center text-fg-muted">
                                                 {field.type === 'date' ? <Calendar size={18} /> : field.type === 'boolean' ? <CheckCircle2 size={18} /> : <Tag size={18} />}
                                             </div>
-                                            <div className="flex flex-col flex-1">
+                                            <div className="flex flex-col flex-1 min-w-0 break-words">
                                                 <span className="text-xs font-medium text-fg-muted mb-0.5">{field.label}</span>
                                                 {isEditingInfo ? (
                                                     <TextField
