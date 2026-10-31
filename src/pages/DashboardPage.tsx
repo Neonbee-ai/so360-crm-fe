@@ -6,7 +6,7 @@ import {
     Calendar, Loader2, ShoppingBag, Package, LayoutDashboard
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { CrossLinkChip, DashboardPageTemplate, KpiCard, Card, SegmentedControl, Grid, GridItem, Button, EmptyState, Progress, Skeleton, Badge } from '@so360/design-system';
+import { CrossLinkChip, DashboardPageTemplate, KpiCard, Card, SegmentedControl, Grid, GridItem, KpiGrid, Button, EmptyState, Progress, Skeleton, Badge } from '@so360/design-system';
 import { useBusinessSettings, useShell } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import REWidgets from '../components/dashboard/REWidgets';
@@ -173,7 +173,7 @@ const DashboardPage = () => {
         kpis: (
             <>
             {/* KPI Row */}
-            <Grid columns={4} gap="md">
+            <KpiGrid>
                 {/* Deal Revenue — gated: deals are a B2B/Both concept */}
                 {showPipeline && (
                     <KpiCard
@@ -214,7 +214,7 @@ const DashboardPage = () => {
                             <span className="block mt-1 text-xs font-normal text-fg-muted">Per closed-won deal</span></>}
                     />
                 )}
-            </Grid>
+            </KpiGrid>
             </>
         ),
         commerce: (
@@ -233,7 +233,7 @@ const DashboardPage = () => {
                         {isCommerceLoading && <Loader2 size={12} className="animate-spin text-fg-muted ml-auto" />}
                     </div>
 
-                    <Grid columns={4} gap="md">
+                    <KpiGrid>
                         <KpiCard
                             label="Revenue"
                             icon={DollarSign}
@@ -262,7 +262,7 @@ const DashboardPage = () => {
                             hint={`Repeat purchase rate · Refund ${(commerceKPIs?.refundRate ?? 0).toFixed(1)}%`}
                             loading={isCommerceLoading && !commerceKPIs}
                         />
-                    </Grid>
+                    </KpiGrid>
 
                     {/* Orders Distribution chart */}
                     {commerceKPIs?.orderChartData && commerceKPIs.orderChartData.values.length > 0 && (

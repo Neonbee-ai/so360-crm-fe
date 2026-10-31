@@ -1,5 +1,6 @@
 import React from 'react';
-import { CheckCircle, Circle, XCircle } from 'lucide-react';
+import { XCircle } from 'lucide-react';
+import { Stepper } from '@so360/design-system';
 
 const FORWARD_STATES = ['new', 'contacted', 'qualified', 'proposal_sent', 'negotiation', 'converted'] as const;
 
@@ -31,40 +32,17 @@ export const LeadJourneyStepper: React.FC<LeadJourneyStepperProps> = ({ currentS
         );
     }
 
-    const currentIndex = FORWARD_STATES.indexOf(normalized as any);
+    const currentIndex = Math.max(FORWARD_STATES.indexOf(normalized as (typeof FORWARD_STATES)[number]), 0);
 
+    // DS Stepper: steps share the width and collapse to circles + current label on narrow containers,
+    // so the lead page never scrolls sideways on phones.
     return (
-        <div className="flex items-center gap-0 max-w-full min-w-0 overflow-x-auto pb-1">
-            {FORWARD_STATES.map((state, index) => {
-                const isCompleted = currentIndex > index;
-                const isCurrent = currentIndex === index;
-                const isLast = index === FORWARD_STATES.length - 1;
-                const isTerminalConverted = isLast && (isCompleted || isCurrent);
-
-                return (
-                    <React.Fragment key={state}>
-                        <div className="flex flex-col items-center shrink-0">
-                            <div className={`flex items-center justify-center w-8 h-8 rounded-full transition-all ${
- isCompleted ? (isTerminalConverted ? 'bg-success text-primary-fg' : 'bg-info text-primary-fg') :
- isCurrent ? (state === 'converted' ? 'bg-success/20 border-2 border-success text-success' : 'bg-info/20 border-2 border-info text-info') :
- 'bg-fg-muted/10 border border-line-strong text-fg-subtle'
- }`}>
-                                {isCompleted ? <CheckCircle className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
-                            </div>
-                            <span className={`text-xs mt-2 text-center min-w-16 px-1 whitespace-nowrap ${
- isCompleted || isCurrent ? (state === 'converted' ? 'text-success' : 'text-info') : 'text-fg-subtle'
- }`}>
-                                {STATE_LABELS[state]}
-                            </span>
-                        </div>
-                        {!isLast && (
-                            <div className={`flex-1 h-0.5 min-w-4 ${
- isCompleted ? 'bg-info' : 'bg-fg-muted/40'
- }`} />
-                        )}
-                    </React.Fragment>
-                );
-            })}
+        <div className="min-w-0 max-w-full">
+            <Stepper
+                name="lead_journey"
+                steps={FORWARD_STATES.map((state) => ({ label: STATE_LABELS[state] }))}
+                current={isConverted ? FORWARD_STATES.length - 1 : currentIndex}
+            />
         </div>
     );
 };

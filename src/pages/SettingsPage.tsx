@@ -522,7 +522,7 @@ const SettingsPage = ({ onOpenIcps, onOpenDataSettings, onOpenEstimator }: { onO
             title="CRM Settings"
             description="Configure your workspace and custom data points"
             primaryAction={(canWriteSettings || (icpEnabled && onOpenIcps) || (estimatorEnabled && onOpenEstimator)) ? (
-                <div className="flex flex-wrap items-center justify-end gap-nb-2">
+                <div className="flex min-w-0 max-w-full flex-wrap items-center justify-end gap-nb-2 max-md:justify-start">
                     {icpEnabled && onOpenIcps && (
                         <Button variant="secondary" onClick={onOpenIcps} data-testid="settings-open-icps">Ideal customers</Button>
                     )}
