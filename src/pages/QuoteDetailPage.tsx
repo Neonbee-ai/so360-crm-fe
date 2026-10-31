@@ -571,20 +571,22 @@ const QuoteDetailPage = () => {
                                 <Button
                                     variant="secondary"
                                     onClick={() => navigate(`/crm/customers/${customer.id}`)}
-                                    className="w-full !justify-start !text-left"
+                                    className="w-full !h-auto !justify-start !whitespace-normal !text-left !py-nb-2"
                                 >
-                                    <p className="font-medium text-fg">
-                                        {customer.company_name || customer.contact_name || '—'}
-                                    </p>
-                                    {customer.company_name && customer.contact_name && (
-                                        <p className="text-sm text-fg-subtle">{customer.contact_name}</p>
-                                    )}
+                                    <span className="flex min-w-0 flex-col items-start">
+                                        <span className="break-words font-medium text-fg">
+                                            {customer.company_name || customer.contact_name || '—'}
+                                        </span>
+                                        {customer.company_name && customer.contact_name && (
+                                            <span className="break-words text-sm text-fg-subtle">{customer.contact_name}</span>
+                                        )}
+                                    </span>
                                 </Button>
                                 <div className="mt-4 space-y-2 text-sm">
                                     {customer.contact_email && (
                                         <div className="flex justify-between gap-3">
                                             <span className="text-fg-subtle">Email</span>
-                                            <span className="text-fg-subtle truncate">{customer.contact_email}</span>
+                                            <span className="min-w-0 break-all text-right text-fg-subtle">{customer.contact_email}</span>
                                         </div>
                                     )}
                                     {customer.phone && (
@@ -596,7 +598,7 @@ const QuoteDetailPage = () => {
                                     {customer.tax_id && (
                                         <div className="flex justify-between gap-3">
                                             <span className="text-fg-subtle">Tax ID</span>
-                                            <span className="text-fg-subtle truncate">{customer.tax_id}</span>
+                                            <span className="min-w-0 break-all text-right text-fg-subtle">{customer.tax_id}</span>
                                         </div>
                                     )}
                                 </div>
@@ -732,7 +734,7 @@ const QuoteDetailPage = () => {
                                                 type="button"
                                                 variant="secondary"
                                                 onClick={() => setPickerLineIndex(index)}
-                                                className="w-full !justify-start !text-left"
+                                                className="w-full !h-auto !justify-start !whitespace-normal !text-left !py-nb-2"
                                             >
                                                 {line.item_image_url ? (
                                                     <img src={line.item_image_url} alt="" className="w-6 h-6 rounded object-cover flex-shrink-0" />
@@ -741,8 +743,8 @@ const QuoteDetailPage = () => {
                                                 )}
                                                 {line.item_name ? (
                                                     <span className="flex-1 min-w-0">
-                                                        <span className="text-fg truncate block">{line.item_name}</span>
-                                                        <span className="flex items-center gap-1 mt-0.5">
+                                                        <span className="block break-words text-fg">{line.item_name}</span>
+                                                        <span className="flex flex-wrap items-center gap-1 mt-0.5">
                                                             <Badge size="sm" tone="neutral">{line.sku}</Badge>
                                                             {line.sub_sku && line.sub_sku !== 'NIL' && (
                                                                 <Badge size="sm" tone="primary">{line.sub_sku}</Badge>
