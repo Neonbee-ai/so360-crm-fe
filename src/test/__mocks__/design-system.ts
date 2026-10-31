@@ -297,7 +297,8 @@ export const Menu = ({ trigger, items = [], name, 'data-testid': testId }: any) 
 export const KpiCard = ({ label, value, hint, onClick, 'data-testid': testId }: any) =>
     React.createElement('div', { 'data-testid': testId, onClick }, React.createElement('span', null, label), React.createElement('span', null, value),
         hint != null && hint !== false ? React.createElement('span', { 'data-slot': 'kpi-hint' }, hint) : null);
-export const StatusBadge = ({ status, 'data-testid': testId }: any) => React.createElement('span', { 'data-testid': testId }, status);
+export const StatusBadge = ({ status, label, 'data-testid': testId }: any) => React.createElement('span', { 'data-testid': testId, 'data-status': status }, label ?? status);
+export const Link = ({ children, ...rest }: any) => React.createElement('a', rest, children);
 export const Alert = ({ title, children, variant, action, 'data-testid': testId }: any) =>
     React.createElement('div', { role: 'alert', 'data-variant': variant, 'data-testid': testId }, title ? React.createElement('p', null, title) : null, children,
         action ? React.createElement('button', { type: 'button', onClick: action.onClick }, action.label) : null);

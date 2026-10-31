@@ -15,3 +15,17 @@ describe('QuoteStatusCell expiry (BDD)', () => {
     expect(screen.getByText('Approved')).toBeTruthy();
   });
 });
+
+describe('QuoteStatusCell DS StatusBadge (BDD)', () => {
+  it('Given a terminal (converted) quote, When rendered, Then it is a plain DS status badge with no change-status button', () => {
+    render(<QuoteStatusCell quote={{ ...base, status: 'converted' }} isActionLoading={false} onAction={vi.fn()} />);
+    const pill = screen.getByText('Converted');
+    expect(pill.getAttribute('data-status')).toBe('converted');
+    expect(screen.queryByRole('button')).toBeNull();
+  });
+  it('Given a draft quote, When rendered, Then the status badge sits inside one change-status trigger', () => {
+    render(<QuoteStatusCell quote={{ ...base, status: 'draft' }} isActionLoading={false} onAction={vi.fn()} />);
+    const trigger = screen.getByRole('button', { name: /Status: Draft/ });
+    expect(trigger.textContent).toContain('Draft');
+  });
+});

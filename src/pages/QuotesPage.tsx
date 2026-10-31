@@ -11,12 +11,22 @@ import { usePersistedState, useListScrollRestore } from '../hooks/useListViewSta
 import { Quote, QuoteStatus, Deal } from '../types/crm';
 import { useBusinessSettings, useActivity, useShellBridge, useQuota, useSandboxLimit } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
-import { QuotaGate, CrossLinkChip, SegmentedControl, toast, ListPageTemplate, Button, Pagination, DataTable, SearchInput, Menu, Alert, EmptyState, TextField, Textarea, type DataTableColumn, type FilterValues, type ListFilterConfig } from '@so360/design-system';
+import { QuotaGate, CrossLinkChip, SegmentedControl, toast, ListPageTemplate, Button, Pagination, DataTable, SearchInput, Menu, Alert, EmptyState, TextField, Textarea, Link, StatusBadge, type BadgeTone, type DataTableColumn, type FilterValues, type ListFilterConfig } from '@so360/design-system';
 import { quotesToCsv, downloadCsv } from '../components/quotes/quotesCsv';
 import { quoteToDocumentData } from '../utils/quoteToDocumentData';
 import ExportMenu from '../components/ExportMenu';
 import { CrmScope } from '../utils/crmScope';
 import { Modal } from '../components/common/Modal';
+
+/** DS Badge tone per quote status (rendered through the standard StatusBadge). */
+export const QUOTE_STATUS_TONES: Record<QuoteStatus, BadgeTone> = {
+    draft: 'neutral',
+    pending_approval: 'warning',
+    approved: 'success',
+    rejected: 'danger',
+    converted: 'primary',
+    expired: 'neutral',
+};
 
 export const statusColors: Record<QuoteStatus, { bg: string; text: string; label: string; border: string }> = {
     draft: { bg: 'bg-fg-muted/10', text: 'text-fg-subtle', label: 'Draft', border: 'border-line' },
@@ -48,32 +58,37 @@ export const QuoteStatusCell: React.FC<QuoteStatusCellProps> = ({ quote, isActio
     const transitions = STATUS_TRANSITIONS[shownStatus] ?? [];
     const status = statusColors[shownStatus] || statusColors.draft;
 
-    const badge = (
-        <Button
-            variant="secondary"
-            size="sm"
-            disabled={isActionLoading}
-            title={transitions.length > 0 ? 'Click to update status' : status.label}
-        >
-            <span className={`w-1.5 h-1.5 rounded-full ${shownStatus === 'approved' ? 'bg-success' : shownStatus === 'pending_approval' ? 'bg-warning' : shownStatus === 'rejected' ? 'bg-danger' : shownStatus === 'converted' ? 'bg-primary' : 'bg-fg-subtle'}`} />
-            <span>{status.label}</span>
-            {transitions.length > 0 && <ChevronDown className="w-3 h-3 opacity-60 ml-0.5" aria-hidden="true" />}
-        </Button>
+    const pill = (
+        <StatusBadge status={shownStatus} map={QUOTE_STATUS_TONES} label={status.label} size="sm" />
     );
 
+    if (transitions.length === 0) {
+        return <span className="inline-flex whitespace-nowrap" title={status.label}>{pill}</span>;
+    }
+
     return (
-        <div onClick={(e) => e.stopPropagation()} className="inline-block">
-            {transitions.length > 0 ? (
-                <Menu
-                    name={`quote-status-${quote.id}`}
-                    trigger={badge}
-                    items={transitions.map((t) => ({
-                        label: t.label,
-                        danger: t.action === 'reject',
-                        onSelect: () => onAction(quote, t.action),
-                    }))}
-                />
-            ) : badge}
+        <div onClick={(e) => e.stopPropagation()} className="inline-flex whitespace-nowrap">
+            <Menu
+                name={`quote-status-${quote.id}`}
+                trigger={
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={isActionLoading}
+                        title="Click to update status"
+                        aria-label={`Status: ${status.label}. Change status`}
+                        className="!gap-nb-1 !px-nb-1"
+                    >
+                        {pill}
+                        <ChevronDown className="h-3 w-3 shrink-0 opacity-60" aria-hidden="true" />
+                    </Button>
+                }
+                items={transitions.map((t) => ({
+                    label: t.label,
+                    danger: t.action === 'reject',
+                    onSelect: () => onAction(quote, t.action),
+                }))}
+            />
         </div>
     );
 };
@@ -452,14 +467,13 @@ const QuotesPage = () => {
             header: 'Quote #',
             sortable: true,
             render: (quote: Quote) => (
-                <Button
-                    variant="secondary"
-                    size="sm"
-                    className="font-mono"
-                    onClick={(e) => { e.stopPropagation(); openQuote(quote.id); }}
+                <Link
+                    href={`/crm/quotes/${quote.id}`}
+                    className="whitespace-nowrap"
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); openQuote(quote.id); }}
                 >
                     {quote.quote_number || `Q-${quote.id.slice(0, 8)}`}
-                </Button>
+                </Link>
             ),
         },
         {
