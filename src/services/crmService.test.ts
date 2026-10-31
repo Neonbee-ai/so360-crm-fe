@@ -987,12 +987,12 @@ describe('Given crmService (legacy layer)', () => {
   it('When action / Then getDealsByLeadId requests deals filtered server-side by lead_id', async () => {
     // Backend already filters by lead_id, so the FE returns the response verbatim.
     mockFetchSuccess([
-      { id: 'd1', lead_id: 'l1', value: '0', notes: [], documents: [], activities: [] },
+      { id: 'd1', lead_id: '11111111-1111-4111-8111-111111111111', value: '0', notes: [], documents: [], activities: [] },
     ]);
-    const result = await crmService.getDealsByLeadId('l1');
+    const result = await crmService.getDealsByLeadId('11111111-1111-4111-8111-111111111111');
     const calledUrl = fetchMock.mock.calls[0][0];
     expect(String(calledUrl)).toContain('/deals');
-    expect(String(calledUrl)).toContain('lead_id=l1');
+    expect(String(calledUrl)).toContain('lead_id=11111111-1111-4111-8111-111111111111');
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe('d1');
   });
@@ -1034,24 +1034,24 @@ describe('Given crmService (legacy layer)', () => {
   it('When action / Then getTasksByLeadId requests tasks filtered server-side by lead_id', async () => {
     // Backend already filters by lead_id, so the FE returns the response verbatim.
     mockFetchSuccess([
-      { id: 't1', lead_id: 'l1', title: 'A', status: 'open' },
+      { id: 't1', lead_id: '11111111-1111-4111-8111-111111111111', title: 'A', status: 'open' },
     ]);
-    const result = await crmService.getTasksByLeadId('l1');
+    const result = await crmService.getTasksByLeadId('11111111-1111-4111-8111-111111111111');
     const calledUrl = fetchMock.mock.calls[0][0];
     expect(String(calledUrl)).toContain('/tasks');
-    expect(String(calledUrl)).toContain('lead_id=l1');
+    expect(String(calledUrl)).toContain('lead_id=11111111-1111-4111-8111-111111111111');
     expect(result).toHaveLength(1);
   });
 
   it('When action / Then getTasksByDealId requests tasks filtered server-side by deal_id', async () => {
     // Backend already filters by deal_id, so the FE returns the response verbatim.
     mockFetchSuccess([
-      { id: 't1', deal_id: 'd1', title: 'A', status: 'open' },
+      { id: 't1', deal_id: '22222222-2222-4222-8222-222222222222', title: 'A', status: 'open' },
     ]);
-    const result = await crmService.getTasksByDealId('d1');
+    const result = await crmService.getTasksByDealId('22222222-2222-4222-8222-222222222222');
     const calledUrl = fetchMock.mock.calls[0][0];
     expect(String(calledUrl)).toContain('/tasks');
-    expect(String(calledUrl)).toContain('deal_id=d1');
+    expect(String(calledUrl)).toContain('deal_id=22222222-2222-4222-8222-222222222222');
     expect(result).toHaveLength(1);
   });
 
@@ -1647,7 +1647,7 @@ describe('Given leadsApi additional', () => {
     expect(out).toEqual({ New: 4, 'Proposal Sent': 2, Lost: 0 });
     const url = String(fetchMock.mock.calls[fetchMock.mock.calls.length - 1][0]);
     expect(url).toContain('/leads/status-counts');
-    expect(decodeURIComponent(url)).toContain('statuses=new,proposal_sent,Lost');
+    expect(decodeURIComponent(url)).toContain('statuses=new,proposal_sent,lost');
     expect(url).not.toContain('skip=');
     expect(url).not.toContain('status=New');
   });
