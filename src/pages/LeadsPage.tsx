@@ -307,13 +307,16 @@ const LeadsPage = () => {
     if (!newOwner) return;
     try {
       await crmService.updateLead(lead.id, { owner: newOwner });
-      await crmService.logActivity({ lead_id: lead.id, type: 'OWNER_CHANGE', notes: `Assigned owner changed to ${newOwner.full_name}`, date: new Date().toISOString() });
-      emitNotification({ event: 'CRM_LEAD_ASSIGNED', userIds: [newOwnerId], variables: { leadName: lead.company_name, actorName: 'You' }, relatedResource: { type: 'lead', id: lead.id } }).catch(() => {});
-      recordActivity({ eventType: 'lead.assigned', eventCategory: 'crm', description: `Assigned lead "${lead.company_name}" to ${newOwner.full_name}`, resourceType: 'lead', resourceId: lead.id }).catch(() => {});
-      setLeads((prev) => prev.map((l) => l.id === lead.id ? { ...l, owner: newOwner } : l));
-    } catch {
-      /* ignore */
+    } catch (err: any) {
+      // The row keeps the previous owner; say why instead of silently reverting (a21e3dd8).
+      toast.error(err?.message ? `Could not change owner: ${err.message}` : 'Could not change owner');
+      return;
     }
+    // Saved: show it even if the activity log below fails.
+    setLeads((prev) => prev.map((l) => l.id === lead.id ? { ...l, owner: newOwner } : l));
+    crmService.logActivity({ lead_id: lead.id, type: 'OWNER_CHANGE', notes: `Assigned owner changed to ${newOwner.full_name}`, date: new Date().toISOString() }).catch(() => {});
+    emitNotification({ event: 'CRM_LEAD_ASSIGNED', userIds: [newOwnerId], variables: { leadName: lead.company_name, actorName: 'You' }, relatedResource: { type: 'lead', id: lead.id } }).catch(() => {});
+    recordActivity({ eventType: 'lead.assigned', eventCategory: 'crm', description: `Assigned lead "${lead.company_name}" to ${newOwner.full_name}`, resourceType: 'lead', resourceId: lead.id }).catch(() => {});
   }, [users, emitNotification, recordActivity]);
 
   const handleStatusChange = useCallback(async (lead: Lead, newStageId: string) => {
