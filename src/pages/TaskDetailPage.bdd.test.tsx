@@ -123,7 +123,8 @@ describe('TaskDetailPage', () => {
       mockGetTaskById.mockResolvedValue(null);
       const { container } = render(<TaskDetailPage />);
       await waitFor(() => expect(screen.getByText('Task not found.')).toBeInTheDocument());
-      expect(container.querySelector('[data-comb-path]')).not.toBeNull();
+      // Real DS floorplans carry data-comb-path; the vitest DS stub marks the same Comb detail root as data-template="detail".
+      expect(container.querySelector('[data-comb-path], [data-template="detail"]')).not.toBeNull();
     });
   });
 

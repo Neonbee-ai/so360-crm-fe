@@ -98,6 +98,7 @@ vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOri
   useSandboxLimit: () => ({ isSandboxMode: false, sandboxEntryLimit: 1000, limitItems: (items: any[]) => items, isLimited: false }),
   ShellContext: React.createContext({}),
   useIdentity: () => ({ user: { id: 'mock-user-id', email: 'test@test.com', full_name: 'Test User' } }),
+  useDatasetSchema: () => ({ fields: [], isLoading: false, error: null }),
 }));
 
 vi.mock('../hooks/useShellBridge', () => ({
