@@ -8,7 +8,7 @@ import { Loader2, Plus } from 'lucide-react';
 import { StageTransitionModal } from '../components/kanban/StageTransitionModal';
 import { DealCloseModal } from '../components/kanban/DealCloseModal';
 import { dealCloseService, stageKind, LoseDealBody, WinDealBody } from '../services/salesConfigService';
-import { toast, ListPageTemplate, Button, SearchInput } from '@so360/design-system';
+import { toast, ListPageTemplate, Button, SearchInput, Skeleton } from '@so360/design-system';
 import CreateDealModal from '../pages/components/CreateDealModal';
 
 import { useDealFilterConfig } from '../pages/components/DealFilters';
@@ -167,15 +167,6 @@ const PipelinePage = () => {
     const confirmWin = (body: WinDealBody) => finishClose(() => dealCloseService.win(closeModal!.deal.id, body));
     const confirmLose = (body: LoseDealBody) => finishClose(() => dealCloseService.lose(closeModal!.deal.id, body));
 
-    if (isInitialLoading) {
-        return (
-            <div className="h-full flex items-center justify-center text-fg-muted gap-3">
-                <Loader2 className="animate-spin" />
-                <span>Loading pipeline...</span>
-            </div>
-        );
-    }
-
     return (
         <ListPageTemplate
             trail={[]}
@@ -210,12 +201,20 @@ const PipelinePage = () => {
                 style={{ height: boardHeight }}
                 className={`transition-opacity duration-300 ${isFiltering ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}
             >
+                {isInitialLoading ? (
+                    <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4" data-testid="pipeline-loading">
+                <Skeleton variant="rect" />
+                <Skeleton variant="text" lines={3} />
+                <span className="sr-only">Loading pipeline...</span>
+            </div>
+                ) : (
                 <KanbanBoard
                     deals={deals}
                     stages={stages}
                     onDealClick={(deal) => navigate(`../deal/${deal.id}`)}
                     onStageChange={handleStageChange}
                 />
+                )}
             </div>
 
             <StageTransitionModal

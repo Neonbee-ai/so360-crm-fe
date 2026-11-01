@@ -8,7 +8,7 @@
  */
 import { Check, Mail, Phone } from 'lucide-react';
 import type { Lead } from '../../types/crm';
-import { IconButton } from '@so360/design-system';
+import { Badge, IconButton } from '@so360/design-system';
 
 interface LeadCardListProps {
   leads: Lead[];
@@ -94,9 +94,9 @@ export default function LeadCardList({
                 </div>
 
                 <div className="flex items-center gap-2 mt-2.5">
-                  <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-surface-raised text-fg-subtle border border-line">
+                  <Badge size="sm" tone="neutral">
                     {lead.status}
-                  </span>
+                  </Badge>
                   {lead.source && <span className="text-xs text-fg-muted">{lead.source}</span>}
                   {lead.owner?.full_name && (
                     <span className="ml-auto text-xs text-fg-muted truncate">{lead.owner.full_name}</span>

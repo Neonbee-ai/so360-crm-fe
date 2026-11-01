@@ -1,8 +1,7 @@
-import { EmptyState } from '@so360/design-system';
 import React, { useState, useEffect, useCallback } from 'react';
-import { Button, IconButton, TextField, NumberInput, SegmentedControl, Select, Checkbox } from '@so360/design-system';
+import { Badge, Button, EmptyState, IconButton, TextField, NumberInput, SegmentedControl, Select, Checkbox, Skeleton, type BadgeTone } from '@so360/design-system';
 import { Modal } from '../../components/common/Modal';
-import { Package, Plus, Trash2, Loader2, Search, Copy } from 'lucide-react';
+import { Package, Plus, Trash2, Search, Copy } from 'lucide-react';
 import { crmService } from '../../services/crmService';
 import { S2S_FLAGS, priceLists } from '../../services/coreS2sService';
 import { PriceListSelect } from '../../components/PriceListSelect';
@@ -15,16 +14,16 @@ import { DEFAULT_HOLD_HOURS, filterAvailable, unitBookingErrorMessage } from '..
 import { MatchingUnitsPanel } from '../../components/matching/MatchingUnitsPanel';
 import { MatchingUnit, unitLabel } from '../../services/matchingUnitsService';
 
-const STATUS_OPTIONS: { value: ProductInterestStatus; label: string; color: string }[] = [
-    { value: 'interested', label: 'Interested', color: 'bg-info/15 text-info' },
-    { value: 'quoted', label: 'Quoted', color: 'bg-warning/15 text-warning' },
-    { value: 'approved', label: 'Approved', color: 'bg-success/15 text-success' },
-    { value: 'ordered', label: 'Ordered', color: 'bg-primary/15 text-primary' },
-    { value: 'cancelled', label: 'Cancelled', color: 'bg-danger/15 text-danger' },
+const STATUS_OPTIONS: { value: ProductInterestStatus; label: string; tone: BadgeTone }[] = [
+    { value: 'interested', label: 'Interested', tone: 'info' },
+    { value: 'quoted', label: 'Quoted', tone: 'warning' },
+    { value: 'approved', label: 'Approved', tone: 'success' },
+    { value: 'ordered', label: 'Ordered', tone: 'primary' },
+    { value: 'cancelled', label: 'Cancelled', tone: 'danger' },
 ];
 
-function statusStyle(status: string) {
-    return STATUS_OPTIONS.find(s => s.value === status)?.color ?? 'bg-line text-fg-subtle';
+function statusTone(status: string): BadgeTone {
+    return STATUS_OPTIONS.find(s => s.value === status)?.tone ?? 'neutral';
 }
 
 interface AddProductModalProps {
@@ -139,13 +138,13 @@ function AddProductModal({ dealId, leadId, onClose, onAdd, onImportFromLead, uni
                 {tab === 'from-lead' && (
                     <>
                         {leadLoading ? (
-                            <div className="flex justify-center py-8"><Loader2 size={20} className="animate-spin text-info" /></div>
+                            <div className="py-4"><Skeleton lines={3} /></div>
                         ) : leadProducts.length === 0 ? (
                             <p className="text-center text-fg-muted text-xs py-8 font-bold">No products on lead</p>
                         ) : (
-                            <div className="space-y-2 max-h-64 overflow-y-auto mb-4">
+                            <div className="divide-y divide-line max-h-96 overflow-y-auto mb-4">
                                 {leadProducts.map(lp => (
-                                    <div key={lp.id} className="flex items-center gap-3 p-3 bg-surface border border-line rounded-nb-lg hover:border-info/50 transition-all">
+                                    <div key={lp.id} className="flex items-center gap-3 px-nb-3 py-nb-2 hover:bg-fg/state-hover transition-colors">
                                         <Checkbox
                                             name={`lead-product-${lp.id}`}
                                             label={lp.item_name}
@@ -157,7 +156,7 @@ function AddProductModal({ dealId, leadId, onClose, onAdd, onImportFromLead, uni
                                                 Qty: {lp.quantity} · {lp.unit_price > 0 ? `₹${lp.unit_price.toLocaleString()}` : 'No price'}
                                             </p>
                                         </div>
-                                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-md ${statusStyle(lp.status)}`}>{lp.status}</span>
+                                        <Badge size="sm" tone={statusTone(lp.status)}>{lp.status}</Badge>
                                     </div>
                                 ))}
                             </div>
@@ -191,16 +190,16 @@ function AddProductModal({ dealId, leadId, onClose, onAdd, onImportFromLead, uni
                                         onHoldHoursChange={setHoldHours}
                                     />
                                 )}
-                                {loading && <div className="flex justify-center py-8"><Loader2 size={20} className="animate-spin text-info" /></div>}
+                                {loading && <div className="py-4"><Skeleton lines={3} /></div>}
                                 {!loading && visibleItems.length === 0 && hasCriteria && (
                                     <p className="text-center text-fg-muted text-xs py-8 font-bold">No products found</p>
                                 )}
                                 {!loading && !hasCriteria && (
                                     <p className="text-center text-fg-muted text-xs py-8 italic">Start typing to search inventory…</p>
                                 )}
-                                <div className="space-y-2 max-h-64 overflow-y-auto">
+                                <div className="divide-y divide-line max-h-96 overflow-y-auto">
                                     {visibleItems.map(item => (
-                                        <Button variant="secondary" size="sm" className="w-full min-w-0 !text-left !h-auto !justify-start" key={item.id} onClick={() => setSelected(item)}>
+                                        <Button variant="ghost" size="sm" className="w-full min-w-0 !text-left !h-auto !justify-start !rounded-none !px-nb-3 !py-nb-2 hover:bg-fg/state-hover" key={item.id} onClick={() => setSelected(item)}>
                                             <div className="flex w-full min-w-0 items-center justify-between gap-3">
                                                 <div className="min-w-0 flex-1">
                                                     <p className="text-xs font-bold text-fg group-hover:text-info transition-colors">{item.name}</p>
@@ -384,7 +383,7 @@ export default function DealProductsTab({ dealId, leadId }: Props) {
             )}
 
             {loading ? (
-                <div className="flex justify-center py-12"><Loader2 size={24} className="animate-spin text-info" /></div>
+                <div className="py-4"><Skeleton variant="rect" /></div>
             ) : products.length === 0 ? (
                 <EmptyState title="No products in this deal" description={leadId ? 'Import from lead or add from inventory' : 'Add products from inventory'} />
             ) : (

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Badge, EmptyState } from '@so360/design-system';
-import { Mail, Loader2, ExternalLink, Smartphone, MessageSquare } from 'lucide-react';
+import { Badge, EmptyState, Skeleton } from '@so360/design-system';
+import { Mail, ExternalLink, Smartphone, MessageSquare } from 'lucide-react';
 import { inboxIntegrationApi, InboxConversationPreview } from '../../services/crmService';
 
 interface Props {
@@ -43,7 +43,7 @@ const EmailsTab: React.FC<Props> = ({ leadId }) => {
     }, [leadId]);
 
     if (loading) {
-        return <div className="flex justify-center py-10 text-fg-muted"><Loader2 size={20} className="animate-spin" /></div>;
+        return <div className="py-nb-4"><Skeleton variant="text" lines={3} /></div>;
     }
 
     if (error) {

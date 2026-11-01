@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Button, Badge, EmptyState, IconButton } from '@so360/design-system';
+import { Button, Badge, EmptyState, IconButton, Skeleton } from '@so360/design-system';
 import {
     MessageSquare, Loader2, ChevronDown, ExternalLink,
     Calendar, Star, FileText, AlertCircle,
@@ -90,9 +90,10 @@ export default function CustomerFeedbackTab({ leadId }: Props) {
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center py-12 text-fg-muted gap-3">
-                <Loader2 size={20} className="animate-spin" />
-                <span className="text-sm font-medium">Loading feedback...</span>
+            <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4">
+                <Skeleton variant="rect" />
+                <Skeleton variant="text" lines={3} />
+                <span className="sr-only">Loading feedback...</span>
             </div>
         );
     }

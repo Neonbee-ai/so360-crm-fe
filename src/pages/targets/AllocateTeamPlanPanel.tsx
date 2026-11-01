@@ -1,4 +1,4 @@
-import { PeopleSelector, Button, TextField, Select, Drawer } from '@so360/design-system';
+import { PeopleSelector, Button, TextField, Select, Drawer, Skeleton } from '@so360/design-system';
 import React, { useEffect, useState } from 'react';
 import { targetPlanService } from '../../services/targetPlanService';
 import {
@@ -96,7 +96,7 @@ export default function AllocateTeamPlanPanel({
       {notice && <div className="mb-2 text-sm text-success">{notice}</div>}
 
       {!plan ? (
-        <div className="text-sm text-fg-subtle">Loading plan…</div>
+        <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4"><Skeleton variant="rect" /><Skeleton variant="text" lines={3} /><span className="sr-only">Loading plan…</span></div>
       ) : !lines.length ? (
         <div className="text-sm text-warning">
           This plan has no target lines, so there is nothing to allocate.
@@ -141,7 +141,7 @@ export default function AllocateTeamPlanPanel({
           <div className="space-y-2">
             {rows.map((r, i) => (
               <div key={r.key} className="flex flex-wrap items-center gap-2">
-                <div className="min-w-64">
+                <div className="w-64 max-w-full min-w-0">
                   <PeopleSelector
                     clearable
                     loadOptions={loadDirectoryPeople}

@@ -1,5 +1,6 @@
 import React from 'react';
 import { EntityTimelineSummary } from '../../../services/crmService';
+import { Badge } from '@so360/design-system';
 import CustomerHealthBadge from './CustomerHealthBadge';
 
 interface Props {
@@ -26,9 +27,9 @@ const TimelineSummaryBanner: React.FC<Props> = ({ summary }) => {
             {Object.entries(summary.counts).length > 0 && (
                 <div className="text-xs text-fg-muted flex flex-wrap gap-2">
                     {Object.entries(summary.counts).map(([key, count]) => (
-                        <span key={key} className="bg-surface-raised text-fg-subtle px-2 py-0.5 rounded font-medium">
+                        <Badge key={key} size="sm" tone="neutral">
                             {key.replace(/^(field|event|activity):/, '')}: {count}
-                        </span>
+                        </Badge>
                     ))}
                 </div>
             )}

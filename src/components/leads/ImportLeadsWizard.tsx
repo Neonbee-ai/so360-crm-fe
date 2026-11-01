@@ -111,8 +111,8 @@ export const ImportLeadsWizard: React.FC<Props> = ({ isOpen, onClose, onImported
 
     return (
         <Modal isOpen={isOpen} onClose={close} title="Import leads" size="xl">
-            <div className="space-y-5" data-testid="import-leads-wizard">
-                <ol className="flex items-center gap-2 text-xs font-semibold" aria-label="Import steps">
+            <div className="space-y-nb-6" data-testid="import-leads-wizard">
+                <ol className="flex flex-wrap items-center gap-nb-2 pb-nb-2 text-xs font-semibold" aria-label="Import steps">
                     {STEPS.map((s, i) => (
                         <li
                             key={s.key}
@@ -150,7 +150,7 @@ export const ImportLeadsWizard: React.FC<Props> = ({ isOpen, onClose, onImported
                         <p className="text-sm text-fg-subtle">
                             {preview.total_rows} row{preview.total_rows === 1 ? '' : 's'} in <span className="text-fg">{file?.name}</span>. Match each column to a lead field.
                         </p>
-                        <div className="space-y-2 max-h-[45vh] overflow-y-auto pr-1">
+                        <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
                             {preview.headers.map((header) => (
                                 <Grid columns={2} gap="md" className="items-center" key={header}  data-testid="import-mapping-row">
                                     <div className="min-w-0">

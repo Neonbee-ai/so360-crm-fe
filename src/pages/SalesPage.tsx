@@ -1,4 +1,4 @@
-import { ListPageTemplate, DataTable, Badge, IconButton, type DataTableColumn, Button } from '@so360/design-system';
+import { ListPageTemplate, DataTable, Badge, IconButton, type DataTableColumn, Button, Skeleton } from '@so360/design-system';
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
@@ -149,7 +149,11 @@ const SalesPage: React.FC = () => {
             {rangeInvalid ? (
                 <div role="alert" className="text-sm text-danger">{rangeError}</div>
             ) : loading ? (
-                <div role="status" className="p-8 text-sm text-fg-subtle">Loading sales…</div>
+                <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4">
+                <Skeleton variant="rect" />
+                <Skeleton variant="text" lines={3} />
+                <span className="sr-only">Loading sales…</span>
+            </div>
             ) : error ? (
                 <div role="alert" className="p-6 bg-danger/10 border border-danger/30 rounded-nb-lg flex items-center justify-between gap-3">
                     <span className="text-sm font-bold text-danger">{error}</span>

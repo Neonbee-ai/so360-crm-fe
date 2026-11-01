@@ -49,11 +49,12 @@ describe('crmService data-layer custom fields', () => {
 import { partnersApi } from './crmService';
 
 describe('partnersApi core.partner custom fields', () => {
-  it('Given a Core partner id / When reading / Then GET /v1/partners/:id', async () => {
+  it('Given a Core partner id / When reading / Then GET /v1/partners/details/:id, never the org-list route', async () => {
     ok({ id: 'cp1', custom_fields: { a: 1 }, custom_fields_version: 2 });
     const row = await partnersApi.getCore('cp1');
     const [url, init] = fetchMock.mock.calls[0];
-    expect(String(url)).toContain('/v1/partners/cp1');
+    expect(String(url)).toContain('/v1/partners/details/cp1');
+    expect(String(url)).not.toMatch(/\/v1\/partners\/cp1(\?|$)/);
     expect(init.method ?? 'GET').toBe('GET');
     expect(row.custom_fields_version).toBe(2);
   });

@@ -488,6 +488,13 @@ describe('DealDetailPage', () => {
       await user.click(screen.getAllByText('Back to Pipeline')[0]);
       expect(mockNavigate).toHaveBeenCalledWith('/crm/pipeline');
     });
+
+    it('When API returns null / Then the not-found state renders inside a Comb root so the page settles', async () => {
+      mockGetDealById.mockResolvedValue(null);
+      const { container } = render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Deal not found.')).toBeInTheDocument());
+      expect(container.querySelector('[data-comb-path]')).not.toBeNull();
+    });
   });
 
   describe('Given a loaded deal / Then the universal Back control navigates to the pipeline list', () => {
@@ -806,6 +813,27 @@ describe('DealDetailPage', () => {
       render(<DealDetailPage />);
       await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
       expect(mockGetLeadById).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Given the deal response embeds its lead', () => {
+    it('When the linked lead was deleted (lead: null) / Then does not call GET /leads/:id', async () => {
+      mockGetDealById.mockResolvedValue(makeDeal({ lead_id: 'lead-gone', lead: null }));
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+      expect(mockGetLeadById).not.toHaveBeenCalled();
+    });
+
+    it('When the embedded lead is present / Then uses it without a second request', async () => {
+      mockGetDealById.mockResolvedValue(makeDeal({ lead: associatedLead }));
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+      expect(mockGetLeadById).not.toHaveBeenCalled();
+    });
+
+    it('When an older backend omits lead / Then falls back to fetching it by lead_id', async () => {
+      render(<DealDetailPage />);
+      await waitFor(() => expect(mockGetLeadById).toHaveBeenCalledWith('lead-1'));
     });
   });
 

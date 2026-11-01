@@ -178,10 +178,10 @@ const RecordImportFlow: React.FC<FlowProps> = ({ kind, onBack, onClose, onImport
     const stepIndex = STEPS.findIndex((s) => s.key === step);
 
     return (
-        <div className="space-y-5" data-testid={`record-import-${kind}`}>
+        <div className="space-y-nb-6" data-testid={`record-import-${kind}`}>
             <div className="flex items-center justify-between gap-2">
                 <h3 className="text-sm font-bold text-fg">{config.title}</h3>
-                <ol className="flex items-center gap-2 text-xs font-semibold" aria-label="Import steps">
+                <ol className="flex flex-wrap items-center gap-nb-2 pb-nb-2 text-xs font-semibold" aria-label="Import steps">
                     {STEPS.map((s, i) => (
                         <li
                             key={s.key}
@@ -233,7 +233,7 @@ const RecordImportFlow: React.FC<FlowProps> = ({ kind, onBack, onClose, onImport
                     <p className="text-sm text-fg-subtle">
                         {plural(parsed.rows.length, ['row', 'rows'])} in <span className="text-fg">{fileName}</span>. Match each column to a field.
                     </p>
-                    <div className="space-y-2 max-h-[45vh] overflow-y-auto pr-1">
+                    <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
                         {parsed.headers.map((header) => (
                             <Grid key={header} columns={2} gap="md" className="items-center" data-testid="import-mapping-row">
                                 <div className="min-w-0">

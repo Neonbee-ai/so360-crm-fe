@@ -67,10 +67,14 @@ describe('Feature KanbanBoard stage accent uses design tokens', () => {
       expect(container.innerHTML.toLowerCase()).not.toContain('#94a3b8');
     });
 
-    it('Given a stage with no colour When rendered Then the header text uses the token', () => {
+    it('Given any stage colour When rendered Then the header text uses text-fg with no inline colour (4.5:1 contrast)', () => {
       const { container } = renderBoard();
-      const styled = Array.from(container.querySelectorAll<HTMLElement>('[style]')).filter((e) => e.style.color === FALLBACK);
-      expect(styled.length).toBeGreaterThan(0);
+      const headers = Array.from(container.querySelectorAll<HTMLElement>('h3'));
+      expect(headers.length).toBeGreaterThan(0);
+      headers.forEach((h) => {
+        expect(h.className).toContain('text-fg');
+        expect(h.style.color).toBe('');
+      });
     });
 
     it('Given an empty-string colour When rendered Then the fallback token is used', () => {

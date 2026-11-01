@@ -1,7 +1,7 @@
 // Stub for @so360/design-system — vi.mock() in each test overrides these
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-export const Button = ({ children, onClick, type, disabled, leftIcon: _l, rightIcon: _r, variant, size, loading, fullWidth: _f, ...rest }: any) =>
+export const Button = ({ children, onClick, type, disabled, leftIcon: _l, rightIcon: _r, leadingIcon: _li, trailingIcon: _ti, variant, size, loading, fullWidth: _f, ...rest }: any) =>
   React.createElement('button', { onClick, type, disabled, 'data-comb': 'button', 'data-variant': variant, 'data-size': size, 'data-loading': loading ? 'true' : undefined, ...rest }, children);
 export const Input = (props: any) => props;
 // ---- Form primitives: render native elements carrying label, testid, value/onChange ----
@@ -72,8 +72,8 @@ export const PortalProvider = ({ children }: any) => React.createElement(React.F
 export const usePortalContainer = () => (typeof document !== 'undefined' ? document.body : null);
 export const Card = ({ title, actions, footer, children, 'data-testid': testId }: any) =>
     React.createElement('div', { 'data-testid': testId }, title ? React.createElement('h3', null, title) : null, actions, children, footer);
-export const Badge = ({ children, onClick, tone, size, 'data-testid': testId }: any) =>
-  React.createElement('span', { onClick, 'data-testid': testId, 'data-tone': tone, 'data-size': size }, children);
+export const Badge = ({ children, onClick, tone, size, variant, title, 'data-testid': testId }: any) =>
+  React.createElement('span', { onClick, title, 'data-testid': testId, 'data-tone': tone, 'data-size': size, 'data-variant': variant }, children);
 export const Spinner = (props: any) => props;
 export const Tooltip = (props: any) => props;
 export const QuotaGate = ({ children }: any) => React.createElement(React.Fragment, null, children);
@@ -297,7 +297,8 @@ export const Menu = ({ trigger, items = [], name, 'data-testid': testId }: any) 
 export const KpiCard = ({ label, value, hint, onClick, 'data-testid': testId }: any) =>
     React.createElement('div', { 'data-testid': testId, onClick }, React.createElement('span', null, label), React.createElement('span', null, value),
         hint != null && hint !== false ? React.createElement('span', { 'data-slot': 'kpi-hint' }, hint) : null);
-export const StatusBadge = ({ status, 'data-testid': testId }: any) => React.createElement('span', { 'data-testid': testId }, status);
+export const StatusBadge = ({ status, label, 'data-testid': testId }: any) => React.createElement('span', { 'data-testid': testId, 'data-status': status }, label ?? status);
+export const Link = ({ children, ...rest }: any) => React.createElement('a', rest, children);
 export const Alert = ({ title, children, variant, action, 'data-testid': testId }: any) =>
     React.createElement('div', { role: 'alert', 'data-variant': variant, 'data-testid': testId }, title ? React.createElement('p', null, title) : null, children,
         action ? React.createElement('button', { type: 'button', onClick: action.onClick }, action.label) : null);
@@ -415,3 +416,7 @@ export const Banner = ({ children, action, 'data-testid': testId }: any) =>
     action ? React.createElement('button', { type: 'button', onClick: action.onClick }, action.label) : null);
 export const CustomFieldsPanel = ({ title, fields = [], 'data-testid': testId }: any) =>
   React.createElement('section', { 'aria-label': title, 'data-testid': testId ?? 'cf-panel-stub' }, fields.map((f: any) => f.field_key).join(','));
+
+export const CountUp = ({ value }: any) => React.createElement(React.Fragment, null, value);
+export const useCountUp = (v: number) => v;
+export const KpiGrid = ({ children }: any) => React.createElement('div', null, children);

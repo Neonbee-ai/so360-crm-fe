@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { X, Search, User as UserIcon, Loader2, Send, AlertCircle, Check } from 'lucide-react';
 import { crmService } from '../../services/crmService';
 import { Quote } from '../../types/crm';
-import { Button, IconButton, TextField, Textarea } from '@so360/design-system';
+import { Badge, Button, IconButton, Skeleton, TextField, Textarea } from '@so360/design-system';
 import { Modal } from '../common/Modal';
 
 export interface ApproverCandidate {
@@ -258,11 +258,11 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
 
             {/* Candidate Dropdown */}
             {dropdownOpen && (
-              <div className="bg-bg border border-line rounded-lg shadow-xl max-h-52 overflow-y-auto z-menu mt-1 divide-y divide-line">
+              <div className="bg-bg border border-line rounded-lg shadow-overlay max-h-52 overflow-y-auto z-menu mt-1 divide-y divide-line">
                 {isLoading ? (
-                  <div className="p-4 flex items-center justify-center gap-2 text-fg-subtle text-sm">
-                    <Loader2 className="w-4 h-4 animate-spin text-warning" />
-                    <span>Loading people directory...</span>
+                  <div role="status" aria-busy="true" className="p-4">
+                    <Skeleton variant="text" lines={2} />
+                    <span className="sr-only">Loading people directory...</span>
                   </div>
                 ) : filteredCandidates.length === 0 ? (
                   <div className="p-4 text-center text-fg-muted text-sm">
@@ -293,9 +293,9 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
                               {cand.full_name}
                             </p>
                             {isSelf && (
-                              <span className="text-xs px-1.5 py-0.5 rounded bg-surface-raised text-fg-subtle border border-line">
+                              <Badge size="sm" tone="neutral">
                                 You (Cannot approve)
-                              </span>
+                              </Badge>
                             )}
                           </div>
                           <p className="text-xs text-fg-subtle truncate">

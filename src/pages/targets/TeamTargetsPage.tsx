@@ -15,7 +15,7 @@ import {
   isUnlinkedProfileError,
   statusText,
 } from './targetUi';
-import { DashboardPageTemplate, Button, DataTable, Badge, Progress, Card, Grid, GridItem } from '@so360/design-system';
+import { DashboardPageTemplate, Button, DataTable, Badge, Progress, Card, Grid, GridItem, Skeleton } from '@so360/design-system';
 import type { DataTableColumn } from '@so360/design-system';
 
 /**
@@ -197,7 +197,7 @@ export default function TeamTargetsPage() {
           }
         >
           {!detail ? (
-            <div className="text-sm text-fg-subtle">Loading…</div>
+            <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4"><Skeleton variant="rect" /><Skeleton variant="text" lines={3} /><span className="sr-only">Loading…</span></div>
           ) : (
             <div className="space-y-3">
               {detail.metrics

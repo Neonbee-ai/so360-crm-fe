@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Loader2 } from 'lucide-react';
-import { Button, DataTable, EmptyState } from '@so360/design-system';
+import { Button, DataTable, EmptyState, Skeleton } from '@so360/design-system';
 import {
     PRIORITY_LABEL,
     maintenanceTabService,
@@ -75,9 +74,7 @@ const MaintenanceTab: React.FC<Props> = ({ customerPartnerId, dealId }) => {
     }
     if (loading) {
         return (
-            <div className="p-nb-6 flex items-center gap-nb-2 text-fg-subtle text-sm" role="status">
-                <Loader2 className="animate-spin" size={16} /> Loading maintenance…
-            </div>
+            <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4"><Skeleton variant="rect" /><Skeleton variant="text" lines={3} /><span className="sr-only">Loading maintenance…</span></div>
         );
     }
     if (error) {
