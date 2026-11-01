@@ -1,3 +1,5 @@
+// DIAG (temporary, do not merge): print each test file at start so a hung file can be identified.
+{ const w = (globalThis as any).__vitest_worker__; const f = w?.filepath ?? w?.ctx?.files?.[0]?.filepath ?? w?.ctx?.files?.[0] ?? 'unknown'; process.stdout.write('[DIAG-START] ' + (typeof f === 'string' ? f : JSON.stringify(f)).replace(/.*\/src\//, 'src/') + '\n'); }
 import { configure } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { beforeEach } from 'vitest';
