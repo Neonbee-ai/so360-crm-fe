@@ -1608,6 +1608,49 @@ export const callsApi = {
 // LEGACY COMPATIBILITY LAYER
 // ============================================================================
 // Maintain backward compatibility with existing code
+/** Shapes the dashboard payload from the three reads (shared by the KPI-first callback). */
+function buildDashboardStats(periodStats: any, performanceStats: any, tasks: any[]) {
+    // Compute team stats from real performance data
+    const teamStats = (performanceStats || []).map((p: any) => ({
+        user: {
+            id: p.user.id,
+            full_name: p.user.name,
+            email: p.user.email,
+            avatar_url: null,
+            role: 'Sales Rep'
+        },
+        revenue: 0,
+        dealCount: p.metrics.won,
+        activeLeads: p.metrics.leads,
+        activityCount: p.metrics.activityPoints,
+        conversionRate: p.metrics.conversionRate,
+    })).sort((a: any, b: any) => b.dealCount - a.dealCount);
+
+    // Get reminders
+    const reminders = tasks.filter((t: any) =>
+        t.status === 'OPEN' && t.type === 'REMINDER'
+    ).sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
+
+    return {
+        financials: {
+            totalRevenue: periodStats.financials.totalRevenue,
+            pipelineValue: periodStats.financials.pipelineValue,
+            avgDealSize: periodStats.financials.avgDealSize,
+            winRate: periodStats.metrics.winRate,
+        },
+        counts: {
+            leads: periodStats.counts.totalLeads,
+            deals: periodStats.counts.totalDeals,
+            tasks: tasks.filter(t => t.status === 'OPEN' || t.status === 'IN_PROGRESS').length,
+            reminders: reminders.length
+        },
+        teamStats,
+        monthlyRevenue: periodStats.chartData.values,
+        chartLabels: periodStats.chartData.labels,
+        reminders
+    };
+}
+
 export const crmService = {
     getDailystoreStores: async (): Promise<Array<{ id: string; name: string; store_code?: string; status?: string }>> => {
         return dailystoreClient.get<Array<{ id: string; name: string; store_code?: string; status?: string }>>('/v1/dailystore/stores');
@@ -1672,6 +1715,15 @@ export const crmService = {
         quarter?: number;
         month?: number;
         week?: number;
+    }, opts?: {
+        /** Bypass the backend's short dashboard cache (after a write). */
+        fresh?: boolean;
+        /**
+         * Called as soon as /analytics/dashboard answers, with the KPI/chart
+         * part and `pending: true` (team + reminders still loading), so the
+         * page can render without waiting for performance and tasks.
+         */
+        onKpis?: (partial: any) => void;
     }) => {
         try {
             // NOTE: This method always routes through the permission-gated
@@ -1689,52 +1741,25 @@ export const crmService = {
             if (params?.quarter) queryParams.append('quarter', params.quarter.toString());
             if (params?.month) queryParams.append('month', params.month.toString());
             if (params?.week) queryParams.append('week', params.week.toString());
+            if (opts?.fresh) queryParams.append('fresh', '1');
 
+            const dashboardRequest = apiClient.get<any>(`/analytics/dashboard?${queryParams.toString()}`);
+            if (opts?.onKpis) {
+                const onKpis = opts.onKpis;
+                dashboardRequest.then((periodStats) => {
+                    try {
+                        onKpis({ ...buildDashboardStats(periodStats, [], []), pending: true });
+                    } catch (err) {
+                        console.error('Dashboard KPI callback failed', err);
+                    }
+                }, () => undefined);
+            }
             const [periodStats, performanceStats, tasks] = await Promise.all([
-                apiClient.get<any>(`/analytics/dashboard?${queryParams.toString()}`),
+                dashboardRequest,
                 apiClient.get<any>('/analytics/performance').catch(() => []),
                 crmService.getTasks(),
             ]);
-
-            // Compute team stats from real performance data
-            const teamStats = (performanceStats || []).map((p: any) => ({
-                user: {
-                    id: p.user.id,
-                    full_name: p.user.name,
-                    email: p.user.email,
-                    avatar_url: null,
-                    role: 'Sales Rep'
-                },
-                revenue: 0,
-                dealCount: p.metrics.won,
-                activeLeads: p.metrics.leads,
-                activityCount: p.metrics.activityPoints,
-                conversionRate: p.metrics.conversionRate,
-            })).sort((a: any, b: any) => b.dealCount - a.dealCount);
-
-            // Get reminders
-            const reminders = tasks.filter((t: any) =>
-                t.status === 'OPEN' && t.type === 'REMINDER'
-            ).sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
-
-            return {
-                financials: {
-                    totalRevenue: periodStats.financials.totalRevenue,
-                    pipelineValue: periodStats.financials.pipelineValue,
-                    avgDealSize: periodStats.financials.avgDealSize,
-                    winRate: periodStats.metrics.winRate,
-                },
-                counts: {
-                    leads: periodStats.counts.totalLeads,
-                    deals: periodStats.counts.totalDeals,
-                    tasks: tasks.filter(t => t.status === 'OPEN' || t.status === 'IN_PROGRESS').length,
-                    reminders: reminders.length
-                },
-                teamStats,
-                monthlyRevenue: periodStats.chartData.values,
-                chartLabels: periodStats.chartData.labels,
-                reminders
-            };
+            return buildDashboardStats(periodStats, performanceStats, tasks);
         } catch (error) {
             console.error('Failed to get dashboard stats', error);
             return {
