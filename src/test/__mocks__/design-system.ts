@@ -420,3 +420,8 @@ export const CustomFieldsPanel = ({ title, fields = [], 'data-testid': testId }:
 export const CountUp = ({ value }: any) => React.createElement(React.Fragment, null, value);
 export const useCountUp = (v: number) => v;
 export const KpiGrid = ({ children }: any) => React.createElement('div', null, children);
+// Stepper (used by LeadJourneyStepper): renders each step label so getByText works.
+export const Stepper = ({ steps = [], current, className }: any) =>
+  React.createElement('ol', { className, 'data-testid': 'stepper' },
+    steps.map((s: any, i: number) =>
+      React.createElement('li', { key: i, 'aria-current': i === current ? 'step' : undefined }, s.label)));
