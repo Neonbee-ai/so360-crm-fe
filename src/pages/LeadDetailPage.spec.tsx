@@ -35,7 +35,11 @@ const mockCrmService = vi.hoisted(() => ({
 }));
 
 vi.mock('../services/crmService', () => ({
-  crmService: mockCrmService,
+  // Reads this spec does not stub resolve to an empty list / `{ data, total }` page.
+  crmService: new Proxy(mockCrmService as Record<string, any>, {
+    get: (t, k: string) => (k in t || k === 'then' ? t[k] : (t[k] = vi.fn().mockResolvedValue(Object.assign([], { data: [], total: 0 })))),
+  }),
+  settingsApi: { sourceTypes: { getAll: vi.fn().mockResolvedValue([]) } },
 }));
 
 vi.mock('react-router-dom', () => ({
@@ -46,7 +50,8 @@ vi.mock('react-router-dom', () => ({
   NavLink: ({ children }: any) => children,
 }));
 
-vi.mock('@so360/shell-context', () => ({
+vi.mock('@so360/shell-context', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   useCurrentEntity: () => ({ setCurrentEntity: vi.fn() }),
   useShellBridge: () => ({
     tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee',

@@ -14,6 +14,8 @@ const mockCrmService = vi.hoisted(() => ({
 }));
 
 vi.mock('../services/crmService', () => ({
+  // ProposalEstimatorPanel (estimatorService) reads crmApiClient from this module.
+  crmApiClient: { get: vi.fn().mockResolvedValue({}), post: vi.fn().mockResolvedValue({}), put: vi.fn().mockResolvedValue({}) },
   crmService: mockCrmService,
 }));
 
