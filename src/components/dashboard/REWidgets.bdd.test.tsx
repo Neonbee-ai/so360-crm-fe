@@ -5,7 +5,7 @@ import React from 'react';
 const flags = vi.hoisted(() => ({ on: new Set<string>(), loaded: true, throws: false }));
 const mockGet = vi.hoisted(() => vi.fn());
 
-vi.mock('@so360/shell-context', () => ({
+vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOriginal<any>()),
     useShellBridge: () => {
         if (flags.throws) throw new Error('no shell bridge');
         return {

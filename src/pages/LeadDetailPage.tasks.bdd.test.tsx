@@ -95,7 +95,7 @@ vi.mock('react-router-dom', () => ({
   Link: ({ children, to, ...props }: any) => <a href={to} {...props}>{children}</a>,
 }));
 
-vi.mock('@so360/shell-context', () => ({
+vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOriginal<any>()),
   // DlCustomFieldsPanel (custom fields tab) reads dataset fields.
   useDatasetSchema: () => ({ fields: [], isLoading: false, error: null }),
   useShell: () => ({ isModuleEnabled: () => false }),

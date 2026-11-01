@@ -42,7 +42,7 @@ vi.mock('react-router-dom', () => ({
 
 let currentMockUser = { id: 'user-submitter-1', name: 'Submitter User' };
 
-vi.mock('@so360/shell-context', () => ({
+vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOriginal<any>()),
   useBusinessSettings: () => ({
     settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' },
   }),

@@ -11,7 +11,7 @@ vi.mock('../services/icpService', () => ({ icpService: svc }));
 vi.mock('react-router-dom', () => ({ useNavigate: () => nav }));
 vi.mock('lucide-react', () => ({ MoreVertical: () => null, Target: () => null }));
 const shell = vi.hoisted(() => ({ value: { hasPermission: (_: string) => true } as any }));
-vi.mock('@so360/shell-context', () => ({ useShellBridge: () => shell.value }));
+vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOriginal<any>()), useShellBridge: () => shell.value }));
 vi.mock('@so360/design-system', async (importOriginal) => ({ ...(await importOriginal<object>()), ...(await import('../test/icpDsMock')) }));
 
 import IcpListPage from './IcpListPage';
