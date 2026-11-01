@@ -21,6 +21,8 @@ const mockViewsUpdate = vi.fn();
 const mockViewsDuplicate = vi.fn();
 const mockViewsSetDefault = vi.fn();
 const mockGetLeadsPaged = vi.fn();
+const mockGetLeadStats = vi.fn();
+const mockGetLeadStatusCounts = vi.fn();
 
 const mockExportLeads = vi.fn();
 vi.mock('../services/exportService', async (importActual) => ({
@@ -32,6 +34,8 @@ vi.mock('../services/crmService', () => ({
   crmService: {
     getLeads: (...a: any[]) => mockGetLeads(...a),
     getLeadsPaged: (...a: any[]) => mockGetLeadsPaged(...a),
+    getLeadStats: (...a: any[]) => mockGetLeadStats(...a),
+    getLeadStatusCounts: (...a: any[]) => mockGetLeadStatusCounts(...a),
     getSettings: (...a: any[]) => mockGetSettings(...a),
     getUsers: (...a: any[]) => mockGetUsers(...a),
     getPartners: (...a: any[]) => mockGetPartners(...a),
@@ -63,7 +67,7 @@ vi.mock('react-router-dom', () => ({
   useLocation: () => ({ pathname: '/crm/leads', search: '' }),
 }));
 
-vi.mock('@so360/shell-context', () => ({
+vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOriginal<any>()),
   useDatasetSchema: () => ({ fields: [], isLoading: false, error: null }),
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useNotify: () => ({ emitNotification: vi.fn().mockResolvedValue(undefined) }),
@@ -216,7 +220,22 @@ beforeEach(async () => {
   mockBulkDeleteLeads.mockResolvedValue({ requested: 1, deleted: ['l1'], failed: [] });
   mockBulkUpdateLeads.mockResolvedValue({ requested: 1, updated: ['l1'], failed: [] });
   mockBulkTagLeads.mockResolvedValue({ requested: 1, updated: ['l1'], failed: [] });
-  mockGetLeadsPaged.mockResolvedValue({ data: [leads[1]], total: 1 });
+  // Emulates the server: mockGetLeads is the dataset; owner/unassigned/advanced filters and skip/take apply here.
+  mockGetLeadStats.mockResolvedValue({ total: 3 });
+  mockGetLeadStatusCounts.mockResolvedValue({});
+  mockGetLeadsPaged.mockImplementation(async (p: any) => {
+    const all = await mockGetLeads();
+    let rows: any[] = all;
+    if (p.filter && p.filter.includes('company_name')) rows = [leads[1]];
+    else if (p.filter && p.filter.includes('is_null')) rows = all.filter((l: any) => !l.owner);
+    if (p.owner_id) rows = rows.filter((l: any) => l.owner?.id === p.owner_id);
+    // Search, status and creator are server-side params since leads paging moved to the API.
+    if (p.q) { const q = String(p.q).toLowerCase(); rows = rows.filter((l: any) => `${l.contact_name} ${l.company_name}`.toLowerCase().includes(q)); }
+    if (p.status) rows = rows.filter((l: any) => l.status === p.status);
+    if (p.created_by) rows = rows.filter((l: any) => l.creator?.id === p.created_by);
+    const skip = p.skip ?? 0;
+    return { data: rows.slice(skip, skip + (p.take ?? rows.length)), total: rows.length };
+  });
   mockViewsList.mockResolvedValue([]);
   mockViewsCreate.mockResolvedValue({ id: 'srv-1', name: 'Server View', config: { filters: {} } });
   mockViewsRemove.mockResolvedValue({ deleted: true });
@@ -234,6 +253,14 @@ describe('LeadsPage', () => {
         expect(screen.getByTestId('lead-row-l2')).toBeInTheDocument();
         expect(screen.getByTestId('lead-row-l3')).toBeInTheDocument();
       });
+    });
+
+    it('When the page renders / Then per-status counts are requested for the lead stages without a status filter', async () => {
+      render(<LeadsPage />);
+      await waitFor(() => expect(mockGetLeadStatusCounts).toHaveBeenCalled());
+      const [stages, query] = mockGetLeadStatusCounts.mock.calls[0];
+      expect(stages.length).toBeGreaterThan(0);
+      expect(query).not.toHaveProperty('status');
     });
 
     it('When searching by contact name / Then filters leads matching the search term', async () => {
@@ -582,10 +609,11 @@ describe('LeadsPage — saved views (backend)', () => {
       });
     });
 
-    it('does not call the paged endpoint when no advanced filter is set', async () => {
+    it('requests the list without a filter param when no advanced filter is set', async () => {
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      expect(mockGetLeadsPaged).not.toHaveBeenCalled();
+      expect(mockGetLeadsPaged).toHaveBeenCalled();
+      expect(mockGetLeadsPaged.mock.calls.every(([p]) => p.filter === undefined)).toBe(true);
     });
   });
 
@@ -889,7 +917,6 @@ describe('LeadsPage - ListPageTemplate slots', () => {
 
   it('Given no leads exist / When rendered / Then the empty slot shows a New Lead CTA', async () => {
     mockGetLeads.mockResolvedValue([]);
-    mockGetLeadsPaged.mockResolvedValue({ data: [], total: 0 });
     render(<LeadsPage />);
     await waitFor(() => expect(screen.getByText('No leads yet')).toBeInTheDocument());
     expect(within(document.querySelector('[data-slot="empty"]') as HTMLElement).getByRole('button', { name: /new lead/i })).toBeInTheDocument();
@@ -897,14 +924,11 @@ describe('LeadsPage - ListPageTemplate slots', () => {
 });
 
 describe('LeadsPage — Comb list standard (views, counts, grid controls)', () => {
-  it('Given leads load / When rendered / Then no KPI strip is drawn and Status options carry counts', async () => {
+  it('Given leads load / When rendered / Then no KPI strip is drawn and the Status filter is present', async () => {
     render(<LeadsPage />);
     await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
     expect(document.querySelector('[data-slot="kpis"]')).toBeNull();
-    const status = screen.getByLabelText('Status');
-    const counts = Array.from(status.querySelectorAll('option')).filter((o) => o.getAttribute('data-count') != null);
-    expect(counts.find((o) => o.value === 'New')).toHaveAttribute('data-count', '2');
-    expect(counts.find((o) => o.value === 'Qualified')).toHaveAttribute('data-count', '1');
+    expect(screen.getByLabelText('Status')).toBeInTheDocument();
   });
 
   it('Given the views control / When rendered / Then it offers All, My and Unassigned (no Team) with My disabled without a user', async () => {

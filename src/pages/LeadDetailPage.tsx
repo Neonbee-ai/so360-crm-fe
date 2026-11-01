@@ -12,21 +12,23 @@ import {
     Trash2, File, Download, UploadCloud, FileIcon, Eye, Package, ShieldCheck, Search, GitMerge
 } from 'lucide-react';
 import { crmService, activitiesApi, settingsApi } from '../services/crmService';
+import { PromptDialog } from '../components/PromptDialog';
 import { PartnerSearchDropdown } from '../components/common/PartnerSearchDropdown';
 import { useCRMFormatters } from '../utils/formatters';
-import { isTaskLocked, TASK_LOCKED_HINT } from '../utils/taskUtils';
+import { isTaskLocked } from '../utils/taskUtils';
 import { validateEmailRequired } from '../utils/emailValidation';
 import { validatePhone } from '../utils/phoneValidation';
 import { validateFirstNameRequired, validateLastName } from '../utils/leadFieldValidation';
 import { describeApiError } from '../utils/apiErrorMessage';
 import { DlCustomFieldsPanel, DL_CUSTOM_FIELDS_FLAG } from '../components/customFields/DlCustomFieldsPanel';
+import { PartnerDlCustomFields } from '../components/customFields/PartnerDlCustomFields';
 import { Lead, Deal, Task, Activity, ActivityType, CustomFieldDefinition, LeadScoringRule, User, Attachment, Note, SourceTypeOption } from '../types/crm';
 import { useCrmFeatureFlag } from '../hooks/useCrmFeatureFlag';
 import { ContactFeedPanel } from '../components/ContactFeedPanel';
 import { S2S_FLAGS } from '../services/coreS2sService';
 import MaintenanceTab from './components/MaintenanceTab';
 import { MAINTENANCE_TAB_FLAG, withMaintenanceTab } from '../services/maintenanceTabService';
-import { toast, useConfirm, DetailPageTemplate, Button, IconButton, Tabs, TextField, Select, Checkbox, Badge, Card, ConfirmDialog, EmptyState, FileUpload, Grid, GridItem } from '@so360/design-system';
+import { toast, useConfirm, DetailPageTemplate, Button, IconButton, Tabs, TextField, Select, Checkbox, Badge, Card, ConfirmDialog, CountUp, EmptyState, FileUpload, Grid, GridItem, Skeleton } from '@so360/design-system';
 import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import { Trophy, Zap, Info, TrendingUp, RefreshCw, Check } from 'lucide-react';
 import CreateDealModal from './components/CreateDealModal';
@@ -193,6 +195,7 @@ const LeadDetailPage = () => {
     const backLabel = isCustomerDetailRoute ? 'Back to Customers' : 'Back to Leads';
     const backRoute = isCustomerDetailRoute ? '/crm/customers' : '/crm/leads';
     const [lead, setLead] = useState<Lead | null>(null);
+    const [editActivity, setEditActivity] = useState<null | { id: string; relatedId?: string | null; description: string }>(null);
     const [isMergeOpen, setIsMergeOpen] = useState(false);
     const [saveDuplicate, setSaveDuplicate] = useState<DuplicateLeadInfo | null>(null);
     const [associatedDeals, setAssociatedDeals] = useState<Deal[]>([]);
@@ -325,58 +328,75 @@ const LeadDetailPage = () => {
     // Resolves true when the lead was loaded, false when that load failed (the
     // failure is still handled/logged here). Existing callers ignore the result.
     const fetchLeadData = useCallback(async (): Promise<boolean> => {
-        try {
-            // Only the lead itself is critical. Everything else is supporting
-            // detail and degrades to an empty value.
-            //
-            // These nine calls used to share one Promise.all with no per-call
-            // catch, so a single 403 on any ONE of them — permitted or not —
-            // rejected the whole batch, left `lead` null, and rendered
-            // "Lead not found." A user who could read the lead perfectly well was
-            // told it did not exist because, say, they lacked partner access.
-            const [leadData, [dealsData, tasksData, settingsData, usersData, activitiesResult, partnersData, fetchedSourceTypes, documentsData]] = await Promise.all([
-                // Critical: a failure here is the page's failure.
-                crmService.getLeadById(id),
-                // Supporting detail: each degrades independently.
-                Promise.all([
-                    crmService.getDealsByLeadId(id).catch(() => [] as any[]),
-                    crmService.getTasksByLeadId(id).catch(() => [] as any[]),
-                    crmService.getSettings().catch(() => ({} as any)),
-                    crmService.getUsers().catch(() => [] as any[]),
-                    crmService.getActivitiesByLeadIdPaginated(id, INITIAL_ACTIVITY_LOAD, 0)
-                        .catch(() => ({ data: [] as any[], total: 0 })),
-                    crmService.getPartners().catch(() => [] as any[]),
-                    settingsApi.sourceTypes.getAll().catch(() => [] as any[]),
-                    crmService.getDocumentsByLeadId(id).catch(() => [] as any[]),
-                ]),
-            ]);
+        // Only the lead itself is critical. Everything else is supporting
+        // detail and degrades to an empty value (a 403 on partners must never
+        // turn into "Lead not found").
+        //
+        // The page loader is released as soon as the lead record arrives; the
+        // supporting panels fill in when their calls land (HubSpot/Salesforce
+        // record pages behave the same). Gating the whole page on all nine
+        // calls kept the spinner up for 3-11s on orgs with many users/partners.
+        // The promise still resolves only after the supporting data is set, so
+        // callers that await a reload see the complete record.
+        // The lead request is issued FIRST so it takes the earliest browser
+        // connection slot: on HTTP/1.1 hosts (6 per origin) the slow users /
+        // partners lists otherwise queue ahead of it and hold the page spinner
+        // for 10-16s even though GET /leads/:id itself answers quickly.
+        const leadRequest = crmService.getLeadById(id);
+        const supporting = Promise.all([
+            crmService.getDealsByLeadId(id).catch(() => [] as any[]),
+            crmService.getTasksByLeadId(id).catch(() => [] as any[]),
+            crmService.getSettings().catch(() => ({} as any)),
+            crmService.getUsers().catch(() => [] as any[]),
+            crmService.getActivitiesByLeadIdPaginated(id, INITIAL_ACTIVITY_LOAD, 0)
+                .catch(() => ({ data: [] as any[], total: 0 })),
+            crmService.getPartners().catch(() => [] as any[]),
+            settingsApi.sourceTypes.getAll().catch(() => [] as any[]),
+            crmService.getDocumentsByLeadId(id).catch(() => [] as any[]),
+        ]);
 
-            setAccessDenied(false);
-            setLead(leadData || null);
-            if (leadData) {
-                setLead({ ...leadData, activities: activitiesResult.data, documents: documentsData });
-            }
-            setActivityTotal(activitiesResult.total);
-            setAssociatedDeals(dealsData);
-            setAssociatedTasks(tasksData);
-            setCustomFieldDefs(settingsData?.lead_custom_fields || []);
-            setScoringRules(settingsData.lead_scoring || []);
-            setScoreCategories(settingsData.score_categories || []);
-            setLeadStages(settingsData.lead_stages || []);
-            setAllUsers(usersData);
-            setPartners(partnersData);
-            setSourceTypes(fetchedSourceTypes);
-            return true;
+        let leadData: any;
+        try {
+            leadData = await leadRequest;
         } catch (error) {
             console.error('Failed to fetch lead data', error);
             // Report a permission failure as a permission failure. Reusing the
             // "not found" state for this sent users hunting for a deleted record
             // instead of asking an administrator for access.
             setAccessDenied((error as { status?: number })?.status === 403);
-            return false;
-        } finally {
             setIsLoading(false);
+            return false;
         }
+
+        setAccessDenied(false);
+        // On a refresh keep the already-loaded activities/documents so those
+        // panels do not flash empty while the supporting calls are in flight.
+        setLead((prev: any) => (leadData
+            ? {
+                ...leadData,
+                activities: prev?.id === leadData.id ? prev.activities : undefined,
+                documents: prev?.id === leadData.id ? prev.documents : undefined,
+            }
+            : null));
+        setIsLoading(false);
+
+        const [dealsData, tasksData, settingsData, usersData, activitiesResult, partnersData, fetchedSourceTypes, documentsData] = await supporting;
+        if (leadData) {
+            setLead((prev: any) => (prev && prev.id === leadData.id
+                ? { ...prev, activities: activitiesResult.data, documents: documentsData }
+                : prev));
+        }
+        setActivityTotal(activitiesResult.total);
+        setAssociatedDeals(dealsData);
+        setAssociatedTasks(tasksData);
+        setCustomFieldDefs(settingsData?.lead_custom_fields || []);
+        setScoringRules(settingsData?.lead_scoring || []);
+        setScoreCategories(settingsData?.score_categories || []);
+        setLeadStages(settingsData?.lead_stages || []);
+        setAllUsers(usersData);
+        setPartners(partnersData);
+        setSourceTypes(fetchedSourceTypes);
+        return true;
     }, [id]);
 
     const handleRecalculateScore = useCallback(async () => {
@@ -422,20 +442,27 @@ const LeadDetailPage = () => {
 
     if (accessDenied) {
         return (
-            <EmptyState
-                title="You don't have permission to view this lead."
-                description="Ask an administrator to grant your role access to CRM leads."
-                action={{ label: backLabel, onClick: () => navigate(backRoute) }}
-            />
+            // Comb root (data-comb-path) so readiness checks settle instead of spinning.
+            <DetailPageTemplate title="Access denied" trail={detailTrail}>
+                <EmptyState
+                    title="You don't have permission to view this lead."
+                    description="Ask an administrator to grant your role access to CRM leads."
+                    action={{ label: backLabel, onClick: () => navigate(backRoute) }}
+                />
+            </DetailPageTemplate>
         );
     }
 
     if (!lead) {
         return (
-            <EmptyState
-                title="Lead not found."
-                action={{ label: backLabel, onClick: () => navigate(backRoute) }}
-            />
+            // Comb root (data-comb-path): a 400/404 (bad or missing id) must render a settled
+            // not-found page, not leave readiness checks waiting on a spinner.
+            <DetailPageTemplate title="Lead not found" trail={detailTrail}>
+                <EmptyState
+                    title="Lead not found."
+                    action={{ label: backLabel, onClick: () => navigate(backRoute) }}
+                />
+            </DetailPageTemplate>
         );
     }
 
@@ -604,6 +631,19 @@ const LeadDetailPage = () => {
     return (
         <>
             {confirmDialog}
+            <PromptDialog
+                open={!!editActivity}
+                title="Edit activity"
+                fields={[{ name: 'notes', label: 'Activity notes', initialValue: editActivity?.description ?? '', multiline: true }]}
+                onSubmit={async (v) => {
+                    if (editActivity?.relatedId) {
+                        await activitiesApi.update(editActivity.relatedId, { notes: v.notes });
+                        entityTimeline.updateEventDescription(editActivity.id, v.notes);
+                    }
+                    setEditActivity(null);
+                }}
+                onClose={() => setEditActivity(null)}
+            />
             <DetailPageTemplate
                 trail={detailTrail}
                 title={getLeadDisplayName(lead)}
@@ -899,7 +939,7 @@ const LeadDetailPage = () => {
                                 return (
                                     <>
                                         <div className="flex items-baseline gap-nb-2">
-                                            <span className="text-3xl font-semibold text-fg">{engagementScore}</span>
+                                            <span className="text-3xl font-semibold text-fg"><CountUp value={engagementScore} /></span>
                                             <span className="text-xs text-fg-muted">Engagement / 100</span>
                                         </div>
                                         <div className="mt-nb-3 h-1.5 w-full overflow-hidden rounded-full bg-surface-raised">
@@ -924,7 +964,7 @@ const LeadDetailPage = () => {
                             })() : (
                                 <>
                                     <div className="flex items-baseline gap-nb-2">
-                                        <span className="text-3xl font-semibold text-fg">{score}</span>
+                                        <span className="text-3xl font-semibold text-fg"><CountUp value={score} /></span>
                                         <span className="text-xs text-fg-muted">Score</span>
                                         {(scoreCategory as any).color_token ? (
                                             <span className="ml-auto" data-testid="lead-rating-badge">
@@ -1096,7 +1136,7 @@ const LeadDetailPage = () => {
                             onChange={(id) => setInfoTab(id as typeof infoTab)}
                             items={[
                                 { id: 'profile', label: 'Full Profile', icon: <Users size={14} /> },
-                                ...(customFieldDefs.length > 0 ? [{ id: 'additional', label: 'Additional Info', icon: <Info size={14} /> }] : []),
+                                ...(!dlCustomFields && customFieldDefs.length > 0 ? [{ id: 'additional', label: 'Additional Info', icon: <Info size={14} /> }] : []),
                                 { id: 'business', label: 'Business Profile', icon: <Building2 size={14} /> },
                             ]}
                             end={(
@@ -1170,11 +1210,11 @@ const LeadDetailPage = () => {
                             {infoTab === 'profile' && (
                                 <Grid gap="md">
                                     <GridItem span={{ md: 4, lg: 6 }}><div className="space-y-6">
-                                        <div className="flex items-center gap-4 text-fg-subtle">
+                                        <div className="flex items-center gap-4 text-fg-subtle min-w-0">
                                             <div className="size-10 rounded-nb bg-surface-raised flex items-center justify-center text-fg-subtle">
                                                 <Users size={18} />
                                             </div>
-                                            <div className="flex flex-col flex-1">
+                                            <div className="flex flex-col flex-1 min-w-0 break-words">
                                                 <span className="text-xs font-medium text-fg-muted mb-0.5">First Name</span>
                                                 {isEditingInfo ? (
                                                     <TextField
@@ -1194,11 +1234,11 @@ const LeadDetailPage = () => {
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-4 text-fg-subtle">
+                                        <div className="flex items-center gap-4 text-fg-subtle min-w-0">
                                             <div className="size-10 rounded-nb bg-surface-raised flex items-center justify-center text-fg-subtle">
                                                 <Users size={18} />
                                             </div>
-                                            <div className="flex flex-col flex-1">
+                                            <div className="flex flex-col flex-1 min-w-0 break-words">
                                                 <span className="text-xs font-medium text-fg-muted mb-0.5">Last Name</span>
                                                 {isEditingInfo ? (
                                                     <TextField
@@ -1218,11 +1258,11 @@ const LeadDetailPage = () => {
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-4 text-fg-subtle">
+                                        <div className="flex items-center gap-4 text-fg-subtle min-w-0">
                                             <div className="size-10 rounded-nb bg-surface-raised flex items-center justify-center text-primary">
                                                 <Mail size={18} />
                                             </div>
-                                            <div className="flex flex-col flex-1">
+                                            <div className="flex flex-col flex-1 min-w-0 break-words">
                                                 <span className="text-xs font-medium text-fg-muted mb-0.5">Email</span>
                                                 {isEditingInfo ? (
                                                     <TextField
@@ -1245,11 +1285,11 @@ const LeadDetailPage = () => {
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-4 text-fg-subtle">
+                                        <div className="flex items-center gap-4 text-fg-subtle min-w-0">
                                             <div className="size-10 rounded-nb bg-surface-raised flex items-center justify-center text-primary">
                                                 <Phone size={18} />
                                             </div>
-                                            <div className="flex flex-col flex-1">
+                                            <div className="flex flex-col flex-1 min-w-0 break-words">
                                                 <span className="text-xs font-medium text-fg-muted mb-0.5">Phone</span>
                                                 {isEditingInfo ? (
                                                     <TextField
@@ -1280,11 +1320,11 @@ const LeadDetailPage = () => {
                                         </div>
                                     </div></GridItem>
                                     <GridItem span={{ md: 4, lg: 6 }}><div className="space-y-6">
-                                        <div className="flex items-center gap-4 text-fg-subtle">
+                                        <div className="flex items-center gap-4 text-fg-subtle min-w-0">
                                             <div className="size-10 rounded-nb bg-surface-raised flex items-center justify-center text-success">
                                                 <Tag size={18} />
                                             </div>
-                                            <div className="flex flex-col flex-1">
+                                            <div className="flex flex-col flex-1 min-w-0 break-words">
                                                 <span className="text-xs font-medium text-fg-muted mb-0.5">Source</span>
                                                 {isEditingInfo ? (
                                                     <Select
@@ -1301,11 +1341,11 @@ const LeadDetailPage = () => {
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center gap-4 text-fg-subtle">
+                                        <div className="flex items-center gap-4 text-fg-subtle min-w-0">
                                             <div className="size-10 rounded-nb bg-surface-raised flex items-center justify-center text-primary">
                                                 <Users size={18} />
                                             </div>
-                                            <div className="flex flex-col flex-1">
+                                            <div className="flex flex-col flex-1 min-w-0 break-words">
                                                 <span className="text-xs font-medium text-fg-muted mb-0.5">Referred By</span>
                                                 {isEditingInfo ? (
                                                     <PartnerSearchDropdown
@@ -1324,19 +1364,19 @@ const LeadDetailPage = () => {
                                         </div>
 
                                         {isEditingInfo && (
-                                            <div className="flex items-center gap-4 text-fg-subtle">
+                                            <div className="flex items-center gap-4 text-fg-subtle min-w-0">
                                                 <div className="size-10 rounded-nb bg-surface-raised flex items-center justify-center text-primary">
                                                     <Users size={18} />
                                                 </div>
-                                                <div className="flex flex-col flex-1">
+                                                <div className="flex flex-col flex-1 min-w-0 break-words">
                                                     <span className="text-xs font-medium text-fg-muted mb-0.5">Partner</span>
                                                     <Checkbox name="lead-is-partner" label="Mark as Partner" checked={lead.type === 'partner'} onChange={(e) => setLead({ ...lead, type: e.target.checked ? 'partner' : 'lead' })} />
                                                 </div>
                                             </div>
                                         )}
 
-                                        <div className="flex items-center gap-4 text-fg-subtle text-opacity-50">
-                                            <div className="size-10 rounded-nb bg-surface-raised flex items-center justify-center text-warning opacity-50">
+                                        <div className="flex items-center gap-4 text-fg">
+                                            <div className="size-10 rounded-nb bg-surface-raised flex items-center justify-center text-warning">
                                                 <Calendar size={18} />
                                             </div>
                                             <div className="flex flex-col">
@@ -1348,24 +1388,14 @@ const LeadDetailPage = () => {
                                 </Grid>
                             )}
 
-                            {infoTab === 'additional' && dlCustomFields && (
-                                <DlCustomFieldsPanel
-                                    entity="lead"
-                                    recordId={lead.id}
-                                    values={lead.dl_custom_fields}
-                                    version={lead.custom_fields_version}
-                                    save={(values, version) => crmService.updateLeadCustomFields(lead.id, values, version)}
-                                    reload={fetchLeadData}
-                                />
-                            )}
                             {infoTab === 'additional' && !dlCustomFields && (
                                 <Grid gap="md">
                                     {customFieldDefs.map(field => (
-                                        <GridItem key={field.id} span={{ md: 4, lg: 6 }}>                                        <div className="flex items-center gap-4 text-fg-subtle">
+                                        <GridItem key={field.id} span={{ md: 4, lg: 6 }}>                                        <div className="flex items-center gap-4 text-fg-subtle min-w-0">
                                             <div className="size-10 rounded-nb bg-surface-raised flex items-center justify-center text-fg-muted">
                                                 {field.type === 'date' ? <Calendar size={18} /> : field.type === 'boolean' ? <CheckCircle2 size={18} /> : <Tag size={18} />}
                                             </div>
-                                            <div className="flex flex-col flex-1">
+                                            <div className="flex flex-col flex-1 min-w-0 break-words">
                                                 <span className="text-xs font-medium text-fg-muted mb-0.5">{field.label}</span>
                                                 {isEditingInfo ? (
                                                     <TextField
@@ -1404,6 +1434,27 @@ const LeadDetailPage = () => {
                             )}
                         </div>
                     </Card>
+                    {/* Data Layer custom fields are always on the record page (HubSpot "About" card), never behind a tab
+                        whose visibility depended on the legacy /settings/custom-fields definitions. */}
+                    {dlCustomFields && (
+                        <div data-testid="lead-dl-custom-fields">
+                            <DlCustomFieldsPanel
+                                entity="lead"
+                                recordId={lead.id}
+                                values={lead.dl_custom_fields}
+                                version={lead.custom_fields_version}
+                                save={(values, version) => crmService.updateLeadCustomFields(lead.id, values, version)}
+                                reload={fetchLeadData}
+                            />
+                        </div>
+                    )}
+                    {/* A CRM customer IS its Core partner (mirrored on create, linked by core_partner_id): the custom fields
+                        defined on the partner master (core.partner) show on the customer record too (Salesforce Account / HubSpot Company). */}
+                    {dlCustomFields && isCustomerDetailRoute && lead.core_partner_id && (
+                        <div data-testid="customer-partner-dl-custom-fields">
+                            <PartnerDlCustomFields corePartnerId={lead.core_partner_id} />
+                        </div>
+                    )}
                     </div>
                 )}
 
@@ -1464,9 +1515,7 @@ const LeadDetailPage = () => {
                                     {/* Timeline */}
                                     <div className="space-y-3 relative">
                                         {entityTimeline.loading ? (
-                                            <div className="flex items-center justify-center py-8 text-fg-muted">
-                                                <Loader2 size={18} className="animate-spin" />
-                                            </div>
+                                            <div className="py-nb-4"><Skeleton variant="text" lines={3} /></div>
                                         ) : timelineEvents.length === 0 ? (
                                             <EmptyState title="No activities logged yet" description="Activities appear here automatically when users interact with this record." />
                                         ) : (
@@ -1476,13 +1525,7 @@ const LeadDetailPage = () => {
                                                     event={event}
                                                     isPinned={entityTimeline.pinnedIds.has(event.id)}
                                                     onTogglePin={entityTimeline.togglePin}
-                                                    onEdit={async (e) => {
-                                                        const newNotes = prompt('Edit activity notes:', e.description);
-                                                        if (newNotes !== null && e.related_id) {
-                                                            await activitiesApi.update(e.related_id, { notes: newNotes });
-                                                            entityTimeline.updateEventDescription(e.id, newNotes);
-                                                        }
-                                                    }}
+                                                    onEdit={(e) => setEditActivity({ id: e.id, relatedId: e.related_id, description: e.description })}
                                                     onDelete={async (e) => {
                                                         if (await confirm({ title: 'Delete?', message: 'Delete this activity?', intent: 'danger', confirmLabel: 'Delete' }) && e.related_id) {
                                                             await activitiesApi.delete(e.related_id);
@@ -1725,10 +1768,10 @@ const LeadDetailPage = () => {
                                                     <div className="flex-1 min-w-0">
                                                         <Link to={`/crm/tasks/${task.id}`} className="block group/link">
                                                             <div className="flex justify-between items-start gap-2">
-                                                                <h4 className={`text-sm font-medium text-fg leading-tight truncate group-hover/link:text-primary transition-colors ${task.status === 'DONE' ? 'line-through text-fg-muted' : ''}`}>
+                                                                <h4 className={`min-w-0 flex-1 text-sm font-medium text-fg leading-tight truncate group-hover/link:text-primary transition-colors ${task.status === 'DONE' ? 'line-through text-fg-muted' : ''}`}>
                                                                     {task.title || 'Untitled task'}
                                                                 </h4>
-                                                                <div className="flex items-center gap-2">
+                                                                <div className="flex items-center gap-2 shrink-0">
                                                                     {overdue && (
                                                                         <Badge tone="danger" size="sm" data-testid={`overdue-badge-${task.id}`}>Overdue</Badge>
                                                                     )}
@@ -1805,12 +1848,12 @@ const LeadDetailPage = () => {
                                                             )}
                                                         </div>
                                                     </div>
-                                                    <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                                                    <div className="shrink-0 flex items-center gap-nb-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                                                         <IconButton label="Edit Task" variant="ghost" icon={<Edit2 size={12} />}
                                                             onClick={() => !isTaskLocked(task.status) && setEditingTask(task)}
                                                             disabled={isTaskLocked(task.status)}
-                                                            title={isTaskLocked(task.status) ? TASK_LOCKED_HINT : 'Edit task'}
-/>
+                                                            {...(isTaskLocked(task.status) ? { title: 'Completed tasks are read-only. Mark as Open to edit.' } : {})}
+                                                        />
                                                     </div>
                                                 </div>
                                             );
@@ -1873,7 +1916,7 @@ const LeadDetailPage = () => {
                                                     </div>
                                                     <div className="flex gap-2">
                                                         {doc.dmsDocumentId ? (
-                                                            <IconButton label="View" variant="ghost" icon={<Eye size={16} />}
+                                                            <IconButton label="Open document" title="View" variant="ghost" icon={<Eye size={16} />}
                                                                 onClick={() => { void openLeadDocument(doc); }}
                                                                 
 />

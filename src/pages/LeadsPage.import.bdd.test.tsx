@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import React from 'react';
 
-const flags = vi.hoisted(() => ({ on: new Set<string>(), canCreate: true, loaded: true }));
+const flags = vi.hoisted(() => ({ on: new Set<string>(), canCreate: true, loaded: true, denied: new Set<string>() }));
 const mockGetLeads = vi.fn();
 const mockGetSettings = vi.fn();
 const mockGetUsers = vi.fn();
@@ -11,6 +11,9 @@ const mockGetPartners = vi.fn();
 vi.mock('../services/crmService', () => ({
   crmService: {
     getLeads: (...a: any[]) => mockGetLeads(...a),
+    getLeadStatusCounts: async () => ({}),
+    getLeadsPaged: async (...a: any[]) => { const d = await mockGetLeads(...a); return { data: d, total: d.length }; },
+    getLeadStats: async () => ({ total: 0 }),
     getSettings: (...a: any[]) => mockGetSettings(...a),
     getUsers: (...a: any[]) => mockGetUsers(...a),
     getPartners: (...a: any[]) => mockGetPartners(...a),
@@ -28,7 +31,7 @@ vi.mock('react-router-dom', () => ({
   useLocation: () => ({ pathname: '/crm/leads', search: '' }),
 }));
 
-vi.mock('@so360/shell-context', () => ({
+vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOriginal<any>()),
   useDatasetSchema: () => ({ fields: [], isLoading: false, error: null }),
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useNotify: () => ({ emitNotification: vi.fn().mockResolvedValue(undefined) }),
@@ -36,9 +39,9 @@ vi.mock('@so360/shell-context', () => ({
   useShellBridge: () => ({
     effectiveFlagsLoaded: flags.loaded,
     permissionsLoaded: true,
-    hasPermission: (p: string) => p !== 'leads.create' || flags.canCreate,
+    hasPermission: (p: string) => (p === 'leads.create' ? flags.canCreate : !flags.denied.has(p)),
     hasAnyPermission: () => true,
-    isFeatureEnabled: (k: string) => k !== 'action:crm:bulk_import' || flags.on.has(k),
+    isFeatureEnabled: (k: string) => (k === 'action:crm:bulk_import' ? flags.on.has(k) : true),
     isFeatureHidden: () => false,
     currentOrg: { id: 'org-1' },
   }),
@@ -61,8 +64,9 @@ vi.mock('@so360/shell-context', () => ({
 
 // Stub the new grid with a testable proxy
 vi.mock('../components/leads/LeadsDataGrid', () => ({
-  LeadsDataGrid: ({ leads, isLoading }: any) => (
+  LeadsDataGrid: ({ leads, isLoading, bulkActions }: any) => (
     <div data-testid="leads-grid">
+      {(bulkActions ?? []).map((a: any) => <button key={a.label} type="button" data-testid="bulk-action">{a.label}</button>)}
       {isLoading
         ? 'Loading...'
         : leads.length === 0
@@ -97,6 +101,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   flags.on.clear();
   flags.canCreate = true;
+  flags.denied.clear();
   flags.loaded = true;
   mockGetLeads.mockResolvedValue([]);
   mockGetSettings.mockResolvedValue({ deal_stages: [], lead_stages: [{ id: 'new', name: 'New' }], lead_custom_fields: [], deal_custom_fields: [], lead_sources: [], lead_scoring: [] });
@@ -117,10 +122,10 @@ describe('Given the Leads page header', () => {
     });
   });
 
-  describe('When the flag is on but the user cannot create leads', () => {
+  describe('When the flag is on but the user lacks leads.import', () => {
     it('Then there is no Import button', async () => {
       flags.on.add('action:crm:bulk_import');
-      flags.canCreate = false;
+      flags.denied.add('leads.import');
       render(<LeadsPage />);
       await screen.findByText('Leads & Accounts');
       expect(screen.queryByRole('button', { name: /^import$/i })).not.toBeInTheDocument();
@@ -167,6 +172,73 @@ describe('Given the Leads page header', () => {
       render(<LeadsPage />);
       await screen.findByText('Leads & Accounts');
       expect(screen.queryByRole('button', { name: /^import$/i })).not.toBeInTheDocument();
+    });
+  });
+});
+
+describe('Given the Leads page export / import RBAC (a25bf315)', () => {
+  // ExportMenu is a Comb Menu whose trigger Button carries the "Export leads" name.
+  const exportGroup = () => screen.queryByRole('button', { name: 'Export leads' });
+  // Bulk actions only render with the grid, which the template hides while the list is empty.
+  const withOneLead = () => mockGetLeads.mockResolvedValue([{ id: 'l1', company_name: 'Acme', contact_name: 'Ann', status: 'New' }]);
+  const importBtn = () => screen.queryByRole('button', { name: /^import$/i });
+  const bulkLabels = () => screen.queryAllByTestId('bulk-action').map((b) => b.textContent);
+
+  describe('When the user has neither leads.export nor leads.import', () => {
+    it('Then the header shows only New Lead, with no export or import controls', async () => {
+      flags.on.add('action:crm:bulk_import');
+      flags.denied.add('leads.export').add('leads.import');
+      render(<LeadsPage />);
+      const newLead = await screen.findByText('New Lead');
+      expect(exportGroup()).toBeNull();
+      expect(importBtn()).toBeNull();
+      // No empty wrapper left behind: New Lead is the only primary action and the
+      // secondary-actions slot is not rendered at all.
+      const header = newLead.closest('[data-slot="header"]') as HTMLElement;
+      expect(header.querySelector('[data-slot="primary"]')?.querySelectorAll('button')).toHaveLength(1);
+      expect(header.querySelector('[data-slot="secondary"]')?.querySelectorAll('button').length ?? 0).toBe(0);
+    });
+  });
+
+  describe('When the user has only leads.export', () => {
+    it('Then export is visible and import is hidden', async () => {
+      flags.on.add('action:crm:bulk_import');
+      flags.denied.add('leads.import');
+      render(<LeadsPage />);
+      await screen.findByText('New Lead');
+      expect(exportGroup()).toBeInTheDocument();
+      expect(importBtn()).toBeNull();
+    });
+  });
+
+  describe('When the user has only leads.import', () => {
+    it('Then import is visible and export is hidden', async () => {
+      flags.on.add('action:crm:bulk_import');
+      flags.denied.add('leads.export');
+      render(<LeadsPage />);
+      await screen.findByText('New Lead');
+      expect(importBtn()).toBeInTheDocument();
+      expect(exportGroup()).toBeNull();
+    });
+  });
+
+  describe('When the user selects rows without leads.export', () => {
+    it('Then the bulk Export action is not offered', async () => {
+      flags.denied.add('leads.export');
+      withOneLead();
+      render(<LeadsPage />);
+      await screen.findByTestId('lead-row');
+      expect(bulkLabels()).toContain('Status');
+      expect(bulkLabels()).not.toContain('Export');
+    });
+  });
+
+  describe('When the user selects rows with leads.export', () => {
+    it('Then the bulk Export action is offered', async () => {
+      withOneLead();
+      render(<LeadsPage />);
+      await screen.findByTestId('lead-row');
+      expect(bulkLabels()).toContain('Export');
     });
   });
 });

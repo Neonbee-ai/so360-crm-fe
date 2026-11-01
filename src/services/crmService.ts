@@ -2,6 +2,7 @@ import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, Ac
 import { createRequestCache } from './requestCache';
 import { notifyQuotaExceeded } from './quotaExceeded';
 import { plainErrorText } from '../utils/apiErrorMessage';
+import { isUuid } from '../utils/fieldPresentation';
 
 // Lead/Deal detail pages and the dashboard each fetch CRM settings (8 parallel
 // requests) and the user list on mount. Both are org-static within a session,
@@ -333,6 +334,8 @@ class ApiClient {
                 throw apiError;
             }
 
+            // 204 / empty 200 (e.g. no saved grid prefs yet) is "no content", not a parse error.
+            if (!text.trim()) return null as T;
             try {
                 return JSON.parse(text);
             } catch (e) {
@@ -682,6 +685,12 @@ export const leadsApi = {
         sort?: string;
         filter?: string;
         fields?: string;
+        owner_id?: string;
+        created_by?: string;
+        rating_id?: string;
+        date_range?: string;
+        start_date?: string;
+        end_date?: string;
     }): Promise<{ data: Lead[]; total: number | null }> => {
         const apiParams: Record<string, any> = { ...params, meta: 'true' };
         if (params.status && STATUS_MAP_FE_TO_BE[params.status]) {
@@ -689,6 +698,26 @@ export const leadsApi = {
         }
         const res = await apiClient.getWithMeta<any[]>('/leads', apiParams);
         return { data: (res.data || []).map(mapLeadFromApi), total: res.total };
+    },
+
+    /**
+     * GET /leads/status-counts - per-status facet counts under the current list filters
+     * (status itself excluded). Keys of the result are the FE stage names passed in.
+     */
+    getStatusCounts: async (
+        stageNames: string[],
+        params: Record<string, any> = {},
+    ): Promise<Record<string, number>> => {
+        if (stageNames.length === 0) return {};
+        const beOf = (n: string) => STATUS_MAP_FE_TO_BE[n] ?? n;
+        const { skip: _s, take: _t, status: _st, meta: _m, ...rest } = params as any;
+        const res = await apiClient.get<{ counts: Record<string, number> }>('/leads/status-counts', {
+            ...rest,
+            statuses: stageNames.map(beOf).join(','),
+        });
+        const out: Record<string, number> = {};
+        for (const n of stageNames) out[n] = res?.counts?.[beOf(n)] ?? 0;
+        return out;
     },
 
     /**
@@ -1406,7 +1435,8 @@ export const partnersApi = {
      * partner links to it by `core_partner_id`; Core owns the data-layer values.
      */
     getCore: async (corePartnerId: string) => {
-        return coreClient.get<any>(`/v1/partners/${corePartnerId}`);
+        // GET /v1/partners/:org_id is Core's org LIST route — the record lives at details/:id (AutoQA r152).
+        return coreClient.get<any>(`/v1/partners/details/${corePartnerId}`);
     },
     /** Save core.partner custom fields through Core's partner update (409 on stale version, 503 when validation is down). */
     updateCoreCustomFields: async (corePartnerId: string, customFields: Record<string, unknown>, version?: number | null) => {
@@ -1578,6 +1608,49 @@ export const callsApi = {
 // LEGACY COMPATIBILITY LAYER
 // ============================================================================
 // Maintain backward compatibility with existing code
+/** Shapes the dashboard payload from the three reads (shared by the KPI-first callback). */
+function buildDashboardStats(periodStats: any, performanceStats: any, tasks: any[]) {
+    // Compute team stats from real performance data
+    const teamStats = (performanceStats || []).map((p: any) => ({
+        user: {
+            id: p.user.id,
+            full_name: p.user.name,
+            email: p.user.email,
+            avatar_url: null,
+            role: 'Sales Rep'
+        },
+        revenue: 0,
+        dealCount: p.metrics.won,
+        activeLeads: p.metrics.leads,
+        activityCount: p.metrics.activityPoints,
+        conversionRate: p.metrics.conversionRate,
+    })).sort((a: any, b: any) => b.dealCount - a.dealCount);
+
+    // Get reminders
+    const reminders = tasks.filter((t: any) =>
+        t.status === 'OPEN' && t.type === 'REMINDER'
+    ).sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
+
+    return {
+        financials: {
+            totalRevenue: periodStats.financials.totalRevenue,
+            pipelineValue: periodStats.financials.pipelineValue,
+            avgDealSize: periodStats.financials.avgDealSize,
+            winRate: periodStats.metrics.winRate,
+        },
+        counts: {
+            leads: periodStats.counts.totalLeads,
+            deals: periodStats.counts.totalDeals,
+            tasks: tasks.filter(t => t.status === 'OPEN' || t.status === 'IN_PROGRESS').length,
+            reminders: reminders.length
+        },
+        teamStats,
+        monthlyRevenue: periodStats.chartData.values,
+        chartLabels: periodStats.chartData.labels,
+        reminders
+    };
+}
+
 export const crmService = {
     getDailystoreStores: async (): Promise<Array<{ id: string; name: string; store_code?: string; status?: string }>> => {
         return dailystoreClient.get<Array<{ id: string; name: string; store_code?: string; status?: string }>>('/v1/dailystore/stores');
@@ -1602,9 +1675,17 @@ export const crmService = {
     getLeadsPaged: async (params: {
         skip?: number; take?: number; q?: string; status?: string; source?: string;
         sort?: string; filter?: string; fields?: string;
+        owner_id?: string; created_by?: string; rating_id?: string;
+        date_range?: string; start_date?: string; end_date?: string;
     }): Promise<{ data: Lead[]; total: number | null }> => {
         return leadsApi.getPaged(params);
     },
+
+    getLeadStatusCounts: async (stageNames: string[], params: Record<string, any> = {}): Promise<Record<string, number>> =>
+        leadsApi.getStatusCounts(stageNames, params),
+
+    // Org-wide lead/contact counts (`total` + per-status), independent of list filters
+    getLeadStats: async (): Promise<any> => leadsApi.getStats(),
 
     // Bulk lead operations
     bulkUpdateLeads: (ids: string[], patch: Record<string, any>) => leadsApi.bulkUpdate(ids, patch),
@@ -1634,6 +1715,15 @@ export const crmService = {
         quarter?: number;
         month?: number;
         week?: number;
+    }, opts?: {
+        /** Bypass the backend's short dashboard cache (after a write). */
+        fresh?: boolean;
+        /**
+         * Called as soon as /analytics/dashboard answers, with the KPI/chart
+         * part and `pending: true` (team + reminders still loading), so the
+         * page can render without waiting for performance and tasks.
+         */
+        onKpis?: (partial: any) => void;
     }) => {
         try {
             // NOTE: This method always routes through the permission-gated
@@ -1651,52 +1741,25 @@ export const crmService = {
             if (params?.quarter) queryParams.append('quarter', params.quarter.toString());
             if (params?.month) queryParams.append('month', params.month.toString());
             if (params?.week) queryParams.append('week', params.week.toString());
+            if (opts?.fresh) queryParams.append('fresh', '1');
 
+            const dashboardRequest = apiClient.get<any>(`/analytics/dashboard?${queryParams.toString()}`);
+            if (opts?.onKpis) {
+                const onKpis = opts.onKpis;
+                dashboardRequest.then((periodStats) => {
+                    try {
+                        onKpis({ ...buildDashboardStats(periodStats, [], []), pending: true });
+                    } catch (err) {
+                        console.error('Dashboard KPI callback failed', err);
+                    }
+                }, () => undefined);
+            }
             const [periodStats, performanceStats, tasks] = await Promise.all([
-                apiClient.get<any>(`/analytics/dashboard?${queryParams.toString()}`),
+                dashboardRequest,
                 apiClient.get<any>('/analytics/performance').catch(() => []),
                 crmService.getTasks(),
             ]);
-
-            // Compute team stats from real performance data
-            const teamStats = (performanceStats || []).map((p: any) => ({
-                user: {
-                    id: p.user.id,
-                    full_name: p.user.name,
-                    email: p.user.email,
-                    avatar_url: null,
-                    role: 'Sales Rep'
-                },
-                revenue: 0,
-                dealCount: p.metrics.won,
-                activeLeads: p.metrics.leads,
-                activityCount: p.metrics.activityPoints,
-                conversionRate: p.metrics.conversionRate,
-            })).sort((a: any, b: any) => b.dealCount - a.dealCount);
-
-            // Get reminders
-            const reminders = tasks.filter((t: any) =>
-                t.status === 'OPEN' && t.type === 'REMINDER'
-            ).sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
-
-            return {
-                financials: {
-                    totalRevenue: periodStats.financials.totalRevenue,
-                    pipelineValue: periodStats.financials.pipelineValue,
-                    avgDealSize: periodStats.financials.avgDealSize,
-                    winRate: periodStats.metrics.winRate,
-                },
-                counts: {
-                    leads: periodStats.counts.totalLeads,
-                    deals: periodStats.counts.totalDeals,
-                    tasks: tasks.filter(t => t.status === 'OPEN' || t.status === 'IN_PROGRESS').length,
-                    reminders: reminders.length
-                },
-                teamStats,
-                monthlyRevenue: periodStats.chartData.values,
-                chartLabels: periodStats.chartData.labels,
-                reminders
-            };
+            return buildDashboardStats(periodStats, performanceStats, tasks);
         } catch (error) {
             console.error('Failed to get dashboard stats', error);
             return {
@@ -1881,6 +1944,9 @@ export const crmService = {
     getDealsByLeadId: async (leadId: string): Promise<Deal[]> => {
         // Filter server-side (backend GET /deals honors lead_id) instead of
         // downloading the whole org dataset and filtering in the browser.
+        // A non-UUID id (mistyped / placeholder route) can never match a row and
+        // the BE answers 400; return empty without issuing the request.
+        if (!isUuid(leadId)) return [];
         return dealsApi.getAll({ lead_id: leadId });
     },
 
@@ -1929,12 +1995,14 @@ export const crmService = {
     async getTasksByLeadId(leadId: string): Promise<Task[]> {
         // Filter server-side (backend GET /tasks honors lead_id) instead of
         // downloading the whole org dataset and filtering in the browser.
+        if (!isUuid(leadId)) return [];
         return tasksApi.getAll({ lead_id: leadId });
     },
 
     async getTasksByDealId(dealId: string): Promise<Task[]> {
         // Filter server-side (backend GET /tasks honors deal_id) instead of
         // downloading the whole org dataset and filtering in the browser.
+        if (!isUuid(dealId)) return [];
         return tasksApi.getAll({ deal_id: dealId });
     },
 
@@ -2067,14 +2135,9 @@ export const crmService = {
             const stagesToUpdate = newStages.filter(s => !s.id.startsWith('st-'));
             const stagesToDelete = currentStages.filter(cs => !newStages.find(ns => ns.id === cs.id));
 
+            // Update/delete first, then create sequentially, so the BE's open-stage
+            // shift on create cannot race the explicit orders (Pulse ba71bf76).
             await Promise.all([
-                ...stagesToCreate.map(s => apiClient.post('/settings/pipeline-stages', {
-                    name: s.name,
-                    order: newStages.indexOf(s) + 1,
-                    color: '#3b82f6',
-                    type: s.type,
-                    probability: s.probability ?? null
-                })),
                 ...stagesToUpdate.map(s => apiClient.patch(`/settings/pipeline-stages/${s.id}`, {
                     name: s.name,
                     order: newStages.indexOf(s) + 1,
@@ -2083,6 +2146,15 @@ export const crmService = {
                 })),
                 ...stagesToDelete.map(s => apiClient.delete(`/settings/pipeline-stages/${s.id}`))
             ]);
+            for (const s of stagesToCreate) {
+                await apiClient.post('/settings/pipeline-stages', {
+                    name: s.name,
+                    order: newStages.indexOf(s) + 1,
+                    color: '#3b82f6',
+                    type: s.type,
+                    probability: s.probability ?? null
+                });
+            }
         } catch (error) {
             console.error('[CRM] Failed to save Pipeline Stages', error);
             failures.push('Pipeline Stages');
@@ -2604,6 +2676,11 @@ export const crmService = {
             `/quotes/${quoteId}/send`,
             payload,
         );
+    },
+
+    /** Server-rendered quotation PDF (GET /quotes/:id/pdf) as a Blob. */
+    async getQuotePdf(quoteId: string): Promise<{ blob: Blob; filename: string | null }> {
+        return apiClient.getBlob(`/quotes/${quoteId}/pdf`);
     },
 
     async deleteQuote(quoteId: string): Promise<void> {

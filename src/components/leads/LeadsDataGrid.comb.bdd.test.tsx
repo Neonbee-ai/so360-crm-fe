@@ -298,3 +298,49 @@ describe('Feature LeadsDataGrid sort headers are Comb ghost Buttons', () => {
     });
   });
 });
+
+describe('Feature LeadsDataGrid is a Comb DS table surface (AutoQA non-DS table probe)', () => {
+  describe('Scenario DS marker', () => {
+    it('Given leads When the desktop grid renders Then its role=grid root carries the DS table marker', () => {
+      renderGrid();
+      const grid = screen.getByRole('grid', { name: 'Leads' });
+      expect(grid).toHaveAttribute('data-comb', 'table');
+      expect(grid).toHaveAttribute('data-comb-id', 'leads');
+      expect(grid).toHaveAttribute('data-comb-state', 'ready');
+      expect(grid.closest('[data-comb="table"]')).toBe(grid);
+    });
+  });
+
+  describe('Scenario column headers', () => {
+    it('Given leads When rendered Then the header row exposes one role=columnheader per visible column', () => {
+      renderGrid();
+      const grid = screen.getByRole('grid', { name: 'Leads' });
+      const headerRow = within(grid).getByTestId('leads-grid-header-row');
+      expect(headerRow).toHaveAttribute('role', 'row');
+      const headers = within(headerRow).getAllByRole('columnheader');
+      expect(headers.length).toBeGreaterThan(0);
+      expect(headers.length).toBe(Number(grid.getAttribute('aria-colcount')));
+      expect(headers.map((h) => h.textContent)).toEqual(expect.arrayContaining(['Company']));
+    });
+
+    it('Given a sorted column When the header is clicked Then its columnheader reports aria-sort', () => {
+      renderGrid();
+      fireEvent.click(hdr('company_name'));
+      const ch = hdr('company_name').closest('[role="columnheader"]');
+      expect(ch).not.toBeNull();
+      expect(ch).toHaveAttribute('aria-sort', expect.stringMatching(/^(ascending|descending)$/));
+    });
+  });
+
+  describe('Scenario body rows', () => {
+    it('Given three leads When rendered Then each body row is role=row with gridcells matching the header count', () => {
+      renderGrid();
+      const grid = screen.getByRole('grid', { name: 'Leads' });
+      const headerRow = within(grid).getByTestId('leads-grid-header-row');
+      const bodyRows = within(grid).getAllByRole('row').filter((r) => r !== headerRow);
+      expect(bodyRows).toHaveLength(3);
+      const cols = within(headerRow).getAllByRole('columnheader').length;
+      for (const r of bodyRows) expect(r.querySelectorAll(':scope > [role="gridcell"]')).toHaveLength(cols);
+    });
+  });
+});

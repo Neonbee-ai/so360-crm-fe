@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Button, Badge, EmptyState, DataTable, SearchInput, ListFilters, type ListFilterConfig, type FilterValues } from '@so360/design-system';
-import { Loader2, Filter, ShieldCheck } from 'lucide-react';
+import { Button, Badge, EmptyState, Skeleton, DataTable, SearchInput, ListFilters, type ListFilterConfig, type FilterValues } from '@so360/design-system';
+import { Filter, ShieldCheck } from 'lucide-react';
 import ExportMenu from '../../components/ExportMenu';
 import { auditTrailApi, AuditTrailEntry, AuditTrailFilters } from '../../services/crmService';
 
@@ -143,9 +143,7 @@ export default function AuditHistoryTab({ entityType, entityId }: Props) {
             )}
 
             {loading ? (
-                <div className="flex items-center justify-center py-12 text-fg-muted">
-                    <Loader2 size={20} className="animate-spin" />
-                </div>
+                <div className="py-nb-4"><Skeleton variant="text" lines={4} /></div>
             ) : entries.length === 0 ? (
                 <EmptyState icon={Filter} title="No audit history matches these filters" />
             ) : (

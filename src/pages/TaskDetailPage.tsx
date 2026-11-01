@@ -11,7 +11,7 @@ import { Loader2 } from 'lucide-react';
 import TaskModal from './components/TaskModal';
 import { RescheduleModal } from './components/RescheduleModal';
 import { ShellContext, useActivity, useShellBridge } from '@so360/shell-context';
-import { toast, getErrorMessage, CrossLinkChip, DetailPageTemplate, Button, Card, Badge, StatusBadge, EmptyState, Alert, IconButton, Textarea, RadioGroup } from '@so360/design-system';
+import { toast, getErrorMessage, CrossLinkChip, DetailPageTemplate, Button, Card, Badge, StatusBadge, EmptyState, Alert, IconButton, Textarea, RadioGroup, Skeleton } from '@so360/design-system';
 import { CrmScope } from '../utils/crmScope';
 import { useCRMFormatters } from '../utils/formatters';
 import { isTaskLocked, canRescheduleTask, canEditTask, isTaskOverdue, TASK_LOCKED_HINT } from '../utils/taskUtils';
@@ -181,19 +181,20 @@ const TaskDetailPage = () => {
 
     if (isLoading) {
         return (
-            <div className="h-full flex items-center justify-center text-fg-muted gap-3">
-                <Loader2 className="animate-spin" />
-                <span>Loading task details...</span>
+            <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4">
+                <Skeleton variant="rect" />
+                <Skeleton variant="text" lines={3} />
+                <span className="sr-only">Loading task details...</span>
             </div>
         );
     }
 
     if (!task) {
         return (
-            <div className="py-12 text-center text-fg-muted">
-                <p>Task not found.</p>
-                <Button variant="secondary" className="mt-4" onClick={() => navigate('/crm/tasks')}>Back to Tasks</Button>
-            </div>
+            // Comb root (data-comb-path) so readiness checks settle on a bad/missing id instead of spinning.
+            <DetailPageTemplate title="Task not found" trail={[{ label: 'Tasks', to: '/crm/tasks' }]}>
+                <EmptyState title="Task not found." action={{ label: 'Back to Tasks', onClick: () => navigate('/crm/tasks') }} />
+            </DetailPageTemplate>
         );
     }
 

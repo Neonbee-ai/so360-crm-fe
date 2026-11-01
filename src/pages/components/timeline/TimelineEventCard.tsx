@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { EntityTimelineEvent } from '../../../services/crmService';
 import { useCRMFormatters } from '../../../utils/formatters';
-import { IconButton } from '@so360/design-system';
+import { Badge, IconButton } from '@so360/design-system';
 
 interface Props {
     event: EntityTimelineEvent;
@@ -62,7 +62,7 @@ const TimelineEventCard: React.FC<Props> = ({ event, isPinned, onTogglePin, onEd
             <div className="flex items-start justify-between gap-2 mb-1">
                 <div className="flex items-center gap-2">
                     <span className="text-xs font-medium text-fg leading-tight">{event.title}</span>
-                    <span className="text-xs bg-surface-raised text-fg-muted px-1.5 py-0.5 rounded font-medium">{event.module}</span>
+                    <Badge size="sm" tone="neutral">{event.module}</Badge>
                 </div>
                 <span className="text-xs text-fg-muted font-mono shrink-0">{formatters.formatDateTime(event.created_at)}</span>
             </div>
@@ -74,7 +74,7 @@ const TimelineEventCard: React.FC<Props> = ({ event, isPinned, onTogglePin, onEd
                     <span className="text-xs text-fg-muted font-medium">{event.actor_name}</span>
                 )}
                 {event.status_badge && (
-                    <span className="text-xs bg-surface-raised text-fg-muted px-1.5 py-0.5 rounded font-medium">{event.status_badge}</span>
+                    <Badge size="sm" tone="neutral">{event.status_badge}</Badge>
                 )}
             </div>
         </>

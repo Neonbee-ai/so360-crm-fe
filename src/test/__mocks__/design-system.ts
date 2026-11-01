@@ -1,8 +1,10 @@
 // Stub for @so360/design-system — vi.mock() in each test overrides these
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-export const Button = ({ children, onClick, type, disabled, leftIcon: _l, rightIcon: _r, variant, size, loading, fullWidth: _f, ...rest }: any) =>
-  React.createElement('button', { onClick, type, disabled, 'data-comb': 'button', 'data-variant': variant, 'data-size': size, 'data-loading': loading ? 'true' : undefined, ...rest }, children);
+// Mirrors the real Button: leading/trailing icons render around the label.
+export const Button = ({ children, onClick, type, disabled, leftIcon, rightIcon, leadingIcon, trailingIcon, variant, size, loading, fullWidth: _f, ...rest }: any) =>
+  React.createElement('button', { onClick, type, disabled, 'data-comb': 'button', 'data-variant': variant, 'data-size': size, 'data-loading': loading ? 'true' : undefined, ...rest },
+    leadingIcon ?? leftIcon ?? null, children, trailingIcon ?? rightIcon ?? null);
 export const Input = (props: any) => props;
 // ---- Form primitives: render native elements carrying label, testid, value/onChange ----
 const FieldWrap = ({ id, label, hint, error, children }: any) =>
@@ -72,8 +74,8 @@ export const PortalProvider = ({ children }: any) => React.createElement(React.F
 export const usePortalContainer = () => (typeof document !== 'undefined' ? document.body : null);
 export const Card = ({ title, actions, footer, children, 'data-testid': testId }: any) =>
     React.createElement('div', { 'data-testid': testId }, title ? React.createElement('h3', null, title) : null, actions, children, footer);
-export const Badge = ({ children, onClick, tone, size, 'data-testid': testId }: any) =>
-  React.createElement('span', { onClick, 'data-testid': testId, 'data-tone': tone, 'data-size': size }, children);
+export const Badge = ({ children, onClick, tone, size, variant, title, 'data-testid': testId }: any) =>
+  React.createElement('span', { onClick, title, 'data-testid': testId, 'data-tone': tone, 'data-size': size, 'data-variant': variant }, children);
 export const Spinner = (props: any) => props;
 export const Tooltip = (props: any) => props;
 export const QuotaGate = ({ children }: any) => React.createElement(React.Fragment, null, children);
@@ -213,7 +215,7 @@ export const Trail = ({ trail, onBack, backLabel }: any) => {
 // Comb page templates — slots render in template order with data-slot markers so specs can assert layout contract.
 const slot = (name: string, node: any) => (node ? React.createElement('div', { 'data-slot': name }, node) : null);
 export const ListPageTemplate = (p: any) =>
-  React.createElement('div', { 'data-template': 'list' },
+  React.createElement('div', { 'data-template': 'list', 'data-comb-path': 'ListPage' },
     React.createElement('header', { 'data-slot': 'header' },
       React.createElement(Trail, p), React.createElement('h1', null, p.title), p.count != null ? React.createElement('span', { 'data-slot': 'count' }, p.count) : null,
       slot('primary', p.primaryAction), slot('secondary', p.headerSecondaryActions), slot('overflow', Array.isArray(p.overflowActions) ? p.overflowActions.map((a: any) => React.createElement('button', { key: a.label, onClick: a.onSelect }, a.label)) : p.overflowActions)),
@@ -225,7 +227,7 @@ export const ListPageTemplate = (p: any) =>
     !p.isEmpty ? p.children : null,
     slot('pagination', p.pagination));
 export const DetailPageTemplate = (p: any) =>
-  React.createElement('div', { 'data-template': 'detail' },
+  React.createElement('div', { 'data-template': 'detail', 'data-comb-path': 'DetailPage' },
     React.createElement('header', { 'data-slot': 'header' },
       React.createElement(Trail, p),
       React.createElement('h1', null, p.title), slot('status', p.status), slot('meta', p.meta),
@@ -239,7 +241,7 @@ export const DetailPageTemplate = (p: any) =>
     React.createElement('main', { 'data-slot': 'main' }, p.children),
     slot('rail', p.sidePanel));
 export const FormPageTemplate = (p: any) =>
-  React.createElement('div', { 'data-template': 'form' },
+  React.createElement('div', { 'data-template': 'form', 'data-comb-path': 'FormPage' },
     React.createElement('header', { 'data-slot': 'header' }, React.createElement(Trail, p), React.createElement('h1', null, p.title)),
     (p.sections ?? []).map((sec: any) => React.createElement('section', { key: sec.id, 'data-slot': 'section' }, React.createElement('h2', null, sec.title), sec.content)),
     p.children,
@@ -258,14 +260,14 @@ export const Tabs = ({ items = [], value, onChange, end }: any) =>
     end ? React.createElement('div', { 'data-slot': 'tabs-end' }, end) : null);
 export const Skeleton = () => React.createElement('div', { 'data-testid': 'skeleton' });
 export const DashboardPageTemplate = (p: any) =>
-  React.createElement('div', { 'data-template': 'dashboard' },
+  React.createElement('div', { 'data-template': 'dashboard', 'data-comb-path': 'DashboardPage' },
     React.createElement('header', { 'data-slot': 'header' },
       React.createElement(Trail, p), React.createElement('h1', null, p.title), p.description ? React.createElement('p', null, p.description) : null,
       slot('meta', p.meta), slot('secondary-actions', p.secondaryActions), slot('primary-action', p.primaryAction)),
     slot('filters', p.filters), slot('toolbar-end', p.toolbarEnd),
     slot('kpis', p.kpis), slot('primary', p.primary), slot('secondary', p.secondary), slot('bottom', p.bottom), p.children);
 export const SettingsPageTemplate = (p: any) =>
-  React.createElement('div', { 'data-template': 'settings' },
+  React.createElement('div', { 'data-template': 'settings', 'data-comb-path': 'SettingsPage' },
     React.createElement('header', { 'data-slot': 'header' }, React.createElement(Trail, p), React.createElement('h1', null, p.title),
       p.description ? React.createElement('p', null, p.description) : null, slot('primary-action', p.primaryAction)),
     React.createElement('nav', { 'data-slot': 'sections', role: 'tablist' }, (p.sections ?? []).map((s: any) =>
@@ -297,7 +299,8 @@ export const Menu = ({ trigger, items = [], name, 'data-testid': testId }: any) 
 export const KpiCard = ({ label, value, hint, onClick, 'data-testid': testId }: any) =>
     React.createElement('div', { 'data-testid': testId, onClick }, React.createElement('span', null, label), React.createElement('span', null, value),
         hint != null && hint !== false ? React.createElement('span', { 'data-slot': 'kpi-hint' }, hint) : null);
-export const StatusBadge = ({ status, 'data-testid': testId }: any) => React.createElement('span', { 'data-testid': testId }, status);
+export const StatusBadge = ({ status, label, 'data-testid': testId }: any) => React.createElement('span', { 'data-testid': testId, 'data-status': status }, label ?? status);
+export const Link = ({ children, ...rest }: any) => React.createElement('a', rest, children);
 export const Alert = ({ title, children, variant, action, 'data-testid': testId }: any) =>
     React.createElement('div', { role: 'alert', 'data-variant': variant, 'data-testid': testId }, title ? React.createElement('p', null, title) : null, children,
         action ? React.createElement('button', { type: 'button', onClick: action.onClick }, action.label) : null);
@@ -371,7 +374,9 @@ export const DateTimePicker = ({ label, hint: _h, error, name, onChange, default
 
 // ---- Comb layout primitives: passthrough wrappers carrying data-testid / className ----
 const passthrough = (defaultTestId: string, tag = 'div') => ({ children, className, 'data-testid': testId, as, ...rest }: any) =>
-  React.createElement(as || tag, { className, 'data-testid': testId ?? defaultTestId, ...(rest['aria-label'] ? { 'aria-label': rest['aria-label'] } : {}) }, children);
+  React.createElement(as || tag, { className, 'data-testid': testId ?? defaultTestId, ...(rest['aria-label'] ? { 'aria-label': rest['aria-label'] } : {}),
+    // Grid.Item span (3 | 4 | 6 | 8 | 12 | 'full') drives the real DS column classes; expose it for layout specs.
+    ...(rest.span != null && typeof rest.span !== 'object' ? { 'data-span': String(rest.span) } : {}) }, children);
 export const GridItem = passthrough('grid-item');
 export const Grid: any = passthrough('grid');
 Grid.Item = GridItem;
@@ -400,8 +405,19 @@ export { Sparkline } from '@ds-real/components/Sparkline';
 export { TrendIndicator } from '@ds-real/components/TrendIndicator';
 // @ts-ignore -- resolved by the vitest '@ds-real' alias
 export { StatusLegend } from '@ds-real/components/StatusLegend';
-export const FileUpload = ({ name, 'aria-label': ariaLabel, accept, disabled, multiple, onChange, 'data-testid': testId }: any) =>
-  React.createElement('input', { type: 'file', name, 'aria-label': ariaLabel, accept, disabled, multiple, 'data-testid': testId, onChange: (e: any) => onChange?.(Array.from(e.target.files ?? [])) });
+// Mirrors the real FileUpload: a role="button" drop zone (UploadCloud icon + prompt)
+// whose click opens the hidden file input. No aria-label on the zone so
+// getByLabelText still resolves to the input alone.
+export const FileUpload = ({ name, 'aria-label': ariaLabel, accept, disabled, multiple, onChange, prompt, 'data-testid': testId }: any) => {
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  return React.createElement('div', {
+      role: 'button', tabIndex: disabled ? -1 : 0, 'aria-disabled': disabled || undefined,
+      onClick: () => { if (!disabled) inputRef.current?.click(); },
+    },
+    React.createElement('svg', { 'data-testid': 'icon-UploadCloud', 'aria-hidden': 'true' }),
+    prompt != null ? React.createElement('span', { 'data-slot': 'upload-prompt' }, prompt) : null,
+    React.createElement('input', { ref: inputRef, type: 'file', name, 'aria-label': ariaLabel, accept, disabled, multiple, 'data-testid': testId, onClick: (e: any) => e.stopPropagation(), onChange: (e: any) => onChange?.(Array.from(e.target.files ?? [])) }));
+};
 
 export const ChipGroup = ({ name, label, options = [], value = [], onChange, 'data-testid': testId }: any) =>
   React.createElement('div', { role: 'group', 'aria-label': label ?? name, 'data-testid': testId },
@@ -415,3 +431,12 @@ export const Banner = ({ children, action, 'data-testid': testId }: any) =>
     action ? React.createElement('button', { type: 'button', onClick: action.onClick }, action.label) : null);
 export const CustomFieldsPanel = ({ title, fields = [], 'data-testid': testId }: any) =>
   React.createElement('section', { 'aria-label': title, 'data-testid': testId ?? 'cf-panel-stub' }, fields.map((f: any) => f.field_key).join(','));
+
+export const CountUp = ({ value }: any) => React.createElement(React.Fragment, null, value);
+export const useCountUp = (v: number) => v;
+export const KpiGrid = ({ children }: any) => React.createElement('div', null, children);
+// Stepper (used by LeadJourneyStepper): renders each step label so getByText works.
+export const Stepper = ({ steps = [], current, className }: any) =>
+  React.createElement('ol', { className, 'data-testid': 'stepper' },
+    steps.map((s: any, i: number) =>
+      React.createElement('li', { key: i, 'aria-current': i === current ? 'step' : undefined }, s.label)));

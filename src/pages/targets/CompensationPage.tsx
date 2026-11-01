@@ -239,6 +239,7 @@ export default function CompensationPage() {
             label="Name"
             aria-label="Rule name"
             value={form.name}
+            error={formError === 'Rule name is required.' ? formError : undefined}
             onChange={(e: any) => setForm({ ...form, name: e.target.value })}
             placeholder="Q3 new-business bonus"
           />

@@ -5,24 +5,24 @@ import { Globe, Smartphone, ShoppingCart, UserPlus, Mail, Phone, Calendar, Store
 import { useShellBridge, useSandboxLimit } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import { crmService } from '../services/crmService';
-import { ListPageTemplate, Pagination, DataTable, SearchInput, type DataTableColumn, type FilterValues, type ListFilterConfig } from '@so360/design-system';
+import { ListPageTemplate, Pagination, DataTable, SearchInput, type DataTableColumn, type FilterValues, type ListFilterConfig, Badge, type BadgeTone } from '@so360/design-system';
 
 type SortField = 'contact_name' | 'email' | 'channel' | 'created_at';
 type SortDirection = 'asc' | 'desc' | null;
 
-const CHANNEL_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
-    storefront_web: { label: 'Web', color: 'bg-primary/10 text-primary border-primary/20', icon: Globe },
-    storefront_mobile: { label: 'Mobile', color: 'bg-primary/10 text-primary border-primary/20', icon: Smartphone },
-    pos: { label: 'POS', color: 'bg-warning/10 text-warning border-warning/20', icon: ShoppingCart },
-    manual: { label: 'Manual', color: 'bg-fg-muted/10 text-fg-subtle border-line', icon: UserPlus },
+const CHANNEL_CONFIG: Record<string, { label: string; tone: BadgeTone; icon: any }> = {
+    storefront_web: { label: 'Web', tone: 'primary' as BadgeTone, icon: Globe },
+    storefront_mobile: { label: 'Mobile', tone: 'primary' as BadgeTone, icon: Smartphone },
+    pos: { label: 'POS', tone: 'warning' as BadgeTone, icon: ShoppingCart },
+    manual: { label: 'Manual', tone: 'neutral' as BadgeTone, icon: UserPlus },
 };
 
-const ACQUISITION_SOURCE_CONFIG: Record<string, { label: string; color: string }> = {
-    storefront_registration: { label: 'Registration', color: 'bg-primary/10 text-primary border-primary/20' },
-    guest_checkout: { label: 'Guest Checkout', color: 'bg-info/10 text-info border-info/20' },
-    pos_inline: { label: 'POS', color: 'bg-warning/10 text-warning border-warning/20' },
-    manual_entry: { label: 'Manual', color: 'bg-fg-muted/10 text-fg-subtle border-line' },
-    lead_promotion: { label: 'Promoted', color: 'bg-success/10 text-success border-success/20' },
+const ACQUISITION_SOURCE_CONFIG: Record<string, { label: string; tone: BadgeTone }> = {
+    storefront_registration: { label: 'Registration', tone: 'primary' as BadgeTone },
+    guest_checkout: { label: 'Guest Checkout', tone: 'info' as BadgeTone },
+    pos_inline: { label: 'POS', tone: 'warning' as BadgeTone },
+    manual_entry: { label: 'Manual', tone: 'neutral' as BadgeTone },
+    lead_promotion: { label: 'Promoted', tone: 'success' as BadgeTone },
 };
 
 const CustomersPage = () => {
@@ -159,34 +159,28 @@ const CustomersPage = () => {
         const config = CHANNEL_CONFIG[channel] || CHANNEL_CONFIG.manual;
         const Icon = config.icon;
         return (
-            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${config.color}`}>
+            <Badge tone={config.tone} size="sm" shape="pill">
                 <Icon size={12} />
                 {config.label}
-            </span>
+            </Badge>
         );
     };
 
     const CategoryBadge = ({ category }: { category: string }) => {
         if (category === 'b2b') {
             return (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-success/10 text-success border border-success/20">
-                    <Building2 size={11} /> B2B
-                </span>
+                <Badge tone="success" size="sm"><Building2 size={11} /> B2B</Badge>
             );
         }
         return (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-fg-muted/10 text-fg-muted border border-line">
-                B2C
-            </span>
+            <Badge tone="neutral" size="sm">B2C</Badge>
         );
     };
 
     const AcquisitionBadge = ({ source }: { source: string }) => {
-        const config = ACQUISITION_SOURCE_CONFIG[source] || { label: source || '-', color: 'bg-fg-muted/10 text-fg-muted border-line' };
+        const config = ACQUISITION_SOURCE_CONFIG[source] || { label: source || '-', tone: 'neutral' as BadgeTone };
         return (
-            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${config.color}`}>
-                {config.label}
-            </span>
+            <Badge tone={config.tone} size="sm">{config.label}</Badge>
         );
     };
 
@@ -260,10 +254,10 @@ const CustomersPage = () => {
                 if (!c.referred_by) return <span className="text-fg-muted text-sm">—</span>;
                 const partner = partners.find((p: any) => p.id === c.referred_by);
                 return (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary border border-primary/20">
+                    <Badge tone="primary" size="sm">
                         <GitMerge size={11} />
                         {partner?.company_name || c.referred_by}
-                    </span>
+                    </Badge>
                 );
             },
         },

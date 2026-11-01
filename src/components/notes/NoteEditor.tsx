@@ -9,7 +9,8 @@ import { IconButton } from '@so360/design-system';
  * allowlist in notes.service.ts — anything the toolbar can't produce isn't
  * worth exposing, since the server would strip it anyway.
  */
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
+import { PromptDialog } from '../PromptDialog';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
@@ -50,6 +51,8 @@ function ToolbarButton({
 }
 
 export default function NoteEditor({ value, onChange, placeholder, autoFocus }: NoteEditorProps) {
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [linkInitial, setLinkInitial] = useState('https://');
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ heading: false, horizontalRule: false }),
@@ -69,7 +72,7 @@ export default function NoteEditor({ value, onChange, placeholder, autoFocus }: 
         role: 'textbox',
         'aria-multiline': 'true',
         class:
-          'min-h-[6rem] text-sm text-fg focus:outline-none [&_p]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-primary [&_a]:underline [&_code]:bg-surface-raised [&_code]:px-1 [&_code]:rounded [&_pre]:bg-surface-raised [&_pre]:p-2 [&_pre]:rounded [&_pre]:overflow-x-auto',
+          'min-h-24 text-sm text-fg focus:outline-none [&_p]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-primary [&_a]:underline [&_code]:bg-surface-raised [&_code]:px-1 [&_code]:rounded [&_pre]:bg-surface-raised [&_pre]:p-2 [&_pre]:rounded [&_pre]:overflow-x-auto',
       },
     },
   });
@@ -78,8 +81,12 @@ export default function NoteEditor({ value, onChange, placeholder, autoFocus }: 
 
   const setLink = () => {
     const previous = editor.getAttributes('link').href as string | undefined;
-    const url = window.prompt('Link URL', previous ?? 'https://');
-    if (url === null) return;
+    setLinkInitial(previous ?? 'https://');
+    setLinkOpen(true);
+  };
+
+  const applyLink = (url: string) => {
+    setLinkOpen(false);
     if (url === '') {
       editor.chain().focus().extendMarkRange('link').unsetLink().run();
       return;
@@ -89,6 +96,13 @@ export default function NoteEditor({ value, onChange, placeholder, autoFocus }: 
 
   return (
     <div data-testid="note-editor">
+      <PromptDialog
+        open={linkOpen}
+        title="Link URL"
+        fields={[{ name: 'url', label: 'Link URL', initialValue: linkInitial }]}
+        onSubmit={(v) => applyLink(v.url.trim())}
+        onClose={() => setLinkOpen(false)}
+      />
       <div className="flex items-center gap-1 pb-2 mb-2 border-b border-line">
         <ToolbarButton label="Bold" active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()}>
           <Bold size={14} />

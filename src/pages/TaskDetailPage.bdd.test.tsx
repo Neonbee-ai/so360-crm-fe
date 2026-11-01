@@ -37,7 +37,7 @@ vi.mock('react-router-dom', () => ({
   Link: ({ children, to, ...props }: any) => <a href={to} {...props}>{children}</a>,
 }));
 
-vi.mock('@so360/shell-context', () => ({
+vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOriginal<any>()),
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   ShellContext: React.createContext({ user: { id: 'user-1' } }),
   useActivity: () => ({ recordActivity: (...a: any[]) => mockRecordActivity(...a) }),
@@ -117,6 +117,14 @@ describe('TaskDetailPage', () => {
       await waitFor(() => expect(screen.getByText('Back to Tasks')).toBeInTheDocument());
       fireEvent.click(screen.getByText('Back to Tasks'));
       expect(mockNavigate).toHaveBeenCalledWith('/crm/tasks');
+    });
+
+    it('When rendered / Then the not-found state renders inside a Comb root so the page settles', async () => {
+      mockGetTaskById.mockResolvedValue(null);
+      const { container } = render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('Task not found.')).toBeInTheDocument());
+      // Real DS floorplans carry data-comb-path; the vitest DS stub marks the same Comb detail root as data-template="detail".
+      expect(container.querySelector('[data-comb-path], [data-template="detail"]')).not.toBeNull();
     });
   });
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Save, Send, CheckCircle, XCircle, FileText, Plus, Trash2, Edit2, Package, Printer, RotateCcw, Clock, Users, ShieldAlert } from 'lucide-react';
+import { Save, Send, CheckCircle, XCircle, FileText, Plus, Trash2, Edit2, Package, Printer, RotateCcw, Clock, Users, ShieldAlert, Download } from 'lucide-react';
+import { canDownloadQuotePdf, downloadQuotePdf } from '../utils/quotePdfDownload';
 import { Modal } from '../components/common/Modal';
 import { crmService } from '../services/crmService';
 import { toast, getErrorMessage, useConfirm, DetailPageTemplate, Button, Card, Badge, Alert, TextField, Textarea, Select, DataTable, IconButton, type DataTableColumn, type BadgeTone, Grid, GridItem, EmptyState } from '@so360/design-system';
@@ -16,6 +17,7 @@ import { PriceListSelect } from '../components/PriceListSelect';
 import { QuotePreviewModal } from '../components/QuotePreviewModal';
 import { quoteLinePreTaxAmount, quoteTotals } from '../utils/quoteLineAmounts';
 import { describeReason } from '../services/salesConfigService';
+import { ProposalEstimatorPanel } from '../components/estimator/ProposalEstimatorPanel';
 import { QuoteApprovalModal } from '../components/quotes/QuoteApprovalModal';
 import { QuoteApprovalHistory, ApprovalRequestRecord } from '../components/quotes/QuoteApprovalHistory';
 
@@ -29,6 +31,17 @@ const statusConfig: Record<QuoteStatus, { bg: string; text: string; label: strin
     converted: { bg: 'bg-primary/20', text: 'text-primary', label: 'Converted', tone: 'primary' },
     expired: { bg: 'bg-fg-muted/20', text: 'text-fg-subtle', label: 'Expired', tone: 'neutral' },
 };
+
+/**
+ * Read mode drops line-item columns no line uses (Stock without catalogue items, 0% discount, 0% tax), like Zoho/QuickBooks,
+ * so the table fits the card and Amount is never clipped. Totals still show discount and tax. Edit mode keeps every column.
+ */
+function quoteLineColumnHasData(key: string, lines: Array<{ item_id?: string | null; discount_percent?: number | null; tax_rate?: number | null }>): boolean {
+    if (key === 'stock') return lines.some((l) => !!l.item_id);
+    if (key === 'discount_percent') return lines.some((l) => Number(l.discount_percent) > 0);
+    if (key === 'tax_rate') return lines.some((l) => Number(l.tax_rate) > 0);
+    return true;
+}
 
 const QuoteDetailPage = () => {
     const [confirm, confirmDialog] = useConfirm();
@@ -119,6 +132,14 @@ const QuoteDetailPage = () => {
         }).catch(() => {});
     }, [lines]);
 
+    // The customer record resolves after the quote, so the dialog can open
+    // before it arrives. Fill the blank recipient once it lands (fires only on
+    // customer change, so a recipient the user cleared stays cleared).
+    useEffect(() => {
+        const email = customer?.contact_email;
+        if (email) setSendTo(prev => prev || email);
+    }, [customer]);
+
     const openSendModal = () => {
         // Prefill with the address on file; the user can redirect it to a
         // procurement mailbox, which is common for B2B quotes.
@@ -172,7 +193,13 @@ const QuoteDetailPage = () => {
             setQuote(data);
             setCustomer(null);
             fetchApprovalHistory(id!);
-            if (data.customer_id) {
+            if (data.customer !== undefined) {
+                // crm-be resolves the linked customer server-side (null when the
+                // quote has none or the customer lead was deleted), so the page
+                // never requests a lead that no longer exists.
+                setCustomer((data.customer as Lead | null) ?? null);
+            } else if (data.customer_id) {
+                // Older crm-be without the embed: resolve the customer here.
                 crmService
                     .getLeadById(data.customer_id)
                     .then((c) => setCustomer(c ?? null))
@@ -475,6 +502,13 @@ const QuoteDetailPage = () => {
         sellerState: (currentOrg as any)?.billing_address?.state,
         sellerCountry: (currentOrg as any)?.billing_address?.country,
     });
+    const handleDownloadPdf = async () => {
+        try {
+            await downloadQuotePdf(quote);
+        } catch (err: any) {
+            toast.error(getErrorMessage(err) || 'Unable to download the quote PDF.');
+        }
+    };
     const handlePrint = () => shell?.printDocument?.('sales_quote', buildDocData());
 
     // Header actions: one primary (first available by priority), at most 2
@@ -505,6 +539,8 @@ const QuoteDetailPage = () => {
         ...(canCreateQuote && canEdit && !isEditing ? [{ label: 'Edit', onSelect: () => setIsEditing(true), icon: <Edit2 className="w-4 h-4" /> }] : []),
         ...(canWithdraw && !isEditing ? [{ label: 'Withdraw Request', onSelect: () => setShowWithdrawModal(true), icon: <RotateCcw className="w-4 h-4" /> }] : []),
         ...(!isEditing && primaryKey !== 'email' ? [{ label: 'Email to Customer', onSelect: openSendModal, icon: <Send className="w-4 h-4" /> }] : []),
+        // Download PDF is a header action (ServiceTitan/Procore show it visibly); it only drops to overflow when both slots are taken.
+        ...(!isEditing && canDownloadQuotePdf(shell) ? [{ label: 'Download PDF', onSelect: handleDownloadPdf, icon: <Download className="w-4 h-4" /> }] : []),
     ];
     const secondaryActions = secondaryCandidates.slice(0, 2).map(c => (
         <Button key={c.label} variant="secondary" onClick={c.onSelect}>{c.icon}{c.label}</Button>
@@ -560,20 +596,22 @@ const QuoteDetailPage = () => {
                                 <Button
                                     variant="secondary"
                                     onClick={() => navigate(`/crm/customers/${customer.id}`)}
-                                    className="w-full !justify-start !text-left"
+                                    className="w-full !h-auto !justify-start !whitespace-normal !text-left !py-nb-2"
                                 >
-                                    <p className="font-medium text-fg">
-                                        {customer.company_name || customer.contact_name || '—'}
-                                    </p>
-                                    {customer.company_name && customer.contact_name && (
-                                        <p className="text-sm text-fg-subtle">{customer.contact_name}</p>
-                                    )}
+                                    <span className="flex min-w-0 flex-col items-start">
+                                        <span className="break-words font-medium text-fg">
+                                            {customer.company_name || customer.contact_name || '—'}
+                                        </span>
+                                        {customer.company_name && customer.contact_name && (
+                                            <span className="break-words text-sm text-fg-subtle">{customer.contact_name}</span>
+                                        )}
+                                    </span>
                                 </Button>
                                 <div className="mt-4 space-y-2 text-sm">
                                     {customer.contact_email && (
                                         <div className="flex justify-between gap-3">
                                             <span className="text-fg-subtle">Email</span>
-                                            <span className="text-fg-subtle truncate">{customer.contact_email}</span>
+                                            <span className="min-w-0 break-all text-right text-fg-subtle">{customer.contact_email}</span>
                                         </div>
                                     )}
                                     {customer.phone && (
@@ -585,7 +623,7 @@ const QuoteDetailPage = () => {
                                     {customer.tax_id && (
                                         <div className="flex justify-between gap-3">
                                             <span className="text-fg-subtle">Tax ID</span>
-                                            <span className="text-fg-subtle truncate">{customer.tax_id}</span>
+                                            <span className="min-w-0 break-all text-right text-fg-subtle">{customer.tax_id}</span>
                                         </div>
                                     )}
                                 </div>
@@ -710,7 +748,7 @@ const QuoteDetailPage = () => {
                             rows={lines.map((line, index) => ({ line, index }))}
                             rowKey={(r) => r.line.id || `new-${r.index}`}
                             emptyState={<span className="text-fg-subtle">No line items added yet</span>}
-                            columns={[
+                            columns={([
                                 {
                                     key: 'description',
                                     header: 'Description',
@@ -721,7 +759,7 @@ const QuoteDetailPage = () => {
                                                 type="button"
                                                 variant="secondary"
                                                 onClick={() => setPickerLineIndex(index)}
-                                                className="w-full !justify-start !text-left"
+                                                className="w-full !h-auto !justify-start !whitespace-normal !text-left !py-nb-2"
                                             >
                                                 {line.item_image_url ? (
                                                     <img src={line.item_image_url} alt="" className="w-6 h-6 rounded object-cover flex-shrink-0" />
@@ -730,11 +768,11 @@ const QuoteDetailPage = () => {
                                                 )}
                                                 {line.item_name ? (
                                                     <span className="flex-1 min-w-0">
-                                                        <span className="text-fg truncate block">{line.item_name}</span>
-                                                        <span className="flex items-center gap-1 mt-0.5">
-                                                            <span className="text-xs px-1.5 py-0.5 bg-fg-muted/20 text-fg-subtle rounded">{line.sku}</span>
+                                                        <span className="block break-words text-fg">{line.item_name}</span>
+                                                        <span className="flex flex-wrap items-center gap-1 mt-0.5">
+                                                            <Badge size="sm" tone="neutral">{line.sku}</Badge>
                                                             {line.sub_sku && line.sub_sku !== 'NIL' && (
-                                                                <span className="text-xs px-1.5 py-0.5 bg-primary/50 text-primary rounded">{line.sub_sku}</span>
+                                                                <Badge size="sm" tone="primary">{line.sub_sku}</Badge>
                                                             )}
                                                         </span>
                                                     </span>
@@ -755,13 +793,13 @@ const QuoteDetailPage = () => {
                                             {line.item_image_url && (
                                                 <img src={line.item_image_url} alt="" className="w-8 h-8 rounded object-cover flex-shrink-0 mt-0.5" />
                                             )}
-                                            <div className="min-w-0">
-                                                <span className="text-fg block">{line.description}</span>
+                                            <div className="min-w-0 max-w-md" data-testid="quote-line-description">
+                                                <span className="text-fg block whitespace-normal [overflow-wrap:anywhere]">{line.description}</span>
                                                 {line.sku && (
                                                     <span className="flex items-center gap-1 mt-0.5">
-                                                        <span className="text-xs px-1.5 py-0.5 bg-fg-muted/20 text-fg-subtle rounded">{line.sku}</span>
+                                                        <Badge size="sm" tone="neutral">{line.sku}</Badge>
                                                         {line.sub_sku && line.sub_sku !== 'NIL' && (
-                                                            <span className="text-xs px-1.5 py-0.5 bg-primary/40 text-primary rounded">{line.sub_sku}</span>
+                                                            <Badge size="sm" tone="primary">{line.sub_sku}</Badge>
                                                         )}
                                                     </span>
                                                 )}
@@ -780,11 +818,11 @@ const QuoteDetailPage = () => {
                                             stock === undefined ? (
                                                 <span className="text-xs text-fg-muted">—</span>
                                             ) : isOOS ? (
-                                                <span className="text-xs font-medium text-danger bg-danger/10 px-2 py-0.5 rounded">OOS</span>
+                                                <Badge tone="danger" size="sm">OOS</Badge>
                                             ) : isLowStock ? (
-                                                <span className="text-xs font-medium text-warning bg-warning/10 px-2 py-0.5 rounded">{stock} avail</span>
+                                                <Badge tone="warning" size="sm">{stock} avail</Badge>
                                             ) : (
-                                                <span className="text-xs font-medium text-success bg-success/10 px-2 py-0.5 rounded">{stock} avail</span>
+                                                <Badge tone="success" size="sm">{stock} avail</Badge>
                                             )
                                         ) : (
                                             <span className="text-xs text-fg-subtle">—</span>
@@ -876,13 +914,13 @@ const QuoteDetailPage = () => {
                                         <IconButton label={`Remove line ${index + 1}`} variant="danger" icon={<Trash2 className="w-4 h-4" />} onClick={() => removeLine(index)} />
                                     ),
                                 }] : []),
-                            ] as DataTableColumn<QuoteLineRow>[]}
+                            ] as DataTableColumn<QuoteLineRow>[]).filter((c) => isEditing || quoteLineColumnHasData(c.key, lines))}
                         />
 
                         {/* Totals */}
                         <div className="mt-6 pt-4 border-t border-line">
                             <div className="flex justify-end">
-                                <div className="w-64 space-y-2">
+                                <div className="w-64 max-w-full min-w-0 space-y-2">
                                     <div className="flex justify-between text-fg-subtle">
                                         <span>Subtotal</span>
                                         <span>{formatCurrency(totals.subtotal)}</span>
@@ -1000,6 +1038,8 @@ const QuoteDetailPage = () => {
                             </div>
                         </div>
                     </Card>
+
+                    <ProposalEstimatorPanel price={totals.grandTotal} formatCurrency={formatCurrency} />
 
                     {/* Approval History Audit Trail */}
                     <QuoteApprovalHistory

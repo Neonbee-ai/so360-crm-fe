@@ -1,6 +1,7 @@
 import React from 'react';
 import { Deal } from '../../types/crm';
 import { Calendar, TrendingUp, Lock } from 'lucide-react';
+import { Badge } from '@so360/design-system';
 import { useCRMFormatters } from '../../utils/formatters';
 
 interface KanbanStage {
@@ -156,14 +157,13 @@ export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: Kanba
                         {/* Stage Header — a non-scrolling flex item, so it stays put while
                             the drop zone below it scrolls independently. */}
                         <div className="flex-shrink-0 flex items-center justify-between px-2">
-                            <h3
-                                className="font-semibold text-fg flex items-center gap-2 text-sm"
-                                style={{ color: accentColor }}
-                            >
+                            {/* Stage colour lives on the drop zone's top border; the
+                                header text stays text-fg so it meets 4.5:1 contrast. */}
+                            <h3 className="font-semibold text-fg flex items-center gap-2 text-sm">
                                 {stage.name}
-                                <span className="text-xs bg-fg-muted/20 text-fg-muted px-2 py-0.5 rounded-full font-semibold">
+                                <Badge size="sm" tone="neutral" shape="pill">
                                     {stageDeals.length}
-                                </span>
+                                </Badge>
                                 {stage.is_terminal && (
                                     <Lock size={11} className="text-fg-muted" />
                                 )}
@@ -197,7 +197,7 @@ export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: Kanba
                                     onClick={() => onDealClick(deal)}
                                     className={`bg-surface border p-4 rounded-nb transition-all cursor-grab active:cursor-grabbing group ${draggedDealId === deal.id
                                         ? 'border-primary/50 scale-95'
-                                        : 'border-line hover:border-primary/50 hover:shadow-xl hover:shadow-primary/20'
+                                        : 'border-line hover:border-primary/50'
                                         }`}
                                 >
                                     <div className="flex justify-between items-start mb-2">
@@ -224,9 +224,9 @@ export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: Kanba
                                                 <span className="text-xs font-semibold text-fg">{formatters.formatCurrency(deal.value)}</span>
                                             </div>
                                         </div>
-                                        <span className="text-xs text-fg-muted font-bold flex items-center gap-1 bg-fg-muted/10 px-1.5 py-0.5 rounded">
+                                        <Badge size="sm" tone="neutral">
                                             <Calendar size={10} className="text-fg-muted" /> {deal.expected_close_date}
-                                        </span>
+                                        </Badge>
                                     </div>
                                 </div>
                             ))}

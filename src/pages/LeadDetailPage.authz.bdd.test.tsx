@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import { vi, describe, test, expect, beforeEach } from 'vitest';
 import LeadDetailPage from './LeadDetailPage';
 
@@ -69,7 +69,7 @@ vi.mock('react-router-dom', () => ({
   NavLink: ({ children }: any) => children,
 }));
 
-vi.mock('@so360/shell-context', () => ({
+vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOriginal<any>()),
   useCurrentEntity: () => ({ setCurrentEntity: vi.fn() }),
   useShellBridge: () => ({
     tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee',
@@ -169,9 +169,30 @@ describe('Given LeadDetailPage and a lead that genuinely does not exist', () => 
     render(<LeadDetailPage />);
 
     await waitFor(() => {
-      expect(screen.getByText(/lead not found/i)).toBeTruthy();
+      expect(screen.getByText('Lead not found.')).toBeTruthy();
     });
     expect(screen.queryByText(/permission to view this lead/i)).toBeNull();
+  });
+});
+
+describe('Given LeadDetailPage opened with a malformed or unknown id (API answers 400)', () => {
+  test('When the lead fetch rejects with 400 / Then a settled not-found page with a way back is shown', async () => {
+    const bad = Object.assign(new Error('Validation failed (uuid is expected)'), { status: 400 });
+    mockCrmService.getLeadById.mockRejectedValueOnce(bad);
+    mockCrmService.getDealsByLeadId.mockRejectedValueOnce(bad);
+    mockCrmService.getTasksByLeadId.mockRejectedValueOnce(bad);
+    mockCrmService.getDocumentsByLeadId.mockRejectedValueOnce(bad);
+
+    const { container } = render(<LeadDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Lead not found.')).toBeTruthy();
+    });
+    // The trail has its own back control; the way back asserted here is the not-found state's action.
+    expect(within(screen.getByTestId('empty-state')).getByRole('button', { name: /back to leads/i })).toBeTruthy();
+    expect(screen.queryByText(/permission to view this lead/i)).toBeNull();
+    expect(screen.queryByText(/loading lead workspace/i)).toBeNull();
+    expect(container.querySelector('[data-comb-path]')).not.toBeNull();
   });
 });
 

@@ -1,23 +1,23 @@
 import React from 'react';
 import { Star, Mail, Phone, Link2, XCircle, MailX, Edit2, Trash2 } from 'lucide-react';
-import { IconButton, Button } from '@so360/design-system';
+import { Badge, IconButton, Button, type BadgeTone } from '@so360/design-system';
 import { Stakeholder } from '../../types/crm';
 import { ROLE_LABELS } from './StakeholderRolesEditor';
 
-const STRENGTH_STYLE: Record<string, string> = {
-    very_strong: 'bg-success/10 text-success border-success/20',
-    strong: 'bg-primary/10 text-primary border-primary/20',
-    moderate: 'bg-surface-raised text-fg-subtle border-line',
-    weak: 'bg-warning/10 text-warning border-warning/20',
-    no_relationship: 'bg-surface text-fg-muted border-line',
+const STRENGTH_TONE: Record<string, BadgeTone> = {
+    very_strong: 'success',
+    strong: 'primary',
+    moderate: 'neutral',
+    weak: 'warning',
+    no_relationship: 'neutral',
 };
 
-const COMMITTEE_STYLE: Record<string, string> = {
-    primary_decision_maker: 'bg-info/10 text-info border-info/20',
-    strong_supporter: 'bg-success/10 text-success border-success/20',
-    neutral: 'bg-surface-raised text-fg-subtle border-line',
-    opposed: 'bg-danger/10 text-danger border-danger/20',
-    unknown: 'bg-surface text-fg-muted border-line',
+const COMMITTEE_TONE: Record<string, BadgeTone> = {
+    primary_decision_maker: 'info',
+    strong_supporter: 'success',
+    neutral: 'neutral',
+    opposed: 'danger',
+    unknown: 'neutral',
 };
 
 interface Props {
@@ -39,7 +39,7 @@ const StakeholderCard: React.FC<Props> = ({ stakeholder, onEdit, onDelete, onOpe
                         <div className="flex items-center gap-1.5">
                             <span className="font-medium text-fg text-xs">{stakeholder.full_name || 'Unnamed'}</span>
                             {stakeholder.is_primary_contact && <Star size={12} className="text-warning fill-warning" />}
-                            {!stakeholder.is_active && <span className="text-xs bg-surface-raised text-fg-muted px-1.5 py-0.5 rounded font-medium">Inactive</span>}
+                            {!stakeholder.is_active && <Badge size="sm" tone="neutral">Inactive</Badge>}
                         </div>
                         <p className="text-xs text-fg-muted">
                             {[stakeholder.job_title, stakeholder.department].filter(Boolean).join(' · ') || '—'}
@@ -54,28 +54,28 @@ const StakeholderCard: React.FC<Props> = ({ stakeholder, onEdit, onDelete, onOpe
 
             <div className="mt-3 flex flex-wrap items-center gap-1.5">
                 {stakeholder.roles.map((role) => (
-                    <span key={role} className="text-xs bg-surface-raised text-fg-subtle px-1.5 py-0.5 rounded font-medium">
+                    <Badge key={role} size="sm" tone="neutral">
                         {ROLE_LABELS[role] || role}
-                    </span>
+                    </Badge>
                 ))}
             </div>
 
             <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${COMMITTEE_STYLE[stakeholder.buying_committee_role]}`}>
+                <Badge size="sm" tone={COMMITTEE_TONE[stakeholder.buying_committee_role] ?? 'neutral'}>
                     {stakeholder.buying_committee_role.replace(/_/g, ' ')}
-                </span>
-                <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${STRENGTH_STYLE[stakeholder.relationship_strength]}`}>
+                </Badge>
+                <Badge size="sm" tone={STRENGTH_TONE[stakeholder.relationship_strength] ?? 'neutral'}>
                     {stakeholder.relationship_strength.replace(/_/g, ' ')}
-                </span>
+                </Badge>
                 {stakeholder.do_not_contact && (
-                    <span className="text-xs px-2 py-0.5 rounded-full border border-danger/20 bg-danger/10 text-danger font-medium flex items-center gap-1">
+                    <Badge size="sm" tone="danger">
                         <XCircle size={9} /> Do Not Contact
-                    </span>
+                    </Badge>
                 )}
                 {stakeholder.marketing_opt_out && (
-                    <span className="text-xs px-2 py-0.5 rounded-full border border-warning/20 bg-warning/10 text-warning font-medium flex items-center gap-1">
+                    <Badge size="sm" tone="warning">
                         <MailX size={9} /> Opted Out
-                    </span>
+                    </Badge>
                 )}
             </div>
 

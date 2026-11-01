@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
-import { DashboardPageTemplate, Card, ListFilters, DataTable, Grid, Button } from '@so360/design-system';
+import { DashboardPageTemplate, Card, ListFilters, DataTable, Grid, Button, Skeleton } from '@so360/design-system';
 import { useSalesFilterConfig } from './components/SalesFiltersBar';
 import {
     salesReportService,
@@ -97,7 +97,11 @@ const CommissionReportPage: React.FC = () => {
     if (rangeInvalid) {
         body = <div role="alert" className="text-xs text-danger">{rangeError}</div>;
     } else if (loading) {
-        body = <div role="status" className="p-8 text-sm text-fg-subtle">Loading commission report…</div>;
+        body = <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4">
+                <Skeleton variant="rect" />
+                <Skeleton variant="text" lines={3} />
+                <span className="sr-only">Loading commission report…</span>
+            </div>;
     } else if (forbidden) {
         body = (
             <div data-testid="commission-report-forbidden" className="p-10 text-center bg-surface border border-line rounded-nb-lg text-sm text-fg-subtle">

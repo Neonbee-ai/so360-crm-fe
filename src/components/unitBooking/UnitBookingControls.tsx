@@ -38,7 +38,7 @@ export function UnitBookingControls({
 
     return (
         <div className="flex items-center gap-2 flex-wrap mb-3" data-testid="unit-booking-controls">
-            <div className="flex-1 min-w-[8rem]">
+            <div className="flex-1 min-w-32">
                 <Select
                     name="unit-booking-project"
                     aria-label="Project"

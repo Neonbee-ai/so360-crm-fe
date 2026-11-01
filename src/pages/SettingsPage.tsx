@@ -1,8 +1,9 @@
+import { insertOpenStage } from '../utils/dealStageOrder';
 import React, { useState, useEffect, useRef } from 'react';
 import { crmService, settingsApi } from '../services/crmService';
 import { CRMSettings, SourceTypeOption, LeadScoringRule, ScoreCategory } from '../types/crm';
 import { Save, AlertCircle, Edit2, Archive, Plus, Trash2, Loader2, Zap, Trophy, ShieldCheck, ToggleLeft, ToggleRight, X, Check, RefreshCw } from 'lucide-react';
-import { Banner, toast, SettingsPageTemplate, Button, IconButton, TextField, Select, Card, ColorPicker, Grid, GridItem } from '@so360/design-system';
+import { Banner, toast, SettingsPageTemplate, Button, IconButton, TextField, Select, Card, ColorPicker, Grid, GridItem, Skeleton, Badge } from '@so360/design-system';
 import { StageStatusSelect } from '../components/common/StageStatusSelect';
 import { useShellBridge } from '@so360/shell-context';
 import DealNamingSettingsTab from './components/settings/DealNamingSettingsTab';
@@ -88,9 +89,10 @@ const BLANK_RULE: Partial<LeadScoringRule> = {
     priority: 0,
 };
 
-const SettingsPage = ({ onOpenIcps, onOpenDataSettings }: { onOpenIcps?: () => void; onOpenDataSettings?: () => void } = {}) => {
+const SettingsPage = ({ onOpenIcps, onOpenDataSettings, onOpenEstimator, onOpenFlow }: { onOpenIcps?: () => void; onOpenDataSettings?: () => void; onOpenEstimator?: () => void; onOpenFlow?: () => void } = {}) => {
     const shell = useShellBridge();
     const icpEnabled = useCrmFeatureFlag('submodule:crm:icp_manager');
+    const estimatorEnabled = useCrmFeatureFlag('submodule:crm:proposal_estimator');
     const canWriteSettings = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('submodule:crm:settings') ?? true);
     const dlCustomFields = useCrmFeatureFlag(DL_CUSTOM_FIELDS_FLAG);
     const assignmentEnabled = useCrmFeatureFlag(RE_FLAGS.LEAD_ASSIGNMENT);
@@ -391,7 +393,7 @@ const SettingsPage = ({ onOpenIcps, onOpenDataSettings }: { onOpenIcps?: () => v
         };
         setSettings({
             ...settings,
-            deal_stages: [...settings.deal_stages, newStage]
+            deal_stages: insertOpenStage(settings.deal_stages, newStage)
         });
     };
 
@@ -507,9 +509,10 @@ const SettingsPage = ({ onOpenIcps, onOpenDataSettings }: { onOpenIcps?: () => v
 
     if (isLoading || !settings) {
         return (
-            <div className="h-full flex items-center justify-center text-fg-muted gap-3">
-                <Loader2 className="animate-spin" />
-                <span>Loading settings...</span>
+            <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4">
+                <Skeleton variant="rect" />
+                <Skeleton variant="text" lines={3} />
+                <span className="sr-only">Loading settings...</span>
             </div>
         );
     }
@@ -519,10 +522,13 @@ const SettingsPage = ({ onOpenIcps, onOpenDataSettings }: { onOpenIcps?: () => v
             trail={[]}
             title="CRM Settings"
             description="Configure your workspace and custom data points"
-            primaryAction={(canWriteSettings || (icpEnabled && onOpenIcps)) ? (
-                <div className="flex items-center gap-nb-2">
+            primaryAction={(canWriteSettings || (icpEnabled && onOpenIcps) || (estimatorEnabled && onOpenEstimator)) ? (
+                <div className="flex min-w-0 max-w-full flex-wrap items-center justify-end gap-nb-2 max-md:justify-start">
                     {icpEnabled && onOpenIcps && (
-                        <Button variant="secondary" onClick={onOpenIcps} data-testid="settings-open-icps">Ideal customers</Button>
+                        <Button variant="secondary" onClick={onOpenIcps} data-testid="settings-open-icps" className="max-md:min-w-0 max-md:whitespace-normal">Ideal customers</Button>
+                    )}
+                    {estimatorEnabled && onOpenEstimator && (
+                        <Button variant="secondary" onClick={onOpenEstimator} data-testid="settings-open-estimator" className="max-md:min-w-0 max-md:whitespace-normal">Estimator</Button>
                     )}
                     {canWriteSettings && (<>
                     {isDirty && !isSaving && (
@@ -620,7 +626,13 @@ const SettingsPage = ({ onOpenIcps, onOpenDataSettings }: { onOpenIcps?: () => v
 
                 {activeTab === 'lead-stages' && (
                     <Card title="Lead Lifecycle Stages" padding="none">
-                        <p className="px-nb-4 pt-nb-3 text-xs text-fg-muted">Managed in the Flow module — edit the CRM lead workflow to change these stages</p>
+                        <Banner
+                            variant="info"
+                            data-testid="crm-lead-stages-flow-banner"
+                            action={onOpenFlow ? { label: 'Open in Flow', onClick: onOpenFlow } : undefined}
+                        >
+                            Lead stages are managed in the Flow module. To add or change a stage, edit the CRM lead workflow in Flow.
+                        </Banner>
                         <div className="p-6">
                             <div className="space-y-3">
                                 {settings.lead_stages.map((stage, idx) => (
@@ -934,7 +946,7 @@ const SettingsPage = ({ onOpenIcps, onOpenDataSettings }: { onOpenIcps?: () => v
                                             <span className="ml-2 text-xs font-semibold text-fg-muted">{option.value}</span>
                                         </div>
                                         {option.is_system && (
-                                            <span className="text-xs font-semibold bg-primary/10 text-primary border border-line px-2 py-0.5 rounded-full">System</span>
+                                            <Badge tone="primary" size="sm" shape="pill">System</Badge>
                                         )}
                                         {canWriteSettings && (
                                             <div className="flex items-center gap-2">
@@ -1032,9 +1044,9 @@ const SettingsPage = ({ onOpenIcps, onOpenDataSettings }: { onOpenIcps?: () => v
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2 mb-0.5">
                                                     <span className="text-sm font-bold text-fg truncate">{rule.name}</span>
-                                                    <span className={`text-xs font-semibold px-1.5 py-0.5 rounded shrink-0 ${rule.rule_type === 'source' ? 'bg-primary/10 text-primary' : rule.rule_type === 'activity' ? 'bg-info/10 text-info' : 'bg-warning/10 text-warning'}`}>
+                                                    <Badge size="sm" tone={rule.rule_type === 'source' ? 'primary' : rule.rule_type === 'activity' ? 'info' : 'warning'}>
                                                         {rule.rule_type === 'source' ? 'Source' : rule.rule_type === 'activity' ? 'Activity' : 'Field'}
-                                                    </span>
+                                                    </Badge>
                                                 </div>
                                                 <p className="text-xs text-fg-muted font-bold truncate">
                                                     {getTargetLabel(rule)} — {getRuleConditionLabel(rule)}
@@ -1246,7 +1258,7 @@ function ScoringRuleForm({
             </Grid>
 
             {/* Row 3: Points + Active + Actions */}
-            <div className="flex items-end gap-4">
+            <div className="flex flex-wrap items-end gap-4">
                 <div className="w-32">
                     <label className={labelCls}>Score Points</label>
                     <TextField

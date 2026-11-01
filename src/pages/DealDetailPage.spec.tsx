@@ -190,3 +190,43 @@ describe('Given DealDetailPage — Deal Lifecycle Management', () => {
     });
   });
 });
+
+describe('Given DealDetailPage — side panel failures are non-fatal', () => {
+  const namedDeal = { ...mockDeal, name: 'AQA-77 Deal' };
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    mockCrmService.getDealById.mockResolvedValue(namedDeal);
+    mockCrmService.getNotesByDealId.mockResolvedValue([]);
+    mockCrmService.getActivitiesByDealId.mockResolvedValue([]);
+    mockCrmService.getTasksByDealId.mockResolvedValue([]);
+    mockCrmService.getDocumentsByDealId.mockResolvedValue([]);
+    mockCrmService.getUsers.mockResolvedValue([]);
+    mockCrmService.getSettings.mockResolvedValue({});
+    mockCrmService.getFulfillmentOrderByDeal.mockResolvedValue(null);
+  });
+
+  test.each([
+    ['getNotesByDealId'],
+    ['getDocumentsByDealId'],
+    ['getTasksByDealId'],
+    ['getActivitiesByDealId'],
+    ['getSettings'],
+    ['getUsers'],
+  ] as const)('Given %s rejects (e.g. net::ERR_FAILED) / When the page loads / Then the deal name still renders and "Deal not found" is not shown', async (fn) => {
+    (mockCrmService as any)[fn].mockRejectedValue(new Error('Network Error'));
+    render(<DealDetailPage />);
+    await waitFor(() => {
+      expect(screen.queryAllByText('AQA-77 Deal').length).toBeGreaterThan(0);
+    });
+    expect(screen.queryByText('Deal not found.')).toBeNull();
+  });
+
+  test('Given the deal itself cannot be loaded / When the page loads / Then the not-found state is shown', async () => {
+    mockCrmService.getDealById.mockResolvedValue(undefined);
+    render(<DealDetailPage />);
+    await waitFor(() => {
+      expect(screen.queryByText('Deal not found.')).not.toBeNull();
+    });
+  });
+});

@@ -109,6 +109,14 @@ vi.mock('./components/QuickActionBar', () => ({
   ),
 }));
 vi.mock('./components/LeadLayoutSettingsPanel', () => ({ default: () => null }));
+vi.mock('../components/customFields/DlCustomFieldsPanel', () => ({
+  DL_CUSTOM_FIELDS_FLAG: 'submodule:crm:dl_custom_fields',
+  DlCustomFieldsPanel: ({ recordId }: any) => <div data-testid="dl-custom-fields-panel">DL fields for {recordId}</div>,
+}));
+
+vi.mock('../components/customFields/PartnerDlCustomFields', () => ({
+  PartnerDlCustomFields: ({ corePartnerId }: any) => <div data-testid="partner-dl-custom-fields-panel">Partner fields for {corePartnerId}</div>,
+}));
 
 const mockNavigate = vi.fn();
 let mockPathname = '/crm/leads/lead-1';
@@ -119,7 +127,7 @@ vi.mock('react-router-dom', () => ({
   Link: ({ children, to, ...props }: any) => <a href={to} {...props}>{children}</a>,
 }));
 
-vi.mock('@so360/shell-context', () => ({
+vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOriginal<any>()),
   useShell: () => ({ isModuleEnabled: () => false }),
   useCurrentEntity: () => ({ setCurrentEntity: mockSetCurrentEntity }),
   useActivity: () => ({ recordActivity: async () => {} }),
@@ -134,6 +142,17 @@ vi.mock('@so360/design-system', async (importOriginal) => {
   return {
     ...actual,
     toast: { ...actual.toast, success: mockShowSuccess, error: mockShowError },
+    // Mirror the real DS FileUpload contract: a role="button" drop zone that opens the hidden file input.
+    FileUpload: ({ 'aria-label': ariaLabel, prompt, disabled, accept, onChange }: any) => {
+      const inputRef = React.useRef<HTMLInputElement>(null);
+      return (
+        <div>
+          <div role="button" aria-label={ariaLabel} onClick={() => !disabled && inputRef.current?.click()}>{prompt}</div>
+          <input ref={inputRef} type="file" hidden accept={accept} disabled={disabled}
+            onChange={(e) => onChange?.(Array.from(e.target.files ?? []))} />
+        </div>
+      );
+    },
   };
 });
 
@@ -805,6 +824,64 @@ describe('LeadDetailPage', () => {
     });
   });
 
+  describe('Given the Data Layer custom fields flag is ON (HubSpot: custom properties visible on the record page)', () => {
+    const flagOn = () => mockUseShellBridge.mockImplementation(() => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
+
+    it('When the lead detail opens / Then the DL custom fields panel is visible without clicking any tab', async () => {
+      flagOn();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      expect(await screen.findByTestId('dl-custom-fields-panel')).toBeInTheDocument();
+    });
+
+    it('When the lead detail opens / Then the legacy Additional Info tab is not offered', async () => {
+      flagOn();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      expect(screen.queryByRole('tab', { name: 'Additional Info' })).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Given a CRM customer linked to a Core partner and the Data Layer flag is ON', () => {
+    const flagOn = () => mockUseShellBridge.mockImplementation(() => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
+
+    it('When /crm/customers/:id opens / Then the core.partner custom fields of the linked partner are shown', async () => {
+      flagOn();
+      mockPathname = '/crm/customers/lead-1';
+      mockGetLeadById.mockResolvedValue(makeLead({ core_partner_id: 'core-p-1' }));
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      expect(await screen.findByText('Partner fields for core-p-1')).toBeInTheDocument();
+    });
+
+    it('When the customer has no Core link / Then no partner panel is shown', async () => {
+      flagOn();
+      mockPathname = '/crm/customers/lead-1';
+      mockGetLeadById.mockResolvedValue(makeLead({ core_partner_id: null }));
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      expect(screen.queryByTestId('partner-dl-custom-fields-panel')).not.toBeInTheDocument();
+    });
+
+    it('When a lead (not customer) route opens / Then the partner panel is not shown', async () => {
+      flagOn();
+      mockPathname = '/crm/leads/lead-1';
+      mockGetLeadById.mockResolvedValue(makeLead({ core_partner_id: 'core-p-1' }));
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      expect(screen.queryByTestId('partner-dl-custom-fields-panel')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Given the Data Layer custom fields flag is OFF', () => {
+    it('When the lead detail opens / Then the DL panel is not rendered and the legacy tab remains', async () => {
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      expect(screen.queryByTestId('dl-custom-fields-panel')).not.toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: 'Additional Info' })).toBeInTheDocument();
+    });
+  });
+
   describe('Given lead phone is not provided', () => {
     it('When phone is null / Then shows Not provided', async () => {
       mockGetLeadById.mockResolvedValue(makeLead({ phone: null }));
@@ -832,6 +909,16 @@ describe('LeadDetailPage', () => {
       mockGetLeadById.mockReturnValue(new Promise(() => {}));
       render(<LeadDetailPage />);
       expect(screen.getByText('Loading lead workspace...')).toBeInTheDocument();
+    });
+  });
+
+  describe('Given the lead record loads but supporting calls are still pending', () => {
+    it('When partners and users have not answered / Then the lead workspace renders without waiting for them', async () => {
+      mockGetPartners.mockReturnValue(new Promise(() => {}));
+      mockGetUsers.mockReturnValue(new Promise(() => {}));
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getAllByText('John Doe').length).toBeGreaterThan(0));
+      expect(screen.queryByText('Loading lead workspace...')).not.toBeInTheDocument();
     });
   });
 
@@ -1352,7 +1439,7 @@ describe('LeadDetailPage', () => {
         fireEvent.click(screen.getByRole('button', { name: /Add Document/i }));
         await vi.advanceTimersByTimeAsync(500);
 
-        expect(await screen.findByText(/Upload Document/i)).toBeInTheDocument();
+        expect(await screen.findByLabelText(/Upload document/i)).toBeInTheDocument();
         expect(clickSpy).toHaveBeenCalled();
       } finally {
         clickSpy.mockRestore();

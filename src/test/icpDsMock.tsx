@@ -1,12 +1,15 @@
 import React from 'react';
 import { vi } from 'vitest';
-import { Trail } from './__mocks__/design-system';
+// The stub path IS the aliased '@so360/design-system' id: importing it statically from inside that
+// module's vi.mock factory waits on itself (deadlock = CI hang). importActual bypasses the mock.
+const { Trail } = await vi.importActual<any>('./__mocks__/design-system');
 
 /** Shared Comb stub + ICP-specific stand-ins (form controls, flat row menu, toast spies, confirm dialog). */
-export * from './__mocks__/design-system';
+// Base stub exports are merged in the vi.mock factory via importOriginal (see Icp*Page tests).
 export const toast = { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() };
 
 export const Spinner = () => <span aria-label="Loading" />;
+export const Skeleton = (_p: Record<string, unknown>) => <div data-testid="skeleton" />;
 
 /** Row menu rendered flat (items always present) so specs can click actions without opening a popover. */
 export const Menu = ({ trigger, items = [] }: any) => (

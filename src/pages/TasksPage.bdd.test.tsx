@@ -22,7 +22,7 @@ vi.mock('react-router-dom', () => ({
   useNavigate: () => mockNavigate,
 }));
 
-vi.mock('@so360/shell-context', () => ({
+vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOriginal<any>()),
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useShell: () => ({ user: { id: 'user-1', full_name: 'Test User' } }),
   useActivity: () => ({ recordActivity: async () => {} }),
@@ -320,6 +320,19 @@ describe('TasksPage', () => {
       expect(container.textContent).toContain('Overdue');
     });
 
+    it('When due date cell renders (Pulse 96ba2819) / Then date and Overdue badge are stacked, never one wrapping row', async () => {
+      render(<TasksPage />);
+      await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
+      const dueDateCol = tableProps.columns[1];
+      expect(dueDateCol.widthClassName).toContain('whitespace-nowrap');
+      const { container } = render(dueDateCol.accessor(makeTasks()[2]));
+      const root = container.firstElementChild as HTMLElement;
+      expect(root.className).toContain('flex-col');
+      expect(root.className).toContain('whitespace-nowrap');
+      expect(root.children.length).toBe(2);
+      expect(root.children[1].textContent).toContain('Overdue');
+    });
+
     it('When Associated With column renders task with deal / Then shows deal name', async () => {
       render(<TasksPage />);
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
@@ -590,12 +603,14 @@ describe('TasksPage — the view survives a trip to a task and back', () => {
       return render(<>{dueCol.accessor(task)}</>).container;
     };
 
-    it('When the task is overdue / Then the date, time and OVERDUE badge stay on one line', async () => {
+    // Pulse 96ba2819: date, time and the OVERDUE badge stack as rows; each row never wraps.
+    it('When the task is overdue / Then the date, time and OVERDUE badge stack without wrapping', async () => {
       const cell = await renderDueCell({ ...makeTasks()[2], due_date: '2024-01-01T04:05:00Z' });
       const wrapper = cell.firstElementChild as HTMLElement;
       expect(wrapper.className).toContain('whitespace-nowrap');
       expect(wrapper.className).not.toContain('flex-wrap');
-      expect(wrapper.className).toContain('items-center');
+      expect(wrapper.className).toContain('flex-col');
+      expect((wrapper.firstElementChild as HTMLElement).className).toContain('items-center');
     });
 
     it('When the task is overdue / Then the OVERDUE badge is shown and the icon does not shrink', async () => {

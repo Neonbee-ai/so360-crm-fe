@@ -127,6 +127,20 @@ function statusColor(status: string) {
   return STATUS_COLORS[status] ?? 'bg-fg-muted/10 text-fg-subtle border-line';
 }
 
+const STATUS_TONES: Record<string, BadgeTone> = {
+  New: 'primary',
+  Contacted: 'info',
+  Qualified: 'primary',
+  'Proposal Sent': 'warning',
+  Negotiation: 'warning',
+  Converted: 'success',
+  Lost: 'danger',
+};
+
+function statusTone(status: string): BadgeTone {
+  return STATUS_TONES[status] ?? 'neutral';
+}
+
 function initials(name: string) {
   return name
     .split(' ')
@@ -298,9 +312,9 @@ const COL_DEFS: ColDef[] = [
               options={ctx.leadStages.map((stage) => ({ value: stage.id, label: stage.name }))}
             />
           ) : (
-            <span className={`px-2 py-1 rounded-full text-xs font-medium border ${color}`}>
+            <Badge size="sm" tone={statusTone(lead.status)}>
               {lead.status}
-            </span>
+            </Badge>
           )}
         </div>
       );
@@ -323,7 +337,7 @@ const COL_DEFS: ColDef[] = [
               className="w-6 h-6 rounded-full object-cover shrink-0"
             />
           ) : (
-            <div className="w-6 h-6 rounded-full bg-line text-fg-subtle flex items-center justify-center text-xs font-bold shrink-0">
+            <div className="w-6 h-6 rounded-full bg-line text-fg flex items-center justify-center text-xs font-bold shrink-0">
               {ownerName !== '—' ? initials(ownerName) : '?'}
             </div>
           )}
@@ -551,17 +565,14 @@ const COL_DEFS: ColDef[] = [
       return tags.length > 0 ? (
         <div className="flex flex-wrap gap-1">
           {tags.slice(0, 3).map((tag) => (
-            <span
-              key={tag}
-              className="px-1.5 py-0.5 rounded text-xs font-medium bg-line text-fg-subtle"
-            >
+            <Badge key={tag} size="sm" tone="neutral">
               {tag}
-            </span>
+            </Badge>
           ))}
           {tags.length > 3 && (
-            <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-surface-raised text-fg-subtle">
+            <Badge size="sm" tone="neutral" variant="muted">
               +{tags.length - 3}
-            </span>
+            </Badge>
           )}
         </div>
       ) : (
@@ -576,19 +587,15 @@ const COL_DEFS: ColDef[] = [
     minWidth: 90,
     render: (lead) => {
       const h = computeLeadHealth(lead);
-      const pill: Record<string, string> = {
-        hot: 'bg-success/15 text-success',
-        warm: 'bg-warning/15 text-warning',
-        cold: 'bg-danger/15 text-danger',
-      };
-      const dot: Record<string, string> = {
-        hot: 'bg-success', warm: 'bg-warning', cold: 'bg-danger',
+      const tone: Record<string, BadgeTone> = {
+        hot: 'success',
+        warm: 'warning',
+        cold: 'danger',
       };
       return (
-        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${pill[h.level]}`}>
-          <span className={`w-1.5 h-1.5 rounded-full ${dot[h.level]}`} />
+        <Badge size="sm" dot tone={tone[h.level] ?? 'neutral'}>
           {h.label}
-        </span>
+        </Badge>
       );
     },
   },
@@ -758,7 +765,7 @@ function BulkActionsBar({ count, actions, selectedIds, onClear }: BulkActionsBar
   ];
 
   return (
-    <div data-testid="bulk-actions-bar" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-menu flex items-center gap-3 px-5 py-3 bg-surface-raised border border-line rounded-2xl shadow-2xl shadow-black/40">
+    <div data-testid="bulk-actions-bar" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-menu flex items-center gap-3 px-5 py-3 bg-surface-raised border border-line rounded-2xl shadow-overlay">
       <span className="text-sm text-fg font-semibold">{count} selected</span>
       <div className="w-px h-5 bg-surface-high" />
       {visible.map((action) =>
@@ -836,7 +843,7 @@ function ContextMenu({ lead, x, y, canDelete, onOpen, onDelete, onClose, onNavig
   return (
     <div
       ref={ref}
-      className="fixed z-menu bg-surface border border-line rounded-xl shadow-2xl py-1.5 min-w-44"
+      className="fixed z-menu bg-surface border border-line rounded-xl shadow-overlay py-1.5 min-w-44"
       style={{ left: Math.min(x, window.innerWidth - 200), top: Math.min(y, window.innerHeight - 300) }}
     >
       {menuItems.map((item) => (
@@ -1212,6 +1219,8 @@ export function LeadsDataGrid({
     return (
       <div
         key={lead.id}
+        role="row"
+        aria-selected={isSelected}
         className={`flex border-b border-line cursor-pointer transition-colors group/row ${
           virtualize && !grouped ? 'overflow-hidden' : ''
         } ${
@@ -1234,7 +1243,8 @@ export function LeadsDataGrid({
             return (
               <div
                 key="select"
-                className={`flex items-center justify-center shrink-0 sticky ${cellPy} ${
+                role="gridcell"
+                className={`flex items-center justify-center shrink-0 sticky z-10 ${cellPy} ${
                   isSelected ? 'bg-primary-container' : isHovered ? 'bg-surface-high' : 'bg-bg'
                 }`}
                 style={{ width: col.width, left: colLeftOffsets['select'] }}
@@ -1255,6 +1265,7 @@ export function LeadsDataGrid({
             return (
               <div
                 key="actions"
+                role="gridcell"
                 className={`flex items-center justify-center shrink-0 ${cellPy}`}
                 style={{ width: col.width }}
                 onClick={(e) => e.stopPropagation()}
@@ -1274,11 +1285,12 @@ export function LeadsDataGrid({
           return (
             <div
               key={col.key}
+              role="gridcell"
               className={`flex items-center shrink-0 px-3 overflow-hidden ${cellPy} ${
                 canEditCell ? 'cursor-text' : ''
               } ${
                 isSticky
-                  ? `sticky ${isSelected ? 'bg-primary-container' : isHovered ? 'bg-surface-high' : 'bg-bg'}`
+                  ? `sticky z-10 ${isSelected ? 'bg-primary-container' : isHovered ? 'bg-surface-high' : 'bg-bg'}`
                   : ''
               }`}
               style={{
@@ -1342,7 +1354,7 @@ export function LeadsDataGrid({
             {showGroupMenu && (
               <div
                 data-testid="group-by-menu"
-                className="absolute right-0 top-full mt-1.5 z-menu bg-surface border border-line rounded-xl shadow-xl py-1 min-w-40"
+                className="absolute right-0 top-full mt-1.5 z-menu bg-surface border border-line rounded-xl shadow-overlay py-1 min-w-40"
               >
                 {GROUP_BY_OPTIONS.map((o) => (
                   <Button variant={groupBy === o.key ? 'primary' : 'secondary'} size="sm" className="w-full !justify-start" key={o.key} onClick={() => { setGroupBy(o.key); setCollapsedGroups(new Set()); setShowGroupMenu(false); }}>
@@ -1361,7 +1373,7 @@ export function LeadsDataGrid({
               <span className="sr-only capitalize">{density}</span>
             </Button>
             {showDensityMenu && (
-              <div className="absolute right-0 top-full mt-1.5 z-menu bg-surface border border-line rounded-xl shadow-xl py-1 min-w-36">
+              <div className="absolute right-0 top-full mt-1.5 z-menu bg-surface border border-line rounded-xl shadow-overlay py-1 min-w-36">
                 {(['compact', 'comfortable', 'spacious'] as GridDensity[]).map((d) => (
                   <Button variant={density === d ? 'primary' : 'secondary'} size="sm" className="w-full !justify-start" key={d} onClick={() => { setDensity(d); setShowDensityMenu(false); }}>
                     {density === d && <Check size={12} />}
@@ -1399,7 +1411,7 @@ export function LeadsDataGrid({
             {showGroupMenu && (
               <div
                 data-testid="group-by-menu"
-                className="absolute right-0 top-full mt-1.5 z-menu bg-surface border border-line rounded-xl shadow-xl py-1 min-w-40"
+                className="absolute right-0 top-full mt-1.5 z-menu bg-surface border border-line rounded-xl shadow-overlay py-1 min-w-40"
               >
                 {GROUP_BY_OPTIONS.map((o) => (
                   <Button variant={groupBy === o.key ? 'primary' : 'secondary'} size="sm" className="w-full !justify-start" key={o.key} onClick={() => { setGroupBy(o.key); setCollapsedGroups(new Set()); setShowGroupMenu(false); }}>
@@ -1418,7 +1430,7 @@ export function LeadsDataGrid({
               <span className="capitalize">{density}</span>
             </Button>
             {showDensityMenu && (
-              <div className="absolute right-0 top-full mt-1.5 z-menu bg-surface border border-line rounded-xl shadow-xl py-1 min-w-36">
+              <div className="absolute right-0 top-full mt-1.5 z-menu bg-surface border border-line rounded-xl shadow-overlay py-1 min-w-36">
                 {(['compact', 'comfortable', 'spacious'] as GridDensity[]).map((d) => (
                   <Button variant={density === d ? 'primary' : 'secondary'} size="sm" className="w-full !justify-start" key={d} onClick={() => { setDensity(d); setShowDensityMenu(false); }}>
                     {density === d && <Check size={12} />}
@@ -1457,11 +1469,18 @@ export function LeadsDataGrid({
         tabIndex={0}
         role="grid"
         aria-label="Leads"
+        aria-rowcount={sortedLeads.length + 1}
+        aria-colcount={orderedCols.length}
+        data-comb="table"
+        data-comb-id="leads"
+        data-comb-state="ready"
         onKeyDown={handleGridKeyDown}
       >
         <div style={{ minWidth: `${totalWidth}px` }}>
           {/* Header */}
           <div
+            role="row"
+            data-testid="leads-grid-header-row"
             className="flex sticky top-0 z-toolbar bg-surface border-b border-line"
             style={{ minWidth: `${totalWidth}px` }}
           >
@@ -1474,6 +1493,8 @@ export function LeadsDataGrid({
                 return (
                   <div
                     key="select"
+                    role="columnheader"
+                    aria-label="Select"
                     className="flex items-center justify-center shrink-0 sticky bg-surface z-toolbar"
                     style={{ width: col.width, left: colLeftOffsets['select'] }}
                   >
@@ -1490,13 +1511,15 @@ export function LeadsDataGrid({
 
               if (col.key === 'actions') {
                 return (
-                  <div key="actions" className="shrink-0" style={{ width: col.width }} />
+                  <div key="actions" role="columnheader" aria-label="Actions" className="shrink-0" style={{ width: col.width }} />
                 );
               }
 
               return (
                 <div
                   key={col.key}
+                  role="columnheader"
+                  aria-sort={sortState ? (sortState.direction === 'asc' ? 'ascending' : 'descending') : undefined}
                   className={`relative flex items-center group px-3 text-nb-title-sm text-fg-muted select-none shrink-0 py-3 ${
                     col.pinned ? 'sticky z-toolbar bg-surface' : ''
                   }`}
@@ -1565,9 +1588,9 @@ export function LeadsDataGrid({
                         <ChevronDown size={14} className="text-fg-subtle" />
                       )}
                       <span className="font-semibold">{g.label}</span>
-                      <span className="text-xs text-fg-muted bg-surface-raised rounded-full px-2 py-0.5">
+                      <Badge size="sm" tone="neutral" shape="pill">
                         {g.count}
-                      </span>
+                      </Badge>
                     </Button>
                     {!isCollapsed && g.leads.map((l) => renderRow(l))}
                   </div>

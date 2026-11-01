@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, Card, FormPageTemplate, FormSection, NumberInput, Select, Spinner, Switch, TextField, Textarea, Grid, GridItem, toast } from '@so360/design-system';
+import { Button, Card, FormPageTemplate, FormSection, NumberInput, Select, Skeleton, Switch, TextField, Textarea, Grid, GridItem, toast } from '@so360/design-system';
 import {
     ICP_CATEGORIES, DEFAULT_MIN_SCORE, applyDraft, emptyCriterion, emptyIcpForm, icpService, icpToForm,
     validateIcp, type Icp, type IcpCriterion, type IcpErrors, type IcpFormValues,
@@ -96,7 +96,7 @@ const IcpFormPage: React.FC = () => {
 
     const back = () => navigate(LIST);
 
-    if (loading) return <div className="flex justify-center py-nb-6 text-fg-muted"><Spinner /><span className="sr-only" data-testid="spinner">Loading…</span></div>;
+    if (loading) return <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4"><Skeleton variant="rect" /><Skeleton variant="text" lines={3} /><span className="sr-only" data-testid="spinner">Loading…</span></div>;
     if (loadError) {
         return (
             <FormPageTemplate title="Ideal customer profile" trail={ICP_TRAIL}>

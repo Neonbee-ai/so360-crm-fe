@@ -18,6 +18,8 @@ const mockGetStockAvailability = vi.fn();
 const mockGetLeadById = vi.fn();
 
 vi.mock('../services/crmService', () => ({
+  // ProposalEstimatorPanel (estimatorService) reads crmApiClient from this module.
+  crmApiClient: { get: vi.fn().mockResolvedValue({}), post: vi.fn().mockResolvedValue({}), put: vi.fn().mockResolvedValue({}) },
   crmService: {
     getQuoteById: (...a: any[]) => mockGetQuoteById(...a),
     updateQuote: vi.fn(),
@@ -131,6 +133,30 @@ describe('QuoteDetailPage — the linked customer', () => {
   describe('Given a quote with no linked customer', () => {
     it('When the page loads / Then no customer panel is rendered and no lookup is made', async () => {
       mockGetQuoteById.mockResolvedValue({ ...quoteFromDeal, customer_id: undefined });
+      render(<QuoteDetailPage />);
+
+      await waitFor(() => expect(screen.getByText('Quote Details')).toBeInTheDocument());
+      expect(mockGetLeadById).not.toHaveBeenCalled();
+      expect(screen.queryByText('Customer')).not.toBeInTheDocument();
+    });
+  });
+});
+
+describe('QuoteDetailPage — customer embedded by crm-be (GET /quotes/:id)', () => {
+  describe('Given the quote response embeds its active customer', () => {
+    it('When the page loads / Then the panel renders from the embed and no lead lookup is made', async () => {
+      mockGetQuoteById.mockResolvedValue({ ...quoteFromDeal, customer });
+      render(<QuoteDetailPage />);
+
+      await waitFor(() => expect(screen.getByText('Priya Nair')).toBeInTheDocument());
+      expect(screen.getByText('ap@acme.example')).toBeInTheDocument();
+      expect(mockGetLeadById).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Given the quote\'s customer lead was deleted (embed is null)', () => {
+    it('When the page loads / Then no lead is requested (no 404) and no customer panel is shown', async () => {
+      mockGetQuoteById.mockResolvedValue({ ...quoteFromDeal, customer: null });
       render(<QuoteDetailPage />);
 
       await waitFor(() => expect(screen.getByText('Quote Details')).toBeInTheDocument());

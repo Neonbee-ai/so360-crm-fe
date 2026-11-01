@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, ChevronRight, ChevronDown, Package } from 'lucide-react';
-import { Button, TextField } from '@so360/design-system';
+import { Badge, Button, TextField } from '@so360/design-system';
 import { Modal } from './common/Modal';
 import { Skeleton } from './common/Skeleton';
 import { crmService } from '../services/crmService';
@@ -118,7 +118,7 @@ export const ProductPickerModal = ({ isOpen, onClose, onSelect }: ProductPickerM
                 </div>
 
                 {/* Results */}
-                <div className="min-h-[200px] max-h-[420px] overflow-y-auto -mx-2 px-2">
+                <div className="min-h-48 max-h-96 overflow-y-auto -mx-2 px-2">
                     {isLoading && (
                         <div className="space-y-2 pt-2">
                             {[...Array(4)].map((_, i) => (
@@ -178,9 +178,9 @@ export const ProductPickerModal = ({ isOpen, onClose, onSelect }: ProductPickerM
                                                     {item.price.toFixed(2)}
                                                 </span>
                                             ) : (
-                                                <span className="text-xs text-warning/90 font-medium bg-warning/10 border border-warning/20 px-2 py-0.5 rounded flex-shrink-0">
+                                                <Badge size="sm" tone="warning">
                                                     No price configured
-                                                </span>
+                                                </Badge>
                                             )}
 
                                             {/* Expand chevron or select arrow */}
@@ -214,12 +214,9 @@ export const ProductPickerModal = ({ isOpen, onClose, onSelect }: ProductPickerM
                                                         <div className="flex-1 min-w-0">
                                                             <div className="flex items-center gap-1.5 flex-wrap">
                                                                 {Object.entries(variant.variant_attributes || {}).map(([k, v]) => (
-                                                                    <span
-                                                                        key={k}
-                                                                        className="text-xs px-1.5 py-0.5 bg-line text-fg-subtle rounded"
-                                                                    >
+                                                                    <Badge key={k} size="sm" tone="neutral">
                                                                         {v}
-                                                                    </span>
+                                                                    </Badge>
                                                                 ))}
                                                             </div>
                                                             <p className="text-xs text-fg-muted mt-0.5">{variant.sku}</p>
@@ -231,9 +228,9 @@ export const ProductPickerModal = ({ isOpen, onClose, onSelect }: ProductPickerM
                                                                 {variant.price.toFixed(2)}
                                                             </span>
                                                         ) : (
-                                                            <span className="text-xs text-warning/90 font-medium bg-warning/10 border border-warning/20 px-2 py-0.5 rounded flex-shrink-0">
+                                                            <Badge size="sm" tone="warning">
                                                                 No price configured
-                                                            </span>
+                                                            </Badge>
                                                         )}
 
                                                         <ChevronRight className="w-4 h-4 text-info opacity-0 group-hover:opacity-100 flex-shrink-0 transition-opacity" />

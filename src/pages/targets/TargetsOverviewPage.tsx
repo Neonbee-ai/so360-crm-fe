@@ -19,7 +19,7 @@ import {
   formatValue,
   statusText,
 } from './targetUi';
-import { DashboardPageTemplate, Badge, Progress, Card, Grid, GridItem, Sparkline, TrendIndicator, StatusLegend } from '@so360/design-system';
+import { DashboardPageTemplate, Badge, Progress, Card, CountUp, Grid, GridItem, Sparkline, TrendIndicator, StatusLegend } from '@so360/design-system';
 
 /**
  * The landing screen.
@@ -122,7 +122,7 @@ export default function TargetsOverviewPage() {
               </div>
               <div className="mt-1 flex items-baseline gap-2">
                 <span className="text-2xl font-semibold text-fg">
-                  {formatValue(h.actual, h.unit, currency)}
+                  <CountUp value={formatValue(h.actual, h.unit, currency)} />
                 </span>
                 <span className="text-sm text-fg-muted">
                   of {formatValue(h.target, h.unit, currency)}
