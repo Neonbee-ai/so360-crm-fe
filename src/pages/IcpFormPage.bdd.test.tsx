@@ -13,7 +13,7 @@ vi.mock('../services/icpService', async () => {
   return { ...actual, icpService: svc };
 });
 vi.mock('react-router-dom', () => ({ useNavigate: () => nav, useParams: () => params }));
-vi.mock('@so360/design-system', async () => await import('../test/icpDsMock'));
+vi.mock('@so360/design-system', async (importOriginal) => ({ ...(await importOriginal<object>()), ...(await import('../test/icpDsMock')) }));
 
 import IcpFormPage from './IcpFormPage';
 import { toast } from '../test/icpDsMock';
