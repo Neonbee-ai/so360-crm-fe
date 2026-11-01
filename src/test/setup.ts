@@ -1,5 +1,5 @@
 // DIAG (temporary, do not merge): print each test file at start so a hung file can be identified.
-{ const w = (globalThis as any).__vitest_worker__; const f = w?.filepath ?? w?.ctx?.files?.[0]?.filepath ?? w?.ctx?.files?.[0] ?? 'unknown'; process.stdout.write('[DIAG-START] ' + (typeof f === 'string' ? f : JSON.stringify(f)).replace(/.*\/src\//, 'src/') + '\n'); }
+{ const w = (globalThis as any).__vitest_worker__; const f = w?.filepath ?? w?.ctx?.files?.[0]?.filepath ?? w?.ctx?.files?.[0] ?? 'unknown'; const __n=(typeof f === 'string' ? f : JSON.stringify(f)).replace(/.*\/src\//, 'src/'); (globalThis as any).__diagN=__n; process.stdout.write('[DIAG-START] ' + (typeof f === 'string' ? f : JSON.stringify(f)).replace(/.*\/src\//, 'src/') + '\n'); }
 import { configure } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { beforeEach } from 'vitest';
@@ -40,3 +40,9 @@ document.elementFromPoint = () => null;
 // pass on an idle box. Raise the budget globally — a passing assertion still
 // resolves as soon as its condition holds, so this costs nothing when green.
 configure({ asyncUtilTimeout: 5000 });
+
+// DIAG phases
+import { beforeAll as __ba, afterAll as __aa } from 'vitest';
+__ba(() => { process.stdout.write('[DIAG-COLLECTED] ' + (globalThis as any).__diagN + '\n'); });
+__aa(() => { process.stdout.write('[DIAG-END] ' + (globalThis as any).__diagN + '\n'); });
+process.on('exit', (c) => { process.stdout.write('[DIAG-EXIT] ' + (globalThis as any).__diagN + ' ' + c + '\n'); });
