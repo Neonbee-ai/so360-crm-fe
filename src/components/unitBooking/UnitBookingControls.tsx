@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Select, Checkbox } from '@so360/design-system';
 import { crmService } from '../../services/crmService';
 import { HOLD_HOUR_OPTIONS, holdHoursLabel } from './unitBooking';
 
@@ -35,36 +36,32 @@ export function UnitBookingControls({
         return () => { alive = false; };
     }, []);
 
-    const selectCls = 'bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-blue-500';
-
     return (
         <div className="flex items-center gap-2 flex-wrap mb-3" data-testid="unit-booking-controls">
-            <select
-                aria-label="Project"
-                value={projectId}
-                onChange={e => onProjectChange(e.target.value)}
-                className={`${selectCls} flex-1 min-w-[8rem]`}
-            >
-                <option value="">All projects</option>
-                {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-            <label className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest cursor-pointer">
-                <input
-                    type="checkbox"
-                    checked={onlyAvailable}
-                    onChange={e => onOnlyAvailableChange(e.target.checked)}
-                    className="w-3.5 h-3.5 rounded accent-blue-500"
+            <div className="flex-1 min-w-32">
+                <Select
+                    name="unit-booking-project"
+                    aria-label="Project"
+                    size="sm"
+                    value={projectId}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => onProjectChange(e.target.value)}
+                    options={[{ value: '', label: 'All projects' }, ...projects.map(p => ({ value: p.id, label: p.name }))]}
                 />
-                Only available
-            </label>
-            <select
+            </div>
+            <Checkbox
+                name="unit-booking-only-available"
+                label="Only available"
+                checked={onlyAvailable}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => onOnlyAvailableChange(e.target.checked)}
+            />
+            <Select
+                name="unit-booking-hold-for"
                 aria-label="Hold for"
-                value={holdHours}
-                onChange={e => onHoldHoursChange(Number(e.target.value))}
-                className={selectCls}
-            >
-                {HOLD_HOUR_OPTIONS.map(h => <option key={h} value={h}>Hold {holdHoursLabel(h)}</option>)}
-            </select>
+                size="sm"
+                value={String(holdHours)}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => onHoldHoursChange(Number(e.target.value))}
+                options={HOLD_HOUR_OPTIONS.map(h => ({ value: String(h), label: `Hold ${holdHoursLabel(h)}` }))}
+            />
         </div>
     );
 }

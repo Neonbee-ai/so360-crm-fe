@@ -23,3 +23,15 @@ export function describeApiError(error: unknown, fallback: string): string {
     if (status && status >= 400 && status < 500) return message;
     return fallback;
 }
+
+/**
+ * Non-JSON error bodies (Cloudflare/nginx 502 HTML pages, empty bodies, huge
+ * dumps) must never reach the UI. Keep a body only when it is short plain text;
+ * otherwise return the `API Error: <status>` fallback, which `describeApiError`
+ * maps to the caller's friendly message.
+ */
+export function plainErrorText(text: string | undefined | null, fallback: string): string {
+    const t = (text ?? '').trim();
+    if (!t || t.length > 300 || /<\s*(!doctype|html|head|body|div|span|center|h\d|title)\b/i.test(t) || /<\/[a-z]+>/i.test(t)) return fallback;
+    return t;
+}

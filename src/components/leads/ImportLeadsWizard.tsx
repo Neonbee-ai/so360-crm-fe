@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Loader2, UploadCloud, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Button, Select, RadioGroup, DataTable, Grid, FileUpload } from '@so360/design-system';
 import { Modal } from '../common/Modal';
 import {
     leadImportService,
@@ -22,9 +23,6 @@ const STEPS: Array<{ key: Step; label: string }> = [
     { key: 'done', label: 'Import' },
 ];
 
-const SELECT_CLS = 'w-full bg-slate-950 border border-slate-800 text-slate-100 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500';
-const PRIMARY_BTN = 'flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-semibold text-sm disabled:opacity-50';
-const SECONDARY_BTN = 'px-4 py-2 rounded-lg text-sm font-semibold text-slate-400 hover:text-slate-200';
 
 interface Props {
     isOpen: boolean;
@@ -113,13 +111,13 @@ export const ImportLeadsWizard: React.FC<Props> = ({ isOpen, onClose, onImported
 
     return (
         <Modal isOpen={isOpen} onClose={close} title="Import leads" size="xl">
-            <div className="space-y-5" data-testid="import-leads-wizard">
-                <ol className="flex items-center gap-2 text-xs font-semibold" aria-label="Import steps">
+            <div className="space-y-nb-6" data-testid="import-leads-wizard">
+                <ol className="flex flex-wrap items-center gap-nb-2 pb-nb-2 text-xs font-semibold" aria-label="Import steps">
                     {STEPS.map((s, i) => (
                         <li
                             key={s.key}
                             aria-current={i === stepIndex ? 'step' : undefined}
-                            className={`px-2.5 py-1 rounded-full border ${i === stepIndex ? 'bg-blue-600 text-white border-blue-600' : i < stepIndex ? 'text-blue-400 border-blue-500/30' : 'text-slate-500 border-slate-700'}`}
+                            className={`px-2.5 py-1 rounded-full border ${i === stepIndex ? 'bg-primary text-primary-fg border-primary' : i < stepIndex ? 'text-primary border-primary/30' : 'text-fg-muted border-line'}`}
                         >
                             {i + 1}. {s.label}
                         </li>
@@ -127,138 +125,115 @@ export const ImportLeadsWizard: React.FC<Props> = ({ isOpen, onClose, onImported
                 </ol>
 
                 {error && (
-                    <p role="alert" className="flex items-center gap-2 text-sm text-red-400">
+                    <p role="alert" className="flex items-center gap-2 text-sm text-danger">
                         <AlertCircle size={14} /> {error}
                     </p>
                 )}
 
                 {step === 'upload' && (
                     <div className="space-y-3">
-                        <label
-                            htmlFor="lead-import-file"
-                            className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-slate-700 rounded-xl p-8 text-slate-400 hover:border-blue-500 cursor-pointer"
-                        >
-                            {busy ? <Loader2 size={24} className="animate-spin" /> : <UploadCloud size={24} />}
-                            <span className="text-sm font-semibold">{busy ? 'Reading file…' : 'Choose a .csv or .xlsx file'}</span>
-                            <span className="text-xs text-slate-500">First row = column headers · up to 5,000 rows · 10 MB</span>
-                        </label>
-                        <input
-                            id="lead-import-file"
+                        <FileUpload
+                            name="lead-import-file"
                             aria-label="Import file"
-                            type="file"
+                            prompt={busy ? 'Reading file…' : 'Choose a .csv or .xlsx file'}
+                            hint="First row = column headers · up to 5,000 rows · 10 MB"
                             accept={ACCEPTED_IMPORT_TYPES}
-                            className="sr-only"
                             disabled={busy}
-                            onChange={(e) => readFile(e.target.files?.[0] ?? null)}
+                            value={[]}
+                            onChange={(files) => readFile(files[0] ?? null)}
                         />
                     </div>
                 )}
 
                 {step === 'map' && preview && (
                     <div className="space-y-4">
-                        <p className="text-sm text-slate-400">
-                            {preview.total_rows} row{preview.total_rows === 1 ? '' : 's'} in <span className="text-slate-200">{file?.name}</span>. Match each column to a lead field.
+                        <p className="text-sm text-fg-subtle">
+                            {preview.total_rows} row{preview.total_rows === 1 ? '' : 's'} in <span className="text-fg">{file?.name}</span>. Match each column to a lead field.
                         </p>
-                        <div className="space-y-2 max-h-[45vh] overflow-y-auto pr-1">
+                        <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
                             {preview.headers.map((header) => (
-                                <div key={header} className="grid grid-cols-2 gap-3 items-center" data-testid="import-mapping-row">
+                                <Grid columns={2} gap="md" className="items-center" key={header}  data-testid="import-mapping-row">
                                     <div className="min-w-0">
-                                        <p className="text-sm font-semibold text-slate-200 truncate">{header}</p>
-                                        <p className="text-xs text-slate-500 truncate">{preview.sample_rows[0]?.[header] ?? ''}</p>
+                                        <p className="text-sm font-semibold text-fg truncate">{header}</p>
+                                        <p className="text-xs text-fg-muted truncate">{preview.sample_rows[0]?.[header] ?? ''}</p>
                                     </div>
-                                    <select
+                                    <Select
                                         aria-label={`Field for ${header}`}
-                                        className={SELECT_CLS}
+                                        name={`import-field-${header}`}
                                         value={mapping[header] ?? ''}
-                                        onChange={(e) => setMapping((m) => ({ ...m, [header]: e.target.value || null }))}
-                                    >
-                                        <option value="">Don't import</option>
-                                        {preview.available_fields.map((f) => (
-                                            <option key={f.key} value={f.key}>{f.custom ? `${f.label} (custom)` : f.label}</option>
-                                        ))}
-                                    </select>
-                                </div>
+                                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setMapping((m) => ({ ...m, [header]: e.target.value || null }))}
+                                        options={[{ value: '', label: "Don't import" }, ...preview.available_fields.map((f) => ({ value: f.key, label: f.custom ? `${f.label} (custom)` : f.label }))]}
+                                    />
+                                </Grid>
                             ))}
                         </div>
                         <div className="flex justify-between">
-                            <button type="button" className={SECONDARY_BTN} onClick={reset}>Choose another file</button>
-                            <button type="button" className={PRIMARY_BTN} onClick={toReview}>Next</button>
+                            <Button type="button" variant="secondary" onClick={reset}>Choose another file</Button>
+                            <Button type="button" onClick={toReview}>Next</Button>
                         </div>
                     </div>
                 )}
 
                 {step === 'review' && preview && (
                     <div className="space-y-4">
-                        <div className="overflow-x-auto border border-slate-800 rounded-lg">
-                            <table className="w-full text-xs" aria-label="Import preview">
-                                <thead>
-                                    <tr className="bg-slate-950 text-slate-400">
-                                        {mappedHeaders.map((h) => <th key={h} className="px-3 py-2 text-left font-semibold whitespace-nowrap">{fieldLabel(mapping[h])}</th>)}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {preview.sample_rows.map((row, i) => (
-                                        <tr key={i} className="border-t border-slate-800 text-slate-200">
-                                            {mappedHeaders.map((h) => <td key={h} className="px-3 py-2 whitespace-nowrap">{row[h] ?? ''}</td>)}
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                        <p className="text-xs text-slate-500">
+                        <DataTable
+                            name="import-preview"
+                            data-testid="import-preview-table"
+                            density="compact"
+                            columns={mappedHeaders.map((h) => ({
+                                key: h,
+                                header: fieldLabel(mapping[h]),
+                                render: (r: { row: Record<string, string> }) => <span className="whitespace-nowrap">{r.row[h] ?? ''}</span>,
+                            }))}
+                            rows={preview.sample_rows.map((row, i) => ({ i, row }))}
+                            rowKey={(r) => String(r.i)}
+                            emptyState={<p className="text-xs text-fg-muted" data-testid="import-preview-empty">No sample rows.</p>}
+                        />
+                        <p className="text-xs text-fg-muted">
                             Showing {preview.sample_rows.length} of {preview.total_rows} rows. Leads with no owner column go through your assignment rules.
                         </p>
-                        <fieldset>
-                            <legend className="text-sm font-semibold text-slate-200 mb-2">When a lead with the same email or phone exists</legend>
-                            <div className="space-y-1.5">
-                                {DUPLICATE_POLICIES.map((p) => (
-                                    <label key={p.value} className="flex items-start gap-2 text-sm text-slate-300">
-                                        <input
-                                            type="radio"
-                                            name="import-duplicate-policy"
-                                            value={p.value}
-                                            checked={policy === p.value}
-                                            onChange={() => setPolicy(p.value)}
-                                            className="mt-1"
-                                        />
-                                        <span><span className="font-semibold">{p.label}</span> <span className="text-slate-500">— {p.hint}</span></span>
-                                    </label>
-                                ))}
-                            </div>
-                        </fieldset>
+                        <div>
+                            <RadioGroup
+                                name="import-duplicate-policy"
+                                label="When a lead with the same email or phone exists"
+                                value={policy}
+                                onChange={(v: string) => setPolicy(v as ImportDuplicatePolicy)}
+                                options={DUPLICATE_POLICIES.map((p) => ({ value: p.value, label: p.label, description: p.hint }))}
+                            />
+                        </div>
                         <div className="flex justify-between">
-                            <button type="button" className={SECONDARY_BTN} onClick={() => setStep('map')} disabled={busy}>Back</button>
-                            <button type="button" className={PRIMARY_BTN} onClick={runImport} disabled={busy}>
+                            <Button type="button" variant="secondary" onClick={() => setStep('map')} disabled={busy}>Back</Button>
+                            <Button type="button" onClick={runImport} disabled={busy}>
                                 {busy && <Loader2 size={14} className="animate-spin" />}
                                 Import {preview.total_rows} lead{preview.total_rows === 1 ? '' : 's'}
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 )}
 
                 {step === 'done' && result && (
                     <div className="space-y-4" data-testid="import-result">
-                        <p className="flex items-center gap-2 text-sm font-semibold text-emerald-400">
+                        <p className="flex items-center gap-2 text-sm font-semibold text-success">
                             <CheckCircle2 size={16} /> Import finished
                         </p>
-                        <dl className="grid grid-cols-3 gap-3 text-center">
+                        <Grid columns={3} gap="md" className="text-center">
                             {([['Created', result.created], ['Updated', result.updated], ['Skipped', result.skipped]] as const).map(([label, n]) => (
-                                <div key={label} className="bg-slate-950 border border-slate-800 rounded-lg p-3">
-                                    <dt className="text-xs text-slate-500">{label}</dt>
-                                    <dd className="text-xl font-bold text-slate-100">{n ?? 0}</dd>
+                                <div key={label} className="bg-bg border border-line rounded-lg p-3">
+                                    <dt className="text-xs text-fg-muted">{label}</dt>
+                                    <dd className="text-xl font-bold text-fg">{n ?? 0}</dd>
                                 </div>
                             ))}
-                        </dl>
+                        </Grid>
                         {result.errors?.length > 0 && (
                             <div>
-                                <p className="text-sm font-semibold text-amber-400 mb-1.5">{result.errors.length} row{result.errors.length === 1 ? '' : 's'} not imported</p>
-                                <ul className="max-h-40 overflow-y-auto text-xs text-slate-400 space-y-1" aria-label="Import errors">
+                                <p className="text-sm font-semibold text-warning mb-1.5">{result.errors.length} row{result.errors.length === 1 ? '' : 's'} not imported</p>
+                                <ul className="max-h-40 overflow-y-auto text-xs text-fg-subtle space-y-1" aria-label="Import errors">
                                     {result.errors.map((e, i) => <li key={i}>Row {e.row}: {e.message}</li>)}
                                 </ul>
                             </div>
                         )}
                         <div className="flex justify-end">
-                            <button type="button" className={PRIMARY_BTN} onClick={close}>Done</button>
+                            <Button type="button" onClick={close}>Done</Button>
                         </div>
                     </div>
                 )}

@@ -13,6 +13,7 @@
  */
 import { useState } from 'react';
 import { Plus, Trash2, X, FolderPlus, Filter as FilterIcon } from 'lucide-react';
+import { Badge, Select, TextField, Button, IconButton } from '@so360/design-system';
 import {
   FILTERABLE_FIELDS,
   getField,
@@ -58,39 +59,33 @@ function RuleRow({
 
   return (
     <div className="flex items-center gap-2 flex-wrap" data-testid="filter-rule">
-      <select
+      <Select
+        name="filter-field"
         aria-label="Field"
-        className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        size="sm"
         value={rule.field}
-        onChange={(e) => onChange(path, { field: e.target.value })}
-      >
-        {FILTERABLE_FIELDS.map((f) => (
-          <option key={f.key} value={f.key}>
-            {f.label}
-          </option>
-        ))}
-      </select>
+        onValueChange={(v) => onChange(path, { field: v })}
+        options={FILTERABLE_FIELDS.map((f) => ({ value: f.key, label: f.label }))}
+      />
 
-      <select
+      <Select
+        name="filter-operator"
         aria-label="Operator"
-        className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        size="sm"
         value={rule.op}
-        onChange={(e) => onChange(path, { op: e.target.value as FilterRule['op'] })}
-      >
-        {ops.map((o) => (
-          <option key={o.op} value={o.op}>
-            {o.label}
-          </option>
-        ))}
-      </select>
+        onValueChange={(v) => onChange(path, { op: v as FilterRule['op'] })}
+        options={ops.map((o) => ({ value: o.op, label: o.label }))}
+      />
 
       {/* Value input(s) — shape depends on the operator's arity. */}
       {operatorTakesNoValue(rule.op) ? null : operatorTakesTwoValues(rule.op) ? (
         <div className="flex items-center gap-1">
-          <input
+          <TextField
+            name="filter-from"
             aria-label="From"
             type={inputType}
-            className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm text-slate-200 w-24 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            size="sm"
+            className="w-24"
             value={Array.isArray(rule.value) ? (rule.value[0] ?? '') : ''}
             onChange={(e) =>
               onChange(path, {
@@ -98,11 +93,13 @@ function RuleRow({
               })
             }
           />
-          <span className="text-slate-500 text-xs">and</span>
-          <input
+          <span className="text-fg-muted text-xs">and</span>
+          <TextField
+            name="filter-to"
             aria-label="To"
             type={inputType}
-            className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm text-slate-200 w-24 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            size="sm"
+            className="w-24"
             value={Array.isArray(rule.value) ? (rule.value[1] ?? '') : ''}
             onChange={(e) =>
               onChange(path, {
@@ -112,55 +109,42 @@ function RuleRow({
           />
         </div>
       ) : operatorTakesList(rule.op) && field?.options ? (
-        <select
+        <Select
+          name="filter-values"
           aria-label="Values"
           multiple
-          className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm text-slate-200 min-w-[10rem] focus:outline-none focus:ring-2 focus:ring-blue-500"
+          size="sm"
+          className="min-w-40"
           value={Array.isArray(rule.value) ? rule.value : []}
           onChange={(e) =>
             onChange(path, {
               value: Array.from(e.target.selectedOptions).map((o) => o.value),
             })
           }
-        >
-          {field.options.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
+          options={field.options.map((o) => ({ value: o.value, label: o.label }))}
+        />
       ) : field?.type === 'enum' && field.options ? (
-        <select
+        <Select
+          name="filter-value"
           aria-label="Value"
-          className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          size="sm"
+          placeholder="Select…"
           value={typeof rule.value === 'string' ? rule.value : ''}
-          onChange={(e) => onChange(path, { value: e.target.value })}
-        >
-          <option value="">Select…</option>
-          {field.options.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
+          onValueChange={(v) => onChange(path, { value: v })}
+          options={field.options.map((o) => ({ value: o.value, label: o.label }))}
+        />
       ) : (
-        <input
+        <TextField
+          name="filter-value-text"
           aria-label="Value"
           type={inputType}
-          className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          size="sm"
           value={typeof rule.value === 'string' || typeof rule.value === 'number' ? rule.value : ''}
           onChange={(e) => onChange(path, { value: e.target.value })}
         />
       )}
 
-      <button
-        type="button"
-        aria-label="Remove rule"
-        className="text-slate-500 hover:text-rose-400 transition-colors ml-auto"
-        onClick={() => onRemove(path)}
-      >
-        <Trash2 size={15} />
-      </button>
+      <IconButton label="Remove rule" icon={<Trash2 size={15} />} onClick={() => onRemove(path)} />
     </div>
   );
 }
@@ -189,39 +173,23 @@ function GroupBlock({
       className={
         depth === 0
           ? 'space-y-3'
-          : 'space-y-3 border-l-2 border-slate-700 pl-3 py-2 rounded bg-slate-800/40'
+          : 'space-y-3 border-l-2 border-line pl-3 py-2 rounded bg-surface-high'
       }
       data-testid={depth === 0 ? 'filter-root' : 'filter-group'}
     >
       <div className="flex items-center gap-2">
-        <div className="inline-flex rounded-md overflow-hidden border border-slate-700 text-xs">
+        <div className="inline-flex rounded-md overflow-hidden border border-line text-xs">
           {(['and', 'or'] as const).map((c) => (
-            <button
-              key={c}
-              type="button"
-              className={`px-2.5 py-1 uppercase tracking-wide font-medium transition-colors ${
-                group.combinator === c
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-800 text-slate-400 hover:text-slate-200'
-              }`}
-              onClick={() => onSetCombinator(path, c)}
-            >
+            <Button variant={group.combinator === c ? "primary" : "secondary"} size="sm" key={c} type="button" onClick={() => onSetCombinator(path, c)}>
               {c}
-            </button>
+            </Button>
           ))}
         </div>
-        <span className="text-xs text-slate-500">
+        <span className="text-xs text-fg-muted">
           {group.combinator === 'and' ? 'Match all of' : 'Match any of'}
         </span>
         {depth > 0 && (
-          <button
-            type="button"
-            aria-label="Remove group"
-            className="text-slate-500 hover:text-rose-400 transition-colors ml-auto"
-            onClick={() => onRemove(path)}
-          >
-            <X size={15} />
-          </button>
+          <IconButton label="Remove group" icon={<X size={15} />} onClick={() => onRemove(path)} />
         )}
       </div>
 
@@ -244,21 +212,13 @@ function GroupBlock({
       )}
 
       <div className="flex items-center gap-3 text-xs">
-        <button
-          type="button"
-          className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 transition-colors"
-          onClick={() => onAddRule(path)}
-        >
+        <Button variant="secondary" size="sm" type="button" onClick={() => onAddRule(path)}>
           <Plus size={13} /> Add condition
-        </button>
+        </Button>
         {depth < 3 && (
-          <button
-            type="button"
-            className="inline-flex items-center gap-1 text-slate-400 hover:text-slate-200 transition-colors"
-            onClick={() => onAddGroup(path)}
-          >
+          <Button variant="secondary" size="sm" type="button" onClick={() => onAddGroup(path)}>
             <FolderPlus size={13} /> Add group
-          </button>
+          </Button>
         )}
       </div>
     </div>
@@ -271,28 +231,21 @@ export default function LeadFilterBuilder({ value, onApply, onClose }: LeadFilte
   const activeCount = countActiveRules(tree);
 
   return (
-    <div className="w-full max-w-2xl bg-slate-900 border border-slate-700 rounded-lg shadow-2xl flex flex-col max-h-[80vh]">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700">
-        <div className="flex items-center gap-2 text-slate-100 font-semibold">
-          <FilterIcon size={16} className="text-blue-400" />
+    <div className="w-full max-w-2xl bg-surface border border-line rounded-lg shadow-overlay flex flex-col" style={{ maxHeight: "80vh" }}>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-line">
+        <div className="flex items-center gap-2 text-fg font-semibold">
+          <FilterIcon size={16} className="text-primary" />
           Advanced Filters
           {activeCount > 0 && (
-            <span className="text-xs bg-blue-600 text-white rounded-full px-2 py-0.5">{activeCount}</span>
+            <Badge size="sm" tone="primary" variant="solid" shape="pill">{activeCount}</Badge>
           )}
         </div>
-        <button
-          type="button"
-          aria-label="Close"
-          className="text-slate-400 hover:text-slate-200 transition-colors"
-          onClick={onClose}
-        >
-          <X size={18} />
-        </button>
+        <IconButton label="Close" icon={<X size={18} />} onClick={onClose} />
       </div>
 
       <div className="px-4 py-4 overflow-y-auto flex-1">
         {tree.rules.length === 0 ? (
-          <div className="text-sm text-slate-500 mb-3">No conditions yet — add one to start filtering.</div>
+          <div className="text-sm text-fg-muted mb-3">No conditions yet — add one to start filtering.</div>
         ) : null}
         <GroupBlock
           group={tree}
@@ -306,29 +259,17 @@ export default function LeadFilterBuilder({ value, onApply, onClose }: LeadFilte
         />
       </div>
 
-      <div className="flex items-center justify-between px-4 py-3 border-t border-slate-700">
-        <button
-          type="button"
-          className="text-sm text-slate-400 hover:text-slate-200 transition-colors"
-          onClick={() => setTree(emptyFilter())}
-        >
+      <div className="flex items-center justify-between px-4 py-3 border-t border-line">
+        <Button variant="secondary" size="sm" type="button" onClick={() => setTree(emptyFilter())}>
           Clear all
-        </button>
+        </Button>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            className="px-3 py-1.5 text-sm text-slate-300 hover:text-white transition-colors"
-            onClick={onClose}
-          >
+          <Button variant="secondary" size="sm" type="button" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            type="button"
-            className="px-4 py-1.5 text-sm bg-blue-600 hover:bg-blue-500 text-white rounded-md font-medium transition-colors"
-            onClick={() => onApply(serializeFilter(tree))}
-          >
+          </Button>
+          <Button variant="primary" size="sm" type="button" onClick={() => onApply(serializeFilter(tree))}>
             Apply{activeCount > 0 ? ` (${activeCount})` : ''}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

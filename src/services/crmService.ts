@@ -1,6 +1,8 @@
 import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType, Lead, DealFilters, CRMSettings, InventoryItem, SalesRep, LeadProduct, DealProduct, LeadScoringRule, ScoreCategory, Stakeholder, StakeholderActivitySummary, Meeting, DealNamingConfig, DEFAULT_DEAL_NAMING_CONFIG } from '../types/crm';
 import { createRequestCache } from './requestCache';
 import { notifyQuotaExceeded } from './quotaExceeded';
+import { plainErrorText } from '../utils/apiErrorMessage';
+import { isUuid } from '../utils/fieldPresentation';
 
 // Lead/Deal detail pages and the dashboard each fetch CRM settings (8 parallel
 // requests) and the user list on mount. Both are org-static within a session,
@@ -88,6 +90,18 @@ const PROJECTS_API_ORIGIN = String(
     win.VITE_SO360_PROJECTS_API ||
     import.meta.env.VITE_SO360_PROJECTS_API ||
     'http://localhost:3010'
+).replace(/\/$/, '');
+
+const MARKETING_API_ORIGIN = String(
+    win.VITE_SO360_MARKETING_API ||
+    import.meta.env.VITE_SO360_MARKETING_API ||
+    'http://localhost:3056'
+).replace(/\/$/, '');
+
+const MAINTENANCE_API_ORIGIN = String(
+    win.VITE_SO360_MAINTENANCE_API ||
+    import.meta.env.VITE_SO360_MAINTENANCE_API ||
+    'http://localhost:3058'
 ).replace(/\/$/, '');
 
 const API_BASE_URL = CRM_API_ORIGIN;
@@ -213,6 +227,9 @@ const mapLeadFromApi = (apiLead: any): Lead => {
         tasks: (apiLead.tasks || []).map(mapTaskFromApi),
         activities: (apiLead.activities || []).map(mapActivityFromApi),
         custom_fields: apiLead.meta_data || {},
+        // Data-layer values live in the lead's own `custom_fields` column (keyed by field_key).
+        dl_custom_fields: apiLead.custom_fields && typeof apiLead.custom_fields === 'object' ? apiLead.custom_fields : {},
+        custom_fields_version: apiLead.custom_fields_version ?? undefined,
         contact_email: apiLead.email,
         backend_status: apiLead.status,
         status: STATUS_MAP_BE_TO_FE[apiLead.status] || apiLead.status || 'New'
@@ -302,7 +319,7 @@ class ApiClient {
                         errorMessage = errorJson.error;
                     }
                 } catch (e) {
-                    errorMessage = text || errorMessage;
+                    errorMessage = plainErrorText(text, errorMessage);
                 }
                 // Carry the status on the Error. Without it every failure looked
                 // identical to callers, so a 403 was indistinguishable from a
@@ -317,6 +334,8 @@ class ApiClient {
                 throw apiError;
             }
 
+            // 204 / empty 200 (e.g. no saved grid prefs yet) is "no content", not a parse error.
+            if (!text.trim()) return null as T;
             try {
                 return JSON.parse(text);
             } catch (e) {
@@ -379,7 +398,7 @@ class ApiClient {
                 errorMessage = Array.isArray(errorJson.message)
                     ? errorJson.message.join(', ')
                     : (errorJson.message || errorJson.error || errorMessage);
-            } catch { errorMessage = text || errorMessage; }
+            } catch { errorMessage = plainErrorText(text, errorMessage); }
             throw new Error(errorMessage);
         }
         const rawTotal = response.headers.get('X-Total-Count');
@@ -516,6 +535,12 @@ const neuraClient = new ApiClient(NEURA_API_ORIGIN, TENANT_ID);
 // selector both need this. Projects BE sets no global route prefix (bare
 // /projects, matching the neuraClient comment above's pattern).
 const projectsClient = new ApiClient(PROJECTS_API_ORIGIN, TENANT_ID);
+// Maintenance module's own backend (/v1/maintenance/*) — read-only lists for the
+// customer / deal "Maintenance" tab. Called directly, no CRM BE proxy.
+const maintenanceClient = new ApiClient(MAINTENANCE_API_ORIGIN, TENANT_ID);
+// Marketing module's own backend (/v1/marketing/*) — ICP auto-list audience picker.
+// Called directly, no CRM BE proxy.
+const marketingClient = new ApiClient(MARKETING_API_ORIGIN, TENANT_ID);
 /**
  * Core and Inventory clients for the record importers (existing clients →
  * Core channel import; projects/towers/units → Inventory), sharing the
@@ -524,6 +549,8 @@ const projectsClient = new ApiClient(PROJECTS_API_ORIGIN, TENANT_ID);
 export { coreClient as crmCoreClient, inventoryClient as crmInventoryClient };
 /** Neura AI client (bare routes, no CRM BE involved) — ICP drafting. */
 export { neuraClient as crmNeuraClient };
+export { maintenanceClient as crmMaintenanceClient };
+export { marketingClient as crmMarketingClient };
 
 // Type Definitions for API Responses
 interface LeadStatsResponse {
@@ -549,6 +576,7 @@ interface PipelineStage {
     name: string;
     order: number;
     color?: string;
+    probability?: number | null;
 }
 
 // Redundant local CustomFieldDefinition removed to fix lint conflict with imported type
@@ -657,6 +685,12 @@ export const leadsApi = {
         sort?: string;
         filter?: string;
         fields?: string;
+        owner_id?: string;
+        created_by?: string;
+        rating_id?: string;
+        date_range?: string;
+        start_date?: string;
+        end_date?: string;
     }): Promise<{ data: Lead[]; total: number | null }> => {
         const apiParams: Record<string, any> = { ...params, meta: 'true' };
         if (params.status && STATUS_MAP_FE_TO_BE[params.status]) {
@@ -664,6 +698,26 @@ export const leadsApi = {
         }
         const res = await apiClient.getWithMeta<any[]>('/leads', apiParams);
         return { data: (res.data || []).map(mapLeadFromApi), total: res.total };
+    },
+
+    /**
+     * GET /leads/status-counts - per-status facet counts under the current list filters
+     * (status itself excluded). Keys of the result are the FE stage names passed in.
+     */
+    getStatusCounts: async (
+        stageNames: string[],
+        params: Record<string, any> = {},
+    ): Promise<Record<string, number>> => {
+        if (stageNames.length === 0) return {};
+        const beOf = (n: string) => STATUS_MAP_FE_TO_BE[n] ?? n;
+        const { skip: _s, take: _t, status: _st, meta: _m, ...rest } = params as any;
+        const res = await apiClient.get<{ counts: Record<string, number> }>('/leads/status-counts', {
+            ...rest,
+            statuses: stageNames.map(beOf).join(','),
+        });
+        const out: Record<string, number> = {};
+        for (const n of stageNames) out[n] = res?.counts?.[beOf(n)] ?? 0;
+        return out;
     },
 
     /**
@@ -1209,6 +1263,7 @@ export const settingsApi = {
             order: number;
             color?: string;
             type?: 'OPEN' | 'WON' | 'LOST';
+            probability?: number | null;
         }): Promise<PipelineStage> => {
             return apiClient.post<PipelineStage>('/settings/pipeline-stages', data);
         },
@@ -1223,6 +1278,7 @@ export const settingsApi = {
                 order?: number;
                 color?: string;
                 type?: 'OPEN' | 'WON' | 'LOST';
+                probability?: number | null;
             }
         ): Promise<PipelineStage> => {
             return apiClient.patch<PipelineStage>(
@@ -1373,6 +1429,21 @@ export const partnersApi = {
     },
     update: async (id: string, data: any) => {
         return apiClient.patch<any>(`/partners/${id}`, data);
+    },
+    /**
+     * Core partner master row (custom_fields + custom_fields_version). A CRM
+     * partner links to it by `core_partner_id`; Core owns the data-layer values.
+     */
+    getCore: async (corePartnerId: string) => {
+        // GET /v1/partners/:org_id is Core's org LIST route — the record lives at details/:id (AutoQA r152).
+        return coreClient.get<any>(`/v1/partners/details/${corePartnerId}`);
+    },
+    /** Save core.partner custom fields through Core's partner update (409 on stale version, 503 when validation is down). */
+    updateCoreCustomFields: async (corePartnerId: string, customFields: Record<string, unknown>, version?: number | null) => {
+        return coreClient.patch<any>(`/v1/partners/${corePartnerId}`, {
+            custom_fields: customFields,
+            ...(version != null ? { version } : {}),
+        });
     },
     getDeals: async (id: string) => {
         return apiClient.get<any>(`/partners/${id}/deals`);
@@ -1561,9 +1632,17 @@ export const crmService = {
     getLeadsPaged: async (params: {
         skip?: number; take?: number; q?: string; status?: string; source?: string;
         sort?: string; filter?: string; fields?: string;
+        owner_id?: string; created_by?: string; rating_id?: string;
+        date_range?: string; start_date?: string; end_date?: string;
     }): Promise<{ data: Lead[]; total: number | null }> => {
         return leadsApi.getPaged(params);
     },
+
+    getLeadStatusCounts: async (stageNames: string[], params: Record<string, any> = {}): Promise<Record<string, number>> =>
+        leadsApi.getStatusCounts(stageNames, params),
+
+    // Org-wide lead/contact counts (`total` + per-status), independent of list filters
+    getLeadStats: async (): Promise<any> => leadsApi.getStats(),
 
     // Bulk lead operations
     bulkUpdateLeads: (ids: string[], patch: Record<string, any>) => leadsApi.bulkUpdate(ids, patch),
@@ -1686,6 +1765,9 @@ export const crmService = {
             owner_id: lead.owner_id || USER_ID,
             referred_by: (lead as any).referred_by,
             meta_data: lead.custom_fields,
+            // Resend after the user accepts a "warn" duplicate; rating set by hand.
+            ...((lead as any).confirm_duplicates && { confirm_duplicates: true }),
+            ...((lead as any).rating_category_id && { rating_category_id: (lead as any).rating_category_id }),
         });
     },
 
@@ -1713,6 +1795,7 @@ export const crmService = {
         if (updates.contact_email !== undefined) data.email = updates.contact_email;
         if (updates.phone !== undefined) data.phone = updates.phone;
         if (updates.source !== undefined) data.source = updates.source;
+        if ((updates as any).rating_category_id !== undefined) data.rating_category_id = (updates as any).rating_category_id;
         if (updates.status !== undefined) {
             // Check if it's FE name or BE name
             data.status = STATUS_MAP_FE_TO_BE[updates.status] || updates.status;
@@ -1727,6 +1810,22 @@ export const crmService = {
         if (updates.type !== undefined) data.type = updates.type;
 
         return leadsApi.update(id, data);
+    },
+
+    /**
+     * Data-layer custom fields (flag submodule:crm:dl_custom_fields): only the
+     * changed field_keys + the version read. 409 = stale, 503 = Core validation down.
+     */
+    updateLeadCustomFields: async (id: string, customFields: Record<string, unknown>, version: number | null): Promise<Lead> => {
+        const body: any = { custom_fields: customFields };
+        if (version != null) body.custom_fields_version = version;
+        return leadsApi.update(id, body);
+    },
+
+    updateDealCustomFields: async (id: string, customFields: Record<string, unknown>, version: number | null): Promise<Deal> => {
+        const body: any = { custom_fields: customFields };
+        if (version != null) body.custom_fields_version = version;
+        return dealsApi.update(id, body);
     },
 
     deleteLead: async (id: string): Promise<void> => {
@@ -1820,6 +1919,9 @@ export const crmService = {
     getDealsByLeadId: async (leadId: string): Promise<Deal[]> => {
         // Filter server-side (backend GET /deals honors lead_id) instead of
         // downloading the whole org dataset and filtering in the browser.
+        // A non-UUID id (mistyped / placeholder route) can never match a row and
+        // the BE answers 400; return empty without issuing the request.
+        if (!isUuid(leadId)) return [];
         return dealsApi.getAll({ lead_id: leadId });
     },
 
@@ -1868,12 +1970,14 @@ export const crmService = {
     async getTasksByLeadId(leadId: string): Promise<Task[]> {
         // Filter server-side (backend GET /tasks honors lead_id) instead of
         // downloading the whole org dataset and filtering in the browser.
+        if (!isUuid(leadId)) return [];
         return tasksApi.getAll({ lead_id: leadId });
     },
 
     async getTasksByDealId(dealId: string): Promise<Task[]> {
         // Filter server-side (backend GET /tasks honors deal_id) instead of
         // downloading the whole org dataset and filtering in the browser.
+        if (!isUuid(dealId)) return [];
         return tasksApi.getAll({ deal_id: dealId });
     },
 
@@ -1940,6 +2044,7 @@ export const crmService = {
                 deal_stages: stages.map(s => ({
                     id: s.id,
                     name: s.name,
+                    probability: s.probability ?? null,
                     type: s.type || (['Won', 'Closed Won'].includes(s.name) ? 'WON' : ['Lost', 'Closed Lost'].includes(s.name) ? 'LOST' : 'OPEN')
                 })),
                 lead_stages: leadStages.map(s => ({ id: s.id, name: s.name })),
@@ -2005,20 +2110,26 @@ export const crmService = {
             const stagesToUpdate = newStages.filter(s => !s.id.startsWith('st-'));
             const stagesToDelete = currentStages.filter(cs => !newStages.find(ns => ns.id === cs.id));
 
+            // Update/delete first, then create sequentially, so the BE's open-stage
+            // shift on create cannot race the explicit orders (Pulse ba71bf76).
             await Promise.all([
-                ...stagesToCreate.map(s => apiClient.post('/settings/pipeline-stages', {
-                    name: s.name,
-                    order: newStages.indexOf(s) + 1,
-                    color: '#3b82f6',
-                    type: s.type
-                })),
                 ...stagesToUpdate.map(s => apiClient.patch(`/settings/pipeline-stages/${s.id}`, {
                     name: s.name,
                     order: newStages.indexOf(s) + 1,
-                    type: s.type
+                    type: s.type,
+                    probability: s.probability ?? null
                 })),
                 ...stagesToDelete.map(s => apiClient.delete(`/settings/pipeline-stages/${s.id}`))
             ]);
+            for (const s of stagesToCreate) {
+                await apiClient.post('/settings/pipeline-stages', {
+                    name: s.name,
+                    order: newStages.indexOf(s) + 1,
+                    color: '#3b82f6',
+                    type: s.type,
+                    probability: s.probability ?? null
+                });
+            }
         } catch (error) {
             console.error('[CRM] Failed to save Pipeline Stages', error);
             failures.push('Pipeline Stages');
@@ -2535,11 +2646,16 @@ export const crmService = {
     async sendQuote(
         quoteId: string,
         payload: { to?: string; message?: string } = {},
-    ): Promise<{ sent: boolean; to?: string; reason?: string }> {
-        return apiClient.post<{ sent: boolean; to?: string; reason?: string }>(
+    ): Promise<{ sent: boolean; to?: string; reason?: string; pending_approval?: boolean; approval_reasons?: Array<{ rule: 'discount' | 'total' | 'margin'; actual: number; threshold: number }> }> {
+        return apiClient.post<{ sent: boolean; to?: string; reason?: string; pending_approval?: boolean; approval_reasons?: Array<{ rule: 'discount' | 'total' | 'margin'; actual: number; threshold: number }> }>(
             `/quotes/${quoteId}/send`,
             payload,
         );
+    },
+
+    /** Server-rendered quotation PDF (GET /quotes/:id/pdf) as a Blob. */
+    async getQuotePdf(quoteId: string): Promise<{ blob: Blob; filename: string | null }> {
+        return apiClient.getBlob(`/quotes/${quoteId}/pdf`);
     },
 
     async deleteQuote(quoteId: string): Promise<void> {
@@ -2696,55 +2812,6 @@ export const crmService = {
         return customersApi.updateBusinessProfile(customerId, profile);
     },
 
-    // Customer Segments
-    getCustomerSegments: async (): Promise<any[]> => {
-        return apiClient.get<any[]>('/customer-segments');
-    },
-    getCustomerSegmentById: async (segmentId: string): Promise<any> => {
-        return apiClient.get<any>(`/customer-segments/${segmentId}`);
-    },
-    createCustomerSegment: async (data: any): Promise<any> => {
-        return apiClient.post<any>('/customer-segments', data);
-    },
-    updateCustomerSegment: async (segmentId: string, data: any): Promise<any> => {
-        return apiClient.patch<any>(`/customer-segments/${segmentId}`, data);
-    },
-    deleteCustomerSegment: async (segmentId: string): Promise<any> => {
-        return apiClient.delete<any>(`/customer-segments/${segmentId}`);
-    },
-    getCustomerSegmentCustomers: async (segmentId: string): Promise<any> => {
-        return apiClient.get<any>(`/customer-segments/${segmentId}/customers`);
-    },
-    getCustomerSegmentLeads: async (segmentId: string): Promise<any> => {
-        return apiClient.get<any>(`/customer-segments/${segmentId}/leads`);
-    },
-    getCustomerSegmentMembers: async (segmentId: string, params?: { type?: 'all' | 'lead' | 'customer'; q?: string; skip?: number; take?: number }): Promise<any> => {
-        return apiClient.get<any>(`/customer-segments/${segmentId}/members`, params);
-    },
-    addCustomerSegmentMembers: async (segmentId: string, members: Array<{ id: string; type: 'lead' | 'customer' }>): Promise<any> => {
-        return apiClient.post<any>(`/customer-segments/${segmentId}/members`, { members });
-    },
-    removeCustomerSegmentMembers: async (segmentId: string, members: Array<{ id: string; type: 'lead' | 'customer' }>): Promise<any> => {
-        return apiClient.delete<any>(`/customer-segments/${segmentId}/members`, { members });
-    },
-
-    // Marketing (CRM-owned, proxied from Storefront internal APIs)
-    getAbandonedCarts: async (storeId: string, params?: any): Promise<any> => {
-        return apiClient.get<any>(`/marketing/${storeId}/abandoned-carts`, params);
-    },
-    getAbandonedCartStats: async (storeId: string): Promise<any> => {
-        return apiClient.get<any>(`/marketing/${storeId}/abandoned-carts/stats`);
-    },
-    getAbandonedCart: async (storeId: string, cartId: string): Promise<any> => {
-        return apiClient.get<any>(`/marketing/${storeId}/abandoned-carts/${cartId}`);
-    },
-    sendAbandonedCartRecovery: async (storeId: string, cartId: string): Promise<any> => {
-        return apiClient.post<any>(`/marketing/${storeId}/abandoned-carts/${cartId}/send-recovery`, {});
-    },
-    updateAbandonedCartStatus: async (storeId: string, cartId: string, status: string): Promise<any> => {
-        return apiClient.patch<any>(`/marketing/${storeId}/abandoned-carts/${cartId}/status`, { status });
-    },
-
     // Storefront Activity Tracking (Proxied through CRM BE)
     getStorefrontActivity: async (leadId: string, params?: any): Promise<any[]> => {
         return apiClient.get<any[]>(`/leads/${leadId}/storefront-activity`, params);
@@ -2757,98 +2824,6 @@ export const crmService = {
     },
     getStorefrontAbandonedCarts: async (leadId: string): Promise<any[]> => {
         return apiClient.get<any[]>(`/leads/${leadId}/storefront-abandoned-carts`);
-    },
-    getAllStorefrontSearches: async (params?: any): Promise<any[]> => {
-        return apiClient.get<any[]>('/marketing/storefront-searches', params);
-    },
-    getMarketingReviews: async (storeId: string, params?: any): Promise<any[]> => {
-        return apiClient.get<any[]>(`/marketing/${storeId}/reviews`, params);
-    },
-    getMarketingWishlist: async (storeId: string, params?: any): Promise<any[]> => {
-        return apiClient.get<any[]>(`/marketing/${storeId}/wishlist`, params);
-    },
-
-    getCampaigns: async (storeId: string, params?: any): Promise<any> => {
-        return apiClient.get<any>(`/marketing/${storeId}/campaigns`, params);
-    },
-    getCampaign: async (storeId: string, campaignId: string): Promise<any> => {
-        return apiClient.get<any>(`/marketing/${storeId}/campaigns/${campaignId}`);
-    },
-    createCampaign: async (storeId: string, data: any): Promise<any> => {
-        return apiClient.post<any>(`/marketing/${storeId}/campaigns`, data);
-    },
-    updateCampaign: async (storeId: string, campaignId: string, data: any): Promise<any> => {
-        return apiClient.put<any>(`/marketing/${storeId}/campaigns/${campaignId}`, data);
-    },
-    deleteCampaign: async (storeId: string, campaignId: string): Promise<any> => {
-        return apiClient.delete<any>(`/marketing/${storeId}/campaigns/${campaignId}`);
-    },
-    sendCampaignNow: async (storeId: string, campaignId: string): Promise<any> => {
-        return apiClient.post<any>(`/marketing/${storeId}/campaigns/${campaignId}/send`, {});
-    },
-    scheduleCampaign: async (storeId: string, campaignId: string, scheduleAt: string): Promise<any> => {
-        return apiClient.post<any>(`/marketing/${storeId}/campaigns/${campaignId}/schedule`, { scheduleAt });
-    },
-    pauseCampaign: async (storeId: string, campaignId: string): Promise<any> => {
-        return apiClient.post<any>(`/marketing/${storeId}/campaigns/${campaignId}/pause`, {});
-    },
-    testSendCampaign: async (storeId: string, campaignId: string, email: string): Promise<any> => {
-        return apiClient.post<any>(`/marketing/${storeId}/campaigns/${campaignId}/test-send`, { email });
-    },
-    getCampaignRecipients: async (storeId: string, campaignId: string, params?: any): Promise<any> => {
-        return apiClient.get<any>(`/marketing/${storeId}/campaigns/${campaignId}/recipients`, params);
-    },
-    getMarketingSegments: async (storeId: string, params?: any): Promise<any> => {
-        return apiClient.get<any>(`/marketing/${storeId}/insights/customer-segments`, params);
-    },
-    getMarketingProductInterest: async (storeId: string, params?: any): Promise<any> => {
-        return apiClient.get<any>(`/marketing/${storeId}/insights/product-interest`, params);
-    },
-    getMarketingBestSellingProducts: async (storeId: string, params?: any): Promise<any> => {
-        return apiClient.get<any>(`/marketing/${storeId}/insights/best-selling-products`, params);
-    },
-    getMarketingTopBuyers: async (storeId: string, params?: any): Promise<any> => {
-        return apiClient.get<any>(`/marketing/${storeId}/insights/top-buyers`, params);
-    },
-    getMarketingInactiveCustomers: async (storeId: string, params?: any): Promise<any> => {
-        return apiClient.get<any>(`/marketing/${storeId}/insights/inactive-customers`, params);
-    },
-    getMarketingConversionFunnel: async (storeId: string, params?: any): Promise<any> => {
-        return apiClient.get<any>(`/marketing/${storeId}/insights/conversion-funnel`, params);
-    },
-    getMarketingEmailPerformance: async (storeId: string, params?: any): Promise<any> => {
-        return apiClient.get<any>(`/marketing/${storeId}/insights/email-performance`, params);
-    },
-
-    // Newsletter Management (moved from Dailystore to CRM)
-    getNewsletterSubscribers: async (storeId: string, params?: any): Promise<any[]> => {
-        return apiClient.get<any[]>(`/marketing/${storeId}/newsletter/subscribers`, params);
-    },
-    addNewsletterSubscriber: async (storeId: string, data: any): Promise<any> => {
-        return apiClient.post<any>(`/marketing/${storeId}/newsletter/subscribers`, data);
-    },
-    unsubscribeNewsletter: async (storeId: string, subscriberId: string): Promise<any> => {
-        return apiClient.post<any>(`/marketing/${storeId}/newsletter/subscribers/${subscriberId}/unsubscribe`, {});
-    },
-    deleteNewsletterSubscriber: async (storeId: string, subscriberId: string): Promise<any> => {
-        return apiClient.delete<any>(`/marketing/${storeId}/newsletter/subscribers/${subscriberId}`);
-    },
-
-    // Coupon Management (moved from Dailystore to CRM)
-    getCoupons: async (storeId: string, params?: any): Promise<any[]> => {
-        return apiClient.get<any[]>(`/marketing/${storeId}/coupons`, params);
-    },
-    createCoupon: async (storeId: string, data: any): Promise<any> => {
-        return apiClient.post<any>(`/marketing/${storeId}/coupons`, data);
-    },
-    getCoupon: async (storeId: string, couponId: string): Promise<any> => {
-        return apiClient.get<any>(`/marketing/${storeId}/coupons/${couponId}`);
-    },
-    updateCoupon: async (storeId: string, couponId: string, data: any): Promise<any> => {
-        return apiClient.put<any>(`/marketing/${storeId}/coupons/${couponId}`, data);
-    },
-    deleteCoupon: async (storeId: string, couponId: string): Promise<any> => {
-        return apiClient.delete<any>(`/marketing/${storeId}/coupons/${couponId}`);
     },
 
     getCommerceKPIs: async (params?: {
@@ -2971,6 +2946,8 @@ export const crmService = {
         neuraClient.setTenantId(id);
         inboxClient.setTenantId(id);
         projectsClient.setTenantId(id);
+        maintenanceClient.setTenantId(id);
+        marketingClient.setTenantId(id);
     },
     setOrgId: (id: string) => {
         if (id !== ORG_ID) {
@@ -2995,6 +2972,8 @@ export const crmService = {
         neuraClient.setOrgId(id);
         inboxClient.setOrgId(id);
         projectsClient.setOrgId(id);
+        maintenanceClient.setOrgId(id);
+        marketingClient.setOrgId(id);
     },
     setUser: (user: User) => {
         CURRENT_USER = user;
@@ -3015,6 +2994,8 @@ export const crmService = {
         neuraClient.setAccessToken(token);
         inboxClient.setAccessToken(token);
         projectsClient.setAccessToken(token);
+        maintenanceClient.setAccessToken(token);
+        marketingClient.setAccessToken(token);
     },
 };
 

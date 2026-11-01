@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Modal } from '../common/Modal';
 import { Deal } from '../../types/crm';
-import { AlertCircle } from 'lucide-react';
+import { Button, Textarea } from '@so360/design-system';
 import { useActivity } from '@so360/shell-context';
 
 interface StageTransitionModalProps {
@@ -34,51 +34,37 @@ export const StageTransitionModal = ({ isOpen, onClose, onConfirm, deal, newStag
             title={isSpecialStage ? `Close Deal: ${newStage}` : `Move to ${newStage}`}
         >
             <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="p-3 bg-slate-950 border border-slate-800 rounded-lg">
-                    <p className="text-sm text-slate-400">
-                        Moving <span className="text-slate-50 font-bold">{deal.name}</span> to the <span className="text-blue-400 font-bold">{newStage}</span> stage.
+                <div className="p-3 bg-bg border border-line rounded-lg">
+                    <p className="text-sm text-fg-subtle">
+                        Moving <span className="text-fg font-bold">{deal.name}</span> to the <span className="text-primary font-bold">{newStage}</span> stage.
                     </p>
                 </div>
 
                 {isSpecialStage && (
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-300 flex items-center gap-2">
-                            Reason for {newStage} *
-                            <AlertCircle size={14} className="text-slate-500" />
-                        </label>
-                        <textarea
-                            required
-                            value={reason}
-                            onChange={(e) => setReason(e.target.value)}
-                            placeholder={`Please provide a brief reason for marking this deal as ${newStage}...`}
-                            className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 resize-none h-24"
-                        />
-                    </div>
+                    <Textarea
+                        name="stage-transition-reason"
+                        label={`Reason for ${newStage}`}
+                        required
+                        value={reason}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setReason(e.target.value)}
+                        placeholder={`Please provide a brief reason for marking this deal as ${newStage}...`}
+                        rows={4}
+                    />
                 )}
 
                 {!isSpecialStage && (
-                    <p className="text-sm text-slate-500 italic">
+                    <p className="text-sm text-fg-muted italic">
                         Confirm the stage change for this opportunity.
                     </p>
                 )}
 
                 <div className="pt-4 flex gap-3">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="flex-1 px-4 py-2 rounded-lg border border-slate-800 text-slate-400 hover:bg-slate-800 transition-colors font-medium text-sm"
-                    >
+                    <Button type="button" variant="secondary" className="flex-1" onClick={onClose}>
                         Cancel
-                    </button>
-                    <button
-                        type="submit"
-                        className={`flex-1 px-4 py-2 rounded-lg font-bold transition-all shadow-lg active:scale-95 text-sm ${newStage === 'Won' ? 'bg-emerald-600 hover:bg-emerald-500 text-white' :
-                                newStage === 'Lost' ? 'bg-rose-600 hover:bg-rose-500 text-white' :
-                                    'bg-blue-600 hover:bg-blue-500 text-white'
-                            }`}
-                    >
+                    </Button>
+                    <Button type="submit" variant={newStage === 'Lost' ? 'danger' : 'primary'} className="flex-1">
                         Confirm Transition
-                    </button>
+                    </Button>
                 </div>
             </form>
         </Modal>

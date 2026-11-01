@@ -12,7 +12,7 @@ import React from 'react';
  */
 export const RequiredMark: React.FC = () => (
     <>
-        <span aria-hidden="true" className="text-red-500">*</span>
+        <span aria-hidden="true" className="text-danger">*</span>
         <span className="sr-only"> required</span>
     </>
 );

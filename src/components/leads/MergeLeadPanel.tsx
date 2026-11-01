@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { GitMerge, Search, X, Loader2 } from 'lucide-react';
-import { toast } from '@so360/design-system';
+import { Search, Loader2 } from 'lucide-react';
+import { toast, Button, Drawer, TextField, DataTable, RadioGroup } from '@so360/design-system';
 import { crmService } from '../../services/crmService';
 import {
     leadDedupService,
@@ -83,122 +83,97 @@ export const MergeLeadPanel: React.FC<Props> = ({ keepLead, onClose, onMerged })
     };
 
     return (
-        <aside
-            className="fixed inset-y-0 right-0 z-40 w-full max-w-xl bg-slate-900 border-l border-slate-800 shadow-2xl flex flex-col"
-            aria-label="Merge leads"
+        <Drawer
+            isOpen
+            onClose={onClose}
+            title="Merge another lead into this one"
+            size="md"
             data-testid="merge-lead-panel"
+            footer={
+                <div className="flex justify-end gap-2">
+                    <Button type="button" variant="secondary" onClick={onClose}>
+                        Cancel
+                    </Button>
+                    <Button type="button" onClick={handleMerge} disabled={!other || merging}>
+                        {merging && <Loader2 size={14} className="animate-spin" />}
+                        Merge
+                    </Button>
+                </div>
+            }
         >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
-                <h2 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-                    <GitMerge size={16} /> Merge another lead into this one
-                </h2>
-                <button type="button" onClick={onClose} aria-label="Close merge panel" className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-800">
-                    <X size={16} />
-                </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-5 space-y-4">
+            <div className="space-y-4">
                 {!other ? (
                     <div className="space-y-2">
-                        <label htmlFor="merge-lead-search" className="text-xs font-medium text-slate-400">
-                            Find the duplicate lead
-                        </label>
-                        <div className="relative">
-                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-                            <input
-                                id="merge-lead-search"
-                                type="text"
-                                value={query}
-                                onChange={e => setQuery(e.target.value)}
-                                placeholder="Search by name, email or phone"
-                                className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
-                                autoFocus
-                            />
-                        </div>
-                        {searching && <p className="text-xs text-slate-500 flex items-center gap-1"><Loader2 size={12} className="animate-spin" /> Searching…</p>}
+                        <TextField
+                            name="merge-lead-search"
+                            id="merge-lead-search"
+                            label="Find the duplicate lead"
+                            type="text"
+                            value={query}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
+                            placeholder="Search by name, email or phone"
+                            leadingIcon={Search}
+                            autoFocus
+                        />
+                        {searching && <p className="text-xs text-fg-muted flex items-center gap-1"><Loader2 size={12} className="animate-spin" /> Searching…</p>}
                         {!searching && query.trim().length >= 2 && results.length === 0 && (
-                            <p className="text-xs text-slate-500">No other leads match.</p>
+                            <p className="text-xs text-fg-muted">No other leads match.</p>
                         )}
-                        <ul className="divide-y divide-slate-800" role="listbox" aria-label="Matching leads">
+                        <ul className="divide-y divide-line" role="listbox" aria-label="Matching leads">
                             {results.map(l => (
                                 <li key={l.id}>
-                                    <button
-                                        type="button"
-                                        role="option"
-                                        aria-selected={false}
-                                        onClick={() => pick(l)}
-                                        className="w-full text-left px-2 py-2 hover:bg-slate-800 rounded-lg"
-                                    >
-                                        <span className="block text-sm text-slate-200">{leadDisplayName(l)}</span>
-                                        <span className="block text-xs text-slate-500">{l.contact_email || l.phone || ''}</span>
-                                    </button>
+                                    <Button variant="secondary" size="sm" className="w-full !text-left !justify-start" type="button" role="option" aria-selected={false} onClick={() => pick(l)}>
+                                        <span className="block text-sm text-fg">{leadDisplayName(l)}</span>
+                                        <span className="block text-xs text-fg-muted">{l.contact_email || l.phone || ''}</span>
+                                    </Button>
                                 </li>
                             ))}
                         </ul>
                     </div>
                 ) : (
                     <div className="space-y-3">
-                        <div className="flex items-center justify-between text-xs text-slate-400">
+                        <div className="flex items-center justify-between text-xs text-fg-subtle">
                             <span>
-                                Merging <strong className="text-slate-200">{leadDisplayName(other)}</strong> into this lead. It will be removed afterwards.
+                                Merging <strong className="text-fg">{leadDisplayName(other)}</strong> into this lead. It will be removed afterwards.
                             </span>
-                            <button type="button" onClick={() => setOther(null)} className="text-blue-400 hover:underline shrink-0 ml-2">
+                            <Button variant="secondary" size="sm" className="shrink-0 ml-2" type="button" onClick={() => setOther(null)}>
                                 Change
-                            </button>
+                            </Button>
                         </div>
-                        <table className="w-full text-sm" data-testid="merge-field-chooser">
-                            <thead>
-                                <tr className="text-[10px] uppercase tracking-widest text-slate-500">
-                                    <th className="text-left py-1 font-bold">Field</th>
-                                    <th className="text-left py-1 font-bold">This lead</th>
-                                    <th className="text-left py-1 font-bold">Other lead</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {MERGE_FIELDS.map(f => {
-                                    const same = !differing.includes(f);
-                                    return (
-                                        <tr key={f.key} className="border-t border-slate-800">
-                                            <td className="py-2 pr-2 text-slate-400">{f.label}</td>
-                                            {[keepLead, other].map((src, i) => (
-                                                <td key={src.id} className="py-2 pr-2">
-                                                    <label className={`flex items-center gap-2 ${same ? 'text-slate-500' : 'text-slate-200'}`}>
-                                                        <input
-                                                            type="radio"
-                                                            name={`merge-${f.key}`}
-                                                            aria-label={`${f.label} from ${i === 0 ? 'this lead' : 'other lead'}`}
-                                                            checked={choices[f.key] === src.id}
-                                                            disabled={same}
-                                                            onChange={() => setChoices(prev => ({ ...prev, [f.key]: src.id }))}
-                                                        />
-                                                        <span className="truncate">{displayFieldValue(src, f.key)}</span>
-                                                    </label>
-                                                </td>
-                                            ))}
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
+                        <DataTable
+                            name="merge-field-chooser"
+                            data-testid="merge-field-chooser"
+                            density="compact"
+                            columns={[
+                                {
+                                    key: 'field',
+                                    header: 'Field and value to keep',
+                                    render: (f: (typeof MERGE_FIELDS)[number]) => {
+                                        const same = !differing.includes(f);
+                                        return (
+                                            <RadioGroup
+                                                name={`merge-${f.key}`}
+                                                label={f.label}
+                                                orientation="horizontal"
+                                                disabled={same}
+                                                value={choices[f.key] === other.id ? 'other' : 'this'}
+                                                onChange={(v: string) => setChoices(prev => ({ ...prev, [f.key]: v === 'other' ? other.id : keepLead.id }))}
+                                                options={[
+                                                    { value: 'this', label: `This lead: ${displayFieldValue(keepLead, f.key) || '—'}` },
+                                                    { value: 'other', label: `Other lead: ${displayFieldValue(other, f.key) || '—'}` },
+                                                ]}
+                                            />
+                                        );
+                                    },
+                                },
+                            ]}
+                            rows={[...MERGE_FIELDS]}
+                            rowKey={(f) => f.key}
+                        />
                     </div>
                 )}
             </div>
-
-            <div className="px-5 py-4 border-t border-slate-800 flex justify-end gap-2">
-                <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-sm text-slate-300 hover:bg-slate-800">
-                    Cancel
-                </button>
-                <button
-                    type="button"
-                    onClick={handleMerge}
-                    disabled={!other || merging}
-                    className="px-4 py-2 rounded-lg text-sm font-bold bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50 flex items-center gap-2"
-                >
-                    {merging && <Loader2 size={14} className="animate-spin" />}
-                    Merge
-                </button>
-            </div>
-        </aside>
+        </Drawer>
     );
 };
 

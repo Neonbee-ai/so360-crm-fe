@@ -207,7 +207,7 @@ describe('Feature: Sales register', () => {
             renderPage();
             await screen.findByTestId('sale-d1');
             const dev = screen.getByLabelText('Developer');
-            expect(within(dev).getAllByRole('option').map((o) => o.textContent)).toEqual(['All developers', 'Emaar', 'dev2']);
+            expect(within(dev).getAllByRole('option').map((o) => o.textContent)).toEqual(['Developer', 'Emaar', 'dev2']);
 
             fireEvent.change(dev, { target: { value: 'dev1' } });
             await waitFor(() => expect(report.listSales).toHaveBeenLastCalledWith({ developer_id: 'dev1' }, 1, SALES_PAGE_SIZE));
@@ -219,8 +219,9 @@ describe('Feature: Sales register', () => {
             report.listSales.mockResolvedValue({ rows: [row()], total: 1 });
             renderPage();
             await screen.findByTestId('sale-d1');
-            fireEvent.change(screen.getByLabelText('From'), { target: { value: '2026-06-10' } });
-            fireEvent.change(screen.getByLabelText('To'), { target: { value: '2026-06-01' } });
+            fireEvent.click(screen.getByTestId('filters-button'));
+            fireEvent.change(screen.getByLabelText('Date range start'), { target: { value: '2026-06-10' } });
+            fireEvent.change(screen.getByLabelText('Date range end'), { target: { value: '2026-06-01' } });
             expect(screen.getByRole('alert')).toHaveTextContent('The start date must be on or before the end date.');
             expect(screen.queryByTestId('sale-d1')).not.toBeInTheDocument();
             expect(report.listSales).toHaveBeenCalledTimes(2); // initial + the valid "from" only
@@ -253,7 +254,8 @@ describe('Feature: Sales register export (RE §48)', () => {
             bridge.value = { permissionsLoaded: true, hasPermission: (p: string) => p === 'deals.export', isFeatureEnabled: () => true };
             report.listSales.mockResolvedValue({ rows: [row()], total: 1 });
             renderPage();
-            fireEvent.click(await screen.findByRole('button', { name: 'Export sales as Excel' }));
+            fireEvent.click(await screen.findByRole('button', { name: 'Export sales' }));
+            fireEvent.click(await screen.findByRole('menuitem', { name: 'Excel' }));
             await waitFor(() => expect(exp.sales).toHaveBeenCalledWith({}, 'xlsx'));
         });
     });

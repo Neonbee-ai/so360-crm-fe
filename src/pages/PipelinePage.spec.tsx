@@ -6,6 +6,7 @@ import PipelinePage from './PipelinePage';
 const mockCrmService = vi.hoisted(() => ({
   getPipeline: vi.fn(),
   updateDealStage: vi.fn(),
+  getUsers: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock('../services/crmService', () => ({

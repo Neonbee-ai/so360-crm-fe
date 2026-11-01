@@ -230,6 +230,51 @@ describe('QuoteDetailPage', () => {
     });
   });
 
+  describe('Given quote lines with no catalogue item, 0% discount and 0% tax', () => {
+    const plainQuote = { ...quoteData, lines: [{ id: 'qp1', description: 'AQA LED retrofit', quantity: 4, unit_price: 9000, line_total: 36000, discount_percent: 0, tax_rate: 0 }] };
+    it('When rendered read-only / Then the empty Stock, Disc % and Tax % columns are dropped and Amount stays visible', async () => {
+      mockGetQuoteById.mockResolvedValue(plainQuote);
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('AQA LED retrofit'));
+      expect(screen.queryByRole('columnheader', { name: 'Stock' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('columnheader', { name: 'Disc %' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('columnheader', { name: 'Tax %' })).not.toBeInTheDocument();
+      expect(screen.getByRole('columnheader', { name: 'Amount' })).toBeInTheDocument();
+    });
+    it('When the user switches to edit mode / Then every column is back so discount and tax can be entered', async () => {
+      mockGetQuoteById.mockResolvedValue(plainQuote);
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('AQA LED retrofit'));
+      fireEvent.click(screen.getByText(/^edit$/i));
+      await waitFor(() => expect(screen.getByRole('columnheader', { name: 'Disc %' })).toBeInTheDocument());
+      expect(screen.getByRole('columnheader', { name: 'Tax %' })).toBeInTheDocument();
+      expect(screen.getByRole('columnheader', { name: 'Stock' })).toBeInTheDocument();
+    });
+  });
+
+  describe('Given a quote line with a catalogue item, a discount and tax', () => {
+    it('When rendered read-only / Then Stock, Disc % and Tax % columns are shown', async () => {
+      mockGetQuoteById.mockResolvedValue({ ...quoteData, lines: [{ id: 'qd1', description: 'Harper', item_id: 'i1', quantity: 1, unit_price: 100, line_total: 100, discount_percent: 10, tax_rate: 18 }] });
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Harper'));
+      expect(screen.getByRole('columnheader', { name: 'Stock' })).toBeInTheDocument();
+      expect(screen.getByRole('columnheader', { name: 'Disc %' })).toBeInTheDocument();
+      expect(screen.getByRole('columnheader', { name: 'Tax %' })).toBeInTheDocument();
+    });
+  });
+
+  describe('Given a quote line with a very long description', () => {
+    const longText = 'AQA-' + 'x'.repeat(300);
+    it('When rendered read-only / Then the description wraps inside a capped column so Amount stays fully visible', async () => {
+      mockGetQuoteById.mockResolvedValue({ ...quoteData, lines: [{ id: 'ql9', description: longText, quantity: 1, unit_price: 10, line_total: 10 }] });
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText(longText));
+      const wrap = screen.getAllByTestId('quote-line-description')[0];
+      expect(wrap).toHaveClass('min-w-0', 'max-w-[28rem]');
+      expect(screen.getByText(longText)).toHaveClass('whitespace-normal', '[overflow-wrap:anywhere]');
+    });
+  });
+
   describe('Given a quote in Pending Approval status', () => {
     it('When rendered / Then shows Approve and Reject buttons', async () => {
       mockGetQuoteById.mockResolvedValue({ ...quoteData, status: 'pending_approval' });

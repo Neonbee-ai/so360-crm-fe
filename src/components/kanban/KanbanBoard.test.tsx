@@ -46,7 +46,7 @@ describe('Given KanbanBoard', () => {
   it('When action / Then shows deal count per stage', () => {
     render(<KanbanBoard deals={deals} stages={stages} onDealClick={vi.fn()} onStageChange={vi.fn()} />);
     const ones = screen.getAllByText('1');
-    expect(ones.some(el => el.closest('[class*="bg-slate"]'))).toBeTruthy();
+    expect(ones.some(el => el.closest('[class*="bg-fg-muted"]'))).toBeTruthy();
   });
 
   it('When action / Then shows stage totals', () => {

@@ -63,7 +63,7 @@ describe('Given CRM Settings', () => {
     describe('When neither commissions nor unit allocation is on', () => {
         it('Then there is no Sales & commission tab', async () => {
             await openPage();
-            expect(screen.queryByRole('button', { name: /sales & commission/i })).not.toBeInTheDocument();
+            expect(screen.queryByRole('tab', { name: /sales & commission/i })).not.toBeInTheDocument();
             expect(screen.queryByTestId('sales-tab')).not.toBeInTheDocument();
         });
     });
@@ -72,7 +72,7 @@ describe('Given CRM Settings', () => {
         it('Then the tab opens the sales settings with write access', async () => {
             flags.on.add('submodule:crm:commissions');
             await openPage();
-            fireEvent.click(screen.getByRole('button', { name: /sales & commission/i }));
+            fireEvent.click(screen.getByRole('tab', { name: /sales & commission/i }));
             expect(await screen.findByTestId('sales-tab')).toHaveAttribute('data-can-write', 'true');
         });
     });
@@ -82,7 +82,7 @@ describe('Given CRM Settings', () => {
             flags.on.add('action:crm:unit_allocation');
             flags.settingsWrite = false;
             await openPage();
-            fireEvent.click(screen.getByRole('button', { name: /sales & commission/i }));
+            fireEvent.click(screen.getByRole('tab', { name: /sales & commission/i }));
             expect(await screen.findByTestId('sales-tab')).toHaveAttribute('data-can-write', 'false');
         });
     });
@@ -92,7 +92,7 @@ describe('Given CRM Settings', () => {
             flags.on.add('submodule:crm:commissions');
             flags.loaded = false;
             await openPage();
-            expect(screen.queryByRole('button', { name: /sales & commission/i })).not.toBeInTheDocument();
+            expect(screen.queryByRole('tab', { name: /sales & commission/i })).not.toBeInTheDocument();
         });
     });
 });

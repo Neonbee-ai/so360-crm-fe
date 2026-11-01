@@ -8,6 +8,7 @@ import { crmService } from '../services/crmService';
 import { useCRMFormatters } from '../utils/formatters';
 import { parseUtcDate } from '../utils/datetime';
 import { useBusinessSettings } from '@so360/shell-context';
+import { Button, TextField, Select, Textarea, Checkbox, Grid, GridItem, Skeleton } from '@so360/design-system';
 
 interface Partner {
     id: string;
@@ -106,7 +107,6 @@ const formatAddress = (a?: AddressShape | null): string => {
 
 // ─── Shared input class ──────────────────────────────────────────────────────
 
-const FIELD_CLS = 'w-full bg-slate-950 border border-slate-800 text-slate-200 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50';
 
 // ─── Props ───────────────────────────────────────────────────────────────────
 
@@ -310,8 +310,8 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                     ['PAN Number', profile?.pan_number],
                 ] as [string, string | undefined][]).map(([label, value]) => (
                     <div key={label} className="flex items-start gap-3">
-                        <span className="text-xs text-slate-500 w-28 shrink-0">{label}</span>
-                        <span className="text-xs text-slate-200 break-words">{value || '—'}</span>
+                        <span className="text-xs text-fg-muted w-28 shrink-0">{label}</span>
+                        <span className="text-xs text-fg break-words">{value || '—'}</span>
                     </div>
                 ))}
             </>
@@ -323,16 +323,16 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                     ['VAT Number', profile?.vat_number],
                 ] as [string, string | undefined][]).map(([label, value]) => (
                     <div key={label} className="flex items-start gap-3">
-                        <span className="text-xs text-slate-500 w-28 shrink-0">{label}</span>
-                        <span className="text-xs text-slate-200 break-words">{value || '—'}</span>
+                        <span className="text-xs text-fg-muted w-28 shrink-0">{label}</span>
+                        <span className="text-xs text-fg break-words">{value || '—'}</span>
                     </div>
                 ))}
             </>
         );
         if (taxRegime === 'us') return (
             <div className="flex items-start gap-3">
-                <span className="text-xs text-slate-500 w-28 shrink-0">Tax Exempt ID</span>
-                <span className="text-xs text-slate-200 break-words">{profile?.tax_exempt_id || '—'}</span>
+                <span className="text-xs text-fg-muted w-28 shrink-0">Tax Exempt ID</span>
+                <span className="text-xs text-fg break-words">{profile?.tax_exempt_id || '—'}</span>
             </div>
         );
         return null;
@@ -342,45 +342,39 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
         if (taxRegime === 'gst') return (
             <>
                 <div>
-                    <label className="text-[11px] text-slate-500 mb-1 block">GST Treatment</label>
-                    <select value={draft.gst_treatment || ''} onChange={e => setDraftField({ gst_treatment: e.target.value })} className={FIELD_CLS}>
-                        <option value="">Select…</option>
-                        {GST_TREATMENT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </select>
+                    <label className="text-xs text-fg-muted mb-1 block">GST Treatment</label>
+                    <Select name="gst-treatment" value={draft.gst_treatment || ''} onChange={e => setDraftField({ gst_treatment: e.target.value })} options={[{ value: '', label: 'Select…' }, ...GST_TREATMENT_OPTIONS]} />
                 </div>
                 <div>
-                    <label className="text-[11px] text-slate-500 mb-1 block">GST Number</label>
-                    <input value={draft.gst_number || ''} onChange={e => setDraftField({ gst_number: e.target.value.toUpperCase() })} placeholder="29ABCDE1234F1Z5" className={`${FIELD_CLS} font-mono`} />
+                    <label className="text-xs text-fg-muted mb-1 block">GST Number</label>
+                    <TextField name="gst-number" value={draft.gst_number || ''} onChange={e => setDraftField({ gst_number: e.target.value.toUpperCase() })} placeholder="29ABCDE1234F1Z5" className="font-mono" />
                 </div>
                 <div>
-                    <label className="text-[11px] text-slate-500 mb-1 block">Place of Supply</label>
-                    <input value={draft.place_of_supply || ''} onChange={e => setDraftField({ place_of_supply: e.target.value })} className={FIELD_CLS} />
+                    <label className="text-xs text-fg-muted mb-1 block">Place of Supply</label>
+                    <TextField name="place-of-supply" value={draft.place_of_supply || ''} onChange={e => setDraftField({ place_of_supply: e.target.value })} />
                 </div>
                 <div>
-                    <label className="text-[11px] text-slate-500 mb-1 block">PAN Number</label>
-                    <input value={draft.pan_number || ''} onChange={e => setDraftField({ pan_number: e.target.value.toUpperCase() })} placeholder="ABCDE1234F" className={`${FIELD_CLS} font-mono`} />
+                    <label className="text-xs text-fg-muted mb-1 block">PAN Number</label>
+                    <TextField name="pan-number" value={draft.pan_number || ''} onChange={e => setDraftField({ pan_number: e.target.value.toUpperCase() })} placeholder="ABCDE1234F" className="font-mono" />
                 </div>
             </>
         );
         if (taxRegime === 'vat') return (
             <>
                 <div>
-                    <label className="text-[11px] text-slate-500 mb-1 block">VAT Treatment</label>
-                    <select value={draft.vat_treatment || ''} onChange={e => setDraftField({ vat_treatment: e.target.value })} className={FIELD_CLS}>
-                        <option value="">Select…</option>
-                        {VAT_TREATMENT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </select>
+                    <label className="text-xs text-fg-muted mb-1 block">VAT Treatment</label>
+                    <Select name="vat-treatment" value={draft.vat_treatment || ''} onChange={e => setDraftField({ vat_treatment: e.target.value })} options={[{ value: '', label: 'Select…' }, ...VAT_TREATMENT_OPTIONS]} />
                 </div>
                 <div>
-                    <label className="text-[11px] text-slate-500 mb-1 block">VAT Number</label>
-                    <input value={draft.vat_number || ''} onChange={e => setDraftField({ vat_number: e.target.value.toUpperCase() })} placeholder="e.g. GB123456789" className={`${FIELD_CLS} font-mono`} />
+                    <label className="text-xs text-fg-muted mb-1 block">VAT Number</label>
+                    <TextField name="vat-number" value={draft.vat_number || ''} onChange={e => setDraftField({ vat_number: e.target.value.toUpperCase() })} placeholder="e.g. GB123456789" className="font-mono" />
                 </div>
             </>
         );
         if (taxRegime === 'us') return (
             <div className="col-span-2">
-                <label className="text-[11px] text-slate-500 mb-1 block">Tax Exempt ID / EIN</label>
-                <input value={draft.tax_exempt_id || ''} onChange={e => setDraftField({ tax_exempt_id: e.target.value })} placeholder="e.g. 12-3456789" className={FIELD_CLS} />
+                <label className="text-xs text-fg-muted mb-1 block">Tax Exempt ID / EIN</label>
+                <TextField name="tax-exempt-id" value={draft.tax_exempt_id || ''} onChange={e => setDraftField({ tax_exempt_id: e.target.value })} placeholder="e.g. 12-3456789" />
             </div>
         );
         return null;
@@ -389,28 +383,28 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
     // ─── Render ──────────────────────────────────────────────────────────────
 
     return (
-        <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-5">
-            <h3 className="text-sm font-semibold text-slate-50 flex items-center gap-2">
-                <Building2 size={16} className="text-emerald-400" />
+        <div className="bg-surface border border-line rounded-nb p-5 space-y-5">
+            <h3 className="text-sm font-semibold text-fg flex items-center gap-2">
+                <Building2 size={16} className="text-success" />
                 Customer Details
             </h3>
 
             {/* Category Badge */}
             <div className="flex items-center gap-3">
-                <span className="text-xs text-slate-500 w-24">Category</span>
+                <span className="text-xs text-fg-muted w-24">Category</span>
                 <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold border ${
-                    lead.customer_category === 'b2b'
-                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                        : 'bg-slate-500/10 text-slate-400 border-slate-500/20'
-                }`}>
+ lead.customer_category === 'b2b'
+ ? 'bg-success/10 text-success border-success/20'
+ : 'bg-fg-muted/10 text-fg-subtle border-line'
+ }`}>
                     {(lead.customer_category || 'b2c').toUpperCase()}
                 </span>
             </div>
 
             {/* Acquisition Source */}
             <div className="flex items-center gap-3">
-                <span className="text-xs text-slate-500 w-24">Source</span>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                <span className="text-xs text-fg-muted w-24">Source</span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium bg-primary/10 text-primary border border-primary/20">
                     <Tag size={11} />
                     {ACQUISITION_SOURCE_LABELS[lead.acquisition_source] || lead.acquisition_source || lead.channel || '-'}
                 </span>
@@ -419,10 +413,10 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
             {/* Referred By */}
             {lead.referred_by && (
                 <div className="flex items-center gap-3">
-                    <span className="text-xs text-slate-500 w-24 flex items-center gap-1">
+                    <span className="text-xs text-fg-muted w-24 flex items-center gap-1">
                         <Users size={11} /> Referred By
                     </span>
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium bg-violet-500/10 text-violet-400 border border-violet-500/20">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium bg-info/10 text-info border border-info/20">
                         {partners.find(p => p.id === lead.referred_by)?.company_name || lead.referred_by}
                     </span>
                 </div>
@@ -431,8 +425,8 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
             {/* First Order */}
             {lead.first_order_id && (
                 <div className="flex items-center gap-3">
-                    <span className="text-xs text-slate-500 w-24">First Order</span>
-                    <span className="flex items-center gap-1.5 text-xs text-slate-300 font-mono">
+                    <span className="text-xs text-fg-muted w-24">First Order</span>
+                    <span className="flex items-center gap-1.5 text-xs text-fg-subtle font-mono">
                         <ShoppingCart size={11} />
                         {lead.first_order_id.substring(0, 8)}...
                     </span>
@@ -443,69 +437,55 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
             {lead.customer_category === 'b2b' && (
                 <>
                     {/* Tax ID */}
-                    <div className="border-t border-slate-800 pt-4">
-                        <label className="text-xs text-slate-500 mb-2 block flex items-center gap-1.5">
+                    <div className="border-t border-line pt-4">
+                        <label className="text-xs text-fg-muted mb-2 block flex items-center gap-1.5">
                             <Shield size={12} /> Tax ID (GST / VAT / TIN)
                         </label>
                         <div className="flex items-center gap-2">
                             <div className="relative flex-1">
-                                <input
-                                    type="text"
+                                <TextField
+                                    name="tax-id"
                                     value={taxIdInput}
                                     onChange={(e) => { setTaxIdInput(e.target.value.toUpperCase()); setTaxError(null); }}
                                     placeholder="e.g. 29ABCDE1234F1Z5"
-                                    className="w-full bg-slate-950 border border-slate-800 text-slate-200 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 font-mono"
+                                    className="font-mono"
                                 />
                                 {lead.tax_id_verified && (
-                                    <CheckCircle2 size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-400" />
+                                    <CheckCircle2 size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-success" />
                                 )}
                             </div>
-                            <button
-                                onClick={handleValidateTaxId}
-                                disabled={isValidatingTax || !taxIdInput.trim()}
-                                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:text-slate-500 text-slate-50 text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5"
-                            >
-                                {isValidatingTax ? <Loader2 size={14} className="animate-spin" /> : <Shield size={14} />}
-                                Validate
-                            </button>
+                            <Button size="sm" variant="secondary" onClick={handleValidateTaxId} disabled={isValidatingTax || !taxIdInput.trim()}>{isValidatingTax ? <Loader2 size={14} className="animate-spin" /> : <Shield size={14} />} Validate</Button>
                         </div>
                         {taxError && (
-                            <div className="mt-2 flex items-center gap-1.5 text-xs text-rose-400">
+                            <div className="mt-2 flex items-center gap-1.5 text-xs text-danger">
                                 <AlertCircle size={12} /> {taxError}
                             </div>
                         )}
                         {lead.tax_id_verified && lead.tax_id_verified_at && (
-                            <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-400">
+                            <div className="mt-2 flex items-center gap-1.5 text-xs text-success">
                                 <CheckCircle2 size={12} /> Verified on {parseUtcDate(lead.tax_id_verified_at).toLocaleDateString()}
                             </div>
                         )}
                     </div>
 
                     {/* Credit Limit */}
-                    <div className="border-t border-slate-800 pt-4">
-                        <label className="text-xs text-slate-500 mb-2 block flex items-center gap-1.5">
+                    <div className="border-t border-line pt-4">
+                        <label className="text-xs text-fg-muted mb-2 block flex items-center gap-1.5">
                             <CreditCard size={12} /> Credit Limit
                         </label>
                         <div className="flex items-center gap-2">
-                            <input
+                            <TextField
+                                name="credit-limit"
                                 type="number"
                                 value={creditLimitInput}
                                 onChange={(e) => setCreditLimitInput(e.target.value)}
                                 min="0"
                                 step="1000"
-                                className="flex-1 bg-slate-950 border border-slate-800 text-slate-200 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                             />
-                            <button
-                                onClick={handleSaveCreditLimit}
-                                disabled={isSavingCredit}
-                                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-slate-50 text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5"
-                            >
-                                {isSavingCredit ? <Loader2 size={14} className="animate-spin" /> : <CreditCard size={14} />}
-                                Save
-                            </button>
+                            <Button size="sm" variant="primary" onClick={handleSaveCreditLimit} disabled={isSavingCredit}>{isSavingCredit ? <Loader2 size={14} className="animate-spin" /> : <CreditCard size={14} />} Save</Button>
                         </div>
                         {parseFloat(lead.credit_balance) > 0 && (
-                            <div className="mt-2 text-xs text-slate-400">
+                            <div className="mt-2 text-xs text-fg-subtle">
                                 Current balance: {formatters.formatCurrency(parseFloat(lead.credit_balance))}
                             </div>
                         )}
@@ -514,43 +494,23 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
             )}
 
             {/* ─── Business Information ────────────────────────────────────────── */}
-            <div className="border-t border-slate-800 pt-4">
+            <div className="border-t border-line pt-4">
                 <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5 uppercase tracking-wider">
-                        <Building2 size={12} className="text-emerald-400" /> Business Information
+                    <span className="text-xs font-semibold text-fg-subtle flex items-center gap-1.5">
+                        <Building2 size={12} className="text-success" /> Business Information
                     </span>
                     {!isEditingProfile ? (
-                        <button
-                            onClick={beginEditProfile}
-                            disabled={isLoadingProfile}
-                            className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-300 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5"
-                        >
-                            <Pencil size={12} /> Edit
-                        </button>
+                        <Button size="sm" variant="secondary" onClick={beginEditProfile} disabled={isLoadingProfile}><Pencil size={12} /> Edit</Button>
                     ) : (
                         <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => setIsEditingProfile(false)}
-                                disabled={isSavingProfile}
-                                className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-400 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5"
-                            >
-                                <X size={12} /> Cancel
-                            </button>
-                            <button
-                                onClick={handleSaveProfile}
-                                disabled={isSavingProfile}
-                                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 text-slate-50 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5"
-                            >
-                                {isSavingProfile ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Save
-                            </button>
+                            <Button size="sm" variant="secondary" onClick={() => setIsEditingProfile(false)} disabled={isSavingProfile}><X size={12} /> Cancel</Button>
+                            <Button size="sm" variant="primary" onClick={handleSaveProfile} disabled={isSavingProfile}>{isSavingProfile ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Save</Button>
                         </div>
                     )}
                 </div>
 
                 {isLoadingProfile ? (
-                    <div className="flex items-center gap-2 text-xs text-slate-500">
-                        <Loader2 size={12} className="animate-spin" /> Loading profile…
-                    </div>
+                    <div role="status" aria-busy="true"><Skeleton variant="text" lines={3} /><span className="sr-only">Loading profile…</span></div>
                 ) : !isEditingProfile ? (
                     /* ── View mode ── */
                     <div className="space-y-2">
@@ -560,18 +520,18 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                             ['Business Type', profile?.business_type],
                         ] as [string, string | undefined][]).map(([label, value]) => (
                             <div key={label} className="flex items-start gap-3">
-                                <span className="text-xs text-slate-500 w-28 shrink-0">{label}</span>
-                                <span className="text-xs text-slate-200 break-words">{value || '—'}</span>
+                                <span className="text-xs text-fg-muted w-28 shrink-0">{label}</span>
+                                <span className="text-xs text-fg break-words">{value || '—'}</span>
                             </div>
                         ))}
                         {renderTaxView()}
                         <div className="flex items-start gap-3 pt-1">
-                            <span className="text-xs text-slate-500 w-28 shrink-0 flex items-center gap-1"><MapPin size={11} /> Billing</span>
-                            <span className="text-xs text-slate-200 break-words">{formatAddress(profile?.billing_address)}</span>
+                            <span className="text-xs text-fg-muted w-28 shrink-0 flex items-center gap-1"><MapPin size={11} /> Billing</span>
+                            <span className="text-xs text-fg break-words">{formatAddress(profile?.billing_address)}</span>
                         </div>
                         <div className="flex items-start gap-3">
-                            <span className="text-xs text-slate-500 w-28 shrink-0 flex items-center gap-1"><MapPin size={11} /> Shipping</span>
-                            <span className="text-xs text-slate-200 break-words">
+                            <span className="text-xs text-fg-muted w-28 shrink-0 flex items-center gap-1"><MapPin size={11} /> Shipping</span>
+                            <span className="text-xs text-fg break-words">
                                 {addressIsEmpty(profile?.shipping_address) ? 'Same as billing' : formatAddress(profile?.shipping_address)}
                             </span>
                         </div>
@@ -579,89 +539,83 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                 ) : (
                     /* ── Edit mode ── */
                     <div className="space-y-3">
-                        <div className="grid grid-cols-2 gap-2">
-                            <div className="col-span-2">
-                                <label className="text-[11px] text-slate-500 mb-1 block">Business Name</label>
-                                <input value={draft.business_name || ''} onChange={e => setDraftField({ business_name: e.target.value })} className={FIELD_CLS} />
-                            </div>
-                            <div className="col-span-2">
-                                <label className="text-[11px] text-slate-500 mb-1 block">Legal Entity Name</label>
-                                <input value={draft.legal_entity_name || ''} onChange={e => setDraftField({ legal_entity_name: e.target.value })} placeholder="Registered legal name (if different)" className={FIELD_CLS} />
-                            </div>
-                            {renderTaxEdit()}
-                            <div className="col-span-2">
-                                <label className="text-[11px] text-slate-500 mb-1 block">Business Type</label>
-                                <input value={draft.business_type || ''} onChange={e => setDraftField({ business_type: e.target.value })} placeholder="e.g. Private Limited" className={FIELD_CLS} />
-                            </div>
-                        </div>
+                        <Grid gap="md">
+                            <GridItem span="full"><div>
+                                <label className="text-xs text-fg-muted mb-1 block">Business Name</label>
+                                <TextField name="business-name" value={draft.business_name || ''} onChange={e => setDraftField({ business_name: e.target.value })} />
+                            </div></GridItem>
+                            <GridItem span="full"><div>
+                                <label className="text-xs text-fg-muted mb-1 block">Legal Entity Name</label>
+                                <TextField name="legal-entity-name" value={draft.legal_entity_name || ''} onChange={e => setDraftField({ legal_entity_name: e.target.value })} placeholder="Registered legal name (if different)" />
+                            </div></GridItem>
+                            <GridItem span={{ md: 4, lg: 6 }}>{renderTaxEdit()}</GridItem>
+                            <GridItem span="full"><div>
+                                <label className="text-xs text-fg-muted mb-1 block">Business Type</label>
+                                <TextField name="business-type" value={draft.business_type || ''} onChange={e => setDraftField({ business_type: e.target.value })} placeholder="e.g. Private Limited" />
+                            </div></GridItem>
+                        </Grid>
 
                         {/* Billing Address */}
                         <div>
-                            <div className="text-[11px] font-semibold text-slate-400 mb-1.5 flex items-center gap-1"><MapPin size={11} /> Billing Address</div>
-                            <div className="grid grid-cols-2 gap-2">
-                                <input value={draft.billing_address?.street || ''} onChange={e => setDraftBilling({ street: e.target.value })} placeholder="Address Line 1" className={`col-span-2 ${FIELD_CLS}`} />
-                                <input value={draft.billing_address?.street2 || ''} onChange={e => setDraftBilling({ street2: e.target.value })} placeholder="Address Line 2" className={`col-span-2 ${FIELD_CLS}`} />
-                                <input value={draft.billing_address?.city || ''} onChange={e => setDraftBilling({ city: e.target.value })} placeholder="City" className={FIELD_CLS} />
-                                <input value={draft.billing_address?.state || ''} onChange={e => setDraftBilling({ state: e.target.value })} placeholder="State / Province" className={FIELD_CLS} />
-                                <input value={draft.billing_address?.postal_code || ''} onChange={e => setDraftBilling({ postal_code: e.target.value })} placeholder="Postal Code" className={FIELD_CLS} />
-                                <input value={draft.billing_address?.country || ''} onChange={e => setDraftBilling({ country: e.target.value })} placeholder="Country" className={FIELD_CLS} />
-                            </div>
+                            <div className="text-xs font-semibold text-fg-subtle mb-1.5 flex items-center gap-1"><MapPin size={11} /> Billing Address</div>
+                            <Grid gap="md">
+                                <GridItem span="full"><TextField name="billing-address-street" value={draft.billing_address?.street || ''} onChange={e => setDraftBilling({ street: e.target.value })} placeholder="Address Line 1" /></GridItem>
+                                <GridItem span="full"><TextField name="billing-address-street2" value={draft.billing_address?.street2 || ''} onChange={e => setDraftBilling({ street2: e.target.value })} placeholder="Address Line 2" /></GridItem>
+                                <GridItem span={{ md: 4, lg: 6 }}><TextField name="billing-address-city" value={draft.billing_address?.city || ''} onChange={e => setDraftBilling({ city: e.target.value })} placeholder="City" /></GridItem>
+                                <GridItem span={{ md: 4, lg: 6 }}><TextField name="billing-address-state" value={draft.billing_address?.state || ''} onChange={e => setDraftBilling({ state: e.target.value })} placeholder="State / Province" /></GridItem>
+                                <GridItem span={{ md: 4, lg: 6 }}><TextField name="billing-address-postal-code" value={draft.billing_address?.postal_code || ''} onChange={e => setDraftBilling({ postal_code: e.target.value })} placeholder="Postal Code" /></GridItem>
+                                <GridItem span={{ md: 4, lg: 6 }}><TextField name="billing-address-country" value={draft.billing_address?.country || ''} onChange={e => setDraftBilling({ country: e.target.value })} placeholder="Country" /></GridItem>
+                            </Grid>
                         </div>
 
-                        <label className="flex items-center gap-2 text-xs text-slate-400">
-                            <input type="checkbox" checked={shippingSame} onChange={e => setShippingSame(e.target.checked)} className="rounded border-slate-700 bg-slate-950" />
-                            Shipping same as Billing
-                        </label>
+                        <Checkbox name="shipping-same" label="Shipping same as Billing" checked={shippingSame} onChange={e => setShippingSame(e.target.checked)} />
 
                         {!shippingSame && (
                             <div>
-                                <div className="text-[11px] font-semibold text-slate-400 mb-1.5 flex items-center gap-1"><MapPin size={11} /> Shipping Address</div>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <input value={draft.shipping_address?.street || ''} onChange={e => setDraftShipping({ street: e.target.value })} placeholder="Address Line 1" className={`col-span-2 ${FIELD_CLS}`} />
-                                    <input value={draft.shipping_address?.street2 || ''} onChange={e => setDraftShipping({ street2: e.target.value })} placeholder="Address Line 2" className={`col-span-2 ${FIELD_CLS}`} />
-                                    <input value={draft.shipping_address?.city || ''} onChange={e => setDraftShipping({ city: e.target.value })} placeholder="City" className={FIELD_CLS} />
-                                    <input value={draft.shipping_address?.state || ''} onChange={e => setDraftShipping({ state: e.target.value })} placeholder="State / Province" className={FIELD_CLS} />
-                                    <input value={draft.shipping_address?.postal_code || ''} onChange={e => setDraftShipping({ postal_code: e.target.value })} placeholder="Postal Code" className={FIELD_CLS} />
-                                    <input value={draft.shipping_address?.country || ''} onChange={e => setDraftShipping({ country: e.target.value })} placeholder="Country" className={FIELD_CLS} />
-                                </div>
+                                <div className="text-xs font-semibold text-fg-subtle mb-1.5 flex items-center gap-1"><MapPin size={11} /> Shipping Address</div>
+                                <Grid gap="md">
+                                    <GridItem span="full"><TextField name="shipping-address-street" value={draft.shipping_address?.street || ''} onChange={e => setDraftShipping({ street: e.target.value })} placeholder="Address Line 1" /></GridItem>
+                                    <GridItem span="full"><TextField name="shipping-address-street2" value={draft.shipping_address?.street2 || ''} onChange={e => setDraftShipping({ street2: e.target.value })} placeholder="Address Line 2" /></GridItem>
+                                    <GridItem span={{ md: 4, lg: 6 }}><TextField name="shipping-address-city" value={draft.shipping_address?.city || ''} onChange={e => setDraftShipping({ city: e.target.value })} placeholder="City" /></GridItem>
+                                    <GridItem span={{ md: 4, lg: 6 }}><TextField name="shipping-address-state" value={draft.shipping_address?.state || ''} onChange={e => setDraftShipping({ state: e.target.value })} placeholder="State / Province" /></GridItem>
+                                    <GridItem span={{ md: 4, lg: 6 }}><TextField name="shipping-address-postal-code" value={draft.shipping_address?.postal_code || ''} onChange={e => setDraftShipping({ postal_code: e.target.value })} placeholder="Postal Code" /></GridItem>
+                                    <GridItem span={{ md: 4, lg: 6 }}><TextField name="shipping-address-country" value={draft.shipping_address?.country || ''} onChange={e => setDraftShipping({ country: e.target.value })} placeholder="Country" /></GridItem>
+                                </Grid>
                             </div>
                         )}
 
                         {/* Accounting Preferences */}
-                        <div className="border-t border-slate-800/60 pt-3">
-                            <div className="text-[11px] font-semibold text-slate-400 mb-2 flex items-center gap-1">
+                        <div className="border-t border-line pt-3">
+                            <div className="text-xs font-semibold text-fg-subtle mb-2 flex items-center gap-1">
                                 <DollarSign size={11} /> Accounting Preferences
                             </div>
-                            <div className="grid grid-cols-2 gap-2">
-                                <div>
-                                    <label className="text-[11px] text-slate-500 mb-1 block">Payment Terms</label>
-                                    <select value={draft.payment_terms || ''} onChange={e => setDraftField({ payment_terms: e.target.value })} className={FIELD_CLS}>
-                                        <option value="">Select…</option>
-                                        {PAYMENT_TERMS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="text-[11px] text-slate-500 mb-1 block">Customer Currency</label>
-                                    <input value={draft.customer_currency || ''} onChange={e => setDraftField({ customer_currency: e.target.value.toUpperCase() })} placeholder={bizSettings?.base_currency || 'e.g. USD'} className={`${FIELD_CLS} font-mono`} maxLength={3} />
-                                </div>
-                                <div className="col-span-2">
-                                    <label className="text-[11px] text-slate-500 mb-1 block">Preferred Tax Group</label>
-                                    <input value={draft.preferred_tax_group || ''} onChange={e => setDraftField({ preferred_tax_group: e.target.value })} placeholder="e.g. Standard GST 18%" className={FIELD_CLS} />
-                                </div>
-                            </div>
+                            <Grid gap="md">
+                                <GridItem span={{ md: 4, lg: 6 }}><div>
+                                    <label className="text-xs text-fg-muted mb-1 block">Payment Terms</label>
+                                    <Select name="payment-terms" value={draft.payment_terms || ''} onChange={e => setDraftField({ payment_terms: e.target.value })} options={[{ value: '', label: 'Select…' }, ...PAYMENT_TERMS_OPTIONS]} />
+                                </div></GridItem>
+                                <GridItem span={{ md: 4, lg: 6 }}><div>
+                                    <label className="text-xs text-fg-muted mb-1 block">Customer Currency</label>
+                                    <TextField name="customer-currency" value={draft.customer_currency || ''} onChange={e => setDraftField({ customer_currency: e.target.value.toUpperCase() })} placeholder={bizSettings?.base_currency || 'e.g. USD'} maxLength={3} className="font-mono" />
+                                </div></GridItem>
+                                <GridItem span="full"><div>
+                                    <label className="text-xs text-fg-muted mb-1 block">Preferred Tax Group</label>
+                                    <TextField name="preferred-tax-group" value={draft.preferred_tax_group || ''} onChange={e => setDraftField({ preferred_tax_group: e.target.value })} placeholder="e.g. Standard GST 18%" />
+                                </div></GridItem>
+                            </Grid>
                         </div>
 
                         {/* Internal Notes */}
-                        <div className="border-t border-slate-800/60 pt-3">
-                            <div className="text-[11px] font-semibold text-slate-400 mb-2 flex items-center gap-1">
+                        <div className="border-t border-line pt-3">
+                            <div className="text-xs font-semibold text-fg-subtle mb-2 flex items-center gap-1">
                                 <FileText size={11} /> Internal Notes
                             </div>
-                            <textarea
+                            <Textarea
+                                name="internal-notes"
                                 value={draft.internal_notes || ''}
                                 onChange={e => setDraftField({ internal_notes: e.target.value })}
                                 placeholder="Notes visible only to staff (sales, accounts, support)…"
                                 rows={3}
-                                className={`${FIELD_CLS} resize-none`}
                             />
                         </div>
                     </div>
@@ -670,9 +624,9 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
 
             {/* ─── Accounting Information (view mode) ─────────────────────────── */}
             {!isEditingProfile && (profile?.payment_terms || profile?.customer_currency || profile?.preferred_tax_group || profile?.internal_notes) && (
-                <div className="border-t border-slate-800 pt-4 space-y-2">
-                    <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5 uppercase tracking-wider mb-2">
-                        <DollarSign size={12} className="text-blue-400" /> Accounting
+                <div className="border-t border-line pt-4 space-y-2">
+                    <span className="text-xs font-semibold text-fg-subtle flex items-center gap-1.5 mb-2">
+                        <DollarSign size={12} className="text-primary" /> Accounting
                     </span>
                     {([
                         ['Payment Terms', profile?.payment_terms ? (PAYMENT_TERMS_LABELS[profile.payment_terms] || profile.payment_terms) : ''],
@@ -680,55 +634,53 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                         ['Tax Group', profile?.preferred_tax_group],
                     ] as [string, string | undefined][]).map(([label, value]) => value ? (
                         <div key={label} className="flex items-start gap-3">
-                            <span className="text-xs text-slate-500 w-28 shrink-0">{label}</span>
-                            <span className="text-xs text-slate-200 break-words">{value}</span>
+                            <span className="text-xs text-fg-muted w-28 shrink-0">{label}</span>
+                            <span className="text-xs text-fg break-words">{value}</span>
                         </div>
                     ) : null)}
                     {profile?.internal_notes && (
                         <div className="flex items-start gap-3">
-                            <span className="text-xs text-slate-500 w-28 shrink-0 flex items-center gap-1"><FileText size={11} /> Notes</span>
-                            <span className="text-xs text-slate-300 break-words italic">{profile.internal_notes}</span>
+                            <span className="text-xs text-fg-muted w-28 shrink-0 flex items-center gap-1"><FileText size={11} /> Notes</span>
+                            <span className="text-xs text-fg-subtle break-words italic">{profile.internal_notes}</span>
                         </div>
                     )}
                 </div>
             )}
 
             {/* ─── Invoices (Accounting cross-module, read-only) ──────────────── */}
-            <div className="border-t border-slate-800 pt-4">
-                <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5 uppercase tracking-wider mb-3">
-                    <FileText size={12} className="text-amber-400" /> Invoices
+            <div className="border-t border-line pt-4">
+                <span className="text-xs font-semibold text-fg-subtle flex items-center gap-1.5 mb-3">
+                    <FileText size={12} className="text-warning" /> Invoices
                 </span>
 
                 {isLoadingInvoices ? (
-                    <div className="flex items-center gap-2 text-xs text-slate-500">
-                        <Loader2 size={12} className="animate-spin" /> Loading invoices…
-                    </div>
+                    <div role="status" aria-busy="true"><Skeleton variant="text" lines={2} /><span className="sr-only">Loading invoices…</span></div>
                 ) : invoiceCount === 0 ? (
-                    <div className="text-xs text-slate-500">No invoices for this customer yet.</div>
+                    <div className="text-xs text-fg-muted">No invoices for this customer yet.</div>
                 ) : (
                     <>
-                        <div className="grid grid-cols-2 gap-2 mb-3">
-                            <div className="bg-slate-950/60 border border-slate-800 rounded-lg p-3">
-                                <div className="text-[11px] text-slate-500">Invoice Count</div>
-                                <div className="text-lg font-semibold text-slate-100">{invoiceCount}</div>
-                            </div>
-                            <div className="bg-slate-950/60 border border-slate-800 rounded-lg p-3">
-                                <div className="text-[11px] text-slate-500">Total Purchase Value</div>
-                                <div className="text-lg font-semibold text-emerald-400">{formatters.formatCurrency(totalPurchaseValue)}</div>
-                            </div>
-                        </div>
+                        <Grid gap="md" className="mb-3">
+                            <GridItem span={{ md: 4, lg: 6 }}><div className="bg-surface-sunken border border-line rounded-nb p-3">
+                                <div className="text-xs text-fg-muted">Invoice Count</div>
+                                <div className="text-lg font-semibold text-fg">{invoiceCount}</div>
+                            </div></GridItem>
+                            <GridItem span={{ md: 4, lg: 6 }}><div className="bg-surface-sunken border border-line rounded-nb p-3">
+                                <div className="text-xs text-fg-muted">Total Purchase Value</div>
+                                <div className="text-lg font-semibold text-success">{formatters.formatCurrency(totalPurchaseValue)}</div>
+                            </div></GridItem>
+                        </Grid>
                         <div className="space-y-1.5">
-                            <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Recent Invoices</div>
+                            <div className="text-xs font-semibold text-fg-subtle">Recent Invoices</div>
                             {recentInvoices.map((inv) => (
-                                <div key={inv.id} className="flex items-center justify-between gap-2 bg-slate-950/40 border border-slate-800/60 rounded-lg px-3 py-2">
+                                <div key={inv.id} className="flex items-center justify-between gap-2 bg-surface-sunken border border-line rounded-nb px-3 py-2">
                                     <div className="min-w-0">
-                                        <div className="text-xs text-slate-200 font-mono truncate">{inv.invoice_number || inv.id?.substring(0, 8)}</div>
-                                        <div className="text-[11px] text-slate-500">
+                                        <div className="text-xs text-fg font-mono truncate">{inv.invoice_number || inv.id?.substring(0, 8)}</div>
+                                        <div className="text-xs text-fg-muted">
                                             {inv.issue_date ? parseUtcDate(inv.issue_date).toLocaleDateString() : '—'}
                                             {inv.status ? <span className="ml-2 capitalize">{inv.status}</span> : null}
                                         </div>
                                     </div>
-                                    <div className="text-xs text-slate-200 shrink-0">{formatters.formatCurrency(Number(inv.total_amount) || 0)}</div>
+                                    <div className="text-xs text-fg shrink-0">{formatters.formatCurrency(Number(inv.total_amount) || 0)}</div>
                                 </div>
                             ))}
                         </div>

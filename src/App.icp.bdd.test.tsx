@@ -10,6 +10,7 @@ const shellState: {
 } = { getFeatureState: () => 'enabled', hasPermission: () => true, permissionsLoaded: true };
 
 vi.mock('@so360/shell-context', () => ({
+  useDatasetSchema: () => ({ fields: [], isLoading: false, error: null }),
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useShellBridge: () => ({
     currentTenant: { id: 'tenant-1' },

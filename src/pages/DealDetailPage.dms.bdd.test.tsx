@@ -140,7 +140,7 @@ const setup = (docs: any[]) => {
 async function renderAndOpenDocsTab() {
     render(<DealDetailPage />);
     await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
-    const docsTab = screen.getByRole('button', { name: /Docs/i });
+    const docsTab = screen.getByRole('tab', { name: /Docs/i });
     await act(async () => { fireEvent.click(docsTab); });
 }
 

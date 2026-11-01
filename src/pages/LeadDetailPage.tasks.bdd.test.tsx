@@ -162,7 +162,7 @@ import LeadDetailPage from './LeadDetailPage';
 
 const clickTasksTab = async () => {
   await waitFor(() => expect(screen.getByText(/Tasks/)).toBeInTheDocument());
-  const tasksTab = Array.from(screen.getAllByRole('button')).find(btn => btn.textContent?.includes('Tasks'));
+  const tasksTab = screen.getAllByRole('tab').find(btn => btn.textContent?.includes('Tasks'));
   if (tasksTab) fireEvent.click(tasksTab);
 };
 
@@ -247,7 +247,7 @@ describe('Lead Detail Tasks Tab — Quick View Enhancements', () => {
       render(<LeadDetailPage />);
       // Click Tasks tab to show tasks
       await waitFor(() => expect(screen.getByText(/Tasks/)).toBeInTheDocument());
-      const tasksTab = Array.from(screen.getAllByRole('button')).find(btn => btn.textContent?.includes('Tasks'));
+      const tasksTab = screen.getAllByRole('tab').find(btn => btn.textContent?.includes('Tasks'));
       expect(tasksTab).toBeTruthy();
       fireEvent.click(tasksTab!);
 
@@ -262,7 +262,7 @@ describe('Lead Detail Tasks Tab — Quick View Enhancements', () => {
       render(<LeadDetailPage />);
       // Click Tasks tab to show tasks
       await waitFor(() => expect(screen.getByText(/Tasks/)).toBeInTheDocument());
-      const tasksTab = Array.from(screen.getAllByRole('button')).find(btn => btn.textContent?.includes('Tasks'));
+      const tasksTab = screen.getAllByRole('tab').find(btn => btn.textContent?.includes('Tasks'));
       fireEvent.click(tasksTab!);
 
       await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
@@ -384,7 +384,7 @@ describe('Lead Detail Tasks Tab — Quick View Enhancements', () => {
 
       const overdueBadge = screen.getByTestId('overdue-badge-task-1');
       expect(overdueBadge).toHaveTextContent('Overdue');
-      expect(overdueBadge).toHaveClass('bg-rose-500/10', 'text-rose-400', 'border-rose-500/30');
+      expect(overdueBadge).toHaveAttribute('data-tone', 'danger');
     });
 
     it('When task status is DONE / Then does not show Overdue badge (even if due_date passed)', async () => {
@@ -413,9 +413,10 @@ describe('Lead Detail Tasks Tab — Quick View Enhancements', () => {
       await clickTasksTab();
       await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
 
-      // Find the card container
-      const card = screen.getByTestId('overdue-badge-task-1').closest('[class*="flex items-start gap-4"]');
-      expect(card).toHaveClass('border-rose-500/40', 'bg-rose-950/10');
+      // Comb: overdue is signalled by the danger-tone Overdue badge on the task row (no tinted card).
+      const card = document.getElementById('task-card-task-1');
+      expect(card).toContainElement(screen.getByTestId('overdue-badge-task-1'));
+      expect(screen.getByTestId('overdue-badge-task-1')).toHaveAttribute('data-tone', 'danger');
     });
 
     it('When task is overdue / Then due date text is displayed in red', async () => {
@@ -431,7 +432,7 @@ describe('Lead Detail Tasks Tab — Quick View Enhancements', () => {
 
       // Due date should be in red for overdue tasks
       const dueDateText = screen.getByText(/^Due/);
-      expect(dueDateText).toHaveClass('text-rose-400');
+      expect(dueDateText).toHaveClass('text-danger');
     });
 
     it('When task due_date is today / Then does not show Overdue badge', async () => {
@@ -502,7 +503,7 @@ describe('Lead Detail Tasks Tab — Quick View Enhancements', () => {
       await waitFor(() => expect(screen.getByTestId('status-button-task-1')).toBeInTheDocument());
 
       // Find checkbox button (before the title)
-      const checkboxes = screen.getAllByRole('button').filter(btn => btn.className.includes('w-5 h-5 rounded border'));
+      const checkboxes = screen.getAllByRole('button', { name: /Mark task (not )?done/ });
       expect(checkboxes.length).toBeGreaterThan(0);
 
       fireEvent.click(checkboxes[0]);
@@ -519,7 +520,7 @@ describe('Lead Detail Tasks Tab — Quick View Enhancements', () => {
 
       // Edit button should exist (it's conditionally visible on hover via CSS)
       const allButtons = screen.getAllByRole('button');
-      const editButtons = allButtons.filter(btn => btn.className.includes('hover:text-blue-400') && btn.className.includes('hover:bg-slate-700'));
+      const editButtons = allButtons.filter(btn => btn.getAttribute('aria-label') === 'Edit Task');
       expect(editButtons.length).toBeGreaterThan(0);
     });
   });
@@ -636,7 +637,7 @@ describe('Lead Detail Tasks Tab — Reminders & Completed-Task Rules', () => {
   const openTasksTab = async () => {
     render(<LeadDetailPage />);
     await waitFor(() => expect(screen.getByText(/Tasks/)).toBeInTheDocument());
-    const tasksTab = Array.from(screen.getAllByRole('button')).find(btn => btn.textContent?.includes('Tasks'));
+    const tasksTab = screen.getAllByRole('tab').find(btn => btn.textContent?.includes('Tasks'));
     fireEvent.click(tasksTab!);
   };
 
@@ -674,7 +675,7 @@ describe('Lead Detail Tasks Tab — Reminders & Completed-Task Rules', () => {
       fireEvent.click(screen.getByTestId('task-reminder-rem-1'));
       await waitFor(() => {
         const card = document.getElementById('task-card-rem-1');
-        expect(card?.className).toContain('ring-amber-500/70');
+        expect(card?.className).toContain('ring-warning');
       });
     });
 
@@ -736,20 +737,19 @@ describe('Lead Detail — readability and header layout', () => {
   const openTasks = async () => {
     render(<LeadDetailPage />);
     await waitFor(() => expect(screen.getByText(/Tasks/)).toBeInTheDocument());
-    const tab = Array.from(screen.getAllByRole('button')).find(b => b.textContent?.includes('Tasks'));
+    const tab = screen.getAllByRole('tab').find(b => b.textContent?.includes('Tasks'));
     fireEvent.click(tab!);
     await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
   };
 
   /** Lowest slate step still legible on the light theme's white card. */
-  const READABLE = /text-slate-(50|100|200|300)\b/;
+  const READABLE = /text-fg(-muted|-subtle)?(\s|$)/;
 
   describe('Given a task card with description, due date and assignee', () => {
     it('When the description renders / Then it uses a readable secondary tone, not the old slate-400', async () => {
       await openTasks();
       const description = screen.getByText('Call them about the proposal');
       expect(description.className).toMatch(READABLE);
-      expect(description.className).not.toMatch(/text-slate-[456]00\b/);
     });
 
     it('When the due date renders on a task that is not overdue / Then it is legible rather than a faded rose tint', async () => {
@@ -775,19 +775,16 @@ describe('Lead Detail — readability and header layout', () => {
       await openTasks();
       const title = screen.getByText('Follow up with client');
       // Raising the metadata must not flatten the hierarchy the report asked to keep.
-      expect(title.className).toMatch(/font-bold/);
-      expect(title.className).toMatch(/text-slate-50\b/);
+      expect(title.className).toMatch(/font-medium/);
+      expect(title.className).toMatch(/text-fg\b/);
     });
   });
 
   describe('Given the record header', () => {
-    it('When the Delete action renders / Then it is icon-only but still named for assistive tech and hover', async () => {
+    it('When the Delete action renders / Then it lives in the overflow menu and is named', async () => {
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
-
-      const del = screen.getByLabelText('Delete');
-      expect(del).toHaveAttribute('title', 'Delete');
-      expect(del.textContent).toBe('');
+      expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument();
     });
 
     it('When the Delete action is used / Then the confirmation step is still required', async () => {
@@ -795,46 +792,54 @@ describe('Lead Detail — readability and header layout', () => {
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
 
-      await user.click(screen.getByLabelText('Delete'));
+      await user.click(screen.getByRole('button', { name: 'Delete' }));
       await waitFor(() =>
         expect(screen.getByText(/Are you sure you want to delete this lead/i)).toBeInTheDocument(),
       );
       expect(mockDeleteLead).not.toHaveBeenCalled();
     });
 
-    it('When the primary CTA sits beside it / Then only the CTA carries a text label', async () => {
+    it('When the header renders / Then Create Deal is the single primary action', async () => {
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('Create Deal')).toBeInTheDocument());
-      expect(screen.queryByRole('button', { name: /^Delete$/ })?.textContent).toBe('');
+      expect(document.querySelectorAll('[data-slot="primary"]').length).toBe(1);
     });
   });
 
   describe('Given the workspace tab bar', () => {
-    it('When the tabs render / Then the strip scrolls on its own so no label is clipped', async () => {
+    it('When the tabs render / Then Overview is first and Activity is last', async () => {
       render(<LeadDetailPage />);
-      const strip = await screen.findByTestId('detail-tab-strip');
-      expect(strip.className).toMatch(/overflow-x-auto/);
-      // Each tab refuses to shrink or wrap, so labels stay whole.
-      const tabs = Array.from(strip.querySelectorAll('button'));
-      expect(tabs.length).toBeGreaterThan(0);
-      tabs.forEach(tab => {
-        expect(tab.className).toMatch(/shrink-0/);
-        expect(tab.className).toMatch(/whitespace-nowrap/);
-      });
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      const tabs = screen.getAllByRole('tab').map(t => t.textContent?.trim());
+      expect(tabs[0]).toBe('Overview');
+      expect(tabs[tabs.length - 1]).toBe('Activity');
     });
 
-    it('When the layout settings control renders / Then it sits outside the scrolling strip so it cannot squeeze the last tab', async () => {
+    it('When every section is visible / Then the Feedback tab is still rendered', async () => {
       render(<LeadDetailPage />);
-      const strip = await screen.findByTestId('detail-tab-strip');
-      const settings = screen.getByLabelText('Layout Settings');
-      expect(strip.contains(settings)).toBe(false);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      const labels = screen.getAllByRole('tab').map(t => t.textContent?.trim());
+      expect(labels.some(l => l?.startsWith('Feedback'))).toBe(true);
     });
+  });
+});
 
-    it('When every section is visible / Then the last tab is still rendered in full', async () => {
-      render(<LeadDetailPage />);
-      const strip = await screen.findByTestId('detail-tab-strip');
-      const labels = Array.from(strip.querySelectorAll('button')).map(b => b.textContent?.trim());
-      expect(labels.some(l => l === 'Feedback')).toBe(true);
-    });
+describe('Lead Detail - DetailPageTemplate slots', () => {
+  it('Given a loaded lead / When rendered / Then header, tabs and rail slots are populated', async () => {
+    render(<LeadDetailPage />);
+    await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+    expect(document.querySelector('[data-slot="primary"]')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Create Deal' })).toBeInTheDocument();
+    expect(document.querySelectorAll('[data-slot="secondary"] button').length).toBeLessThanOrEqual(2);
+    expect(screen.getAllByRole('tab')[0]).toHaveTextContent('Overview');
+    expect(screen.getByTestId('recent-activity-rail')).toBeInTheDocument();
+  });
+
+  it('Given the Overview tab is default / When Activity is chosen / Then it becomes selected', async () => {
+    render(<LeadDetailPage />);
+    await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+    expect(screen.getByRole('tab', { name: 'Overview' })).toHaveAttribute('aria-selected', 'true');
+    fireEvent.click(screen.getByRole('tab', { name: 'Activity' }));
+    expect(screen.getByRole('tab', { name: 'Activity' })).toHaveAttribute('aria-selected', 'true');
   });
 });

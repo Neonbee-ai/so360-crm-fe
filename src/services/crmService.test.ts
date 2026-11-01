@@ -987,12 +987,12 @@ describe('Given crmService (legacy layer)', () => {
   it('When action / Then getDealsByLeadId requests deals filtered server-side by lead_id', async () => {
     // Backend already filters by lead_id, so the FE returns the response verbatim.
     mockFetchSuccess([
-      { id: 'd1', lead_id: 'l1', value: '0', notes: [], documents: [], activities: [] },
+      { id: 'd1', lead_id: '11111111-1111-4111-8111-111111111111', value: '0', notes: [], documents: [], activities: [] },
     ]);
-    const result = await crmService.getDealsByLeadId('l1');
+    const result = await crmService.getDealsByLeadId('11111111-1111-4111-8111-111111111111');
     const calledUrl = fetchMock.mock.calls[0][0];
     expect(String(calledUrl)).toContain('/deals');
-    expect(String(calledUrl)).toContain('lead_id=l1');
+    expect(String(calledUrl)).toContain('lead_id=11111111-1111-4111-8111-111111111111');
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe('d1');
   });
@@ -1034,24 +1034,24 @@ describe('Given crmService (legacy layer)', () => {
   it('When action / Then getTasksByLeadId requests tasks filtered server-side by lead_id', async () => {
     // Backend already filters by lead_id, so the FE returns the response verbatim.
     mockFetchSuccess([
-      { id: 't1', lead_id: 'l1', title: 'A', status: 'open' },
+      { id: 't1', lead_id: '11111111-1111-4111-8111-111111111111', title: 'A', status: 'open' },
     ]);
-    const result = await crmService.getTasksByLeadId('l1');
+    const result = await crmService.getTasksByLeadId('11111111-1111-4111-8111-111111111111');
     const calledUrl = fetchMock.mock.calls[0][0];
     expect(String(calledUrl)).toContain('/tasks');
-    expect(String(calledUrl)).toContain('lead_id=l1');
+    expect(String(calledUrl)).toContain('lead_id=11111111-1111-4111-8111-111111111111');
     expect(result).toHaveLength(1);
   });
 
   it('When action / Then getTasksByDealId requests tasks filtered server-side by deal_id', async () => {
     // Backend already filters by deal_id, so the FE returns the response verbatim.
     mockFetchSuccess([
-      { id: 't1', deal_id: 'd1', title: 'A', status: 'open' },
+      { id: 't1', deal_id: '22222222-2222-4222-8222-222222222222', title: 'A', status: 'open' },
     ]);
-    const result = await crmService.getTasksByDealId('d1');
+    const result = await crmService.getTasksByDealId('22222222-2222-4222-8222-222222222222');
     const calledUrl = fetchMock.mock.calls[0][0];
     expect(String(calledUrl)).toContain('/tasks');
-    expect(String(calledUrl)).toContain('deal_id=d1');
+    expect(String(calledUrl)).toContain('deal_id=22222222-2222-4222-8222-222222222222');
     expect(result).toHaveLength(1);
   });
 
@@ -1519,98 +1519,6 @@ describe('Given crmService (legacy layer)', () => {
     expect(result.credit_limit).toBe(5000);
   });
 
-  // Customer Segments
-  it('When action / Then getCustomerSegments fetches segments', async () => {
-    mockFetchSuccess([{ id: 'seg1', name: 'VIP' }]);
-    const result = await crmService.getCustomerSegments();
-    expect(result).toHaveLength(1);
-  });
-
-  it('When action / Then getCustomerSegmentById fetches one segment', async () => {
-    mockFetchSuccess({ id: 'seg1', name: 'VIP' });
-    const result = await crmService.getCustomerSegmentById('seg1');
-    expect(result.name).toBe('VIP');
-  });
-
-  it('When action / Then createCustomerSegment sends POST', async () => {
-    mockFetchSuccess({ id: 'seg-new' });
-    const result = await crmService.createCustomerSegment({ name: 'New' });
-    expect(result.id).toBe('seg-new');
-  });
-
-  it('When action / Then updateCustomerSegment sends PATCH', async () => {
-    mockFetchSuccess({ id: 'seg1', name: 'Updated' });
-    const result = await crmService.updateCustomerSegment('seg1', { name: 'Updated' });
-    expect(result.name).toBe('Updated');
-  });
-
-  it('When action / Then deleteCustomerSegment sends DELETE', async () => {
-    mockFetchSuccess({ message: 'ok' });
-    await crmService.deleteCustomerSegment('seg1');
-    expect(fetchMock).toHaveBeenCalled();
-  });
-
-  it('When action / Then getCustomerSegmentCustomers fetches customers', async () => {
-    mockFetchSuccess([{ id: 'c1' }]);
-    const result = await crmService.getCustomerSegmentCustomers('seg1');
-    expect(result).toHaveLength(1);
-  });
-
-  it('When action / Then getCustomerSegmentLeads fetches leads', async () => {
-    mockFetchSuccess([{ id: 'l1' }]);
-    const result = await crmService.getCustomerSegmentLeads('seg1');
-    expect(result).toHaveLength(1);
-  });
-
-  it('When action / Then getCustomerSegmentMembers fetches with params', async () => {
-    mockFetchSuccess({ members: [{ id: 'c1' }] });
-    const result = await crmService.getCustomerSegmentMembers('seg1', { type: 'customer' });
-    expect(result.members).toHaveLength(1);
-  });
-
-  it('When action / Then addCustomerSegmentMembers sends POST', async () => {
-    mockFetchSuccess({ added: 2 });
-    const result = await crmService.addCustomerSegmentMembers('seg1', [{ id: 'c1', type: 'customer' }]);
-    expect(result.added).toBe(2);
-  });
-
-  it('When action / Then removeCustomerSegmentMembers sends DELETE', async () => {
-    mockFetchSuccess({ removed: 1 });
-    const result = await crmService.removeCustomerSegmentMembers('seg1', [{ id: 'c1', type: 'customer' }]);
-    expect(result.removed).toBe(1);
-  });
-
-  // Marketing APIs
-  it('When action / Then getAbandonedCarts fetches carts', async () => {
-    mockFetchSuccess([{ id: 'cart1' }]);
-    const result = await crmService.getAbandonedCarts('s1');
-    expect(result).toHaveLength(1);
-  });
-
-  it('When action / Then getAbandonedCartStats fetches stats', async () => {
-    mockFetchSuccess({ totalAbandoned: 5 });
-    const result = await crmService.getAbandonedCartStats('s1');
-    expect(result.totalAbandoned).toBe(5);
-  });
-
-  it('When action / Then getAbandonedCart fetches single cart', async () => {
-    mockFetchSuccess({ id: 'cart1' });
-    const result = await crmService.getAbandonedCart('s1', 'cart1');
-    expect(result.id).toBe('cart1');
-  });
-
-  it('When action / Then sendAbandonedCartRecovery sends POST', async () => {
-    mockFetchSuccess({ sent: true });
-    const result = await crmService.sendAbandonedCartRecovery('s1', 'cart1');
-    expect(result.sent).toBe(true);
-  });
-
-  it('When action / Then updateAbandonedCartStatus sends PATCH', async () => {
-    mockFetchSuccess({ status: 'recovered' });
-    const result = await crmService.updateAbandonedCartStatus('s1', 'cart1', 'recovered');
-    expect(result.status).toBe('recovered');
-  });
-
   it('When action / Then getStorefrontActivity fetches activities', async () => {
     mockFetchSuccess([{ id: 'a1' }]);
     const result = await crmService.getStorefrontActivity('l1');
@@ -1633,182 +1541,6 @@ describe('Given crmService (legacy layer)', () => {
     mockFetchSuccess([{ id: 'c1' }]);
     const result = await crmService.getStorefrontAbandonedCarts('l1');
     expect(result).toHaveLength(1);
-  });
-
-  it('When action / Then getAllStorefrontSearches fetches searches', async () => {
-    mockFetchSuccess([{ id: 's1', search_query: 'test' }]);
-    const result = await crmService.getAllStorefrontSearches();
-    expect(result).toHaveLength(1);
-  });
-
-  it('When action / Then getMarketingReviews fetches reviews', async () => {
-    mockFetchSuccess([{ id: 'r1' }]);
-    const result = await crmService.getMarketingReviews('s1');
-    expect(result).toHaveLength(1);
-  });
-
-  it('When action / Then getMarketingWishlist fetches wishlist', async () => {
-    mockFetchSuccess([{ id: 'w1' }]);
-    const result = await crmService.getMarketingWishlist('s1');
-    expect(result).toHaveLength(1);
-  });
-
-  it('When action / Then getCampaigns fetches campaigns', async () => {
-    mockFetchSuccess({ data: [{ id: 'c1' }] });
-    const result = await crmService.getCampaigns('s1');
-    expect(result.data).toHaveLength(1);
-  });
-
-  it('When action / Then getCampaign fetches single campaign', async () => {
-    mockFetchSuccess({ id: 'c1' });
-    const result = await crmService.getCampaign('s1', 'c1');
-    expect(result.id).toBe('c1');
-  });
-
-  it('When action / Then createCampaign sends POST', async () => {
-    mockFetchSuccess({ id: 'c-new' });
-    const result = await crmService.createCampaign('s1', { name: 'Camp' });
-    expect(result.id).toBe('c-new');
-  });
-
-  it('When action / Then updateCampaign sends PUT', async () => {
-    mockFetchSuccess({ id: 'c1', name: 'Updated' });
-    const result = await crmService.updateCampaign('s1', 'c1', { name: 'Updated' });
-    expect(result.name).toBe('Updated');
-  });
-
-  it('When action / Then deleteCampaign sends DELETE', async () => {
-    mockFetchSuccess({});
-    await crmService.deleteCampaign('s1', 'c1');
-    expect(fetchMock).toHaveBeenCalled();
-  });
-
-  it('When action / Then sendCampaignNow sends POST', async () => {
-    mockFetchSuccess({ sent: true });
-    await crmService.sendCampaignNow('s1', 'c1');
-    expect(fetchMock).toHaveBeenCalled();
-  });
-
-  it('When action / Then scheduleCampaign sends POST with scheduleAt', async () => {
-    mockFetchSuccess({ scheduled: true });
-    await crmService.scheduleCampaign('s1', 'c1', '2024-12-01T10:00:00Z');
-    expect(fetchMock).toHaveBeenCalled();
-  });
-
-  it('When action / Then pauseCampaign sends POST', async () => {
-    mockFetchSuccess({});
-    await crmService.pauseCampaign('s1', 'c1');
-    expect(fetchMock).toHaveBeenCalled();
-  });
-
-  it('When action / Then testSendCampaign sends POST with email', async () => {
-    mockFetchSuccess({});
-    await crmService.testSendCampaign('s1', 'c1', 'test@test.com');
-    expect(fetchMock).toHaveBeenCalled();
-  });
-
-  it('When action / Then getCampaignRecipients fetches recipients', async () => {
-    mockFetchSuccess({ data: [{ email: 'a@b.com' }] });
-    const result = await crmService.getCampaignRecipients('s1', 'c1');
-    expect(result.data).toHaveLength(1);
-  });
-
-  it('When action / Then getMarketingSegments fetches segments', async () => {
-    mockFetchSuccess({ data: [] });
-    const result = await crmService.getMarketingSegments('s1');
-    expect(result.data).toBeDefined();
-  });
-
-  it('When action / Then getMarketingProductInterest fetches data', async () => {
-    mockFetchSuccess({ data: [] });
-    const result = await crmService.getMarketingProductInterest('s1');
-    expect(result).toBeDefined();
-  });
-
-  it('When action / Then getMarketingBestSellingProducts fetches data', async () => {
-    mockFetchSuccess({ data: [] });
-    const result = await crmService.getMarketingBestSellingProducts('s1');
-    expect(result).toBeDefined();
-  });
-
-  it('When action / Then getMarketingTopBuyers fetches data', async () => {
-    mockFetchSuccess({ data: [] });
-    const result = await crmService.getMarketingTopBuyers('s1');
-    expect(result).toBeDefined();
-  });
-
-  it('When action / Then getMarketingInactiveCustomers fetches data', async () => {
-    mockFetchSuccess({ data: [] });
-    const result = await crmService.getMarketingInactiveCustomers('s1');
-    expect(result).toBeDefined();
-  });
-
-  it('When action / Then getMarketingConversionFunnel fetches data', async () => {
-    mockFetchSuccess({ funnel: {} });
-    const result = await crmService.getMarketingConversionFunnel('s1');
-    expect(result).toBeDefined();
-  });
-
-  it('When action / Then getMarketingEmailPerformance fetches data', async () => {
-    mockFetchSuccess({ openRate: 45 });
-    const result = await crmService.getMarketingEmailPerformance('s1');
-    expect(result.openRate).toBe(45);
-  });
-
-  // Newsletter
-  it('When action / Then getNewsletterSubscribers fetches subscribers', async () => {
-    mockFetchSuccess([{ id: 'sub1' }]);
-    const result = await crmService.getNewsletterSubscribers('s1');
-    expect(result).toHaveLength(1);
-  });
-
-  it('When action / Then addNewsletterSubscriber sends POST', async () => {
-    mockFetchSuccess({ id: 'sub-new' });
-    const result = await crmService.addNewsletterSubscriber('s1', { email: 'a@b.com' });
-    expect(result.id).toBe('sub-new');
-  });
-
-  it('When action / Then unsubscribeNewsletter sends POST', async () => {
-    mockFetchSuccess({});
-    await crmService.unsubscribeNewsletter('s1', 'sub1');
-    expect(fetchMock).toHaveBeenCalled();
-  });
-
-  it('When action / Then deleteNewsletterSubscriber sends DELETE', async () => {
-    mockFetchSuccess({});
-    await crmService.deleteNewsletterSubscriber('s1', 'sub1');
-    expect(fetchMock).toHaveBeenCalled();
-  });
-
-  // Coupons
-  it('When action / Then getCoupons fetches coupons', async () => {
-    mockFetchSuccess([{ id: 'cp1' }]);
-    const result = await crmService.getCoupons('s1');
-    expect(result).toHaveLength(1);
-  });
-
-  it('When action / Then createCoupon sends POST', async () => {
-    mockFetchSuccess({ id: 'cp-new' });
-    const result = await crmService.createCoupon('s1', { code: 'SAVE10' });
-    expect(result.id).toBe('cp-new');
-  });
-
-  it('When action / Then getCoupon fetches single coupon', async () => {
-    mockFetchSuccess({ id: 'cp1', code: 'SAVE10' });
-    const result = await crmService.getCoupon('s1', 'cp1');
-    expect(result.code).toBe('SAVE10');
-  });
-
-  it('When action / Then updateCoupon sends PUT', async () => {
-    mockFetchSuccess({ id: 'cp1', code: 'SAVE20' });
-    const result = await crmService.updateCoupon('s1', 'cp1', { code: 'SAVE20' });
-    expect(result.code).toBe('SAVE20');
-  });
-
-  it('When action / Then deleteCoupon sends DELETE', async () => {
-    mockFetchSuccess({});
-    await crmService.deleteCoupon('s1', 'cp1');
-    expect(fetchMock).toHaveBeenCalled();
   });
 
   it('When action / Then getFulfillmentOrderByDeal returns null when no orders', async () => {
@@ -1907,6 +1639,23 @@ describe('Given leadsApi additional', () => {
     const [, opts] = fetchMock.mock.calls[0];
     const body = JSON.parse(opts.body);
     expect(body.status).toBe('qualified');
+  });
+
+  it('When stage names are given / Then getStatusCounts maps to BE statuses, drops paging/status and keys by stage', async () => {
+    mockFetchSuccess({ counts: { new: 4, proposal_sent: 2 } });
+    const out = await leadsApi.getStatusCounts(['New', 'Proposal Sent', 'Lost'], { q: 'x', status: 'New', skip: 5, take: 10 });
+    expect(out).toEqual({ New: 4, 'Proposal Sent': 2, Lost: 0 });
+    const url = String(fetchMock.mock.calls[fetchMock.mock.calls.length - 1][0]);
+    expect(url).toContain('/leads/status-counts');
+    expect(decodeURIComponent(url)).toContain('statuses=new,proposal_sent,lost');
+    expect(url).not.toContain('skip=');
+    expect(url).not.toContain('status=New');
+  });
+
+  it('When no stages / Then getStatusCounts returns {} without a request', async () => {
+    const before = fetchMock.mock.calls.length;
+    expect(await leadsApi.getStatusCounts([])).toEqual({});
+    expect(fetchMock.mock.calls.length).toBe(before);
   });
 
   it('When action / Then getStats fetches lead stats', async () => {

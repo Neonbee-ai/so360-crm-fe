@@ -11,7 +11,7 @@ import {
  * Source-level contract for "editable Quote fields look disabled".
  *
  * Title, Valid Until, every line-item cell and the whole Notes & Terms block
- * were filled with `bg-slate-800` — lighter than the `bg-slate-900` card behind
+ * were filled with `bg-surface-raised` — lighter than the `bg-surface` card behind
  * them, which is this app's treatment for *disabled* controls. Users read the
  * form as read-only and stopped trying to edit it.
  *
@@ -24,26 +24,26 @@ const source = readFileSync(path.join(__dirname, 'QuoteDetailPage.tsx'), 'utf8')
 describe('Given the editable-field style tokens', () => {
     it('When applied / Then they sit darker than the card, so the field reads as a well to type into', () => {
         for (const token of [EDITABLE_FIELD_CLASS, EDITABLE_FIELD_SM_CLASS]) {
-            expect(token).toContain('bg-slate-950');
-            // `disabled:bg-slate-800` is fine and wanted; an *unqualified* one is
+            expect(token).toContain('bg-bg');
+            // `disabled:bg-surface-raised` is fine and wanted; an *unqualified* one is
             // the disabled-looking fill this fix removed.
-            expect(token).not.toMatch(/(^|\s)bg-slate-800\b/);
+            expect(token).not.toMatch(/(^|\s)bg-surface-raised\b/);
         }
     });
 
     it('When applied / Then they carry a visible border with hover and focus feedback', () => {
         for (const token of [EDITABLE_FIELD_CLASS, EDITABLE_FIELD_SM_CLASS]) {
-            expect(token).toContain('border-slate-700');
-            expect(token).toContain('hover:border-slate-600');
-            expect(token).toContain('focus:ring-blue-500/50');
-            expect(token).toContain('focus:border-blue-500');
+            expect(token).toContain('border-line');
+            expect(token).toContain('hover:border-line');
+            expect(token).toContain('focus:ring-primary/50');
+            expect(token).toContain('focus:border-primary');
         }
     });
 
     it('When a control is disabled / Then it keeps the greyed, non-interactive treatment', () => {
         for (const token of [EDITABLE_FIELD_CLASS, EDITABLE_FIELD_SM_CLASS]) {
-            expect(token).toContain('disabled:bg-slate-800');
-            expect(token).toContain('disabled:text-slate-400');
+            expect(token).toContain('disabled:bg-surface-raised');
+            expect(token).toContain('disabled:text-fg-subtle');
             expect(token).toContain('disabled:cursor-not-allowed');
         }
     });
@@ -55,23 +55,21 @@ describe('Given the editable-field style tokens', () => {
 });
 
 describe('Given the Quote page', () => {
-    it('When it renders an editable control / Then it uses the shared tokens', () => {
-        expect(source).toContain("from '../components/common/fieldStyles'");
-        expect(source).toContain('className={EDITABLE_FIELD_CLASS}');
-        expect(source).toContain('className={EDITABLE_FIELD_SM_NUMERIC_CLASS}');
+    it('When it renders an editable control / Then it uses the Comb form controls, which own the editable look', () => {
+        // The page no longer hand-styles inputs with the fieldStyles tokens (Comb adoption);
+        // TextField/Textarea/Select from the design system carry the well-style affordance.
+        expect(source).toMatch(/import \{[^}]*\bTextField\b[^}]*\} from '@so360\/design-system'/);
+        expect(source).toMatch(/import \{[^}]*\bTextarea\b[^}]*\} from '@so360\/design-system'/);
+        expect(source).not.toMatch(/<input\b|<textarea\b/);
     });
 
     it('Then no control is left with the old disabled-looking fill', () => {
-        expect(source).not.toMatch(/bg-slate-800 border border-slate-600/);
+        expect(source).not.toMatch(/bg-surface-raised border border-slate-600/);
     });
 
     it('Then the whole form — details, line items and notes & terms — is restyled, not just one section', () => {
-        // 16 controls carried the disabled-looking fill: Title and Valid Until,
-        // the line-item cells, and every Notes & Terms field.
-        const usages =
-            source.split('className={EDITABLE_FIELD_CLASS}').length - 1 +
-            (source.split('className={EDITABLE_FIELD_SM_CLASS}').length - 1) +
-            (source.split('className={EDITABLE_FIELD_SM_NUMERIC_CLASS}').length - 1);
+        // 16 controls carried the disabled-looking fill; all are now DS form controls.
+        const usages = (source.match(/<(TextField|Textarea|Select)\b/g) ?? []).length;
         expect(usages).toBeGreaterThanOrEqual(16);
     });
 });

@@ -145,26 +145,20 @@ beforeEach(() => {
 
 describe('TaskModal', () => {
 
-  // ── Desktop layout: overlay must stack above the shell NavBar ──────────────
-  // Regression: the New Task modal was clipped under the global header because
-  // its overlay sat at z-50, below the sticky shell NavBar (.glass-nav, z-500).
-  // The overlay must paint on top of the header — z-[600] — and stay centered.
-  describe('Given a desktop viewport (overlay stacking)', () => {
-    it('When rendered / Then the overlay paints above the NavBar (z-[600], not z-50)', async () => {
+  // ── Overlay: shown as a dialog (DS Modal owns stacking/centering) ──────────
+  describe('Given the modal is rendered', () => {
+    it('When rendered / Then it is a dialog titled New Task', async () => {
       render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
       await waitFor(() => expect(screen.getByText('New Task')).toBeInTheDocument());
-      const overlay = document.querySelector('div.fixed.inset-0') as HTMLElement;
-      expect(overlay).toBeTruthy();
-      expect(overlay.className).toContain('z-[600]');
-      expect(overlay.className).not.toContain('z-50');
+      expect(within(screen.getByRole('dialog')).getByText('New Task')).toBeInTheDocument();
     });
 
-    it('When rendered / Then the overlay centers the modal in the viewport', async () => {
-      render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
-      await waitFor(() => expect(screen.getByText('New Task')).toBeInTheDocument());
-      const overlay = document.querySelector('div.fixed.inset-0') as HTMLElement;
-      expect(overlay.className).toContain('items-center');
-      expect(overlay.className).toContain('justify-center');
+    it('When the Close control is clicked / Then onClose is called', async () => {
+      const onClose = vi.fn();
+      render(<TaskModal leadId="lead-1" onClose={onClose} onSuccess={vi.fn()} />);
+      await waitFor(() => screen.getByText('New Task'));
+      fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Close' }));
+      expect(onClose).toHaveBeenCalled();
     });
   });
 
@@ -680,32 +674,7 @@ describe('TaskModal', () => {
   });
 
   // ── Viewport height fix ───────────────────────────────────────────────────
-  describe('Given the modal renders in a constrained viewport (height fix)', () => {
-    it('When rendered / Then the modal container has max-h-[90vh] class to stay within viewport', async () => {
-      const { container } = render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
-      await waitFor(() => screen.getByText('New Task'));
-      // The inner modal div (not the overlay) must have the height constraint
-      const modalBox = container.querySelector('[class*="max-h-\\[90vh\\]"]');
-      expect(modalBox).not.toBeNull();
-    });
-
-    it('When rendered / Then the modal container has overflow-hidden to enforce the max-height clipping', async () => {
-      const { container } = render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
-      await waitFor(() => screen.getByText('New Task'));
-      // overflow-hidden must live on the same element as max-h-[90vh] so that flex
-      // children cannot push the container past the viewport height cap.
-      const modalBox = container.querySelector('[class*="max-h-\\[90vh\\]"]');
-      expect(modalBox).not.toBeNull();
-      expect(modalBox!.className).toContain('overflow-hidden');
-    });
-
-    it('When rendered / Then the scrollable content area has overflow-y-auto to allow internal scrolling', async () => {
-      const { container } = render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
-      await waitFor(() => screen.getByText('New Task'));
-      const scrollableArea = container.querySelector('[class*="overflow-y-auto"]');
-      expect(scrollableArea).not.toBeNull();
-    });
-
+  describe('Given the modal footer', () => {
     it('When rendered / Then Cancel and Create Task buttons are accessible without scrolling (in fixed footer)', async () => {
       render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
       await waitFor(() => screen.getByText('New Task'));

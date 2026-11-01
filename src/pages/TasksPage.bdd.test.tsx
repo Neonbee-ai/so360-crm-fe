@@ -32,24 +32,42 @@ vi.mock('@so360/shell-context', () => ({
   useSandboxLimit: () => ({ isSandboxMode: false, sandboxEntryLimit: 0, isLimited: false }),}));
 
 let tableProps: any = {};
-vi.mock('../components/common/Table', () => ({
-  Table: (props: any) => {
-    tableProps = props;
-    if (props.isLoading) return <div data-testid="table">Loading...</div>;
-    if (props.data.length === 0) return <div data-testid="table">{props.emptyMessage}</div>;
-    const actionCol = props.columns?.[props.columns.length - 1];
+vi.mock('@so360/design-system', async (importOriginal) => {
+  const actual: any = await importOriginal();
+  const RowMenu = ({ items }: any) => {
+    const [open, setOpen] = React.useState(false);
     return (
-      <div data-testid="table">
-        {props.data.map((task: any) => (
-          <div key={task.id} data-testid={`task-row-${task.id}`} onClick={() => props.onRowClick(task)}>
-            {task.title} - {task.status}
-            {actionCol?.accessor(task)}
-          </div>
-        ))}
-      </div>
+      <span>
+        <button aria-label="More actions" onClick={(e) => { e.stopPropagation(); setOpen(true); }} />
+        {open && items.map((it: any) => <button key={it.label} role="menuitem" onClick={() => it.onSelect()}>{it.label}</button>)}
+      </span>
     );
-  },
-}));
+  };
+  return {
+    ...actual,
+    DataTable: (props: any) => {
+      tableProps = {
+        ...props,
+        data: props.rows,
+        isLoading: props.loading,
+        emptyMessage: props.emptyState,
+        columns: props.columns.map((c: any) => ({ ...c, accessor: c.render })),
+      };
+      if (props.loading) return <div data-testid="table">Loading...</div>;
+      if (props.rows.length === 0) return <div data-testid="table">{props.emptyState}</div>;
+      return (
+        <div data-testid="table">
+          {props.rows.map((task: any) => (
+            <div key={task.id} data-testid={`task-row-${task.id}`} onClick={() => props.onRowClick(task)}>
+              {task.title} - {task.status}
+              {props.rowActions && <RowMenu items={props.rowActions(task)} />}
+            </div>
+          ))}
+        </div>
+      );
+    },
+  };
+});
 
 import TasksPage from './TasksPage';
 
@@ -76,6 +94,33 @@ beforeEach(async () => {
 });
 
 describe('TasksPage', () => {
+  describe('Given the user may view team and all tasks', () => {
+    it('When rendered / Then scope is a views segmented control with My, Team and All options', async () => {
+      render(<TasksPage />);
+      await waitFor(() => expect(screen.getByTestId('table')).toBeInTheDocument());
+      const group = screen.getByTestId('tasks-scope-views');
+      expect(group).toBeInTheDocument();
+      expect(screen.getByRole('radio', { name: 'My Tasks' })).toBeInTheDocument();
+      expect(screen.getByRole('radio', { name: 'Team Tasks' })).toBeInTheDocument();
+      expect(screen.getByRole('radio', { name: 'All Tasks' })).toBeInTheDocument();
+    });
+
+    it('When Team Tasks is chosen / Then tasks are reloaded with team scope', async () => {
+      render(<TasksPage />);
+      await waitFor(() => expect(mockGetTasks).toHaveBeenCalled());
+      fireEvent.click(screen.getByRole('radio', { name: 'Team Tasks' }));
+      await waitFor(() => expect(mockGetTasks).toHaveBeenLastCalledWith('team'));
+    });
+
+    it('When columns are built / Then the title column is wide and the assignee column cannot collapse', async () => {
+      render(<TasksPage />);
+      await waitFor(() => expect(tableProps.columns).toBeDefined());
+      const col = (k: string) => tableProps.columns.find((c: any) => c.key === k);
+      expect(col('title').widthClassName).toBe('min-w-64');
+      expect(col('assigned_to').widthClassName).toBe('min-w-48');
+    });
+  });
+
   describe('Given tasks are loading', () => {
     it('When rendered / Then shows loading state via Table', async () => {
       mockGetTasks.mockReturnValue(new Promise(() => {}));
@@ -116,7 +161,7 @@ describe('TasksPage', () => {
     it('When user clicks Open filter / Then shows only open tasks', async () => {
       render(<TasksPage />);
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
-      fireEvent.click(screen.getByText('Open'));
+      fireEvent.change(screen.getByLabelText('Status'), { target: { value: 'Open' } });
       await waitFor(() => {
         expect(tableProps.data.every((t: any) => t.status === 'OPEN')).toBe(true);
       });
@@ -125,7 +170,7 @@ describe('TasksPage', () => {
     it('When user clicks Done filter / Then shows only completed tasks', async () => {
       render(<TasksPage />);
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
-      fireEvent.click(screen.getByText('Done'));
+      fireEvent.change(screen.getByLabelText('Status'), { target: { value: 'Done' } });
       await waitFor(() => {
         expect(tableProps.data.every((t: any) => t.status === 'DONE')).toBe(true);
       });
@@ -134,9 +179,7 @@ describe('TasksPage', () => {
     it('When user clicks Overdue filter / Then shows only open tasks past due date', async () => {
       render(<TasksPage />);
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
-      const filterBtns = screen.getAllByRole('button');
-      const overdueBtn = filterBtns.find(b => b.textContent === 'Overdue')!;
-      fireEvent.click(overdueBtn);
+      fireEvent.change(screen.getByLabelText('Status'), { target: { value: 'Overdue' } });
       await waitFor(() => {
         const openPastDue = tableProps.data.filter((t: any) => t.status === 'OPEN' && new Date(t.due_date) < new Date());
         expect(tableProps.data.length).toBe(openPastDue.length);
@@ -155,7 +198,8 @@ describe('TasksPage', () => {
     it('When delete confirmed / Then removes task from list', async () => {
       render(<TasksPage />);
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
-      fireEvent.click(screen.getAllByTitle('Delete task')[0]);
+      fireEvent.click(screen.getAllByLabelText('More actions')[0]);
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Delete task' }));
       await waitFor(() => expect(screen.getByText('Delete Task')).toBeInTheDocument());
       fireEvent.click(screen.getByText('Delete'));
       await waitFor(() => expect(mockDeleteTask).toHaveBeenCalledWith('t1'));
@@ -165,7 +209,8 @@ describe('TasksPage', () => {
       mockDeleteTask.mockRejectedValue(new Error('Server error'));
       render(<TasksPage />);
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
-      fireEvent.click(screen.getAllByTitle('Delete task')[0]);
+      fireEvent.click(screen.getAllByLabelText('More actions')[0]);
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Delete task' }));
       await waitFor(() => expect(screen.getByText('Delete Task')).toBeInTheDocument());
       fireEvent.click(screen.getByText('Delete'));
       await waitFor(() => expect(screen.getByText('Server error')).toBeInTheDocument());
@@ -174,7 +219,8 @@ describe('TasksPage', () => {
     it('When cancel is clicked / Then dismisses delete dialog', async () => {
       render(<TasksPage />);
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
-      fireEvent.click(screen.getAllByTitle('Delete task')[0]);
+      fireEvent.click(screen.getAllByLabelText('More actions')[0]);
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Delete task' }));
       await waitFor(() => expect(screen.getByText('Delete Task')).toBeInTheDocument());
       fireEvent.click(screen.getByText('Cancel'));
       await waitFor(() => expect(screen.queryByText('Delete Task')).not.toBeInTheDocument());
@@ -185,27 +231,22 @@ describe('TasksPage', () => {
     it('When sort header in column is rendered / Then provides a clickable sort button', async () => {
       render(<TasksPage />);
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
-      const titleHeader = tableProps.columns[0].header;
-      const { container } = render(titleHeader);
-      const btn = container.querySelector('button');
-      expect(btn).toBeTruthy();
-      expect(btn!.textContent).toContain('Task');
+      expect(tableProps.columns[0].sortable).toBe(true);
+      expect(tableProps.columns[0].header).toBe('Task');
     });
 
     it('When due_date header is rendered / Then provides sortable header', async () => {
       render(<TasksPage />);
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
-      const dueDateHeader = tableProps.columns[1].header;
-      const { container } = render(dueDateHeader);
-      expect(container.textContent).toContain('Due Date');
+      expect(tableProps.columns[1].sortable).toBe(true);
+      expect(tableProps.columns[1].header).toBe('Due Date');
     });
 
     it('When assigned_to header is rendered / Then provides sortable header', async () => {
       render(<TasksPage />);
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
-      const assigneeHeader = tableProps.columns[3].header;
-      const { container } = render(assigneeHeader);
-      expect(container.textContent).toContain('Assigned To');
+      expect(tableProps.columns[3].sortable).toBe(true);
+      expect(tableProps.columns[3].header).toBe('Assigned To');
     });
   });
 
@@ -222,31 +263,10 @@ describe('TasksPage', () => {
   });
 
   describe('Given search bar rendering', () => {
-    it('When Tasks page loads / Then search input uses consistent CRM padding and text-sm class', async () => {
+    it('When Tasks page loads / Then the Comb search input is rendered', async () => {
       render(<TasksPage />);
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
-      const input = screen.getByPlaceholderText('Search tasks...');
-      expect(input.className).toContain('pl-10');
-      expect(input.className).toContain('py-2');
-      expect(input.className).toContain('text-sm');
-      expect(input.className).not.toContain('pl-12');
-      expect(input.className).not.toContain('py-2.5');
-    });
-
-    it('When Tasks page loads / Then search input has placeholder-slate-400 matching other CRM modules', async () => {
-      render(<TasksPage />);
-      await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
-      const input = screen.getByPlaceholderText('Search tasks...');
-      expect(input.className).toContain('placeholder-slate-400');
-    });
-
-    it('When Tasks page loads / Then outer search+filter container has md:items-center for proper icon alignment', async () => {
-      render(<TasksPage />);
-      await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
-      const input = screen.getByPlaceholderText('Search tasks...');
-      // input → relative wrapper → outer flex container
-      const outerContainer = input.parentElement?.parentElement;
-      expect(outerContainer?.className).toContain('md:items-center');
+      expect(screen.getByPlaceholderText('Search tasks...')).toBeInTheDocument();
     });
   });
 
@@ -300,6 +320,19 @@ describe('TasksPage', () => {
       expect(container.textContent).toContain('Overdue');
     });
 
+    it('When due date cell renders (Pulse 96ba2819) / Then date and Overdue badge are stacked, never one wrapping row', async () => {
+      render(<TasksPage />);
+      await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
+      const dueDateCol = tableProps.columns[1];
+      expect(dueDateCol.widthClassName).toContain('whitespace-nowrap');
+      const { container } = render(dueDateCol.accessor(makeTasks()[2]));
+      const root = container.firstElementChild as HTMLElement;
+      expect(root.className).toContain('flex-col');
+      expect(root.className).toContain('whitespace-nowrap');
+      expect(root.children.length).toBe(2);
+      expect(root.children[1].textContent).toContain('Overdue');
+    });
+
     it('When Associated With column renders task with deal / Then shows deal name', async () => {
       render(<TasksPage />);
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
@@ -320,10 +353,7 @@ describe('TasksPage', () => {
       render(<TasksPage />);
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
       // canCreateTask is false before flags resolve — the delete column renders nothing
-      const actionsCol = tableProps.columns[tableProps.columns.length - 1];
-      const cell = actionsCol.accessor(makeTasks()[0]);
-      const { container } = render(cell);
-      expect(container.querySelector('button')).toBeNull();
+      expect(tableProps.rowActions).toBeUndefined();
     });
 
     it('When effectiveFlagsLoaded is true and isFeatureEnabled returns true / Then delete button in action column is present', async () => {
@@ -334,10 +364,7 @@ describe('TasksPage', () => {
       } as any);
       render(<TasksPage />);
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
-      const actionsCol = tableProps.columns[tableProps.columns.length - 1];
-      const cell = actionsCol.accessor(makeTasks()[0]);
-      const { container } = render(cell);
-      expect(container.querySelector('button')).not.toBeNull();
+      expect(tableProps.rowActions(makeTasks()[0]).map((a: any) => a.label)).toEqual(['Delete task']);
     });
   });
 });
@@ -442,9 +469,7 @@ describe('TasksPage — visibility scope tabs', () => {
 describe('TasksPage — Completed tasks are read-only', () => {
   const assigneeCell = (task: any) => {
     const col = tableProps.columns.find((c: any) => {
-      const header = c.header;
-      const label = header?.props?.label ?? header;
-      return label === 'Assigned To';
+      return c.header === 'Assigned To';
     });
     return render(col.accessor(task)).container;
   };
@@ -506,7 +531,7 @@ describe('TasksPage — the view survives a trip to a task and back', () => {
   describe('Given the user filtered the list before opening a record', () => {
     it('When they return / Then the same filter is still applied', async () => {
       const first = await remount();
-      fireEvent.click(screen.getByText('Done'));
+      fireEvent.change(screen.getByLabelText('Status'), { target: { value: 'Done' } });
       await waitFor(() => expect(tableProps.data.map((t: any) => t.id)).toEqual(['t2']));
       first.unmount();
 
@@ -516,12 +541,11 @@ describe('TasksPage — the view survives a trip to a task and back', () => {
 
     it('When they return / Then the active filter chip is still highlighted', async () => {
       const first = await remount();
-      fireEvent.click(screen.getByText('Overdue'));
+      fireEvent.change(screen.getByLabelText('Status'), { target: { value: 'Overdue' } });
       first.unmount();
 
       await remount();
-      const chip = screen.getByText('Overdue');
-      expect(chip.className).toMatch(/bg-blue-600/);
+      expect((screen.getByLabelText('Status') as HTMLSelectElement).value).toBe('Overdue');
     });
   });
 
@@ -552,7 +576,7 @@ describe('TasksPage — the view survives a trip to a task and back', () => {
   describe('Given a different organisation is active', () => {
     it('When the list loads / Then the previous org\'s filter is not carried over', async () => {
       const first = await remount();
-      fireEvent.click(screen.getByText('Done'));
+      fireEvent.change(screen.getByLabelText('Status'), { target: { value: 'Done' } });
       await waitFor(() => expect(tableProps.data.map((t: any) => t.id)).toEqual(['t2']));
       first.unmount();
 
@@ -575,7 +599,7 @@ describe('TasksPage — the view survives a trip to a task and back', () => {
       mockGetTasks.mockResolvedValue([task]);
       render(<TasksPage />);
       await waitFor(() => expect(tableProps.data).toHaveLength(1));
-      const dueCol = tableProps.columns.find((c: any) => typeof c.accessor === 'function' && c.header?.props?.field === 'due_date');
+      const dueCol = tableProps.columns.find((c: any) => typeof c.accessor === 'function' && c.key === 'due_date');
       return render(<>{dueCol.accessor(task)}</>).container;
     };
 

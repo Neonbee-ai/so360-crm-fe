@@ -5,8 +5,10 @@ import LeadsPage from './LeadsPage';
 
 const mockCrmService = vi.hoisted(() => ({
   deleteLead: vi.fn(),
-  getCustomerSegmentLeads: vi.fn(),
   getLeads: vi.fn(),
+  getLeadsPaged: vi.fn(),
+  getLeadStats: vi.fn(),
+  getLeadStatusCounts: vi.fn(),
   getSettings: vi.fn(),
   getUsers: vi.fn(),
   getPartners: vi.fn(),
@@ -22,19 +24,20 @@ vi.mock('../services/crmService', () => ({
 }));
 
 vi.mock('@so360/shell-context', () => ({
+  useDatasetSchema: () => ({ fields: [], isLoading: false, error: null }),
   useShellBridge: () => ({
     tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee',
     orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
     userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
     effectiveFlagsLoaded: true,
-    permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: vi.fn().mockReturnValue(true),
+    permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: vi.fn((k: string) => k !== 'submodule:crm:dl_custom_fields'),
   }),
   useShell: () => ({
     tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee',
     orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
     userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
     isModuleEnabled: () => true,
-    permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true,
+    permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: (k: string) => k !== 'submodule:crm:dl_custom_fields',
     isFeatureHidden: () => false,
   }),
   useBusinessSettings: () => ({ base_currency: 'USD', locale: 'en-US', currency: 'USD' }),
@@ -60,7 +63,7 @@ vi.mock('../hooks/useShellBridge', () => ({
     orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
     userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
     effectiveFlagsLoaded: true,
-    permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: vi.fn().mockReturnValue(true),
+    permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: vi.fn((k: string) => k !== 'submodule:crm:dl_custom_fields'),
   }),
 }));
 
@@ -74,6 +77,9 @@ describe('Given LeadsPage — Lead Management', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockCrmService.getLeads.mockResolvedValue(mockLeads);
+    mockCrmService.getLeadsPaged.mockResolvedValue({ data: mockLeads, total: mockLeads.length });
+    mockCrmService.getLeadStats.mockResolvedValue({ total: mockLeads.length });
+    mockCrmService.getLeadStatusCounts.mockResolvedValue({});
     mockCrmService.getSettings.mockResolvedValue({ lead_stages: [], lead_custom_fields: [] });
     mockCrmService.getUsers.mockResolvedValue([]);
     mockCrmService.getPartners.mockResolvedValue([]);
@@ -148,6 +154,7 @@ describe('Given LeadsPage — Lead Management', () => {
 
   test('Given empty leads list / When no leads / Then shows empty state', async () => {
     mockCrmService.getLeads.mockResolvedValueOnce([]);
+    mockCrmService.getLeadsPaged.mockResolvedValueOnce({ data: [], total: 0 });
     render(<LeadsPage />);
     await waitFor(() => {
       expect(screen.queryAllByText(/no leads|empty|lead/i).length).toBeGreaterThan(0);

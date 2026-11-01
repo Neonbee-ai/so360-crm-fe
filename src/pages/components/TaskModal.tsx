@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { X, Loader2, Calendar, Clock, CheckCircle2, User as UserIcon, UserPlus, ChevronDown, Link2 } from 'lucide-react';
+import { Loader2, CheckCircle2, UserPlus, Link2 } from 'lucide-react';
 import { crmService } from '../../services/crmService';
 import { ProjectSelect } from '../../components/common/ProjectSelect';
 import { composeDueDate, dueDateCalendarDay, inputValueToApiValue, splitStoredDueDate } from '../../utils/datetime';
 import { Task, TaskType, TaskPriority, TASK_PRIORITY_OPTIONS, User, Lead, Deal } from '../../types/crm';
-import { toast } from '@so360/design-system';
-import { useShell, useActivity } from '@so360/shell-context';
+import { toast, Button, TextField, Textarea, Select, DatePicker, TimePicker, Grid, GridItem } from '@so360/design-system';
+import { Modal } from '../../components/common/Modal';
+import { useShell, useShellBridge, useActivity } from '@so360/shell-context';
 
 interface TaskModalProps {
     task?: Task | null; // If null, creating new task
@@ -48,6 +49,10 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
     const originalAssigneeId = task?.assigned_to?.id || '';
     const [assignedToId, setAssignedToId] = useState(originalAssigneeId);
     const [reminderMinutes, setReminderMinutes] = useState(task?.reminder_minutes_before?.toString() || '');
+    // Per-task override of the org default reminder (Sales-to-Service); blank = use org default.
+    const flagBridge = useShellBridge();
+    const remindersEnabled = flagBridge?.isFeatureEnabled?.('submodule:crm:task_reminders') ?? false;
+    const [reminderOffset, setReminderOffset] = useState(task?.reminder_offset_minutes?.toString() || '');
     const [users, setUsers] = useState<User[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const showAssociatePicker = !leadId && !dealId && !isEditing;
@@ -171,6 +176,10 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                 data.reminder_minutes_before = parseInt(reminderMinutes);
             }
 
+            if (remindersEnabled && type !== 'REMINDER' && reminderOffset.trim() !== '') {
+                data.reminder_offset_minutes = parseInt(reminderOffset, 10);
+            }
+
             if (leadId) data.lead_id = leadId;
             if (dealId) data.deal_id = dealId;
             if (stakeholderId) data.stakeholder_id = stakeholderId;
@@ -224,206 +233,182 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
     };
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
-            <div className="bg-slate-900 border border-slate-700/50 rounded-3xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in zoom-in duration-200">
-                <div className="px-8 py-6 border-b border-slate-700/50 bg-slate-800/20 flex items-center justify-between flex-shrink-0">
-                    <h2 className="text-xl font-black text-slate-50 uppercase tracking-tight flex items-center gap-2">
-                        <CheckCircle2 className={isEditing ? "text-blue-500" : "text-emerald-500"} size={24} />
-                        {isEditing ? 'Edit Task' : 'New Task'}
-                    </h2>
-                    <button onClick={onClose} className="text-slate-500 hover:text-slate-50 transition-colors">
-                        <X size={20} />
-                    </button>
-                </div>
-                <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-                <div className="p-8 space-y-6 overflow-y-auto flex-1">
+        <Modal
+            isOpen
+            onClose={onClose}
+            size="lg"
+            dismissible={!isSubmitting}
+            data-testid="task-modal"
+            title={
+                <span className="flex items-center gap-2">
+                    <CheckCircle2 className={isEditing ? "text-primary" : "text-success"} size={24} />
+                    {isEditing ? 'Edit Task' : 'New Task'}
+                </span>
+            }
+            footer={
+                <>
+                    <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>
+                        Cancel
+                    </Button>
+                    <Button type="submit" form="task-modal-form" variant="primary" disabled={isSubmitting}>
+                        {isSubmitting && <Loader2 size={12} className="animate-spin" />}
+                        {isEditing ? 'Save Changes' : 'Create Task'}
+                    </Button>
+                </>
+            }
+        >
+                <form id="task-modal-form" onSubmit={handleSubmit} className="flex flex-col">
+                <div className="space-y-6">
                     <div className="space-y-4">
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Task Title</label>
-                            <input
-                                type="text"
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
-                                className="w-full bg-slate-950 border border-slate-700/50 text-slate-50 rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all font-bold"
+                        <TextField
+                            name="task-title"
+                            label="Task Title"
+                            type="text"
+                            value={title}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTitle(e.target.value)}
+                            required
+                            placeholder="e.g. Follow up email..."
+                        />
+
+                        <Textarea
+                            name="task-description"
+                            label="Description"
+                            value={description}
+                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
+                            placeholder="Add details..."
+                            rows={3}
+                        />
+
+                        <Select
+                            name="task-priority"
+                            label="Priority"
+                            value={priority}
+                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setPriority(e.target.value as TaskPriority)}
+                            options={TASK_PRIORITY_OPTIONS.map(o => ({ value: o.value, label: o.label }))}
+                        />
+
+                        <Select
+                            name="task-type"
+                            label="Type"
+                            value={type}
+                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                                const nextType = e.target.value as TaskType;
+                                setType(nextType);
+                                // A reminder must ring at a moment; offer a
+                                // sensible one rather than an empty field.
+                                if (nextType === 'REMINDER' && !dueTime) setDueTime('09:00');
+                            }}
+                            options={[
+                                { value: 'TODO', label: 'To Do' },
+                                { value: 'CALL', label: 'Call' },
+                                { value: 'EMAIL', label: 'Email' },
+                                { value: 'MEETING', label: 'Meeting' },
+                                { value: 'REMINDER', label: 'Reminder' },
+                            ]}
+                        />
+                        <Grid gap="md">
+                            <GridItem span={{ md: 4, lg: 6 }}><DatePicker
+                                name="task-start-date"
+                                label="Start Date"
+                                value={startDate}
+                                onChange={(v: string) => setStartDate(v)}
+                            /></GridItem>
+                            <GridItem span={{ md: 4, lg: 6 }}><DatePicker
+                                name="task-due-date"
+                                label="Due Date"
+                                value={dueDate}
+                                onChange={(v: string) => setDueDate(v)}
+                                min={todayDate}
                                 required
-                                placeholder="e.g. Follow up email..."
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Description</label>
-                            <textarea
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                                className="w-full bg-slate-950 border border-slate-700/50 text-slate-50 rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all font-bold resize-none h-20"
-                                placeholder="Add details..."
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Priority</label>
-                            <div className="relative">
-                                <select
-                                    value={priority}
-                                    onChange={(e) => setPriority(e.target.value as TaskPriority)}
-                                    className="w-full bg-slate-950 border border-slate-700/50 text-slate-50 rounded-xl px-4 py-3 pr-9 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
-                                >
-                                    {TASK_PRIORITY_OPTIONS.map(o => (
-                                        <option key={o.value} value={o.value}>{o.label}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Type</label>
-                            <div className="relative">
-                                <select
-                                    value={type}
-                                    onChange={(e) => {
-                                        const nextType = e.target.value as TaskType;
-                                        setType(nextType);
-                                        // A reminder must ring at a moment; offer a
-                                        // sensible one rather than an empty field.
-                                        if (nextType === 'REMINDER' && !dueTime) setDueTime('09:00');
-                                    }}
-                                    className="w-full bg-slate-950 border border-slate-700/50 text-slate-50 rounded-xl px-4 py-3 pr-9 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
-                                >
-                                    <option value="TODO">To Do</option>
-                                    <option value="CALL">Call</option>
-                                    <option value="EMAIL">Email</option>
-                                    <option value="MEETING">Meeting</option>
-                                    <option value="REMINDER">Reminder</option>
-                                </select>
-                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Start Date</label>
-                                <div className="relative">
-                                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
-                                    <input
-                                        type="date"
-                                        value={startDate}
-                                        onChange={(e) => setStartDate(e.target.value)}
-                                        className="w-full bg-slate-950 border border-slate-700/50 text-slate-50 rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold"
-                                    />
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <label htmlFor="task-due-date" className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                                    Due Date
-                                </label>
-                                <div className="relative">
-                                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
-                                    <input
-                                        id="task-due-date"
-                                        type="date"
-                                        value={dueDate}
-                                        onChange={(e) => setDueDate(e.target.value)}
-                                        min={todayDate}
-                                        className="w-full bg-slate-950 border border-slate-700/50 text-slate-50 rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold"
-                                        required
-                                    />
-                                </div>
-                            </div>
-                        </div>
+                            /></GridItem>
+                        </Grid>
 
                         {/* Due time is optional for every kind except Reminder, which
                             is an alarm. Left blank the task stays a plain calendar
                             date — no invented 9am, no invented midnight. */}
-                        <div className="space-y-2">
-                            <label htmlFor="task-due-time" className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                                Due Time {type === 'REMINDER' ? <span className="text-red-500">*</span> : <span className="text-slate-600 normal-case tracking-normal font-bold">(optional)</span>}
-                            </label>
-                            <div className="flex gap-2">
-                                <div className="relative flex-1">
-                                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
-                                    <input
-                                        id="task-due-time"
-                                        type="time"
-                                        value={dueTime}
-                                        onChange={(e) => setDueTime(e.target.value)}
-                                        className="w-full bg-slate-950 border border-slate-700/50 text-slate-50 rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold"
-                                        required={type === 'REMINDER'}
-                                    />
-                                </div>
-                                {dueTime && type !== 'REMINDER' && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setDueTime('')}
-                                        className="px-3 py-3 rounded-xl border border-slate-700/50 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-50 transition-colors"
-                                    >
-                                        Clear
-                                    </button>
-                                )}
+                        <div className="flex items-end gap-2">
+                            <div className="flex-1 min-w-0">
+                                <TimePicker
+                                    name="task-due-time"
+                                    label={`Due Time ${type === 'REMINDER' ? '*' : '(optional)'}`}
+                                    value={dueTime}
+                                    onChange={(v: string) => setDueTime(v)}
+                                    required={type === 'REMINDER'}
+                                />
                             </div>
+                            {dueTime && type !== 'REMINDER' && (
+                                <Button type="button" variant="secondary" onClick={() => setDueTime('')}>
+                                    Clear
+                                </Button>
+                            )}
                         </div>
 
                         {type === 'REMINDER' && (
-                            <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Remind me before</label>
-                                <select
-                                    value={reminderMinutes}
-                                    onChange={(e) => setReminderMinutes(e.target.value)}
-                                    className="w-full bg-slate-950 border border-slate-700/50 text-slate-50 rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
-                                >
-                                    <option value="">No reminder notification</option>
-                                    <option value="15">15 minutes before</option>
-                                    <option value="30">30 minutes before</option>
-                                    <option value="60">1 hour before</option>
-                                    <option value="1440">1 day before</option>
-                                </select>
-                            </div>
+                            <Select
+                                name="task-reminder-minutes"
+                                label="Remind me before"
+                                value={reminderMinutes}
+                                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setReminderMinutes(e.target.value)}
+                                options={[
+                                    { value: '', label: 'No reminder notification' },
+                                    { value: '15', label: '15 minutes before' },
+                                    { value: '30', label: '30 minutes before' },
+                                    { value: '60', label: '1 hour before' },
+                                    { value: '1440', label: '1 day before' },
+                                ]}
+                            />
                         )}
 
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Assigned To</label>
-                            <div className="flex gap-2">
-                                <div className="relative flex-1">
-                                    <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-                                    <select
-                                        value={assignedToId}
-                                        onChange={(e) => setAssignedToId(e.target.value)}
-                                        className="w-full bg-slate-950 border border-slate-700/50 text-slate-50 rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
-                                    >
-                                        <option value="">{isEditing ? 'Unassigned' : 'Select assignee…'}</option>
-                                        {users.map(u => (
-                                            <option key={u.id} value={u.id}>
-                                                {u.full_name}
-                                                {u.id === currentUserId ? ' (You)' : ''}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={handleAssignToMe}
-                                    disabled={!currentUserId || assignedToId === currentUserId}
-                                    className="flex items-center gap-1.5 px-3 py-3 text-sm bg-blue-600/10 border border-blue-600/20 rounded-xl text-blue-400 hover:bg-blue-600/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-                                    title={
-                                        !currentUserId
-                                            ? "User session not available"
-                                            : assignedToId === currentUserId
-                                            ? "Already assigned to you"
-                                            : "Assign this task to yourself"
-                                    }
-                                >
-                                    <UserPlus className="w-4 h-4" />
-                                    <span className="text-[10px] font-black uppercase tracking-widest">Me</span>
-                                </button>
+                        {remindersEnabled && type !== 'REMINDER' && (
+                            <TextField
+                                name="task-reminder-offset"
+                                type="number"
+                                label="Reminder (minutes before due)"
+                                placeholder="Org default"
+                                value={reminderOffset}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setReminderOffset(e.target.value)}
+                            />
+                        )}
+
+                        <div className="flex items-end gap-2">
+                            <div className="flex-1 min-w-0">
+                                <Select
+                                    name="task-assigned-to"
+                                    label="Assigned To"
+                                    value={assignedToId}
+                                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setAssignedToId(e.target.value)}
+                                    options={[
+                                        { value: '', label: isEditing ? 'Unassigned' : 'Select assignee…' },
+                                        ...users.map(u => ({ value: u.id, label: `${u.full_name}${u.id === currentUserId ? ' (You)' : ''}` })),
+                                    ]}
+                                />
                             </div>
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                onClick={handleAssignToMe}
+                                disabled={!currentUserId || assignedToId === currentUserId}
+                                title={
+                                    !currentUserId
+                                        ? "User session not available"
+                                        : assignedToId === currentUserId
+                                        ? "Already assigned to you"
+                                        : "Assign this task to yourself"
+                                }
+                            >
+                                <UserPlus className="w-4 h-4" />
+                                <span className="text-xs font-semibold">Me</span>
+                            </Button>
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                            <label className="text-xs font-semibold text-fg-muted flex items-center gap-1.5">
                                 <Link2 size={12} />
-                                Project <span className="text-slate-600 normal-case tracking-normal font-bold">(optional)</span>
+                                Project <span className="text-fg-muted font-bold">(optional)</span>
                             </label>
                             <ProjectSelect value={projectId} onChange={setProjectId} />
                             {projectId && (
-                                <p className="text-[11px] text-slate-500">
+                                <p className="text-xs text-fg-muted">
                                     This task will be synchronized with the selected Project.
                                 </p>
                             )}
@@ -431,90 +416,60 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
 
                         {showAssociatePicker && (
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                                <label className="text-xs font-semibold text-fg-muted flex items-center gap-1.5">
                                     <Link2 size={12} />
                                     Associate With
                                 </label>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="relative">
-                                        <select
-                                            value={associateType}
-                                            onChange={(e) => { setAssociateType(e.target.value as any); setAssociateId(''); }}
-                                            className="w-full bg-slate-950 border border-slate-700/50 text-slate-50 rounded-xl px-4 py-3 pr-9 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
-                                        >
-                                            <option value="none">None</option>
-                                            <option value="lead">Lead</option>
-                                            <option value="deal">Deal</option>
-                                        </select>
-                                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
-                                    </div>
+                                <Grid gap="md">
+                                    <GridItem span={{ md: 4, lg: 6 }}><Select
+                                        name="task-associate-type"
+                                        aria-label="Associate type"
+                                        value={associateType}
+                                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { setAssociateType(e.target.value as any); setAssociateId(''); }}
+                                        options={[
+                                            { value: 'none', label: 'None' },
+                                            { value: 'lead', label: 'Lead' },
+                                            { value: 'deal', label: 'Deal' },
+                                        ]}
+                                    /></GridItem>
                                     {associateType !== 'none' && (
-                                        <div className="relative">
-                                            <select
-                                                value={associateId}
-                                                onChange={(e) => setAssociateId(e.target.value)}
-                                                className="w-full bg-slate-950 border border-slate-700/50 text-slate-50 rounded-xl px-4 py-3 pr-9 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
-                                            >
-                                                <option value="">Select {associateType === 'lead' ? 'Lead' : 'Deal'}…</option>
-                                                {associateType === 'lead'
-                                                    ? leads.map(l => (
-                                                        <option key={l.id} value={l.id}>
-                                                            {l.company_name || l.contact_name}
-                                                        </option>
-                                                    ))
-                                                    : deals.map(d => (
-                                                        <option key={d.id} value={d.id}>
-                                                            {d.name || d.company_name}
-                                                        </option>
-                                                    ))
-                                                }
-                                            </select>
-                                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
-                                        </div>
+                                        <GridItem span={{ md: 4, lg: 6 }}><Select
+                                            name="task-associate-id"
+                                            aria-label="Associate record"
+                                            value={associateId}
+                                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setAssociateId(e.target.value)}
+                                            options={[
+                                                { value: '', label: `Select ${associateType === 'lead' ? 'Lead' : 'Deal'}…` },
+                                                ...(associateType === 'lead'
+                                                    ? leads.map(l => ({ value: l.id, label: l.company_name || l.contact_name || '' }))
+                                                    : deals.map(d => ({ value: d.id, label: d.name || d.company_name || '' }))),
+                                            ]}
+                                        /></GridItem>
                                     )}
-                                </div>
+                                </Grid>
                             </div>
                         )}
 
                         {isEditing && (
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Status</label>
-                                <select
-                                    value={status}
-                                    onChange={(e) => setStatus(e.target.value as Task['status'])}
-                                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all appearance-none cursor-pointer"
-                                >
-                                    <option value="OPEN">Open</option>
-                                    <option value="IN_PROGRESS">In Progress</option>
-                                    <option value="DONE">Done</option>
-                                    <option value="ON_HOLD">On Hold</option>
-                                    <option value="CANCELLED">Cancelled</option>
-                                </select>
-                            </div>
+                            <Select
+                                name="task-status"
+                                label="Status"
+                                value={status}
+                                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStatus(e.target.value as Task['status'])}
+                                options={[
+                                    { value: 'OPEN', label: 'Open' },
+                                    { value: 'IN_PROGRESS', label: 'In Progress' },
+                                    { value: 'DONE', label: 'Done' },
+                                    { value: 'ON_HOLD', label: 'On Hold' },
+                                    { value: 'CANCELLED', label: 'Cancelled' },
+                                ]}
+                            />
                         )}
                     </div>
 
                 </div>
-                <div className="px-8 pb-6 pt-4 flex justify-end gap-3 border-t border-slate-800/50 flex-shrink-0">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-50 transition-colors"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className={`px-8 py-3 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:pointer-events-none flex items-center gap-2 ${isEditing ? 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/20' : 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/20'}`}
-                        >
-                            {isSubmitting && <Loader2 size={12} className="animate-spin" />}
-                            {isEditing ? 'Save Changes' : 'Create Task'}
-                        </button>
-                </div>
                 </form>
-            </div>
-        </div>
+        </Modal>
     );
 };
 

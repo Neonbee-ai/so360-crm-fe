@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useShellBridge } from '@so360/shell-context';
 import { salesTargetService } from '../../services/salesTargetService';
+import { Modal } from '../../components/common/Modal';
+import { useConfirm, ListPageTemplate, Button, DataTable, EmptyState, Badge, Switch, TextField, Select, Checkbox, SearchInput } from '@so360/design-system';
+import type { DataTableColumn, FilterValues } from '@so360/design-system';
+import { Trash2, Plus, ListChecks, AlertCircle } from 'lucide-react';
 
 const SOURCE_LABELS: Record<string, string> = {
   MANUAL: 'Manual',
@@ -28,6 +32,7 @@ const EMPTY_FORM = {
 };
 
 export default function AdminTaskTypesPage() {
+  const [confirm, confirmDialog] = useConfirm();
   const shell = useShellBridge();
   const [taskTypes, setTaskTypes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,6 +40,7 @@ export default function AdminTaskTypesPage() {
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState('');
   const [filterIndustry, setFilterIndustry] = useState('all');
 
   useEffect(() => {
@@ -89,7 +95,7 @@ export default function AdminTaskTypesPage() {
   };
 
   const handleDelete = async (tt: any) => {
-    if (!confirm(`Delete "${tt.name}"?`)) return;
+    if (!await confirm({ title: 'Delete?', message: `Delete "${tt.name}"?`, intent: 'danger', confirmLabel: 'Delete' })) return;
     try {
       await salesTargetService.deleteTaskType(tt.id);
       load();
@@ -98,237 +104,201 @@ export default function AdminTaskTypesPage() {
     }
   };
 
+  const q = search.trim().toLowerCase();
   const visible = taskTypes.filter(tt =>
-    filterIndustry === 'all' || (tt.industry_tags ?? []).includes(filterIndustry)
+    (filterIndustry === 'all' || (tt.industry_tags ?? []).includes(filterIndustry)) &&
+    (!q || String(tt.name || '').toLowerCase().includes(q))
   );
+  const hasFilters = filterIndustry !== 'all' || !!q;
+
+  const columns: DataTableColumn<any>[] = [
+    { key: 'name', header: 'Name', sortable: true, sortValue: (tt) => tt.name || '', render: (tt) => (
+      <span className="text-fg font-medium">
+        {tt.name}
+        {tt.is_predefined && <span className="ml-nb-2 text-xs text-fg-muted font-normal">(predefined)</span>}
+      </span>
+    ) },
+    { key: 'source', header: 'Source', render: (tt) => (
+      <Badge tone={tt.source === 'MANUAL' ? 'neutral' : tt.source === 'FLOW_TRANSITION' ? 'info' : 'success'}>
+        {SOURCE_LABELS[tt.source] ?? tt.source}
+      </Badge>
+    ) },
+    { key: 'unit', header: 'Unit', render: (tt) => <span className="text-fg-subtle">{tt.unit}</span> },
+    { key: 'industries', header: 'Industries', render: (tt) => <span className="text-fg-subtle text-xs">{(tt.industry_tags ?? []).join(', ') || '—'}</span> },
+    { key: 'status', header: 'Status', render: (tt) => (
+      <Switch
+        name={`task-type-active-${tt.id}`}
+        label="Active"
+        aria-label={`Toggle ${tt.name}`}
+        checked={!!tt.active}
+        onCheckedChange={() => handleToggleActive(tt)}
+      />
+    ) },
+  ];
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-xl font-semibold text-slate-100">Sales Activity Types</h1>
-          <p className="text-sm text-slate-400 mt-1">Define what activities reps track — auto-counted or manual</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setShowModal(true)}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded transition-colors"
-        >
-          + New Type
-        </button>
-      </div>
+    <ListPageTemplate
+      trail={[{ label: 'Settings', to: '/crm/settings' }]}
+      title="Sales Activity Types"
+      description="Define what activities reps track — auto-counted or manual"
+      count={taskTypes.length}
+      primaryAction={<Button onClick={() => setShowModal(true)}><Plus size={16} aria-hidden="true" /> New type</Button>}
+      search={<SearchInput placeholder="Search activity types" value={search} onChange={setSearch} data-testid="task-types-search" />}
+      filterConfig={{
+        fields: [{
+          key: 'industry',
+          label: 'Industry',
+          type: 'select',
+          quick: true,
+          options: INDUSTRY_OPTIONS.filter(i => i !== 'all').map(i => ({ value: i, label: i.replace(/_/g, ' ') })),
+        }],
+        values: { industry: filterIndustry === 'all' ? '' : filterIndustry } as FilterValues,
+        onChange: (v: FilterValues) => setFilterIndustry(String(v.industry || '') || 'all'),
+        onClear: () => setFilterIndustry('all'),
+      }}
+    >
+      {confirmDialog}
 
-      {/* Industry filter */}
-      <div className="flex gap-2 mb-4 flex-wrap">
-        {INDUSTRY_OPTIONS.map(ind => (
-          <button
-            key={ind}
-            type="button"
-            onClick={() => setFilterIndustry(ind)}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-              filterIndustry === ind
-                ? 'bg-blue-600 text-white'
-                : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-            }`}
-          >
-            {ind === 'all' ? 'All industries' : ind.replace(/_/g, ' ')}
-          </button>
-        ))}
-      </div>
-
-      {error && (
-        <div className="mb-4 p-3 bg-red-900/30 border border-red-700 rounded text-red-300 text-sm">{error}</div>
-      )}
-
-      {loading ? (
-        <div className="text-slate-400 text-sm">Loading…</div>
+      {error && !taskTypes.length && !loading ? (
+        <EmptyState
+          icon={AlertCircle}
+          title="Couldn't load activity types"
+          description={error}
+          action={{ label: 'Try again', onClick: () => { setError(null); load(); } }}
+        />
       ) : (
-        <div className="rounded-lg border border-slate-800 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-900 text-slate-400 text-xs uppercase tracking-wider">
-              <tr>
-                <th className="px-4 py-3 text-left">Name</th>
-                <th className="px-4 py-3 text-left">Source</th>
-                <th className="px-4 py-3 text-left">Unit</th>
-                <th className="px-4 py-3 text-left">Industries</th>
-                <th className="px-4 py-3 text-left">Status</th>
-                <th className="px-4 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800">
-              {visible.length === 0 && (
-                <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-500">No task types yet</td></tr>
-              )}
-              {visible.map((tt: any) => (
-                <tr key={tt.id} className="bg-slate-950 hover:bg-slate-900 transition-colors">
-                  <td className="px-4 py-3 text-slate-100 font-medium">
-                    {tt.name}
-                    {tt.is_predefined && (
-                      <span className="ml-2 text-xs text-slate-500 font-normal">(predefined)</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                      tt.source === 'MANUAL' ? 'bg-slate-700 text-slate-300'
-                      : tt.source === 'FLOW_TRANSITION' ? 'bg-purple-900/50 text-purple-300'
-                      : 'bg-green-900/50 text-green-300'
-                    }`}>
-                      {SOURCE_LABELS[tt.source] ?? tt.source}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-slate-400">{tt.unit}</td>
-                  <td className="px-4 py-3 text-slate-400 text-xs">
-                    {(tt.industry_tags ?? []).join(', ') || '—'}
-                  </td>
-                  <td className="px-4 py-3">
-                    <button
-                      type="button"
-                      onClick={() => handleToggleActive(tt)}
-                      className={`w-10 h-5 rounded-full transition-colors relative ${tt.active ? 'bg-green-600' : 'bg-slate-600'}`}
-                    >
-                      <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${tt.active ? 'translate-x-5' : 'translate-x-0.5'}`} />
-                    </button>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    {!tt.is_predefined && (
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(tt)}
-                        className="text-red-400 hover:text-red-300 text-xs"
-                      >
-                        Delete
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <>
+        {error && (
+          <div className="mb-nb-3 text-sm text-danger">{error}</div>
+        )}
+        <DataTable
+          columns={columns}
+          rows={visible}
+          rowKey={(tt: any) => tt.id}
+          loading={loading}
+          rowActions={(tt: any) => tt.is_predefined ? [] : [
+            { label: 'Delete', icon: <Trash2 size={14} />, danger: true, onSelect: () => handleDelete(tt) },
+          ]}
+          getRowProps={(tt: any) => ({ 'data-testid': `task-type-row-${tt.id}` })}
+          emptyState={hasFilters ? (
+            <EmptyState
+              icon={ListChecks}
+              title="No matching activity types"
+              description="Try a different search or clear the industry filter."
+              action={{ label: 'Clear filters', onClick: () => { setSearch(''); setFilterIndustry('all'); } }}
+            />
+          ) : (
+            <EmptyState
+              icon={ListChecks}
+              title="No activity types yet"
+              description="Define the activities your reps track, auto-counted or manual."
+              action={{ label: 'New type', onClick: () => setShowModal(true) }}
+            />
+          )}
+        />
+        </>
       )}
 
       {/* Create modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 rounded-xl border border-slate-700 w-full max-w-md p-6">
-            <h2 className="text-lg font-semibold text-slate-100 mb-4">New Activity Type</h2>
-
+        <Modal
+          isOpen
+          size="md"
+          title="New Activity Type"
+          dismissible={!saving}
+          data-testid="new-activity-type-modal"
+          onClose={() => { setShowModal(false); setForm({ ...EMPTY_FORM }); }}
+          footer={
+            <>
+              <Button type="button" variant="secondary" onClick={() => { setShowModal(false); setForm({ ...EMPTY_FORM }); }}>
+                Cancel
+              </Button>
+              <Button type="button" variant="primary" onClick={handleSave} disabled={saving || !form.name}>
+                {saving ? 'Saving…' : 'Create'}
+              </Button>
+            </>
+          }
+        >
             <div className="space-y-4">
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">Name</label>
-                <input
-                  className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-blue-500"
-                  placeholder="e.g. LinkedIn DM Sent"
-                  value={form.name}
-                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                />
-              </div>
+              <TextField
+                name="task_type_name"
+                label="Name"
+                placeholder="e.g. LinkedIn DM Sent"
+                value={form.name}
+                onChange={(e: any) => setForm(f => ({ ...f, name: e.target.value }))}
+              />
 
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">Source</label>
-                <select
-                  className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-blue-500"
-                  value={form.source}
-                  onChange={e => setForm(f => ({ ...f, source: e.target.value }))}
-                >
-                  <option value="MANUAL">Manual (off-platform — rep taps +1)</option>
-                  <option value="FLOW_TRANSITION">Flow Transition (auto-counted from workflow)</option>
-                  <option value="CRM_TABLE">CRM Auto (counted from leads/deals table)</option>
-                </select>
-              </div>
+              <Select
+                name="task_type_source"
+                label="Source"
+                value={form.source}
+                onChange={(e: any) => setForm(f => ({ ...f, source: e.target.value }))}
+                options={[
+                  { value: 'MANUAL', label: 'Manual (off-platform — rep taps +1)' },
+                  { value: 'FLOW_TRANSITION', label: 'Flow Transition (auto-counted from workflow)' },
+                  { value: 'CRM_TABLE', label: 'CRM Auto (counted from leads/deals table)' },
+                ]}
+              />
 
               {form.source === 'FLOW_TRANSITION' && (
-                <div className="space-y-2">
-                  <div>
-                    <label className="block text-xs text-slate-400 mb-1">Entity Type</label>
-                    <input
-                      className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-blue-500"
-                      placeholder="e.g. deal"
-                      value={form.flow_trigger.entity_type}
-                      onChange={e => setForm(f => ({ ...f, flow_trigger: { ...f.flow_trigger, entity_type: e.target.value } }))}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-slate-400 mb-1">Transition Key</label>
-                    <input
-                      className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-blue-500"
-                      placeholder="e.g. sent_proposal"
-                      value={form.flow_trigger.transition_key}
-                      onChange={e => setForm(f => ({ ...f, flow_trigger: { ...f.flow_trigger, transition_key: e.target.value } }))}
-                    />
-                  </div>
+                <div className="space-y-nb-2">
+                  <TextField
+                    name="task_type_entity"
+                    label="Entity Type"
+                    placeholder="e.g. deal"
+                    value={form.flow_trigger.entity_type}
+                    onChange={(e: any) => setForm(f => ({ ...f, flow_trigger: { ...f.flow_trigger, entity_type: e.target.value } }))}
+                  />
+                  <TextField
+                    name="task_type_transition"
+                    label="Transition Key"
+                    placeholder="e.g. sent_proposal"
+                    value={form.flow_trigger.transition_key}
+                    onChange={(e: any) => setForm(f => ({ ...f, flow_trigger: { ...f.flow_trigger, transition_key: e.target.value } }))}
+                  />
                 </div>
               )}
 
               {form.source === 'CRM_TABLE' && (
-                <div>
-                  <label className="block text-xs text-slate-400 mb-1">Count Rule</label>
-                  <select
-                    className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-blue-500"
-                    value={form.crm_table_rule_preset}
-                    onChange={e => setForm(f => ({ ...f, crm_table_rule_preset: e.target.value }))}
-                  >
-                    <option value="">Select…</option>
-                    {CRM_TABLE_RULES.map(r => (
-                      <option key={r.label} value={r.label}>{r.label}</option>
-                    ))}
-                  </select>
-                </div>
+                <Select
+                  name="task_type_rule"
+                  label="Count Rule"
+                  value={form.crm_table_rule_preset}
+                  onChange={(e: any) => setForm(f => ({ ...f, crm_table_rule_preset: e.target.value }))}
+                  options={[{ value: '', label: 'Select…' }, ...CRM_TABLE_RULES.map(r => ({ value: r.label, label: r.label }))]}
+                />
               )}
 
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">Unit (display label)</label>
-                <input
-                  className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-blue-500"
-                  placeholder="e.g. DMs, proposals, leads"
-                  value={form.unit}
-                  onChange={e => setForm(f => ({ ...f, unit: e.target.value }))}
-                />
-              </div>
+              <TextField
+                name="task_type_unit"
+                label="Unit (display label)"
+                placeholder="e.g. DMs, proposals, leads"
+                value={form.unit}
+                onChange={(e: any) => setForm(f => ({ ...f, unit: e.target.value }))}
+              />
 
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Industries</label>
+                <label className="block text-xs text-fg-subtle mb-1">Industries</label>
                 <div className="flex flex-wrap gap-2">
                   {INDUSTRY_OPTIONS.filter(i => i !== 'all').map(ind => (
-                    <label key={ind} className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={form.industry_tags.includes(ind)}
-                        onChange={e => setForm(f => ({
-                          ...f,
-                          industry_tags: e.target.checked
-                            ? [...f.industry_tags, ind]
-                            : f.industry_tags.filter(t => t !== ind),
-                        }))}
-                        className="accent-blue-500"
-                      />
-                      {ind.replace(/_/g, ' ')}
-                    </label>
+                    <Checkbox
+                      key={ind}
+                      name={`industry-${ind}`}
+                      label={ind.replace(/_/g, ' ')}
+                      checked={form.industry_tags.includes(ind)}
+                      onChange={(e: any) => setForm(f => ({
+                        ...f,
+                        industry_tags: e.target.checked
+                          ? [...f.industry_tags, ind]
+                          : f.industry_tags.filter(t => t !== ind),
+                      }))}
+                    />
                   ))}
                 </div>
               </div>
             </div>
-
-            <div className="flex gap-3 mt-6 justify-end">
-              <button
-                type="button"
-                onClick={() => { setShowModal(false); setForm({ ...EMPTY_FORM }); }}
-                className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={saving || !form.name}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm font-medium rounded transition-colors"
-              >
-                {saving ? 'Saving…' : 'Create'}
-              </button>
-            </div>
-          </div>
-        </div>
+        </Modal>
       )}
-    </div>
+    </ListPageTemplate>
   );
 }

@@ -18,9 +18,15 @@ function renderBar(overrides: Partial<React.ComponentProps<typeof QuickActionBar
     return { ...utils, handlers };
 }
 
+/** The actions live in a single header menu; open it before asserting on the items. */
+function openMenu() {
+    fireEvent.click(screen.getByRole('button', { name: /Log activity/i }));
+}
+
 describe('Given no permission props are passed (legacy callers)', () => {
     test('When QuickActionBar renders, Then all six actions are shown by default', () => {
         renderBar();
+        openMenu();
         for (const label of ALL_LABELS) {
             expect(screen.getByText(label)).toBeInTheDocument();
         }
@@ -28,7 +34,7 @@ describe('Given no permission props are passed (legacy callers)', () => {
 });
 
 describe('Given a default Employee with no activity permissions granted', () => {
-    test('When QuickActionBar renders, Then none of the six action buttons appear and nothing is rendered', () => {
+    test('When QuickActionBar renders, Then the menu trigger and every action are absent and nothing is rendered', () => {
         const { container } = renderBar({
             canAddNote: false, canSendEmail: false, canLogCall: false,
             canScheduleMeeting: false, canCreateTask: false, canUploadDocument: false,
@@ -46,8 +52,9 @@ describe('Given an Employee whose Admin granted only Create Task', () => {
             canAddNote: false, canSendEmail: false, canLogCall: false,
             canScheduleMeeting: false, canCreateTask: true, canUploadDocument: false,
         });
+        openMenu();
         expect(screen.getByText('Create Task')).toBeInTheDocument();
-        expect(screen.queryAllByRole('button')).toHaveLength(1);
+        expect(screen.queryAllByRole('menuitem')).toHaveLength(1);
         for (const label of ALL_LABELS.filter(l => l !== 'Create Task')) {
             expect(screen.queryByText(label)).not.toBeInTheDocument();
         }
@@ -60,6 +67,7 @@ describe('Given an Admin with all six permissions granted', () => {
             canAddNote: true, canSendEmail: true, canLogCall: true,
             canScheduleMeeting: true, canCreateTask: true, canUploadDocument: true,
         });
+        openMenu();
         for (const label of ALL_LABELS) {
             expect(screen.getByText(label)).toBeInTheDocument();
         }
@@ -70,6 +78,7 @@ describe('Given an Admin with all six permissions granted', () => {
             canAddNote: true, canSendEmail: true, canLogCall: true,
             canScheduleMeeting: true, canCreateTask: true, canUploadDocument: true,
         });
+        openMenu();
         fireEvent.click(screen.getByText('Create Task'));
         expect(handlers.onCreateTask).toHaveBeenCalledTimes(1);
     });
@@ -78,9 +87,10 @@ describe('Given an Admin with all six permissions granted', () => {
 describe('Given a permission that was granted is later revoked by the Admin', () => {
     test('When QuickActionBar re-renders with the permission false, Then the corresponding button disappears', () => {
         const { rerender, handlers } = renderBar({ canCreateTask: true });
+        openMenu();
         expect(screen.getByText('Create Task')).toBeInTheDocument();
 
-        rerender(<QuickActionBar {...handlers} canCreateTask={false} />);
+        rerender(<QuickActionBar {...handlers} canAddNote={false} canSendEmail={false} canLogCall={false} canScheduleMeeting={false} canCreateTask={false} canUploadDocument={false} />);
         expect(screen.queryByText('Create Task')).not.toBeInTheDocument();
     });
 });
@@ -89,10 +99,11 @@ describe('Given rapid repeat clicks on a visible action', () => {
     test('When the same action is clicked twice within the double-click guard window, Then the handler fires only once', () => {
         vi.useFakeTimers();
         const { handlers } = renderBar({ canAddNote: true });
-        const btn = screen.getByText('Add Note');
-        fireEvent.click(btn);
+        openMenu();
+        fireEvent.click(screen.getByText('Add Note'));
         vi.advanceTimersByTime(DOUBLE_CLICK_GUARD_MS - 50);
-        fireEvent.click(btn);
+        openMenu();
+        fireEvent.click(screen.getByText('Add Note'));
         expect(handlers.onAddNote).toHaveBeenCalledTimes(1);
         vi.useRealTimers();
     });

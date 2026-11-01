@@ -64,3 +64,14 @@ describe('TimelineEventCard — G8 Client 360 icons', () => {
         });
     });
 });
+
+describe('TimelineEventCard — Inbox threads by reference', () => {
+    it('Given an inbox conversation event Then it links into Inbox by id', () => {
+        renderCard(baseEvent({ module: 'inbox', related_type: 'conversation', related_id: 'c1' }));
+        expect(screen.getByTestId('timeline-inbox-link')).toHaveAttribute('href', '/inbox/conversations/c1');
+    });
+    it('Given a CRM event Then there is no inbox link', () => {
+        renderCard(baseEvent());
+        expect(screen.queryByTestId('timeline-inbox-link')).toBeNull();
+    });
+});

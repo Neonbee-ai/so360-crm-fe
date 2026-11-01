@@ -50,7 +50,7 @@ const renderHub = () => {
 const choose = (label: string) => fireEvent.click(screen.getByRole('button', { name: new RegExp(label) }));
 const pick = (file: File) => fireEvent.change(screen.getByLabelText('Import file'), { target: { files: [file] } });
 const csv = (text: string, name = 'data.csv') => new File([text], name, { type: 'text/csv' });
-const closeModal = () => fireEvent.click(screen.getByTestId('icon-X').closest('button') as HTMLElement);
+const closeModal = () => fireEvent.click(screen.getByRole('button', { name: 'Close' }));
 
 const CLIENTS_CSV = 'Name,Email,Phone\nAli,ali@x.com,\nNobody,,\nSara,,+971500000000';
 const UNITS_CSV = 'Project,Tower,Unit No,Bedrooms,Final price\nPalm Vista,Tower A,101,2,1000000\nPalm Vista,Tower Z,102,3,';
@@ -63,7 +63,7 @@ const toMap = async (kind: string, text: string) => {
 
 beforeEach(() => {
     vi.clearAllMocks();
-    h.perms = new Set(['categories.create', 'items.import', 'employees.import']);
+    h.perms = new Set(['leads.import', 'categories.create', 'items.import', 'employees.import']);
     h.loaded = true;
     h.importClients.mockResolvedValue({ created: 1, updated: 1, skipped: 0, problems: [{ row: 4, message: 'partner create failed' }] });
     h.importProjects.mockResolvedValue({ created: 0, updated: 0, skipped: 2, problems: [] });
@@ -88,13 +88,21 @@ describe('Given the CRM import hub', () => {
     });
 
     describe('When permissions are missing or not loaded yet', () => {
-        it('Then only leads and clients are offered', () => {
+        it('Then no import type is offered', () => {
             h.perms = new Set();
             renderHub();
             expect(screen.queryByText('Projects & towers')).toBeNull();
             expect(screen.queryByText('Units')).toBeNull();
             expect(screen.queryByText('Agents')).toBeNull();
+            expect(screen.queryByText('Existing clients')).toBeNull();
+            expect(screen.queryByText('Leads & contacts')).toBeNull();
+        });
+        it('Then leads and clients are offered with only leads.import', () => {
+            h.perms = new Set(['leads.import']);
+            renderHub();
+            expect(screen.getByText('Leads & contacts')).toBeInTheDocument();
             expect(screen.getByText('Existing clients')).toBeInTheDocument();
+            expect(screen.queryByText('Units')).toBeNull();
         });
         it('Then nothing gated shows before permissions load', () => {
             h.loaded = false;

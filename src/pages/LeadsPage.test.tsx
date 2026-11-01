@@ -10,10 +10,12 @@ const mockGetPartners = vi.fn();
 vi.mock('../services/crmService', () => ({
   crmService: {
     getLeads: (...a: any[]) => mockGetLeads(...a),
+    getLeadsPaged: async (...a: any[]) => { const d = await mockGetLeads(...a); return { data: d, total: d.length }; },
+    getLeadStats: async () => ({ total: 0 }),
+    getLeadStatusCounts: async () => ({}),
     getSettings: (...a: any[]) => mockGetSettings(...a),
     getUsers: (...a: any[]) => mockGetUsers(...a),
     getPartners: (...a: any[]) => mockGetPartners(...a),
-    getCustomerSegmentLeads: vi.fn().mockResolvedValue({ leads: [] }),
     updateLead: vi.fn(),
     logActivity: vi.fn(),
     deleteLead: vi.fn(),
@@ -29,6 +31,7 @@ vi.mock('react-router-dom', () => ({
 }));
 
 vi.mock('@so360/shell-context', () => ({
+  useDatasetSchema: () => ({ fields: [], isLoading: false, error: null }),
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useNotify: () => ({ emitNotification: vi.fn().mockResolvedValue(undefined) }),
   useActivity: () => ({ recordActivity: vi.fn().mockResolvedValue(undefined) }),
@@ -110,7 +113,7 @@ describe('Given LeadsPage', () => {
   it('When no leads / Then shows empty state', async () => {
     render(<LeadsPage />);
     await waitFor(() => {
-      expect(screen.getByTestId('leads-grid')).toHaveTextContent('No leads found');
+      expect(screen.getByText('No leads yet')).toBeInTheDocument();
     });
   });
 
@@ -132,5 +135,24 @@ describe('Given LeadsPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Acme Corp')).toBeInTheDocument();
     });
+  });
+});
+
+describe('Given the leads list answers before settings and users', () => {
+  it('When settings and users are still pending Then the leads grid renders without waiting', async () => {
+    mockGetLeads.mockResolvedValue([{ id: 'l1', company_name: 'Acme' }]);
+    mockGetSettings.mockImplementation(() => new Promise(() => {}));
+    mockGetUsers.mockImplementation(() => new Promise(() => {}));
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getAllByTestId('lead-row')).toHaveLength(1));
+  });
+
+  it('When settings or users fail Then the leads still render and no page error shows', async () => {
+    mockGetLeads.mockResolvedValue([{ id: 'l1', company_name: 'Acme' }]);
+    mockGetSettings.mockRejectedValue(new Error('settings down'));
+    mockGetUsers.mockRejectedValue(new Error('users down'));
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getAllByTestId('lead-row')).toHaveLength(1));
+    expect(screen.queryByText(/settings down|users down/)).not.toBeInTheDocument();
   });
 });

@@ -105,7 +105,7 @@ vi.mock('@so360/shell-context', () => ({
     hasAnyPermission: () => true,
   }),
   useActivity: () => ({ recordActivity: async () => {} }),
-  useShellBridge: () => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true }),
+  useShellBridge: () => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: (k: string) => k !== 'submodule:crm:dl_custom_fields' }),
 }));
 
 vi.mock('../config/features', () => ({
@@ -362,7 +362,7 @@ describe('DealDetailPage', () => {
       await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
       await user.click(screen.getByText(/Tasks \(2\)/));
       await waitFor(() => expect(screen.getByText('Follow up call')).toBeInTheDocument());
-      const checkboxes = screen.getAllByRole('button').filter(b => b.className.includes('rounded border'));
+      const checkboxes = screen.getAllByRole('button', { name: /Mark task (not )?done/ });
       fireEvent.click(checkboxes[0]);
       await waitFor(() => expect(mockUpdateTask).toHaveBeenCalledWith('t1', { status: 'DONE' }));
     });
@@ -432,33 +432,14 @@ describe('DealDetailPage', () => {
   });
 
   describe('Given the Deal Detail navigation tabs', () => {
-    it('When the page renders / Then the tab strip scrolls horizontally instead of clipping tabs', async () => {
+    it('When the page renders / Then every tab is reachable in the tab list', async () => {
       render(<DealDetailPage />);
       await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
 
-      const strip = screen.getByTestId('deal-detail-tab-strip');
-      expect(strip.className).toContain('overflow-x-auto');
-      expect(strip.parentElement?.className).not.toContain('overflow-hidden');
-
-      // Every tab must still be reachable inside the scroll strip, not hidden.
-      const tabButtons = within(strip).getAllByRole('button');
-      const tabLabels = tabButtons.map((btn) => btn.textContent);
+      const tabLabels = screen.getAllByRole('tab').map((btn) => btn.textContent);
       ['Activity', 'Notes', 'Products', 'Additional Info', 'Calls'].forEach((label) => {
         expect(tabLabels.some((text) => text?.includes(label))).toBe(true);
       });
-    });
-
-    it('When switching tabs / Then the newly active tab scrolls into view', async () => {
-      const user = userEvent.setup();
-      const scrollIntoViewMock = vi.fn();
-      HTMLElement.prototype.scrollIntoView = scrollIntoViewMock;
-
-      render(<DealDetailPage />);
-      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
-      scrollIntoViewMock.mockClear();
-
-      await user.click(screen.getByText('Products'));
-      await waitFor(() => expect(scrollIntoViewMock).toHaveBeenCalled());
     });
   });
 
@@ -507,6 +488,13 @@ describe('DealDetailPage', () => {
       await user.click(screen.getAllByText('Back to Pipeline')[0]);
       expect(mockNavigate).toHaveBeenCalledWith('/crm/pipeline');
     });
+
+    it('When API returns null / Then the not-found state renders inside a Comb root so the page settles', async () => {
+      mockGetDealById.mockResolvedValue(null);
+      const { container } = render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Deal not found.')).toBeInTheDocument());
+      expect(container.querySelector('[data-comb-path]')).not.toBeNull();
+    });
   });
 
   describe('Given a loaded deal / Then the universal Back control navigates to the pipeline list', () => {
@@ -514,7 +502,7 @@ describe('DealDetailPage', () => {
       const user = userEvent.setup();
       render(<DealDetailPage />);
       await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
-      await user.click(screen.getAllByText('Back')[0]);
+      await user.click(screen.getAllByLabelText('Back to Pipeline')[0]);
       expect(mockNavigate).toHaveBeenCalledWith('/crm/pipeline');
     });
   });
@@ -563,23 +551,20 @@ describe('DealDetailPage', () => {
       const user = userEvent.setup();
       render(<DealDetailPage />);
       await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
-      await user.click(screen.getByLabelText('Delete'));
+      await user.click(screen.getByText('Delete'));
       await waitFor(() => {
         const confirmTexts = screen.getAllByText(/Delete/);
         expect(confirmTexts.length).toBeGreaterThan(1);
       });
     });
 
-    it('When delete confirmation modal opens / Then container has max-h-[90vh]', async () => {
+    it('When delete confirmation modal opens / Then it is shown as a dialog', async () => {
       const user = userEvent.setup();
       render(<DealDetailPage />);
       await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
-      await user.click(screen.getByLabelText('Delete'));
+      await user.click(screen.getByText('Delete'));
       await waitFor(() => {
-        const panels = Array.from(document.querySelectorAll('div')).filter(
-          el => el.className.includes('max-h-[90vh]'),
-        );
-        expect(panels.length).toBeGreaterThan(0);
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
       });
     });
   });
@@ -805,16 +790,13 @@ describe('DealDetailPage', () => {
       expect(screen.getByTestId('project-select')).toBeInTheDocument();
     });
 
-    it('When project modal opens / Then container has max-h-[90vh]', async () => {
+    it('When project modal opens / Then it is shown as a dialog', async () => {
       const user = userEvent.setup();
       render(<DealDetailPage />);
       await waitFor(() => expect(screen.getByText('Create Project')).toBeInTheDocument());
       await user.click(screen.getByText('Create Project'));
       await waitFor(() => {
-        const panels = Array.from(document.querySelectorAll('div')).filter(
-          el => el.className.includes('max-h-[90vh]'),
-        );
-        expect(panels.length).toBeGreaterThan(0);
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
       });
     });
 
@@ -831,6 +813,27 @@ describe('DealDetailPage', () => {
       render(<DealDetailPage />);
       await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
       expect(mockGetLeadById).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Given the deal response embeds its lead', () => {
+    it('When the linked lead was deleted (lead: null) / Then does not call GET /leads/:id', async () => {
+      mockGetDealById.mockResolvedValue(makeDeal({ lead_id: 'lead-gone', lead: null }));
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+      expect(mockGetLeadById).not.toHaveBeenCalled();
+    });
+
+    it('When the embedded lead is present / Then uses it without a second request', async () => {
+      mockGetDealById.mockResolvedValue(makeDeal({ lead: associatedLead }));
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+      expect(mockGetLeadById).not.toHaveBeenCalled();
+    });
+
+    it('When an older backend omits lead / Then falls back to fetching it by lead_id', async () => {
+      render(<DealDetailPage />);
+      await waitFor(() => expect(mockGetLeadById).toHaveBeenCalledWith('lead-1'));
     });
   });
 
@@ -1001,34 +1004,21 @@ describe('DealDetailPage — deal context passed to Accounting document flows', 
  */
 describe('DealDetailPage — header and card presentation', () => {
   /** Lowest slate step still legible on the light theme's white card. */
-  const READABLE = /text-slate-(50|100|200|300)\b/;
+  const READABLE = /text-fg(-muted)?(\s|$)/;
 
   describe('Given the record header', () => {
-    it('When the Delete action renders / Then it carries no text label', async () => {
+    it('When the Delete action renders / Then it lives in the header overflow menu flagged as destructive', async () => {
       render(<DealDetailPage />);
       await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
-      expect(screen.getByLabelText('Delete').textContent).toBe('');
+      const del = screen.getByText('Delete');
+      expect(del.closest('[data-slot="overflow"]')).not.toBeNull();
+      expect(del).toHaveAttribute('data-danger', 'true');
     });
 
-    it('When the Delete action renders / Then it is still named on hover and for screen readers', async () => {
+    it('When the back control renders / Then it is the Comb trail back to the parent', async () => {
       render(<DealDetailPage />);
       await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
-      const del = screen.getByLabelText('Delete');
-      expect(del).toHaveAttribute('title', 'Delete');
-      expect(del).toHaveAttribute('aria-label', 'Delete');
-    });
-
-    it('When the Delete action renders / Then keyboard focus stays visible', async () => {
-      render(<DealDetailPage />);
-      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
-      expect(screen.getByLabelText('Delete').className).toMatch(/focus-visible:ring/);
-    });
-
-    it('When the back control renders / Then it uses the same neutral wording as every other module', async () => {
-      render(<DealDetailPage />);
-      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
-      expect(screen.getAllByText('Back').length).toBeGreaterThan(0);
-      expect(screen.queryByRole('button', { name: 'Back to Pipeline' })).toBeNull();
+      expect(screen.getAllByLabelText('Back to Pipeline').length).toBeGreaterThan(0);
     });
   });
 
@@ -1141,7 +1131,6 @@ describe('DealDetailPage — deal stage selector', () => {
 
       const currentOption = screen.getByTestId('deal-stage-option-qualified');
       expect(currentOption).toHaveAttribute('aria-selected', 'true');
-      expect(currentOption.className).toContain('bg-blue-600');
       const otherOption = screen.getByTestId('deal-stage-option-new');
       expect(otherOption).toHaveAttribute('aria-selected', 'false');
     });
@@ -1242,21 +1231,17 @@ describe('DealDetailPage — deal stage selector', () => {
   });
 
   describe('Given the header button group has multiple conditionally-rendered actions', () => {
-    it('When Delete, Sign, Estimate, Invoice and Project actions are all visible / Then all five render without breaking and the group is wrap-capable', async () => {
+    it('When Delete, Sign, Estimate, Invoice and Project actions are all visible / Then all five render without breaking', async () => {
       shellCtl.signEnabled = true;
       shellCtl.canEditDeal = true;
       render(<DealDetailPage />);
       await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
 
-      expect(screen.getByLabelText('Delete')).toBeInTheDocument();
+      expect(screen.getByText('Delete')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /request signature/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /create estimate/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /create invoice/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /create project/i })).toBeInTheDocument();
-
-      // The button row must allow wrapping rather than squeezing the title at md widths.
-      const buttonGroup = screen.getByRole('button', { name: /request signature/i }).parentElement;
-      expect(buttonGroup?.className).toContain('flex-wrap');
     });
   });
 

@@ -16,7 +16,7 @@ describe('Feature: ICP fit card on lead detail', () => {
     render(<IcpFitCard meta={{ icp_score: 72, icp_name: 'Enterprise CTOs', icp_criteria: { industry: 30 } }} />);
     expect(screen.getByText('ICP fit')).toBeTruthy();
     expect(screen.getByTestId('icp-fit-score').textContent).toBe('72 / 100');
-    expect(screen.getByTestId('icp-fit-band').textContent).toBe('Good fit');
+    expect(screen.getByTestId('badge-icp-fit-band').textContent).toBe('Good fit');
     expect(screen.getByTestId('icp-fit-name').textContent).toBe('Enterprise CTOs');
     expect(screen.getByText('Industry')).toBeTruthy();
   });
@@ -151,13 +151,13 @@ describe('Feature: score parsing', () => {
   it('Given score 0 When rendered Then card shows 0 / 100 as Not a fit (0 is a valid score)', () => {
     render(<IcpFitCard meta={{ icp_score: 0 }} />);
     expect(score()).toBe('0 / 100');
-    expect(screen.getByTestId('icp-fit-band').textContent).toBe('Not a fit');
+    expect(screen.getByTestId('badge-icp-fit-band').textContent).toBe('Not a fit');
   });
 
   it('Given a numeric string When rendered Then it is parsed', () => {
     render(<IcpFitCard meta={{ icp_score: '85' }} />);
     expect(score()).toBe('85 / 100');
-    expect(screen.getByTestId('icp-fit-band').textContent).toBe('Excellent fit');
+    expect(screen.getByTestId('badge-icp-fit-band').textContent).toBe('Excellent fit');
   });
 
   it('Given a padded numeric string When rendered Then it is parsed', () => {
@@ -179,25 +179,25 @@ describe('Feature: score parsing', () => {
   it('Given a negative score When rendered Then it is clamped to 0 / 100 as Not a fit', () => {
     render(<IcpFitCard meta={{ icp_score: -5 }} />);
     expect(score()).toBe('0 / 100');
-    expect(screen.getByTestId('icp-fit-band').textContent).toBe('Not a fit');
+    expect(screen.getByTestId('badge-icp-fit-band').textContent).toBe('Not a fit');
   });
 
   it('Given a score above 100 When rendered Then it is clamped to 100 / 100 as Excellent', () => {
     render(<IcpFitCard meta={{ icp_score: 150 }} />);
     expect(score()).toBe('100 / 100');
-    expect(screen.getByTestId('icp-fit-band').textContent).toBe('Excellent fit');
+    expect(screen.getByTestId('badge-icp-fit-band').textContent).toBe('Excellent fit');
   });
 
   it('Given 59.5 When rendered Then displayed score and band agree (rounded before banding)', () => {
     render(<IcpFitCard meta={{ icp_score: 59.5 }} />);
     expect(score()).toBe('60 / 100');
-    expect(screen.getByTestId('icp-fit-band').textContent).toBe('Good fit');
+    expect(screen.getByTestId('badge-icp-fit-band').textContent).toBe('Good fit');
   });
 
   it('Given 79.4 When rendered Then it rounds down and stays Good fit', () => {
     render(<IcpFitCard meta={{ icp_score: 79.4 }} />);
     expect(score()).toBe('79 / 100');
-    expect(screen.getByTestId('icp-fit-band').textContent).toBe('Good fit');
+    expect(screen.getByTestId('badge-icp-fit-band').textContent).toBe('Good fit');
   });
 });
 
@@ -207,14 +207,14 @@ describe('Feature: band rendering at every edge', () => {
     [60, 'Good fit'], [79, 'Good fit'], [80, 'Excellent fit'], [100, 'Excellent fit'],
   ])('Given score %i When rendered Then badge reads %s', (s, label) => {
     render(<IcpFitCard meta={{ icp_score: s }} />);
-    expect(screen.getByTestId('icp-fit-band').textContent).toBe(label);
+    expect(screen.getByTestId('badge-icp-fit-band').textContent).toBe(label);
   });
 
   it.each([
-    [90, 'emerald'], [70, 'blue'], [50, 'amber'], [10, 'slate'],
-  ])('Given score %i When rendered Then badge uses the %s colour family', (s, colour) => {
+    [90, 'success'], [70, 'info'], [50, 'warning'], [10, 'neutral'],
+  ])('Given score %i When rendered Then badge uses the %s tone', (s, colour) => {
     render(<IcpFitCard meta={{ icp_score: s }} />);
-    expect(screen.getByTestId('icp-fit-band').className).toContain(`text-${colour}-400`);
+    expect(screen.getByTestId('badge-icp-fit-band').getAttribute('data-tone')).toBe(colour);
   });
 });
 
@@ -384,7 +384,7 @@ describe('Feature: accessibility and structure', () => {
     render(<IcpFitCard meta={{ icp_score: 50, icp_name: 'N', icp_criteria: { a: 1 }, synced_at: '2026-10-01T10:00:00Z' }} />);
     const root = screen.getByTestId('icp-fit-card');
     expect(root.tagName).toBe('SECTION');
-    ['icp-fit-band', 'icp-fit-score', 'icp-fit-name', 'icp-fit-criteria', 'icp-fit-source'].forEach((id) =>
+    ['badge-icp-fit-band', 'icp-fit-score', 'icp-fit-name', 'icp-fit-criteria', 'icp-fit-source'].forEach((id) =>
       expect(within(root).getByTestId(id)).toBeTruthy());
   });
 

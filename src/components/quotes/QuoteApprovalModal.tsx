@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { X, Search, User as UserIcon, Loader2, Send, AlertCircle, Check } from 'lucide-react';
 import { crmService } from '../../services/crmService';
 import { Quote } from '../../types/crm';
+import { Badge, Button, IconButton, Skeleton, TextField, Textarea } from '@so360/design-system';
+import { Modal } from '../common/Modal';
 
 export interface ApproverCandidate {
   person_id?: string;
@@ -141,185 +143,28 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
   const quoteTotal = Number(quote.total_amount || quote.grand_total || 0);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
-          <div className="flex items-center gap-2">
-            <Send className="w-5 h-5 text-amber-400" />
-            <h3 className="text-lg font-semibold text-slate-100">Submit Quote for Approval</h3>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-200 p-1 rounded-lg hover:bg-slate-800 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-6 space-y-5 overflow-y-auto flex-1">
-          {error && (
-            <div className="p-3 bg-red-500/10 border border-red-500/40 rounded-lg flex items-center gap-2.5 text-red-300 text-sm">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          {/* Quote summary card */}
-          <div className="bg-slate-800/80 border border-slate-700/60 rounded-lg p-4 space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-400">Quote:</span>
-              <span className="font-semibold text-slate-200">
-                {quote.quote_number || `Q-${quote.id.slice(0, 8)}`}
-              </span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-400">Customer:</span>
-              <span className="font-medium text-slate-200 truncate max-w-[260px]">
-                {quote.customer_name || quote.deal?.company_name || 'Customer'}
-              </span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-400">Amount:</span>
-              <span className="font-bold text-amber-400">{currencyFormatter(quoteTotal)}</span>
-            </div>
-          </div>
-
-          {/* Approver Selection */}
-          <div className="space-y-2" ref={dropdownRef}>
-            <label className="block text-sm font-medium text-slate-300">
-              Select people who need to approve <span className="text-red-400">*</span>
-            </label>
-            <p className="text-xs text-slate-400">
-              Approvers come from the People Connect employee directory. All selected people must approve.
-            </p>
-
-            {/* Selected Chips */}
-            {selectedApprovers.length > 0 && (
-              <div className="flex flex-wrap gap-2 pt-1 pb-2">
-                {selectedApprovers.map((approver) => (
-                  <span
-                    key={approver.user_id}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-full text-xs font-medium"
-                  >
-                    <UserIcon className="w-3 h-3" />
-                    <span>{approver.full_name}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleRemove(approver.user_id)}
-                      aria-label={`Remove ${approver.full_name}`}
-                      className="hover:text-red-300 hover:bg-amber-500/30 rounded-full p-0.5 transition-colors"
-                      title={`Remove ${approver.full_name}`}
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {/* Search Input */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setDropdownOpen(true);
-                }}
-                onFocus={() => setDropdownOpen(true)}
-                placeholder="Search by name, email, department or role..."
-                className="w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors"
-              />
-            </div>
-
-            {/* Candidate Dropdown */}
-            {dropdownOpen && (
-              <div className="bg-slate-950 border border-slate-700 rounded-lg shadow-xl max-h-52 overflow-y-auto z-20 mt-1 divide-y divide-slate-800">
-                {isLoading ? (
-                  <div className="p-4 flex items-center justify-center gap-2 text-slate-400 text-sm">
-                    <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
-                    <span>Loading people directory...</span>
-                  </div>
-                ) : filteredCandidates.length === 0 ? (
-                  <div className="p-4 text-center text-slate-500 text-sm">
-                    {searchTerm ? 'No matching people found' : 'No available approvers'}
-                  </div>
-                ) : (
-                  filteredCandidates.map((cand) => {
-                    const isSelf = currentUserId && cand.user_id === currentUserId;
-                    return (
-                      <button
-                        key={cand.user_id}
-                        type="button"
-                        onClick={() => {
-                          handleSelect(cand);
-                          if (!isSelf) setDropdownOpen(false);
-                        }}
-                        className={`w-full text-left px-3 py-2.5 flex items-center gap-3 transition-colors ${
-                          isSelf
-                            ? 'opacity-60 bg-slate-900/50 cursor-pointer'
-                            : 'hover:bg-slate-800/80 cursor-pointer'
-                        }`}
-                      >
-                        <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 font-semibold text-xs flex-shrink-0">
-                          {cand.full_name?.charAt(0) || 'U'}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium text-slate-200 truncate">
-                              {cand.full_name}
-                            </p>
-                            {isSelf && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
-                                You (Cannot approve)
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-xs text-slate-400 truncate">
-                            {cand.job_title || cand.department_name || cand.email || ''}
-                          </p>
-                        </div>
-                      </button>
-                    );
-                  })
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Submission Note */}
-          <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-slate-300">
-              Optional Note for Approvers
-            </label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add context or justification for this approval (e.g. Special commercial discount approved by VP Sales)..."
-              rows={3}
-              className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors"
-            />
-          </div>
-        </div>
-
-        {/* Footer Actions */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 bg-slate-900/80 border-t border-slate-800">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isSubmitting}
-            className="px-4 py-2 text-sm text-slate-300 hover:text-slate-100 transition-colors"
-          >
+    <Modal
+      isOpen
+      onClose={onClose}
+      size="lg"
+      dismissible={!isSubmitting}
+      data-testid="quote-approval-modal"
+      title={
+        <span className="flex items-center gap-2">
+          <Send className="w-5 h-5 text-warning" />
+          Submit Quote for Approval
+        </span>
+      }
+      footer={
+        <>
+          <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="primary"
             onClick={handleSend}
             disabled={isSubmitting || selectedApprovers.length === 0}
-            className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
           >
             {isSubmitting ? (
               <>
@@ -332,9 +177,149 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
                 <span>Send for Approval</span>
               </>
             )}
-          </button>
+          </Button>
+        </>
+      }
+    >
+        <div className="space-y-5">
+          {error && (
+            <div className="p-3 bg-danger/10 border border-danger/40 rounded-lg flex items-center gap-2.5 text-danger text-sm">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Quote summary card */}
+          <div className="bg-surface-sunken border border-line rounded-lg p-4 space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-fg-subtle">Quote:</span>
+              <span className="font-semibold text-fg">
+                {quote.quote_number || `Q-${quote.id.slice(0, 8)}`}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-fg-subtle">Customer:</span>
+              <span className="font-medium text-fg truncate max-w-64">
+                {quote.customer_name || quote.deal?.company_name || 'Customer'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-fg-subtle">Amount:</span>
+              <span className="font-bold text-warning">{currencyFormatter(quoteTotal)}</span>
+            </div>
+          </div>
+
+          {/* Approver Selection */}
+          <div className="space-y-2" ref={dropdownRef}>
+            <label className="block text-sm font-medium text-fg-subtle">
+              Select people who need to approve <span className="text-danger">*</span>
+            </label>
+            <p className="text-xs text-fg-subtle">
+              Approvers come from the People Connect employee directory. All selected people must approve.
+            </p>
+
+            {/* Selected Chips */}
+            {selectedApprovers.length > 0 && (
+              <div className="flex flex-wrap gap-2 pt-1 pb-2">
+                {selectedApprovers.map((approver) => (
+                  <span
+                    key={approver.user_id}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-warning/20 text-warning border border-warning/30 rounded-full text-xs font-medium"
+                  >
+                    <UserIcon className="w-3 h-3" />
+                    <span>{approver.full_name}</span>
+                    <IconButton
+                      label={`Remove ${approver.full_name}`}
+                      icon={<X className="w-3 h-3" />}
+                      size="sm"
+                      onClick={() => handleRemove(approver.user_id)}
+                    />
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Search Input */}
+            <div className="relative">
+              <TextField
+                name="approver-search"
+                aria-label="Search approvers"
+                type="text"
+                value={searchTerm}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  setSearchTerm(e.target.value);
+                  setDropdownOpen(true);
+                }}
+                onFocus={() => setDropdownOpen(true)}
+                placeholder="Search by name, email, department or role..."
+                leadingIcon={Search}
+              />
+            </div>
+
+            {/* Candidate Dropdown */}
+            {dropdownOpen && (
+              <div className="bg-bg border border-line rounded-lg shadow-overlay max-h-52 overflow-y-auto z-menu mt-1 divide-y divide-line">
+                {isLoading ? (
+                  <div role="status" aria-busy="true" className="p-4">
+                    <Skeleton variant="text" lines={2} />
+                    <span className="sr-only">Loading people directory...</span>
+                  </div>
+                ) : filteredCandidates.length === 0 ? (
+                  <div className="p-4 text-center text-fg-muted text-sm">
+                    {searchTerm ? 'No matching people found' : 'No available approvers'}
+                  </div>
+                ) : (
+                  filteredCandidates.map((cand) => {
+                    const isSelf = currentUserId && cand.user_id === currentUserId;
+                    return (
+                      <Button
+                        key={cand.user_id}
+                        type="button"
+                        variant="ghost"
+                        onClick={() => {
+                          handleSelect(cand);
+                          if (!isSelf) setDropdownOpen(false);
+                        }}
+                        className={`!h-auto w-full !justify-start !whitespace-normal gap-3 py-2.5 !text-left ${
+                          isSelf ? 'opacity-60 !bg-surface-sunken' : ''
+                        }`}
+                      >
+                        <div className="w-7 h-7 rounded-full bg-surface-raised border border-line flex items-center justify-center text-fg-subtle font-semibold text-xs flex-shrink-0">
+                          {cand.full_name?.charAt(0) || 'U'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium text-fg truncate">
+                              {cand.full_name}
+                            </p>
+                            {isSelf && (
+                              <Badge size="sm" tone="neutral">
+                                You (Cannot approve)
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-fg-subtle truncate">
+                            {cand.job_title || cand.department_name || cand.email || ''}
+                          </p>
+                        </div>
+                      </Button>
+                    );
+                  })
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Submission Note */}
+          <Textarea
+            name="approval-notes"
+            label="Optional Note for Approvers"
+            value={notes}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNotes(e.target.value)}
+            placeholder="Add context or justification for this approval (e.g. Special commercial discount approved by VP Sales)..."
+            rows={3}
+          />
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 };

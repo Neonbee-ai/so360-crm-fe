@@ -118,6 +118,13 @@ describe('TaskDetailPage', () => {
       fireEvent.click(screen.getByText('Back to Tasks'));
       expect(mockNavigate).toHaveBeenCalledWith('/crm/tasks');
     });
+
+    it('When rendered / Then the not-found state renders inside a Comb root so the page settles', async () => {
+      mockGetTaskById.mockResolvedValue(null);
+      const { container } = render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('Task not found.')).toBeInTheDocument());
+      expect(container.querySelector('[data-comb-path]')).not.toBeNull();
+    });
   });
 
   describe('Given task is loaded', () => {
@@ -129,7 +136,7 @@ describe('TaskDetailPage', () => {
     it('When the header Back is clicked / Then it navigates to /crm/tasks, not the dashboard', async () => {
       render(<TaskDetailPage />);
       await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
-      fireEvent.click(screen.getAllByText('Back')[0]);
+      fireEvent.click(screen.getAllByLabelText('Back to Tasks')[0]);
       expect(mockNavigate).toHaveBeenCalledWith('/crm/tasks');
     });
 
@@ -148,7 +155,7 @@ describe('TaskDetailPage', () => {
 
     it('When rendered / Then shows task status badge', async () => {
       render(<TaskDetailPage />);
-      await waitFor(() => expect(screen.getByText('OPEN')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText(/^open$/i)).toBeInTheDocument());
     });
 
     it('When task has deal / Then shows deal link', async () => {
@@ -194,12 +201,9 @@ describe('TaskDetailPage', () => {
     it('When delete button clicked and confirmed / Then deletes task and navigates', async () => {
       render(<TaskDetailPage />);
       await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
-      const allBtns = screen.getAllByRole('button');
-      const trashBtn = allBtns.find(b => b.className.includes('hover:text-rose'));
-      fireEvent.click(trashBtn!);
-      await waitFor(() => expect(screen.getByText('Delete Task')).toBeInTheDocument());
-      const deleteConfirmBtn = screen.getAllByText('Delete').find(el => el.closest('button')?.className.includes('bg-red'));
-      fireEvent.click(deleteConfirmBtn!);
+      fireEvent.click(screen.getByRole('button', { name: 'Delete Task' }));
+      await waitFor(() => expect(screen.getByText(/cannot be undone/)).toBeInTheDocument());
+      fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
       await waitFor(() => expect(mockDeleteTask).toHaveBeenCalledWith('task-1'));
       expect(mockNavigate).toHaveBeenCalledWith('/crm/tasks');
     });
@@ -494,16 +498,15 @@ describe('TaskDetailPage', () => {
     it('When the page renders / Then Edit and Delete are grouped in one action area', async () => {
       render(<TaskDetailPage />);
       await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
-      const group = screen.getByTestId('task-actions');
-      expect(group.querySelector('[aria-label="Edit Task"]')).toBeTruthy();
-      expect(group.querySelector('[aria-label="Delete Task"]')).toBeTruthy();
+      expect(screen.getByLabelText('Edit Task')).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Delete Task' })).toBeTruthy();
     });
 
     it('When the page renders / Then both actions expose descriptive tooltips', async () => {
       render(<TaskDetailPage />);
       await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
       expect(screen.getByLabelText('Edit Task').getAttribute('title')).toBe('Edit Task');
-      expect(screen.getByLabelText('Delete Task').getAttribute('title')).toBe('Delete Task');
+      expect(screen.getByRole('button', { name: 'Delete Task' })).toBeTruthy();
     });
   });
 

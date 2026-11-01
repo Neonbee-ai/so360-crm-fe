@@ -29,17 +29,17 @@ export const DealLifecycleStepper: React.FC<DealLifecycleStepperProps> = ({ stag
 
     if (isLostType(currentStage) || currentState?.toLowerCase() === 'lost') {
         return (
-            <div className="flex items-center gap-3 p-4 bg-red-500/10 rounded-lg border border-red-500/20">
-                <XCircle className="w-5 h-5 text-red-400" />
-                <span className="text-red-400 font-medium">Deal Lost</span>
+            <div className="flex items-center gap-3 p-4 bg-danger/10 rounded-lg border border-danger/20">
+                <XCircle className="w-5 h-5 text-danger" />
+                <span className="text-fg font-medium">Deal Lost</span>
             </div>
         );
     }
 
     if (forwardStages.length === 0) {
         return (
-            <div className="flex items-center gap-3 p-4 bg-slate-500/10 rounded-lg border border-slate-500/20">
-                <span className="text-slate-400 text-sm">No pipeline stages configured</span>
+            <div className="flex items-center gap-3 p-4 bg-fg-muted/10 rounded-lg border border-line">
+                <span className="text-fg-subtle text-sm">No pipeline stages configured</span>
             </div>
         );
     }
@@ -47,7 +47,7 @@ export const DealLifecycleStepper: React.FC<DealLifecycleStepperProps> = ({ stag
     const currentIndex = forwardStages.findIndex(s => s.id === resolvedId);
 
     return (
-        <div className="flex items-center gap-0">
+        <div className="flex items-center gap-0 max-w-full min-w-0 overflow-x-auto pb-1">
             {forwardStages.map((stage, index) => {
                 const isCompleted = currentIndex > index;
                 const isCurrent = currentIndex === index;
@@ -56,23 +56,23 @@ export const DealLifecycleStepper: React.FC<DealLifecycleStepperProps> = ({ stag
 
                 return (
                     <React.Fragment key={stage.id}>
-                        <div className="flex flex-col items-center">
+                        <div className="flex flex-col items-center shrink-0">
                             <div className={`flex items-center justify-center w-8 h-8 rounded-full transition-all ${
-                                isCompleted ? (isTerminalWon ? 'bg-emerald-500 text-white' : 'bg-teal-500 text-white') :
-                                isCurrent ? (isWonType(stage) ? 'bg-emerald-500/20 border-2 border-emerald-500 text-emerald-400' : 'bg-teal-500/20 border-2 border-teal-500 text-teal-400') :
-                                'bg-slate-500/10 border border-slate-400 text-slate-400'
+                                isCompleted ? (isTerminalWon ? 'bg-success text-primary-fg' : 'bg-info text-primary-fg') :
+                                isCurrent ? (isWonType(stage) ? 'bg-success/20 border-2 border-success text-success' : 'bg-info/20 border-2 border-info text-info') :
+                                'bg-fg-muted/10 border border-line-strong text-fg-subtle'
                             }`}>
                                 {isCompleted ? <CheckCircle className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
                             </div>
-                            <span className={`text-xs mt-2 text-center w-16 truncate ${
-                                isCompleted || isCurrent ? (isWonType(stage) ? 'text-emerald-400' : 'text-teal-400') : 'text-slate-400'
+                            <span className={`text-xs mt-2 text-center min-w-16 px-1 whitespace-nowrap ${
+                                isCompleted || isCurrent ? (isWonType(stage) ? 'text-success' : 'text-info') : 'text-fg-subtle'
                             }`} title={stage.name}>
                                 {stage.name}
                             </span>
                         </div>
                         {!isLast && (
                             <div className={`flex-1 h-0.5 min-w-4 ${
-                                isCompleted ? 'bg-teal-500' : 'bg-slate-400/40'
+                                isCompleted ? 'bg-info' : 'bg-fg-muted/40'
                             }`} />
                         )}
                     </React.Fragment>

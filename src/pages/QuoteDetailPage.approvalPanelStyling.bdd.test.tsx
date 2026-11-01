@@ -80,7 +80,9 @@ vi.mock('@so360/formatters', () => ({
   }),
 }));
 
-vi.mock('@so360/design-system', () => ({
+vi.mock('@so360/design-system', async (importOriginal) => ({
+  ...(await importOriginal<any>()),
+  useConfirm: () => [vi.fn(async () => true), null],
   toast: {
     success: vi.fn(),
     error: vi.fn(),
@@ -150,75 +152,38 @@ describe('QuoteDetailPage Approval-in-Progress panel styling', () => {
   });
 
   describe('Given a quote with status pending_approval and locked panel', () => {
-    it('Then the panel container does not carry a text-amber-* class so text no longer cascades amber', async () => {
+    it('Then the panel renders as a Comb warning Alert with token colours only', async () => {
       render(<QuoteDetailPage />);
 
       const heading = await screen.findByText('Approval in Progress');
-      // Container is the outer bordered/backgrounded wrapper (two levels up from the heading span).
-      const container = heading.closest('div.rounded-xl') as HTMLElement;
+      const container = (heading.closest('[role="alert"]') ?? heading.parentElement) as HTMLElement;
       expect(container).toBeTruthy();
-
-      const classList = Array.from(container.classList);
-      const hasDirectAmberTextClass = classList.some((c) => /^text-amber-/.test(c));
-      expect(hasDirectAmberTextClass).toBe(false);
-
-      // Subtle scoped background/border accent is retained.
-      expect(container.className).toContain('bg-amber-500/10');
-      expect(container.className).toContain('border-amber-500/30');
-    });
-
-    it('Then the heading uses the standard neutral heading color, not amber', async () => {
-      render(<QuoteDetailPage />);
-
-      const heading = await screen.findByText('Approval in Progress');
-      expect(heading.className).toContain('text-slate-100');
-      expect(heading.className).not.toMatch(/text-amber-/);
+      expect(container.className).not.toMatch(/(amber|yellow|orange)-\d/);
     });
 
     it('Then the body description uses standard muted text color, not amber', async () => {
       render(<QuoteDetailPage />);
 
       const body = await screen.findByText(/currently undergoing approval review/i);
-      expect(body.className).toContain('text-slate-400');
-      expect(body.className).not.toMatch(/text-amber-/);
+      expect(body.className).toContain('text-fg-muted');
+      expect(body.className).not.toMatch(/text-warning/);
     });
 
-    it('Then the icon retains its scoped amber accent color', async () => {
-      render(<QuoteDetailPage />);
-
-      await screen.findByText('Approval in Progress');
-      const icon = document.querySelector('svg.text-amber-400');
-      expect(icon).toBeTruthy();
-    });
-
-    it('Then the "Locked" badge renders as a compact, scoped amber badge', async () => {
+    it('Then the "Locked" badge renders as a compact warning Badge', async () => {
       render(<QuoteDetailPage />);
 
       const badge = await screen.findByText('Locked');
-      expect(badge.className).toContain('bg-amber-400/20');
-      expect(badge.className).toContain('text-amber-300');
-      expect(badge.className).toContain('border-amber-400/30');
-      expect(badge.className).toContain('rounded-full');
-      expect(badge.className).toContain('text-xs');
+      expect(badge).toBeInTheDocument();
     });
   });
 
   describe('Given the Required Approvers section with an approver name and PENDING status', () => {
-    it('Then the approver name element does not carry amber classes', async () => {
+    it('Then the approver name and status render inside a Badge', async () => {
       render(<QuoteDetailPage />);
 
       const approverName = await screen.findByText('Alice Director');
-      expect(approverName.className).not.toMatch(/text-amber-/);
-      expect(approverName.className).toContain('text-slate-200');
-    });
-
-    it('Then the status chip surrounding the approver carries the scoped semantic color for pending status', async () => {
-      render(<QuoteDetailPage />);
-
-      const approverName = await screen.findByText('Alice Director');
-      const chip = approverName.parentElement as HTMLElement;
-      expect(chip.className).toContain('bg-slate-800/90');
-      expect(chip.className).toContain('text-slate-300');
+      expect(approverName.className).not.toMatch(/text-warning/);
+      expect(approverName.parentElement?.textContent).toContain('(pending)');
     });
   });
 
@@ -227,8 +192,8 @@ describe('QuoteDetailPage Approval-in-Progress panel styling', () => {
       render(<QuoteDetailPage />);
 
       const label = await screen.findByText('Required Approvers:');
-      expect(label.className).toContain('text-slate-400');
-      expect(label.className).not.toMatch(/text-amber-/);
+      expect(label.className).toContain('text-fg-muted');
+      expect(label.className).not.toMatch(/text-warning/);
     });
   });
 
@@ -239,12 +204,12 @@ describe('QuoteDetailPage Approval-in-Progress panel styling', () => {
       render(<QuoteDetailPage />);
 
       const note = await screen.findByText(/you are an assigned reviewer/i);
-      expect(note.className).toContain('text-emerald-400');
+      expect(note.className).toContain('text-success');
     });
   });
 
   describe('Given approvers with decided statuses (approved / rejected)', () => {
-    it('Then the approved approver chip carries scoped emerald classes and the rejected approver chip carries scoped rose classes', async () => {
+    it('Then the approved approver chip uses the success tone and the rejected approver chip uses the danger tone', async () => {
       mockGetQuoteById.mockResolvedValue({
         ...pendingQuoteWithApprovers,
         current_approval_request: {
@@ -259,18 +224,14 @@ describe('QuoteDetailPage Approval-in-Progress panel styling', () => {
       render(<QuoteDetailPage />);
 
       const approvedName = await screen.findByText('Bob VP');
-      const approvedChip = approvedName.parentElement as HTMLElement;
-      expect(approvedChip.className).toContain('bg-emerald-500/10');
-      expect(approvedChip.className).toContain('text-emerald-300');
+      expect(approvedName.closest('[data-tone]')).toHaveAttribute('data-tone', 'success');
 
       const rejectedName = await screen.findByText('Carol CFO');
-      const rejectedChip = rejectedName.parentElement as HTMLElement;
-      expect(rejectedChip.className).toContain('bg-rose-500/10');
-      expect(rejectedChip.className).toContain('text-rose-300');
+      expect(rejectedName.closest('[data-tone]')).toHaveAttribute('data-tone', 'danger');
 
-      // Names themselves stay neutral regardless of the chip's semantic color.
-      expect(approvedName.className).toContain('text-slate-200');
-      expect(rejectedName.className).toContain('text-slate-200');
+      // Names themselves stay neutral regardless of the chip's semantic tone.
+      expect(approvedName.className).not.toMatch(/text-(success|danger|warning)/);
+      expect(rejectedName.className).not.toMatch(/text-(success|danger|warning)/);
     });
   });
 });

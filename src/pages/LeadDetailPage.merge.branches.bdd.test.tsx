@@ -210,7 +210,7 @@ describe('Given the merge panel is open', () => {
     await renderLoaded();
     fireEvent.click(screen.getByRole('button', { name: 'Merge' }));
     expect(screen.getByTestId('merge-lead-panel')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Close merge panel' }));
+    fireEvent.click(within(screen.getByTestId('merge-lead-panel')).getByRole('button', { name: 'Close' }));
     await waitFor(() => expect(screen.queryByTestId('merge-lead-panel')).toBeNull());
     expect(mockMerge).not.toHaveBeenCalled();
     expect(mockPublish).not.toHaveBeenCalled();

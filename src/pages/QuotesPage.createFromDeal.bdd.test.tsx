@@ -81,7 +81,7 @@ async function createQuoteFromDeal(dealName: string) {
   await waitFor(() => expect(screen.getByText('Create New Quote')).toBeInTheDocument());
 
   await user.click(screen.getByText('Select a deal...'));
-  await user.click(await screen.findByText(dealName));
+  await user.click(await screen.findByText(dealName, { selector: 'span' }));
   await user.click(screen.getByRole('button', { name: 'Create Quote' }));
 
   await waitFor(() => expect(mockCreateQuote).toHaveBeenCalled());

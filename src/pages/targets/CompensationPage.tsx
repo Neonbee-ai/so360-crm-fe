@@ -2,13 +2,24 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useShellBridge } from '@so360/shell-context';
 import { targetPlanService } from '../../services/targetPlanService';
 import { salesTargetService } from '../../services/salesTargetService';
-import { EmptyState, Panel, PersonName, PersonPicker, formatValue } from './targetUi';
+import {
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  PersonName,
+  loadDirectoryPeople,
+  personIdOf,
+  formatValue,
+} from './targetUi';
 import {
   EMPTY_INCENTIVE_RULE,
   buildIncentiveRulePayload,
   type IncentiveRuleForm,
   type IncentiveRuleType,
 } from './incentiveRule';
+import { PeopleSelector, DashboardPageTemplate, Button, DataTable, TextField, Select, DatePicker, DateInput, FormField, Card, Modal, Grid, GridItem } from '@so360/design-system';
+import { Calculator, Plus } from 'lucide-react';
+import type { DataTableColumn } from '@so360/design-system';
 
 /**
  * Incentive and commission review.
@@ -35,6 +46,7 @@ export default function CompensationPage() {
   const [error, setError] = useState<string | null>(null);
   const [taskTypes, setTaskTypes] = useState<any[]>([]);
   const [showRuleForm, setShowRuleForm] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [form, setForm] = useState<IncentiveRuleForm>(EMPTY_INCENTIVE_RULE);
 
   // `base_currency` is the field Core actually returns on business_settings.
@@ -65,18 +77,18 @@ export default function CompensationPage() {
   const saveRule = async () => {
     const built = buildIncentiveRulePayload(form);
     if (!built.ok) {
-      setError(built.error);
+      setFormError(built.error);
       return;
     }
     setBusy(true);
-    setError(null);
+    setFormError(null);
     try {
       await targetPlanService.createIncentiveRule(built.payload);
       setForm(EMPTY_INCENTIVE_RULE);
       setShowRuleForm(false);
       load();
     } catch (e: any) {
-      setError(e.message);
+      setFormError(e.message);
     } finally {
       setBusy(false);
     }
@@ -121,414 +133,269 @@ export default function CompensationPage() {
     }
   };
 
+  const summaryColumns: DataTableColumn<any>[] = [
+    { key: 'component', header: 'Component', render: (c) => <span className={c.__total ? 'font-medium text-fg' : 'text-fg'}>{c.rule_name}</span> },
+    { key: 'basis', header: 'Basis', render: (c) => c.__total ? null : (
+      <span className="text-fg-subtle text-xs">
+        {c.basis}
+        {!c.eligible && <span className="text-fg-muted"> — not eligible</span>}
+      </span>
+    ) },
+    { key: 'amount', header: 'Amount', align: 'right', render: (c) => <span className={c.__total ? 'font-medium text-fg' : 'text-fg'}>{formatValue(c.amount, 'currency', currency)}</span> },
+  ];
+
+  const ruleColumns: DataTableColumn<any>[] = [
+    { key: 'name', header: 'Name', sortable: true, sortValue: (r) => r.name || '', render: (r) => <span className="text-fg">{r.name}</span> },
+    { key: 'type', header: 'Type', render: (r) => <span className="text-fg-subtle">{r.rule_type}</span> },
+    { key: 'trigger', header: 'Trigger', render: (r) => (
+      <span className="text-fg-subtle text-xs">
+        {r.rule_type === 'attainment_bonus' && `at ${Math.round(Number(r.attainment_threshold ?? 1) * 100)}% attainment`}
+        {r.rule_type === 'per_unit' && `${formatValue(r.amount, 'currency', currency)} per unit`}
+        {r.rule_type === 'deal_commission' && `${(r.bands ?? []).length} band${(r.bands ?? []).length === 1 ? '' : 's'}`}
+      </span>
+    ) },
+    { key: 'scope', header: 'Scope', render: (r) => (
+      <span className="text-fg-subtle text-xs">
+        {r.applies_to_person_id ? <PersonName id={r.applies_to_person_id} /> : r.applies_to_role ? r.applies_to_role : 'all'}
+      </span>
+    ) },
+  ];
+
   return (
-    <div className="p-6 space-y-5">
-      <div>
-        <h1 className="text-lg font-semibold text-slate-100">Compensation</h1>
-        <div className="mt-1 text-xs text-amber-300">
-          ⚠ For manager review only. No payroll or payment action is taken.
-        </div>
-      </div>
+    <DashboardPageTemplate
+      trail={[{ label: 'Targets', to: '/crm/targets' }]}
+      title="Compensation"
+      meta={<span className="text-xs text-warning">⚠ For manager review only. No payroll or payment action is taken.</span>}
+      primaryAction={(
+        <Button variant="primary" onClick={() => { setFormError(null); setShowRuleForm(true); }}>
+          <Plus size={16} aria-hidden="true" /> Add rule
+        </Button>
+      )}
+      filters={(
+        <Grid columns={12}>
+          <GridItem span={6}>
+            <FormField label="Person" name="comp_person">
+              <PeopleSelector clearable loadOptions={loadDirectoryPeople} value={personId} onChange={(id) => setPersonId(personIdOf(id))} />
+            </FormField>
+          </GridItem>
+          <GridItem span={3}>
+            <DateInput name="comp_from" label="From" value={periodStart} onChange={(iso: string) => setPeriodStart(iso)} />
+          </GridItem>
+          <GridItem span={3}>
+            <DateInput name="comp_to" label="To" value={periodEnd} onChange={(iso: string) => setPeriodEnd(iso)} />
+          </GridItem>
+          <GridItem span={12}>
+            <Button variant="primary" onClick={calculate} disabled={busy || !personId}>
+              {busy ? 'Calculating…' : 'Calculate'}
+            </Button>
+          </GridItem>
+        </Grid>
+      )}
+    >
+    <div className="space-y-5">
 
-      {error && <div className="text-sm text-rose-300">{error}</div>}
-
-      <Panel title="Calculate">
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="min-w-64">
-            <label className="block text-[11px] text-slate-400 mb-1">
-              Person
-            </label>
-            <PersonPicker value={personId} onChange={setPersonId} />
-          </div>
-          <div>
-            <label className="block text-[11px] text-slate-400 mb-1">From</label>
-            <input
-              type="date"
-              className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
-              value={periodStart}
-              onChange={(e) => setPeriodStart(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="block text-[11px] text-slate-400 mb-1">To</label>
-            <input
-              type="date"
-              className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
-              value={periodEnd}
-              onChange={(e) => setPeriodEnd(e.target.value)}
-            />
-          </div>
-          <button
-            className="rounded bg-slate-700 px-3 py-1.5 text-sm text-slate-100 hover:bg-slate-600 disabled:opacity-50"
-            onClick={calculate}
-            disabled={busy || !personId}
-          >
-            {busy ? 'Calculating…' : 'Calculate'}
-          </button>
-        </div>
-      </Panel>
+      {error && !loading && <ErrorState error={error} onRetry={load} />}
 
       {calc && (
-        <Panel title="Incentive summary">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs text-slate-400 border-b border-slate-800">
-                  <th className="py-2 pr-4 font-medium">Component</th>
-                  <th className="py-2 pr-4 font-medium">Basis</th>
-                  <th className="py-2 font-medium text-right">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {calc.components?.map((c: any) => (
-                  <tr key={c.rule_id} className="border-b border-slate-800/60">
-                    <td className="py-2 pr-4 text-slate-200">{c.rule_name}</td>
-                    <td className="py-2 pr-4 text-slate-400 text-xs">
-                      {c.basis}
-                      {!c.eligible && (
-                        <span className="text-slate-500"> — not eligible</span>
-                      )}
-                    </td>
-                    <td className="py-2 text-right text-slate-200">
-                      {formatValue(c.amount, 'currency', currency)}
-                    </td>
-                  </tr>
-                ))}
-                <tr>
-                  <td className="py-2 pr-4 font-medium text-slate-100">
-                    Total calculated
-                  </td>
-                  <td />
-                  <td className="py-2 text-right font-medium text-slate-100">
-                    {formatValue(calc.total_amount, 'currency', currency)}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div className="mt-3 text-[11px] text-amber-300">
+        <Card title="Incentive summary">
+          <DataTable
+            columns={summaryColumns}
+            rows={[
+              ...(calc.components ?? []),
+              { rule_id: '__total', rule_name: 'Total calculated', __total: true, amount: calc.total_amount },
+            ]}
+            rowKey={(c: any) => c.rule_id}
+          />
+          <div className="mt-3 text-xs text-warning">
             {calc.advisory_notice}
           </div>
-        </Panel>
+        </Card>
       )}
 
-      <Panel
+      <Modal
+        open={showRuleForm}
+        onClose={() => setShowRuleForm(false)}
         title="New rule"
-        action={
-          <button
-            className="text-xs text-slate-400 hover:text-slate-200"
-            onClick={() => setShowRuleForm((v) => !v)}
-          >
-            {showRuleForm ? 'Cancel' : 'Add rule'}
-          </button>
-        }
+        description="Rules are read during calculation only. Adding one never pays anyone."
+        size="lg"
+        dismissible={!busy}
+        footer={(
+          <>
+            <Button variant="secondary" onClick={() => setShowRuleForm(false)} disabled={busy}>
+              Cancel
+            </Button>
+            <Button variant="primary" onClick={saveRule} disabled={busy}>
+              Save rule
+            </Button>
+          </>
+        )}
       >
-        {!showRuleForm ? (
-          <div className="text-xs text-slate-500">
-            Rules are read during calculation only. Adding one never pays
-            anyone.
+        {formError && <div className="mb-nb-3 text-sm text-danger">{formError}</div>}
+    <div className="space-y-nb-3">
+      <div className="space-y-nb-3">
+        <div>
+          <TextField
+            name="rule_name"
+            label="Name"
+            aria-label="Rule name"
+            value={form.name}
+            error={formError === 'Rule name is required.' ? formError : undefined}
+            onChange={(e: any) => setForm({ ...form, name: e.target.value })}
+            placeholder="Q3 new-business bonus"
+          />
+        </div>
+        <Select
+          name="rule_type"
+          label="Type"
+          aria-label="Rule type"
+          value={form.rule_type}
+          onChange={(e: any) => setForm({ ...form, rule_type: e.target.value as IncentiveRuleType })}
+          options={[
+            { value: 'attainment_bonus', label: 'Bonus at attainment' },
+            { value: 'per_unit', label: 'Per unit of a metric' },
+            { value: 'deal_commission', label: 'Deal commission' },
+          ]}
+        />
+
+        {form.rule_type !== 'deal_commission' && (
+          <>
+            <Select
+              name="rule_metric"
+              label="Metric"
+              aria-label="Metric"
+              value={form.task_type_id}
+              onChange={(e: any) => setForm({ ...form, task_type_id: e.target.value })}
+              options={[{ value: '', label: 'Select…' }, ...taskTypes.map((t) => ({ value: t.id, label: t.name }))]}
+            />
+            <TextField
+              name="rule_amount"
+              label="Amount"
+              aria-label="Amount"
+              value={form.amount}
+              onChange={(e: any) => setForm({ ...form, amount: e.target.value })}
+            />
+          </>
+        )}
+
+        {form.rule_type === 'attainment_bonus' && (
+          <TextField
+            name="rule_threshold"
+            label="At attainment (%)"
+            aria-label="Attainment threshold"
+            value={form.attainment_threshold_pct}
+            onChange={(e: any) => setForm({ ...form, attainment_threshold_pct: e.target.value })}
+          />
+        )}
+      </div>
+
+      {form.rule_type === 'deal_commission' && (
+        <div className="space-y-2">
+          <div className="text-xs text-fg-subtle">
+            Bands by deal value. Leave the top band&apos;s maximum empty
+            so the largest deals still earn commission.
           </div>
-        ) : (
-          <div className="space-y-3">
-            <div className="flex flex-wrap items-end gap-3">
-              <div className="grow basis-64">
-                <label className="block text-[11px] text-slate-400 mb-1">
-                  Name
-                </label>
-                <input
-                  aria-label="Rule name"
-                  className="w-full rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="Q3 new-business bonus"
+          {form.bands.map((b, i) => (
+            <div key={i} className="flex items-center gap-2">
+              {(['min', 'max', 'percent'] as const).map((f) => (
+                <TextField
+                  key={f}
+                  name={`band_${i}_${f}`}
+                  aria-label={`Band ${i + 1} ${f === 'percent' ? 'percent' : f === 'min' ? 'minimum' : 'maximum'}`}
+                  placeholder={f === 'min' ? 'min' : f === 'max' ? 'max (open)' : '%'}
+                  value={b[f]}
+                  onChange={(e: any) => {
+                    const bands = [...form.bands];
+                    bands[i] = { ...b, [f]: e.target.value };
+                    setForm({ ...form, bands });
+                  }}
                 />
-              </div>
-              <div>
-                <label className="block text-[11px] text-slate-400 mb-1">
-                  Type
-                </label>
-                <select
-                  aria-label="Rule type"
-                  className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
-                  value={form.rule_type}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      rule_type: e.target.value as IncentiveRuleType,
-                    })
-                  }
-                >
-                  <option value="attainment_bonus">
-                    Bonus at attainment
-                  </option>
-                  <option value="per_unit">Per unit of a metric</option>
-                  <option value="deal_commission">Deal commission</option>
-                </select>
-              </div>
-
-              {form.rule_type !== 'deal_commission' && (
-                <>
-                  <div>
-                    <label className="block text-[11px] text-slate-400 mb-1">
-                      Metric
-                    </label>
-                    <select
-                      aria-label="Metric"
-                      className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
-                      value={form.task_type_id}
-                      onChange={(e) =>
-                        setForm({ ...form, task_type_id: e.target.value })
-                      }
-                    >
-                      <option value="">Select…</option>
-                      {taskTypes.map((t) => (
-                        <option key={t.id} value={t.id}>
-                          {t.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[11px] text-slate-400 mb-1">
-                      Amount
-                    </label>
-                    <input
-                      aria-label="Amount"
-                      className="w-32 rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none"
-                      value={form.amount}
-                      onChange={(e) =>
-                        setForm({ ...form, amount: e.target.value })
-                      }
-                    />
-                  </div>
-                </>
-              )}
-
-              {form.rule_type === 'attainment_bonus' && (
-                <div>
-                  <label className="block text-[11px] text-slate-400 mb-1">
-                    At attainment (%)
-                  </label>
-                  <input
-                    aria-label="Attainment threshold"
-                    className="w-24 rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none"
-                    value={form.attainment_threshold_pct}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        attainment_threshold_pct: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              )}
-            </div>
-
-            {form.rule_type === 'deal_commission' && (
-              <div className="space-y-2">
-                <div className="text-[11px] text-slate-400">
-                  Bands by deal value. Leave the top band&apos;s maximum empty
-                  so the largest deals still earn commission.
-                </div>
-                {form.bands.map((b, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <input
-                      aria-label={`Band ${i + 1} minimum`}
-                      className="w-28 rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none"
-                      placeholder="min"
-                      value={b.min}
-                      onChange={(e) => {
-                        const bands = [...form.bands];
-                        bands[i] = { ...b, min: e.target.value };
-                        setForm({ ...form, bands });
-                      }}
-                    />
-                    <input
-                      aria-label={`Band ${i + 1} maximum`}
-                      className="w-28 rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none"
-                      placeholder="max (open)"
-                      value={b.max}
-                      onChange={(e) => {
-                        const bands = [...form.bands];
-                        bands[i] = { ...b, max: e.target.value };
-                        setForm({ ...form, bands });
-                      }}
-                    />
-                    <input
-                      aria-label={`Band ${i + 1} percent`}
-                      className="w-24 rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none"
-                      placeholder="%"
-                      value={b.percent}
-                      onChange={(e) => {
-                        const bands = [...form.bands];
-                        bands[i] = { ...b, percent: e.target.value };
-                        setForm({ ...form, bands });
-                      }}
-                    />
-                    {form.bands.length > 1 && (
-                      <button
-                        className="text-xs text-slate-500 hover:text-slate-300"
-                        aria-label={`Remove band ${i + 1}`}
-                        onClick={() =>
-                          setForm({
-                            ...form,
-                            bands: form.bands.filter((_, j) => j !== i),
-                          })
-                        }
-                      >
-                        remove
-                      </button>
-                    )}
-                  </div>
-                ))}
-                <button
-                  className="text-xs text-slate-400 hover:text-slate-200"
+              ))}
+              {form.bands.length > 1 && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  aria-label={`Remove band ${i + 1}`}
                   onClick={() =>
                     setForm({
                       ...form,
-                      bands: [...form.bands, { min: '', max: '', percent: '' }],
+                      bands: form.bands.filter((_, j) => j !== i),
                     })
                   }
                 >
-                  + band
-                </button>
-              </div>
-            )}
-
-            <div className="flex flex-wrap items-end gap-3">
-              <div>
-                <label className="block text-[11px] text-slate-400 mb-1">
-                  Applies to
-                </label>
-                <select
-                  aria-label="Scope"
-                  className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
-                  value={form.scope}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      scope: e.target.value as IncentiveRuleForm['scope'],
-                    })
-                  }
-                >
-                  <option value="all">Everyone</option>
-                  <option value="role">A role</option>
-                  <option value="person">One person</option>
-                </select>
-              </div>
-              {form.scope === 'role' && (
-                <div>
-                  <label className="block text-[11px] text-slate-400 mb-1">
-                    Role
-                  </label>
-                  <input
-                    aria-label="Role"
-                    className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none"
-                    value={form.applies_to_role}
-                    onChange={(e) =>
-                      setForm({ ...form, applies_to_role: e.target.value })
-                    }
-                  />
-                </div>
+                  remove
+                </Button>
               )}
-              {form.scope === 'person' && (
-                <div className="min-w-64">
-                  <label className="block text-[11px] text-slate-400 mb-1">
-                    Person
-                  </label>
-                  <PersonPicker
-                    value={form.applies_to_person_id}
-                    onChange={(id) =>
-                      setForm({ ...form, applies_to_person_id: id })
-                    }
-                  />
-                </div>
-              )}
-              <div>
-                <label className="block text-[11px] text-slate-400 mb-1">
-                  From
-                </label>
-                <input
-                  type="date"
-                  aria-label="Effective from"
-                  className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
-                  value={form.effective_from}
-                  onChange={(e) =>
-                    setForm({ ...form, effective_from: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] text-slate-400 mb-1">
-                  To
-                </label>
-                <input
-                  type="date"
-                  aria-label="Effective to"
-                  className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
-                  value={form.effective_to}
-                  onChange={(e) =>
-                    setForm({ ...form, effective_to: e.target.value })
-                  }
-                />
-              </div>
-              <button
-                className="rounded bg-slate-700 px-3 py-1.5 text-sm text-slate-100 hover:bg-slate-600 disabled:opacity-50"
-                onClick={saveRule}
-                disabled={busy}
-              >
-                Save rule
-              </button>
             </div>
-          </div>
+          ))}
+          <Button variant="secondary" size="sm"
+            onClick={() =>
+              setForm({
+                ...form,
+                bands: [...form.bands, { min: '', max: '', percent: '' }],
+              })
+            }
+          >
+            + band
+          </Button>
+        </div>
+      )}
+
+      <div className="space-y-nb-3">
+        <Select
+          name="rule_scope"
+          label="Applies to"
+          aria-label="Scope"
+          value={form.scope}
+          onChange={(e: any) => setForm({ ...form, scope: e.target.value as IncentiveRuleForm['scope'] })}
+          options={[
+            { value: 'all', label: 'Everyone' },
+            { value: 'role', label: 'A role' },
+            { value: 'person', label: 'One person' },
+          ]}
+        />
+        {form.scope === 'role' && (
+          <TextField
+            name="rule_role"
+            label="Role"
+            aria-label="Role"
+            value={form.applies_to_role}
+            onChange={(e: any) => setForm({ ...form, applies_to_role: e.target.value })}
+          />
         )}
-      </Panel>
+        {form.scope === 'person' && (
+          <FormField label="Person" name="rule_person">
+            <PeopleSelector
+              clearable
+              loadOptions={loadDirectoryPeople}
+              value={form.applies_to_person_id}
+              onChange={(id) => setForm({ ...form, applies_to_person_id: personIdOf(id) })}
+            />
+          </FormField>
+        )}
+        <DatePicker name="rule_from" label="From" aria-label="Effective from" value={form.effective_from} onChange={(iso: string) => setForm({ ...form, effective_from: iso })} />
+        <DatePicker name="rule_to" label="To" aria-label="Effective to" value={form.effective_to} onChange={(iso: string) => setForm({ ...form, effective_to: iso })} />
+      </div>
+    </div>
+
+      </Modal>
 
       {loading ? (
-        <div className="text-sm text-slate-400">Loading rules…</div>
+        <LoadingState />
       ) : !rules.length ? (
-        <EmptyState message="No incentive rules configured." />
+        error ? null : (
+          <EmptyState
+            icon={Calculator}
+            title="No incentive rules"
+            description="Add a rule to start calculating incentives and commissions."
+            action={{ label: 'Add rule', onClick: () => { setFormError(null); setShowRuleForm(true); } }}
+          />
+        )
       ) : (
-        <Panel title="Rules">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs text-slate-400 border-b border-slate-800">
-                  <th className="py-2 pr-4 font-medium">Name</th>
-                  <th className="py-2 pr-4 font-medium">Type</th>
-                  <th className="py-2 pr-4 font-medium">Trigger</th>
-                  <th className="py-2 font-medium">Scope</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rules.map((r) => (
-                  <tr key={r.id} className="border-b border-slate-800/60">
-                    <td className="py-2 pr-4 text-slate-200">{r.name}</td>
-                    <td className="py-2 pr-4 text-slate-400">{r.rule_type}</td>
-                    <td className="py-2 pr-4 text-slate-400 text-xs">
-                      {r.rule_type === 'attainment_bonus' &&
-                        `at ${Math.round(Number(r.attainment_threshold ?? 1) * 100)}% attainment`}
-                      {r.rule_type === 'per_unit' &&
-                        `${formatValue(r.amount, 'currency', currency)} per unit`}
-                      {r.rule_type === 'deal_commission' &&
-                        `${(r.bands ?? []).length} band${(r.bands ?? []).length === 1 ? '' : 's'}`}
-                    </td>
-                    <td className="py-2 text-slate-400 text-xs">
-                      {r.applies_to_person_id ? (
-                        <PersonName id={r.applies_to_person_id} />
-                      ) : r.applies_to_role ? (
-                        r.applies_to_role
-                      ) : (
-                        'all'
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Panel>
+        <Card title="Rules">
+          <DataTable columns={ruleColumns} rows={rules} rowKey={(r: any) => r.id} />
+        </Card>
       )}
     </div>
+    </DashboardPageTemplate>
   );
 }

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, DeleteConfirmDialog, toast } from '@so360/design-system';
+import { Target } from 'lucide-react';
+import { Badge, Button, DeleteConfirmDialog, DataTable, EmptyState, ListPageTemplate, toast, type DataTableColumn, Skeleton } from '@so360/design-system';
 import { useShellBridge } from '@so360/shell-context';
 import { icpService, type Icp } from '../services/icpService';
 
@@ -14,7 +15,7 @@ const IcpListPage: React.FC = () => {
     const canDelete = shell?.hasPermission?.('linkedin_sync.delete') ?? true;
 
     const [icps, setIcps] = useState<Icp[]>([]);
-    const [segments, setSegments] = useState<{ id: string; name: string }[]>([]);
+    const [audiences, setAudiences] = useState<{ id: string; name: string }[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [archiveTarget, setArchiveTarget] = useState<Icp | null>(null);
@@ -26,10 +27,10 @@ const IcpListPage: React.FC = () => {
         try {
             const [list, segs] = await Promise.all([
                 icpService.list(),
-                icpService.segments().catch(() => []),
+                icpService.audiences().catch(() => []),
             ]);
             setIcps(list);
-            setSegments(segs);
+            setAudiences(segs);
         } catch (e: any) {
             setError(e?.message || 'Could not load ideal customer profiles');
         } finally {
@@ -39,10 +40,10 @@ const IcpListPage: React.FC = () => {
 
     useEffect(() => { void load(); }, [load]);
 
-    const segmentName = useMemo(() => {
-        const m = new Map(segments.map((s) => [s.id, s.name]));
+    const audienceName = useMemo(() => {
+        const m = new Map(audiences.map((s) => [s.id, s.name]));
         return (id?: string | null) => (id ? m.get(id) ?? 'Unknown list' : null);
-    }, [segments]);
+    }, [audiences]);
 
     const onSetDefault = async (icp: Icp) => {
         try {
@@ -77,79 +78,69 @@ const IcpListPage: React.FC = () => {
         ...(canDelete ? [{ label: 'Archive', danger: true, onSelect: () => setArchiveTarget(icp) }] : []),
     ];
 
-    const linkBtn = 'rounded-lg px-2 py-1 text-xs font-bold text-slate-300 hover:bg-slate-800 hover:text-slate-50';
+    const columns: DataTableColumn<Icp>[] = [
+        {
+            key: 'name',
+            header: 'Name',
+            render: (icp) => (
+                <>
+                    <span className="font-medium min-w-0 [overflow-wrap:anywhere]">{icp.name}</span>{' '}
+                    {icp.is_default && <Badge tone="primary" size="sm" data-testid="badge">Default</Badge>}
+                </>
+            ),
+        },
+        { key: 'criteria', header: 'Criteria', align: 'right', render: (icp) => <span data-testid={`icp-count-${icp.id}`}>{icp.icp_criteria?.length ?? 0}</span> },
+        {
+            key: 'auto',
+            header: 'Auto-add to list',
+            render: (icp) => {
+                const seg = audienceName(icp.auto_audience_id);
+                return <span className="text-fg-muted">{seg ? `${seg} · score ≥ ${icp.auto_segment_min_score ?? 70}` : '—'}</span>;
+            },
+        },
+    ];
+
+    const newBtn = <Button onClick={() => navigate(`${BASE}/new`)}>New ICP</Button>;
+
+    const body = loading ? (
+        <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4" data-testid="icp-loading">
+            <Skeleton variant="rect" />
+            <Skeleton variant="text" lines={3} />
+            <span className="sr-only" data-testid="spinner">Loading…</span>
+        </div>
+    ) : error ? (
+        <EmptyState title="Could not load profiles" description={error} action={{ label: 'Retry', onClick: () => void load() }} />
+    ) : (
+        <DataTable<Icp>
+            name="icps"
+            data-testid="icp-table"
+            rows={icps}
+            rowKey={(icp) => icp.id}
+            columns={columns}
+            getRowProps={(icp) => ({ 'data-testid': `icp-row-${icp.id}` })}
+            rowActions={canUpdate || canDelete ? rowItems : undefined}
+        />
+    );
 
     return (
-        <div className="p-8">
-            <header className="mb-8 flex items-center justify-between gap-3">
-                <div>
-                    <h1 className="text-4xl font-black tracking-tight text-slate-50">Ideal customer profiles</h1>
-                    {!loading && <p className="mt-1 font-medium text-slate-400">{`${icps.length} profile${icps.length === 1 ? '' : 's'}`}</p>}
-                </div>
-                {canCreate && <Button onClick={() => navigate(`${BASE}/new`)}>New ICP</Button>}
-            </header>
-            {loading ? (
-                <div className="flex justify-center py-10 text-slate-400" data-testid="icp-loading"><span data-testid="spinner">Loading…</span></div>
-            ) : error ? (
-                <div role="status" className="rounded-2xl border border-slate-700/50 bg-slate-900 p-8 text-center">
-                    <h3 className="font-black text-slate-50">Could not load profiles</h3>
-                    <p className="mt-1 text-slate-400">{error}</p>
-                    <div className="mt-4"><Button onClick={() => void load()}>Retry</Button></div>
-                </div>
-            ) : icps.length === 0 ? (
-                <div role="status" className="rounded-2xl border border-slate-700/50 bg-slate-900 p-8 text-center">
-                    <h3 className="font-black text-slate-50">No ideal customer profiles yet</h3>
-                    <p className="mt-1 text-slate-400">An ICP describes who you want to sell to. The LinkedIn extension scores every profile you capture against it to give a fit score, and can add strong matches to a list automatically.</p>
-                    {canCreate && <div className="mt-4"><Button onClick={() => navigate(`${BASE}/new`)}>New ICP</Button></div>}
-                </div>
-            ) : (
-                <table className="w-full text-sm text-slate-200" data-testid="icp-table">
-                    <thead>
-                        <tr className="border-b border-slate-700/50 text-left text-slate-400">
-                            <th className="py-2 pr-3 font-medium">Name</th>
-                            <th className="py-2 pr-3 font-medium">Criteria</th>
-                            <th className="py-2 pr-3 font-medium">Auto-add to list</th>
-                            <th className="py-2 font-medium" aria-label="Actions" />
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {icps.map((icp) => {
-                            const items = rowItems(icp);
-                            const seg = segmentName(icp.auto_segment_id);
-                            return (
-                                <tr key={icp.id} className="border-b border-slate-700/50" data-testid={`icp-row-${icp.id}`}>
-                                    <td className="py-3 pr-3">
-                                        <span className="font-medium">{icp.name}</span>{' '}
-                                        {icp.is_default && (
-                                            <span data-testid="badge" className="rounded-full bg-blue-600/20 px-2 py-0.5 text-xs font-bold text-blue-300">Default</span>
-                                        )}
-                                    </td>
-                                    <td className="py-3 pr-3" data-testid={`icp-count-${icp.id}`}>{icp.icp_criteria?.length ?? 0}</td>
-                                    <td className="py-3 pr-3 text-slate-400">
-                                        {seg ? `${seg} · score ≥ ${icp.auto_segment_min_score ?? 70}` : '—'}
-                                    </td>
-                                    <td className="py-3 text-right">
-                                        {items.length > 0 && (
-                                            <div role="group" aria-label={`Actions for ${icp.name}`} className="inline-flex gap-1">
-                                                {items.map((it) => (
-                                                    <button
-                                                        key={it.label}
-                                                        type="button"
-                                                        className={it.danger ? `${linkBtn} text-red-400` : linkBtn}
-                                                        onClick={it.onSelect}
-                                                    >
-                                                        {it.label}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
-            )}
+        <>
+            <ListPageTemplate
+                trail={[{ label: 'Settings', to: '/crm/settings' }]}
+                title="Ideal customer profiles"
+                description={!loading ? `${icps.length} profile${icps.length === 1 ? '' : 's'}` : undefined}
+                primaryAction={canCreate ? newBtn : undefined}
+                isEmpty={!loading && !error && icps.length === 0}
+                empty={(
+                    <EmptyState
+                        icon={Target}
+                        title="No ideal customer profiles yet"
+                        description="An ICP describes who you want to sell to. The LinkedIn extension scores every profile you capture against it to give a fit score, and can add strong matches to a list automatically."
+                        action={canCreate ? { label: 'New ICP', onClick: () => navigate(`${BASE}/new`) } : undefined}
+                    />
+                )}
+            >
+                {body}
+            </ListPageTemplate>
             <DeleteConfirmDialog
                 isOpen={archiveTarget !== null}
                 onClose={() => setArchiveTarget(null)}
@@ -160,7 +151,7 @@ const IcpListPage: React.FC = () => {
                 isLoading={archiving}
                 variant="danger"
             />
-        </div>
+        </>
     );
 };
 

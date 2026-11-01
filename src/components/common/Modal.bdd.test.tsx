@@ -1,8 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { Modal } from './Modal';
+
+// Real DS Modal so the wrapper is verified against the actual dialog (focus, portal, ARIA).
+vi.mock('@so360/design-system', async () => {
+  const stub = await import('../../test/__mocks__/design-system');
+  const real = await import('@ds-real/components/Modal');
+  return { ...stub, Modal: real.Modal };
+});
 
 describe('Modal', () => {
   describe('Given the modal is open', () => {
@@ -28,7 +35,7 @@ describe('Modal', () => {
       const onClose = vi.fn();
       render(<Modal isOpen={true} onClose={onClose} title="Title"><p>Content</p></Modal>);
       // Modal renders via portal into document.body — query there
-      const backdrop = document.body.querySelector('.bg-black\\/60');
+      const backdrop = document.body.querySelector('[data-testid="modal-overlay"]');
       expect(backdrop).toBeTruthy();
       fireEvent.click(backdrop!);
       expect(onClose).toHaveBeenCalledTimes(1);
@@ -72,84 +79,33 @@ describe('Modal', () => {
     });
   });
 
-  describe('Given viewport-safety layout contract (overflow fix)', () => {
-    const getOuter = () => document.body.querySelector('.fixed.inset-0.z-\\[600\\]') as HTMLElement;
-    const getPanel = (outer: HTMLElement) =>
-      Array.from(outer.children).find(el => !el.classList.contains('fixed')) as HTMLElement;
-
-    it('When the modal is open / Then outer wrapper has overflow-y-auto so backdrop scrolls on tall viewports', () => {
+  describe('Given viewport-safety layout contract (DS Modal)', () => {
+    it('When the modal is open / Then the panel is capped at 90vh and the body scrolls inside it', () => {
       render(<Modal isOpen={true} onClose={vi.fn()} title="Overflow Guard"><p>content</p></Modal>);
-      const outer = getOuter();
-      expect(outer).not.toBeNull();
-      expect(outer.className).toContain('overflow-y-auto');
-    });
-
-    it('When the modal is open / Then outer wrapper uses items-start (not items-center) to prevent top clipping', () => {
-      render(<Modal isOpen={true} onClose={vi.fn()} title="Items Start"><p>content</p></Modal>);
-      const outer = getOuter();
-      expect(outer.className).toContain('items-start');
-      expect(outer.className).not.toContain('items-center');
-    });
-
-    it('When the modal is open / Then outer wrapper is a flex container with justify-center', () => {
-      render(<Modal isOpen={true} onClose={vi.fn()} title="Flex Center"><p>content</p></Modal>);
-      const outer = getOuter();
-      expect(outer.className).toContain('flex');
-      expect(outer.className).toContain('justify-center');
-    });
-
-    it('When the modal is open / Then modal panel has my-auto for centering when content fits viewport', () => {
-      render(<Modal isOpen={true} onClose={vi.fn()} title="My Auto"><p>content</p></Modal>);
-      const outer = getOuter();
-      const panel = getPanel(outer);
-      expect(panel).not.toBeNull();
-      expect(panel.className).toContain('my-auto');
-    });
-
-    it('When the modal is open / Then modal panel has max-h constraint to cap height within viewport', () => {
-      render(<Modal isOpen={true} onClose={vi.fn()} title="MaxH Test"><p>content</p></Modal>);
-      const outer = getOuter();
-      const panel = getPanel(outer);
-      expect(panel.className).toContain('max-h-');
-    });
-
-    it('When the modal is open / Then modal panel max-height is exactly 90vh', () => {
-      render(<Modal isOpen={true} onClose={vi.fn()} title="MaxH 90vh"><p>content</p></Modal>);
-      const outer = getOuter();
-      const panel = getPanel(outer);
+      const panel = screen.getByRole('dialog');
       expect(panel.className).toContain('max-h-[90vh]');
-    });
-
-    it('When the modal is open / Then modal panel has overflow-hidden to clip internal content', () => {
-      render(<Modal isOpen={true} onClose={vi.fn()} title="Clip Test"><p>content</p></Modal>);
-      const outer = getOuter();
-      const panel = getPanel(outer);
-      expect(panel.className).toContain('overflow-hidden');
-    });
-
-    it('When the modal is open / Then body scroll zone has min-h-0 to allow flex shrinking', () => {
-      render(<Modal isOpen={true} onClose={vi.fn()} title="MinH Zero"><p>body</p></Modal>);
-      const outer = getOuter();
-      const panel = getPanel(outer);
       const scrollZone = panel.querySelector('.overflow-y-auto') as HTMLElement;
       expect(scrollZone).not.toBeNull();
       expect(scrollZone.className).toContain('min-h-0');
     });
 
-    it('When the modal is open / Then inner scroll zone is a child of the panel, not the panel itself', () => {
-      render(<Modal isOpen={true} onClose={vi.fn()} title="Internal Scroll"><p>body</p></Modal>);
-      const outer = getOuter();
-      const panel = getPanel(outer);
-      const scrollZone = panel.querySelector('.overflow-y-auto');
-      expect(scrollZone).not.toBeNull();
-      expect(panel.className).not.toContain('overflow-y-auto');
+    it('When size is 5xl / Then the panel uses max-w-5xl; default is lg', () => {
+      const { unmount } = render(<Modal isOpen onClose={vi.fn()} title="T"><p>x</p></Modal>);
+      expect(screen.getByRole('dialog').className).toContain('max-w-nb-modal-lg');
+      unmount();
+      render(<Modal isOpen onClose={vi.fn()} title="T" size="5xl"><p>x</p></Modal>);
+      expect(screen.getByRole('dialog').className).toContain('max-w-5xl');
     });
 
-    it('When the modal header is rendered / Then it is a shrink-0 child so it never scrolls away', () => {
+    it('When bodyPadding is false / Then the body has no padding', () => {
+      render(<Modal isOpen onClose={vi.fn()} title="T" bodyPadding={false}><p data-testid="c">x</p></Modal>);
+      expect(screen.getByTestId('c').parentElement!.className).not.toContain('px-6');
+    });
+
+    it('When the modal is open / Then the header sits above the scrolling body', () => {
       render(<Modal isOpen={true} onClose={vi.fn()} title="Header Sticky"><p>body</p></Modal>);
-      const header = screen.getByText('Header Sticky').closest('div');
-      expect(header).not.toBeNull();
-      expect(header!.className).toContain('shrink-0');
+      const panel = screen.getByRole('dialog');
+      expect(panel.firstElementChild!.textContent).toContain('Header Sticky');
     });
   });
 
@@ -163,9 +119,9 @@ describe('Modal', () => {
       expect(document.body.querySelector('[class*="fixed inset-0"]')).toBeTruthy();
     });
 
-    it('When the modal is open / Then the overlay has z-[600] to sit above the Shell NavBar (z-500)', () => {
+    it('When the modal is open / Then the overlay uses the z-dialog token to sit above the Shell chrome', () => {
       render(<Modal isOpen={true} onClose={vi.fn()} title="Z-index Test"><p>content</p></Modal>);
-      const overlay = document.body.querySelector('[class*="z-\\[600\\]"]');
+      const overlay = document.body.querySelector('[class*="z-dialog"]');
       expect(overlay).toBeTruthy();
     });
 
@@ -189,6 +145,61 @@ describe('Modal', () => {
       );
       expect(container.firstChild).toBeNull();
       expect(screen.queryByText('Closed Portal')).not.toBeInTheDocument();
+    });
+  });
+  describe('Given a modal with a footer', () => {
+    it('When rendered / Then the footer actions are inside the dialog', () => {
+      render(
+        <Modal isOpen onClose={vi.fn()} title="With footer" footer={<button type="button">Save</button>}>
+          <p>Body</p>
+        </Modal>,
+      );
+      expect(within(screen.getByRole('dialog')).getByRole('button', { name: 'Save' })).toBeInTheDocument();
+    });
+
+    it('When a data-testid is passed / Then it is set on the dialog panel', () => {
+      render(<Modal isOpen onClose={vi.fn()} title="T" data-testid="my-modal"><p>x</p></Modal>);
+      expect(screen.getByTestId('my-modal')).toBe(screen.getByRole('dialog'));
+    });
+
+    it('When subtitle is passed / Then it renders under the title', () => {
+      render(<Modal isOpen onClose={vi.fn()} title="T" subtitle="Sub line"><p>x</p></Modal>);
+      expect(screen.getByText('Sub line')).toBeInTheDocument();
+    });
+  });
+
+  describe('Given the Escape key', () => {
+    it('When Escape is pressed on a dismissible modal / Then calls onClose', () => {
+      const onClose = vi.fn();
+      render(<Modal isOpen onClose={onClose} title="T"><p>x</p></Modal>);
+      fireEvent.keyDown(document, { key: 'Escape' });
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('When Escape is pressed and dismissible is false / Then onClose is not called', () => {
+      const onClose = vi.fn();
+      render(<Modal isOpen onClose={onClose} title="T" dismissible={false}><p>x</p></Modal>);
+      fireEvent.keyDown(document, { key: 'Escape' });
+      expect(onClose).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Given dismissible is false (busy)', () => {
+    it('When the close button is clicked / Then it is disabled and onClose is not called', () => {
+      const onClose = vi.fn();
+      render(<Modal isOpen onClose={onClose} title="T" dismissible={false}><p>x</p></Modal>);
+      const closeBtn = within(screen.getByRole('dialog')).getAllByRole('button')[0];
+      expect(closeBtn).toBeDisabled();
+      fireEvent.click(closeBtn);
+      expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it('When the backdrop is clicked / Then onClose is not called', () => {
+      const onClose = vi.fn();
+      render(<Modal isOpen onClose={onClose} title="T" dismissible={false}><p>x</p></Modal>);
+      const backdrop = screen.getByTestId('modal-overlay');
+      fireEvent.click(backdrop);
+      expect(onClose).not.toHaveBeenCalled();
     });
   });
 });

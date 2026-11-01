@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useId, useMemo } from 'react';
 import { Search, X, ChevronDown, Loader2 } from 'lucide-react';
+import { TextField, Button, IconButton } from '@so360/design-system';
 import { crmService } from '../../services/crmService';
 
 // Projects that can no longer take work. Hidden from the picker, but a task
@@ -64,7 +65,6 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
     // the loaded page, or a closed project). Keyed by id so a stale name never shows.
     const [resolved, setResolved] = useState<{ id: string; label: string } | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
-    const triggerRef = useRef<HTMLButtonElement>(null);
     // Set when the picker closes from the keyboard or a selection, so focus goes
     // back to the trigger (but not when the user clicks or tabs elsewhere).
     const restoreFocus = useRef(false);
@@ -153,7 +153,7 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
     useEffect(() => {
         if (!isOpen && restoreFocus.current) {
             restoreFocus.current = false;
-            triggerRef.current?.focus();
+            containerRef.current?.querySelector<HTMLButtonElement>('button[role="combobox"]')?.focus();
         }
     }, [isOpen]);
 
@@ -233,10 +233,12 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
         <div ref={containerRef} onBlur={handleBlur} className={`relative ${className}`} data-testid="project-select">
             {isOpen ? (
                 <div
-                    className={`flex items-center gap-2 w-full bg-slate-950 border rounded-xl px-4 py-3 transition-all border-blue-500 ring-2 ring-blue-500/20 ${inputClassName}`}
+                    className={`flex items-center gap-2 w-full bg-bg border rounded-xl px-4 py-3 transition-all border-primary ring-2 ring-primary/20 ${inputClassName}`}
                 >
-                    <Search size={14} className="text-slate-500 shrink-0" />
-                    <input
+                    <Search size={14} className="text-fg-muted shrink-0" />
+                    <div className="flex-1 min-w-0">
+                    <TextField
+                        name="project-select-query"
                         autoFocus
                         type="text"
                         role="combobox"
@@ -250,15 +252,16 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
                         aria-autocomplete="list"
                         aria-controls={listId}
                         aria-activedescendant={activeIndex >= 0 ? optionId(activeIndex) : undefined}
-                        className="flex-1 bg-transparent font-bold text-slate-50 outline-none placeholder:text-slate-500 min-w-0"
+                        size="sm"
+                        className="border-0 bg-transparent px-0 font-bold shadow-none focus:ring-0"
                         data-testid="project-select-input"
                     />
-                    <ChevronDown size={14} className="text-slate-500 shrink-0 transition-transform rotate-180" />
+                    </div>
+                    <ChevronDown size={14} className="text-fg-muted shrink-0 transition-transform rotate-180" />
                 </div>
             ) : (
                 <>
-                    <button
-                        ref={triggerRef}
+                    <Button variant="secondary" size="sm" className={`w-full !justify-start ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${inputClassName}`}
                         type="button"
                         role="combobox"
                         aria-label="Project"
@@ -269,29 +272,25 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
                         disabled={disabled}
                         onClick={() => { if (!disabled) setIsOpen(true); }}
                         onKeyDown={handleTriggerKeyDown}
-                        className={`flex items-center gap-2 w-full text-left bg-slate-950 border rounded-xl px-4 py-3 cursor-pointer transition-all border-slate-700/50 hover:border-slate-600 focus-visible:outline-none focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/20
-                            ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
-                            ${inputClassName}`}
                     >
-                        <Search size={14} className="text-slate-500 shrink-0" />
-                        <span className={`flex-1 font-bold truncate ${value ? 'text-slate-50' : 'text-slate-400'}`}>
+                        <Search size={14} className="text-fg-muted shrink-0" />
+                        <span className={`flex-1 font-bold truncate ${value ? 'text-fg' : 'text-fg-subtle'}`}>
                             {value ? (selectedLabel || '…') : noneLabel}
                         </span>
                         {/* The clear button overlays this slot when a project is selected. */}
                         {value
-                            ? <span className="w-[14px] shrink-0" aria-hidden="true" />
-                            : <ChevronDown size={14} className="text-slate-500 shrink-0" />}
-                    </button>
+                            ? <span className="w-3.5 shrink-0" aria-hidden="true" />
+                            : <ChevronDown size={14} className="text-fg-muted shrink-0" />}
+                    </Button>
                     {value && (
-                        <button
-                            type="button"
-                            onClick={() => onChange('')}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
-                            aria-label="Clear project"
+                        <IconButton
+                            label="Clear project"
+                            size="sm"
+                            className="absolute right-4 top-1/2 -translate-y-1/2"
                             data-testid="project-select-clear"
-                        >
-                            <X size={14} />
-                        </button>
+                            icon={<X size={14} aria-hidden="true" />}
+                            onClick={() => onChange('')}
+                        />
                     )}
                 </>
             )}
@@ -301,25 +300,24 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
                     role="listbox"
                     id={listId}
                     aria-label="Projects"
-                    className="absolute z-50 top-full mt-1 w-full bg-slate-900 border border-slate-700 rounded-xl shadow-xl overflow-hidden"
+                    className="absolute z-menu top-full mt-1 w-full bg-surface border border-line rounded-xl shadow-overlay overflow-hidden"
                     data-testid="project-select-list"
                 >
                     <div className="max-h-56 overflow-y-auto">
                         {/* Options are driven by aria-activedescendant, so they stay out of the Tab order. */}
-                        <button
+                        <Button variant="secondary" size="sm" className="w-full !justify-start border-0"
                             type="button"
                             role="option"
                             tabIndex={-1}
                             id={optionId(0)}
                             aria-selected={!value}
                             onClick={() => select('')}
-                            className={`w-full text-left px-3 py-2 text-sm italic transition-colors ${activeIndex === 0 ? 'bg-slate-800' : 'hover:bg-slate-800'} text-slate-400`}
                             data-testid="project-option-none"
                         >
                             {noneLabel}
-                        </button>
+                        </Button>
                         {options.map((p, i) => (
-                            <button
+                            <Button variant="secondary" size="sm" className="w-full !justify-between border-0"
                                 key={p.id}
                                 type="button"
                                 role="option"
@@ -327,42 +325,38 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
                                 id={optionId(i + 1)}
                                 aria-selected={p.id === value}
                                 onClick={() => select(p.id)}
-                                className={`w-full text-left px-3 py-2 text-sm transition-colors flex items-center justify-between
-                                    ${p.id === value ? 'bg-blue-600/20 text-blue-400' : 'text-slate-200'}
-                                    ${activeIndex === i + 1 ? 'bg-slate-800' : 'hover:bg-slate-800'}`}
                                 data-testid={`project-option-${p.id}`}
                             >
                                 <span className="font-medium truncate">{labelOf(p)}</span>
-                                {codeOf(p) && <span className="text-slate-400 text-xs ml-2 shrink-0">{codeOf(p)}</span>}
-                            </button>
+                                {codeOf(p) && <span className="text-fg-subtle text-xs ml-2 shrink-0">{codeOf(p)}</span>}
+                            </Button>
                         ))}
                         {isLoading && (
-                            <div className="px-3 py-3 flex items-center justify-center gap-2 text-sm text-slate-500" data-testid="project-select-loading">
+                            <div className="px-3 py-3 flex items-center justify-center gap-2 text-sm text-fg-muted" data-testid="project-select-loading">
                                 <Loader2 size={14} className="animate-spin" /> Loading projects…
                             </div>
                         )}
                         {error && (
-                            <div className="px-3 py-3 text-sm text-center text-red-400" role="alert" data-testid="project-select-error">
+                            <div className="px-3 py-3 text-sm text-center text-danger" role="alert" data-testid="project-select-error">
                                 Couldn't load projects.{' '}
-                                <button type="button" onClick={() => load(term, 1)} className="underline font-bold" data-testid="project-select-retry">
+                                <Button variant="secondary" size="sm" type="button" onClick={() => load(term, 1)}  data-testid="project-select-retry">
                                     Retry
-                                </button>
+                                </Button>
                             </div>
                         )}
                         {showEmpty && (
-                            <div className="px-3 py-3 text-sm text-slate-500 text-center italic" data-testid="project-select-empty">
+                            <div className="px-3 py-3 text-sm text-fg-muted text-center italic" data-testid="project-select-empty">
                                 No projects found
                             </div>
                         )}
                         {hasMore && !isLoading && !error && (
-                            <button
+                            <Button variant="secondary" size="sm" className="w-full"
                                 type="button"
                                 onClick={() => load(term, page + 1)}
-                                className="w-full px-3 py-2 text-xs font-bold text-blue-400 hover:bg-slate-800 transition-colors"
                                 data-testid="project-select-more"
                             >
                                 Load more
-                            </button>
+                            </Button>
                         )}
                     </div>
                 </div>

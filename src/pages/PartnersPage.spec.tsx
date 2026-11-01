@@ -33,6 +33,7 @@ vi.mock('react-router-dom', () => ({
 }));
 
 vi.mock('@so360/shell-context', () => ({
+  useDatasetSchema: () => ({ fields: [], isLoading: false, error: null }),
   useShellBridge: () => ({
     tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee',
     orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',

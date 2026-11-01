@@ -22,6 +22,15 @@ export function fitBand(score: number): FitBand {
   return 'not_a_fit';
 }
 
+/** ICP best-match score (0-100, rounded + clamped) for a lead row, or null when it has none. Prefers meta `icp_score`, falls back to the `score` column. */
+export function leadIcpScore(lead: { score?: number | string | null; custom_fields?: Record<string, any> | null }): number | null {
+  for (const raw of [lead.custom_fields?.icp_score, lead.score]) {
+    const n = typeof raw === 'number' ? raw : typeof raw === 'string' && raw.trim() !== '' ? Number(raw) : NaN;
+    if (Number.isFinite(n)) return Math.min(100, Math.max(0, Math.round(n)));
+  }
+  return null;
+}
+
 export type CriterionState = 'met' | 'missed' | 'unknown';
 export interface IcpCriterionView { key: string; label: string; state: CriterionState; found?: string }
 
