@@ -140,6 +140,19 @@ const DashboardPage = () => {
         );
     }
 
+    // A failed or empty stats read must not crash the page (stats stays null).
+    if (!stats) {
+        return (
+            <div className="w-full p-nb-4">
+                <EmptyState
+                    title="Couldn't load insights"
+                    description="The dashboard numbers could not be loaded. Try again."
+                    action={{ label: 'Try again', onClick: () => { void fetchStats(); } }}
+                />
+            </div>
+        );
+    }
+
     const { financials, counts, teamStats, monthlyRevenue, chartLabels, reminders } = stats;
     const revenueLabels = chartLabels || ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 

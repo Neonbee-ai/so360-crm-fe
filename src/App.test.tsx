@@ -48,14 +48,33 @@ vi.mock('@so360/shell-context', () => {
   };
 });
 
-vi.mock('./services/crmService', () => ({
-  crmService: {
+// Pages reached through the router call many service methods on mount; any
+// method not pinned here resolves to an empty list so the routes settle. The
+// dashboard stats call resolves to null (the "couldn't load" state).
+vi.mock('./services/crmService', () => {
+  const pinned: Record<string, unknown> = {
     setTenantId: vi.fn(),
     setOrgId: vi.fn(),
     setAccessToken: vi.fn(),
     setUser: vi.fn(),
-  },
-}));
+    getDashboardStats: vi.fn().mockResolvedValue(null),
+    getSettings: vi.fn().mockResolvedValue(null),
+  };
+  const auto = (target: Record<string, unknown>) => new Proxy(target, {
+    get(t, key: string) {
+      if (!(key in t)) t[key] = typeof key === 'string' && key !== 'then' ? vi.fn().mockResolvedValue([]) : undefined;
+      return t[key];
+    },
+  });
+  const nested = () => new Proxy({} as Record<string, unknown>, {
+    get(t, key: string) {
+      if (key === 'then') return undefined;
+      if (!(key in t)) t[key] = auto({});
+      return t[key];
+    },
+  });
+  return { crmService: auto(pinned), settingsApi: nested(), activitiesApi: auto({}) };
+});
 
 import App from './App';
 

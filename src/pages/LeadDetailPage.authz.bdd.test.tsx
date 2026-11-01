@@ -189,7 +189,8 @@ describe('Given LeadDetailPage opened with a malformed or unknown id (API answer
     await waitFor(() => {
       expect(screen.getByText('Lead not found.')).toBeTruthy(); // empty-state body; the header title repeats it without the period
     });
-    expect(screen.getByRole('button', { name: /back to leads/i })).toBeTruthy();
+    // Both the header back control and the empty-state CTA lead back to the list.
+    expect(screen.getAllByRole('button', { name: /back to leads/i }).length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByText(/permission to view this lead/i)).toBeNull();
     expect(screen.queryByText(/loading lead workspace/i)).toBeNull();
     // Real DS floorplans carry data-comb-path; the vitest DS stub marks the same Comb detail root as data-template="detail".
