@@ -77,7 +77,7 @@ describe('Given DashboardPage — period selectors', () => {
     await waitFor(() => screen.getByText('Executive Overview'));
     fireEvent.click(screen.getByText('Quarterly'));
     await waitFor(() => {
-      expect(mockGetDashboardStats).toHaveBeenCalledWith(expect.objectContaining({ period: 'quarterly' }));
+      expect(mockGetDashboardStats).toHaveBeenCalledWith(expect.objectContaining({ period: 'quarterly' }), expect.anything());
     });
   });
 
@@ -86,7 +86,7 @@ describe('Given DashboardPage — period selectors', () => {
     await waitFor(() => screen.getByText('Executive Overview'));
     fireEvent.click(screen.getByText('Monthly'));
     await waitFor(() => {
-      expect(mockGetDashboardStats).toHaveBeenCalledWith(expect.objectContaining({ period: 'monthly' }));
+      expect(mockGetDashboardStats).toHaveBeenCalledWith(expect.objectContaining({ period: 'monthly' }), expect.anything());
     });
   });
 });
@@ -216,5 +216,46 @@ describe('Given DashboardPage — error handling', () => {
     const calls = mockGetDashboardStats.mock.calls.length;
     fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
     await waitFor(() => expect(mockGetDashboardStats.mock.calls.length).toBe(calls + 1));
+  });
+});
+
+describe('Given DashboardPage — KPI-first streaming (Pulse b671c161)', () => {
+  it('When the KPI part arrives before team + reminders / Then KPIs render with skeletons in place of the pending widgets', async () => {
+    mockGetDashboardStats.mockImplementation((_p: any, opts: any) => {
+      opts?.onKpis?.({ ...baseDashboard, teamStats: [], reminders: [], pending: true });
+      return new Promise(() => undefined); // performance + tasks never land
+    });
+    render(<DashboardPage />);
+    await waitFor(() => screen.getByText('Executive Overview'));
+    expect(screen.queryByText('Call John')).not.toBeInTheDocument();
+    expect(screen.queryByText('Bob')).not.toBeInTheDocument();
+    expect(screen.queryByText(/No active reminders|No revenue attributed yet/i)).not.toBeInTheDocument();
+  });
+
+  it('When the full payload lands after the KPI part / Then reminders and team replace the skeletons', async () => {
+    mockGetDashboardStats.mockImplementation((_p: any, opts: any) => {
+      opts?.onKpis?.({ ...baseDashboard, teamStats: [], reminders: [], pending: true });
+      return Promise.resolve(baseDashboard);
+    });
+    render(<DashboardPage />);
+    await waitFor(() => screen.getByText('Call John'));
+  });
+
+  it('When the first load runs / Then it asks for the KPI callback and not a cache bypass', async () => {
+    render(<DashboardPage />);
+    await waitFor(() => expect(mockGetDashboardStats).toHaveBeenCalled());
+    const opts = mockGetDashboardStats.mock.calls[0][1];
+    expect(typeof opts.onKpis).toBe('function');
+    expect(opts.fresh).toBeUndefined();
+  });
+
+  it('When leads change (silent refresh after a write) / Then it re-reads with fresh=true', async () => {
+    const { publishLeadsChanged } = await import('../utils/leadEvents');
+    render(<DashboardPage />);
+    await waitFor(() => screen.getByText('Executive Overview'));
+    publishLeadsChanged('deleted', ['lead-1']);
+    await waitFor(() => {
+      expect(mockGetDashboardStats).toHaveBeenLastCalledWith(expect.anything(), { fresh: true });
+    });
   });
 });

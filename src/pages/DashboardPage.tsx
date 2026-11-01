@@ -89,7 +89,12 @@ const DashboardPage = () => {
                 quarter: period === 'quarterly' ? quarter : undefined,
                 month: period === 'monthly' ? month : undefined,
                 week: period === 'weekly' ? week : undefined,
-            });
+            }, opts?.silent
+                // Silent refresh follows a write: bypass the backend row cache.
+                ? { fresh: true }
+                // First paint: show KPIs as soon as /analytics/dashboard answers;
+                // team + reminders stream in as skeletons until the rest lands.
+                : { onKpis: (partial) => { setStats(partial); setIsLoading(false); } });
             setStats(data);
         } catch (error) {
             console.error('Failed to fetch dashboard stats', error);
@@ -150,6 +155,7 @@ const DashboardPage = () => {
     }
 
     const { financials, counts, teamStats, monthlyRevenue, chartLabels, reminders } = stats;
+    const pendingRest = !!stats?.pending;
     const revenueLabels = chartLabels || ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
     const formatCurrency = (amount: number) => {
@@ -351,7 +357,9 @@ const DashboardPage = () => {
                     <Link to="../tasks" className="text-xs font-semibold text-primary hover:text-primary transition-colors">View All Tasks</Link>
                 </div>
                 <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-                    {reminders.length > 0 ? reminders.map((task: any) => (
+                    {pendingRest ? (
+                                <Skeleton variant="text" lines={2} />
+                            ) : reminders.length > 0 ? reminders.map((task: any) => (
                         <div key={task.id} className="flex-shrink-0 w-72 max-w-full flex flex-col gap-2">
                         <Link
                             to={`../tasks/${task.id}`}
@@ -454,7 +462,8 @@ const DashboardPage = () => {
                     <p className="text-xs text-fg-muted font-bold mb-4">Revenue leaders</p>
 
                     <div className="divide-y divide-line overflow-y-auto pr-2 custom-scrollbar flex-1">
-                        {teamStats.length === 0 && (
+                        {pendingRest && <Skeleton variant="text" lines={3} />}
+                        {!pendingRest && teamStats.length === 0 && (
                             <div className="flex flex-col items-center">
                                 <EmptyState
                                     className="!py-4"
