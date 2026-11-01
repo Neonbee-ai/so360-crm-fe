@@ -15,7 +15,7 @@ const h = vi.hoisted(() => ({
 
 vi.mock('react-router-dom', () => ({ useNavigate: () => h.navigate }));
 
-vi.mock('@so360/shell-context', () => ({
+vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOriginal<any>()),
     useShellBridge: () => ({
         permissionsLoaded: h.loaded,
         hasPermission: (p: string) => h.perms.has(p),
@@ -58,7 +58,7 @@ const toMap = async () => {
 
 beforeEach(() => {
     vi.clearAllMocks();
-    h.perms = new Set(['categories.create', 'items.import', 'employees.import']);
+    h.perms = new Set(['leads.import', 'categories.create', 'items.import', 'employees.import']);
     h.loaded = true;
     h.importClients.mockResolvedValue({ created: 2, updated: 0, skipped: 0, problems: [] });
     h.listCategories.mockResolvedValue([]);
@@ -82,27 +82,28 @@ describe('Feature ImportHub uses Comb Buttons', () => {
         expect(opts[4]).toHaveTextContent('Opens People Connect import');
     });
 
-    it('Given no permissions When opened Then only 2 option buttons exist', () => {
+    it('Given no permissions When opened Then no option buttons exist (leads and clients need leads.import)', () => {
         h.perms = new Set();
         renderHub();
-        expect(within(screen.getByTestId('import-hub')).getAllByRole('button')).toHaveLength(2);
+        expect(within(screen.getByTestId('import-hub')).queryAllByRole('button')).toHaveLength(0);
     });
 
     it.each([
         ['categories.create', 'Projects & towers'],
         ['items.import', 'Units'],
         ['employees.import', 'Agents'],
+        ['leads.import', 'Existing clients'],
     ])('Given only permission %s When opened Then %s appears and the others do not', (perm, label) => {
         h.perms = new Set([perm]);
         renderHub();
         expect(screen.getByRole('button', { name: new RegExp(label) })).toBeInTheDocument();
-        expect(within(screen.getByTestId('import-hub')).getAllByRole('button')).toHaveLength(3);
+        expect(within(screen.getByTestId('import-hub')).getAllByRole('button')).toHaveLength(perm === 'leads.import' ? 2 : 1);
     });
 
     it('Given permissions not loaded When opened Then gated buttons are absent', () => {
         h.loaded = false;
         renderHub();
-        expect(within(screen.getByTestId('import-hub')).getAllByRole('button')).toHaveLength(2);
+        expect(within(screen.getByTestId('import-hub')).queryAllByRole('button')).toHaveLength(0);
     });
 
     it('Given the option buttons When tabbed Then focus follows DOM order', async () => {

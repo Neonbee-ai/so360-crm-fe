@@ -3,7 +3,7 @@ import { render, screen, within } from '@testing-library/react';
 import React from 'react';
 
 const shell = vi.hoisted(() => ({ value: {} as any }));
-vi.mock('@so360/shell-context', () => ({ useShellBridge: () => shell.value }));
+vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOriginal<any>()), useShellBridge: () => shell.value }));
 
 import IcpFitCard, { ICP_FLAG } from './IcpFitCard';
 import { fitBand } from '../../utils/icpFit';
