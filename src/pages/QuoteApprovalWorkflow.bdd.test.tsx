@@ -42,7 +42,7 @@ vi.mock('react-router-dom', () => ({
 
 let currentMockUser = { id: 'user-submitter-1', name: 'Submitter User' };
 
-vi.mock('@so360/shell-context', () => ({
+vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOriginal<any>()),
   useBusinessSettings: () => ({
     settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' },
   }),
@@ -454,8 +454,8 @@ describe('CRM Quote Approval Workflow BDD Specifications', () => {
         expect(screen.getByText('Enterprise License')).toBeInTheDocument();
         expect(screen.getByText('Acme Corp')).toBeInTheDocument();
       });
-      // Approve / Reject live in the row-actions menu
-      fireEvent.click(screen.getByRole('button', { name: 'Row actions' }));
+      // Comb: Approve / Reject live in the DataTable row-actions menu.
+      fireEvent.click(screen.getAllByLabelText('Row actions')[0]);
       expect(screen.getByRole('menuitem', { name: /^approve$/i })).toBeInTheDocument();
       expect(screen.getByRole('menuitem', { name: /^reject$/i })).toBeInTheDocument();
     });
@@ -480,7 +480,7 @@ describe('CRM Quote Approval Workflow BDD Specifications', () => {
 
       fireEvent.click(await screen.findByRole('radio', { name: /^Approvals/ }));
 
-      fireEvent.click(await screen.findByRole('button', { name: 'Row actions' }));
+      fireEvent.click((await screen.findAllByLabelText('Row actions'))[0]);
       fireEvent.click(screen.getByRole('menuitem', { name: /^approve$/i }));
 
       await waitFor(() => {

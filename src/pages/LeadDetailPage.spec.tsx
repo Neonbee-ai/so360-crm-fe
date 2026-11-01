@@ -11,7 +11,6 @@ const mockCrmService = vi.hoisted(() => ({
   getActivitiesByLeadId: vi.fn(),
   getActivitiesByLeadIdPaginated: vi.fn(),
   getDealsByLeadId: vi.fn(),
-  getDocumentsByLeadId: vi.fn(() => Promise.resolve([])),
   getLeadById: vi.fn(),
   getPartners: vi.fn(),
   getSettings: vi.fn(),
@@ -36,12 +35,11 @@ const mockCrmService = vi.hoisted(() => ({
 }));
 
 vi.mock('../services/crmService', () => ({
-  crmService: mockCrmService,
-  settingsApi: {
-    sourceTypes: { getAll: vi.fn(() => Promise.resolve([])) },
-    scoringRules: { recalculate: vi.fn(() => Promise.resolve(undefined)) },
-  },
-  activitiesApi: { getByLeadId: vi.fn(), create: vi.fn(), update: vi.fn(), delete: vi.fn() },
+  // Reads this spec does not stub resolve to an empty list / `{ data, total }` page.
+  crmService: new Proxy(mockCrmService as Record<string, any>, {
+    get: (t, k: string) => (k in t || k === 'then' ? t[k] : (t[k] = vi.fn().mockResolvedValue(Object.assign([], { data: [], total: 0 })))),
+  }),
+  settingsApi: { sourceTypes: { getAll: vi.fn().mockResolvedValue([]) } },
 }));
 
 vi.mock('react-router-dom', () => ({
@@ -52,7 +50,8 @@ vi.mock('react-router-dom', () => ({
   NavLink: ({ children }: any) => children,
 }));
 
-vi.mock('@so360/shell-context', () => ({
+vi.mock('@so360/shell-context', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   useCurrentEntity: () => ({ setCurrentEntity: vi.fn() }),
   useShellBridge: () => ({
     tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee',
@@ -77,7 +76,6 @@ vi.mock('@so360/shell-context', () => ({
   useSandboxLimit: () => ({ isSandboxMode: false, sandboxEntryLimit: 1000, limitItems: (items: any[]) => items, isLimited: false }),
   ShellContext: React.createContext({}),
   useIdentity: () => ({ user: { id: 'mock-user-id', email: 'test@test.com', full_name: 'Test User' } }),
-  useDatasetSchema: () => ({ fields: [], isLoading: false, error: null }),
 }));
 
 vi.mock('../hooks/useShellBridge', () => ({

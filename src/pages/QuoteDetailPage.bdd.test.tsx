@@ -33,7 +33,7 @@ vi.mock('react-router-dom', () => ({
   useNavigate: () => vi.fn(),
 }));
 
-vi.mock('@so360/shell-context', () => ({
+vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOriginal<any>()),
   useBusinessSettings: () => ({
     settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' },
   }),
@@ -624,13 +624,10 @@ describe('QuoteDetailPage', () => {
 // Print button only opens a print dialog and cannot produce one.
 describe('Given a saved quote', () => {
   beforeEach(() => {
-    // crm-be embeds the resolved customer on the quote (b7ab30b); the page uses
-    // that embed and only falls back to getLeadById when it is absent.
-    mockGetQuoteById.mockResolvedValue({
-      ...quoteData,
-      customer_id: 'c1',
-      customer: { id: 'c1', company_name: 'Acme', contact_email: 'buyer@acme.example' },
-    });
+    // customer_id is what triggers resolving the customer record — the nested
+    // `customer` object alone is not enough.
+    // No embedded `customer` (older crm-be) so the page resolves it via getLeadById.
+    mockGetQuoteById.mockResolvedValue({ ...quoteData, customer: undefined, customer_id: 'c1' });
     mockGetLeadById.mockResolvedValue({ id: 'c1', company_name: 'Acme', contact_email: 'buyer@acme.example' });
     mockSendQuote.mockReset();
   });
@@ -650,6 +647,16 @@ describe('Given a saved quote', () => {
   it('When the dialog opens / Then the recipient is prefilled from the linked customer', async () => {
     await openDialog();
     const input = document.querySelector('input[type="email"]') as HTMLInputElement;
+    await waitFor(() => expect(input.value).toBe('buyer@acme.example'));
+  });
+
+  it('When the dialog opens before the customer record arrives / Then the recipient fills in once it lands', async () => {
+    let resolveCustomer: (v: unknown) => void = () => {};
+    mockGetLeadById.mockReturnValue(new Promise(r => { resolveCustomer = r; }));
+    await openDialog();
+    const input = document.querySelector('input[type="email"]') as HTMLInputElement;
+    expect(input.value).toBe('');
+    resolveCustomer({ id: 'c1', company_name: 'Acme', contact_email: 'buyer@acme.example' });
     await waitFor(() => expect(input.value).toBe('buyer@acme.example'));
   });
 
@@ -678,7 +685,6 @@ describe('Given a saved quote', () => {
   });
 
   it('When the recipient is blank / Then sending is disabled rather than failing server-side', async () => {
-    mockGetQuoteById.mockResolvedValue({ ...quoteData, customer_id: 'c1', customer: { id: 'c1', company_name: 'Acme' } });
     mockGetLeadById.mockResolvedValue({ id: 'c1', company_name: 'Acme' });
     await openDialog();
     const button = screen.getByText('Send quotation').closest('button')!;

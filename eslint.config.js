@@ -1,5 +1,7 @@
 import tseslint from 'typescript-eslint';
-import comb from 'eslint-plugin-comb';
+// eslint-plugin-comb is a file: link into so360-shell-fe, which the CI gate does not
+// install; load it when present (local dev) and skip the Comb rules otherwise.
+const comb = await import('eslint-plugin-comb').then((m) => m.default).catch(() => null);
 
 const noop = { meta: { schema: [] }, create: () => ({}) };
 
@@ -20,15 +22,19 @@ export default [
       react: { rules: { 'no-danger': noop } },
     },
   },
-  {
-    ...comb.configs.recommended,
-    ignores: [
-      '**/*.test.{ts,tsx}',
-      '**/*.spec.{ts,tsx}',
-      '**/*.bdd.test.{ts,tsx}',
-      'src/test/**',
-      '**/__tests__/**',
-      '**/__mocks__/**',
-    ],
-  },
+  ...(comb
+    ? [
+        {
+          ...comb.configs.recommended,
+          ignores: [
+            '**/*.test.{ts,tsx}',
+            '**/*.spec.{ts,tsx}',
+            '**/*.bdd.test.{ts,tsx}',
+            'src/test/**',
+            '**/__tests__/**',
+            '**/__mocks__/**',
+          ],
+        },
+      ]
+    : []),
 ];

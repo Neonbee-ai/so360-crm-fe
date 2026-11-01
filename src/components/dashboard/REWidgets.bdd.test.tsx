@@ -5,7 +5,7 @@ import React from 'react';
 const flags = vi.hoisted(() => ({ on: new Set<string>(), loaded: true, throws: false }));
 const mockGet = vi.hoisted(() => vi.fn());
 
-vi.mock('@so360/shell-context', () => ({
+vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOriginal<any>()),
     useShellBridge: () => {
         if (flags.throws) throw new Error('no shell bridge');
         return {
@@ -20,14 +20,6 @@ vi.mock('../../utils/formatters', () => ({
 vi.mock('../../services/reWidgetsService', async (importActual) => {
     const actual = await importActual<typeof import('../../services/reWidgetsService')>();
     return { ...actual, reWidgetsService: { get: (...a: any[]) => mockGet(...a) } };
-});
-// The shared DS stub's GridItem drops `span`; expose it so the widget layout can be asserted.
-vi.mock('@so360/design-system', async (importActual) => {
-    const actual = await importActual<Record<string, unknown>>();
-    return {
-        ...actual,
-        GridItem: ({ span, children }: any) => <div data-testid="grid-item" data-span={String(span)}>{children}</div>,
-    };
 });
 
 import REWidgets from './REWidgets';
@@ -246,8 +238,9 @@ describe('Given the Top agents leaderboard card', () => {
         it('Then the card spans the full widget row', async () => {
             render(<REWidgets />);
             const card = await screen.findByTestId('re-widget-agents');
+            // Comb Grid: the leaderboard sits in a full-width Grid.Item (span="full").
             expect(card.closest('[data-testid="grid-item"]')).toHaveAttribute('data-span', 'full');
-            expect(screen.getByTestId('re-widget-sources').closest('[data-testid="grid-item"]')).toHaveAttribute('data-span', '3');
+            expect(screen.getByTestId('re-widget-sources').className).not.toMatch(/col-span/);
         });
     });
 

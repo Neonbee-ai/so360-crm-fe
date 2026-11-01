@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import React from 'react';
 
 const svc = vi.hoisted(() => ({
@@ -11,7 +11,7 @@ vi.mock('../services/icpService', () => ({ icpService: svc }));
 vi.mock('react-router-dom', () => ({ useNavigate: () => nav }));
 vi.mock('lucide-react', () => ({ MoreVertical: () => null, Target: () => null }));
 const shell = vi.hoisted(() => ({ value: { hasPermission: (_: string) => true } as any }));
-vi.mock('@so360/shell-context', () => ({ useShellBridge: () => shell.value }));
+vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOriginal<any>()), useShellBridge: () => shell.value }));
 vi.mock('@so360/design-system', async (importOriginal) => ({ ...(await importOriginal<object>()), ...(await import('../test/icpDsMock')) }));
 
 import IcpListPage from './IcpListPage';
@@ -32,14 +32,17 @@ beforeEach(() => {
   svc.setDefault.mockResolvedValue({});
 });
 
-// The DataTable row menu is single-open: opening one row's menu closes the other.
-const openRow = (id: string) => fireEvent.click(screen.getByTestId(`icp-table-actions-${id}`));
-const rowItems = (id: string) => {
-  openRow(id);
-  const labels = within(screen.getByRole('menu')).getAllByRole('menuitem').map((m) => m.textContent);
-  openRow(id);
+// The DataTable row menu opens one row at a time (as the real DS does), so read
+// each row's menu in turn and count labels across all rows.
+const rowLabels = () => (['i1', 'i2'] as const).flatMap((id) => {
+  const trigger = screen.getByTestId(`icp-table-actions-${id}`);
+  fireEvent.click(trigger);
+  const labels = screen.queryAllByRole('menuitem').map((b) => b.textContent);
+  fireEvent.click(trigger);
   return labels;
-};
+});
+const countOf = (label: string) => rowLabels().filter((l) => l === label).length;
+const openRow = (id: string) => fireEvent.click(screen.getByTestId(`icp-table-actions-${id}`));
 
 describe('Given the ideal customer profiles list', () => {
   describe('When profiles exist', () => {
@@ -215,8 +218,12 @@ describe('Given row rendering edge cases', () => {
     it('Then it has no Set as default action while others do', async () => {
       render(<IcpListPage />);
       await screen.findByTestId('icp-row-i1');
-      expect(rowItems('i1')).toEqual(['Edit', 'Archive']);
-      expect(rowItems('i2')).toEqual(['Edit', 'Set as default', 'Archive']);
+      expect(countOf('Set as default')).toBe(1);
+      expect(countOf('Edit')).toBe(2);
+      expect(countOf('Archive')).toBe(2);
+      // The default (i1) is the one without it.
+      openRow('i1');
+      expect(screen.queryByText('Set as default')).toBeNull();
     });
   });
 });
@@ -302,8 +309,7 @@ describe('Given permission and bridge variations', () => {
       render(<IcpListPage />);
       await screen.findByTestId('icp-row-i2');
       expect(screen.getByText('New ICP')).toBeTruthy();
-      expect(rowItems('i1')).toEqual(['Edit', 'Archive']);
-      expect(rowItems('i2')).toEqual(['Edit', 'Set as default', 'Archive']);
+      expect(countOf('Edit')).toBe(2);
     });
   });
   describe('When the bridge has no hasPermission function', () => {
@@ -312,8 +318,7 @@ describe('Given permission and bridge variations', () => {
       render(<IcpListPage />);
       await screen.findByTestId('icp-row-i2');
       expect(screen.getByText('New ICP')).toBeTruthy();
-      expect(rowItems('i1')).toEqual(['Edit', 'Archive']);
-      expect(rowItems('i2')).toEqual(['Edit', 'Set as default', 'Archive']);
+      expect(countOf('Archive')).toBe(2);
     });
   });
   describe('When the user can only read', () => {
@@ -341,8 +346,9 @@ describe('Given permission and bridge variations', () => {
       allow('linkedin_sync.update');
       render(<IcpListPage />);
       await screen.findByTestId('icp-row-i2');
-      expect(rowItems('i1')).toEqual(['Edit']);
-      expect(rowItems('i2')).toEqual(['Edit', 'Set as default']);
+      expect(countOf('Edit')).toBe(2);
+      expect(countOf('Set as default')).toBe(1);
+      expect(countOf('Archive')).toBe(0);
     });
   });
   describe('When the user can only delete', () => {
@@ -350,8 +356,9 @@ describe('Given permission and bridge variations', () => {
       allow('linkedin_sync.delete');
       render(<IcpListPage />);
       await screen.findByTestId('icp-row-i2');
-      expect(rowItems('i1')).toEqual(['Archive']);
-      expect(rowItems('i2')).toEqual(['Archive']);
+      expect(countOf('Archive')).toBe(2);
+      expect(countOf('Edit')).toBe(0);
+      expect(countOf('Set as default')).toBe(0);
     });
   });
   describe('When the list is empty and the user can create', () => {

@@ -97,7 +97,7 @@ vi.mock('./components/ActivityHistoryDrawer', () => ({
 vi.mock('./components/TaskModal', () => ({ default: ({ onClose }: any) => <div data-testid="task-modal"><button onClick={onClose}>Close</button></div> }));
 
 const shellCtl = vi.hoisted(() => ({ signEnabled: false, canEditDeal: true }));
-vi.mock('@so360/shell-context', () => ({
+vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOriginal<any>()),
   useShell: () => ({
     isModuleEnabled: (m: string) => m === 'sign' && shellCtl.signEnabled,
     permissionsLoaded: true,

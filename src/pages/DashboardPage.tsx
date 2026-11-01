@@ -140,15 +140,11 @@ const DashboardPage = () => {
         );
     }
 
-    // A failed or empty stats read must not crash the page (stats stays null).
+    // A failed or empty stats read used to crash the whole page on the destructure below.
     if (!stats) {
         return (
             <div className="w-full p-nb-4">
-                <EmptyState
-                    title="Couldn't load insights"
-                    description="The dashboard numbers could not be loaded. Try again."
-                    action={{ label: 'Try again', onClick: () => { void fetchStats(); } }}
-                />
+                <EmptyState title="Dashboard insights could not be loaded." action={{ label: 'Retry', onClick: () => { void fetchStats(); } }} />
             </div>
         );
     }

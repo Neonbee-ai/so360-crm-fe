@@ -7,15 +7,14 @@ const mockCrmService = vi.hoisted(() => ({
   getPipeline: vi.fn(),
   updateDealStage: vi.fn(),
   getUsers: vi.fn().mockResolvedValue([]),
-  // CreateDealModal loads its dependencies on open.
   getSettings: vi.fn().mockResolvedValue({ deal_stages: [], deal_custom_fields: [] }),
-  getSalesReps: vi.fn().mockResolvedValue([]),
-  getCustomers: vi.fn().mockResolvedValue([]),
-  getLeadById: vi.fn().mockResolvedValue(null),
 }));
 
 vi.mock('../services/crmService', () => ({
-  crmService: mockCrmService,
+  // Reads this spec does not stub resolve to an empty list / `{ data, total }` page.
+  crmService: new Proxy(mockCrmService as Record<string, any>, {
+    get: (t, k: string) => (k in t || k === 'then' ? t[k] : (t[k] = vi.fn().mockResolvedValue(Object.assign([], { data: [], total: 0 })))),
+  }),
 }));
 
 vi.mock('react-router-dom', () => ({
@@ -26,7 +25,8 @@ vi.mock('react-router-dom', () => ({
   NavLink: ({ children }: any) => children,
 }));
 
-vi.mock('@so360/shell-context', () => ({
+vi.mock('@so360/shell-context', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   useShellBridge: () => ({
     tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee',
     orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',

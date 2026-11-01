@@ -7,20 +7,6 @@ vi.mock('../../services/leadImportService', async (importActual) => {
     const actual = await importActual<typeof import('../../services/leadImportService')>();
     return { ...actual, leadImportService: svc };
 });
-// The shared DS stub's FileUpload is a bare <input>; this one also shows the drop-zone prompt so its copy can be asserted.
-vi.mock('@so360/design-system', async (importActual) => {
-    const actual = await importActual<Record<string, unknown>>();
-    return {
-        ...actual,
-        FileUpload: ({ name, 'aria-label': ariaLabel, accept, disabled, prompt, onChange }: any) => (
-            <div>
-                <span>{prompt}</span>
-                <input type="file" name={name} aria-label={ariaLabel} accept={accept} disabled={disabled}
-                    onChange={(e) => onChange?.(Array.from(e.target.files ?? []))} />
-            </div>
-        ),
-    };
-});
 
 import ImportLeadsWizard from './ImportLeadsWizard';
 
@@ -222,8 +208,10 @@ describe('Given the upload step', () => {
             svc.preview.mockReturnValueOnce(new Promise(r => { resolvePreview = r; }));
             const { onClose } = renderWizard();
             expect(screen.getByText('Choose a .csv or .xlsx file')).toBeInTheDocument();
+            expect(screen.getByTestId('icon-UploadCloud')).toBeInTheDocument();
             pick(csv());
             expect(await screen.findByText('Reading file…')).toBeInTheDocument();
+            // The drop zone (DS FileUpload) owns its visuals; busy = "Reading file…" prompt + disabled input.
             expect(screen.getByLabelText('Import file')).toBeDisabled();
             closeX();
             expect(onClose).not.toHaveBeenCalled();

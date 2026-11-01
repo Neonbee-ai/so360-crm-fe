@@ -17,8 +17,10 @@ const shellState: {
   permissionsLoaded: true,
 };
 
-vi.mock('@so360/shell-context', () => {
-  const bridge = () => ({
+vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOriginal<any>()),
+  useDatasetSchema: () => ({ fields: [], isLoading: false, error: null }),
+  useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
+  useShellBridge: () => ({
     currentTenant: { id: 'tenant-1' },
     currentOrg: { id: 'org-1' },
     accessToken: 'tok',
@@ -30,51 +32,25 @@ vi.mock('@so360/shell-context', () => {
     permissionsLoaded: shellState.permissionsLoaded,
     hasPermission: (code: string) => shellState.hasPermission(code),
     hasAnyPermission: (...codes: string[]) => codes.some(c => shellState.hasPermission(c)),
-  });
-  return {
-    useDatasetSchema: () => ({ fields: [], isLoading: false, error: null }),
-    useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
-    useShellBridge: bridge,
-    // Pages call useShell() directly (Dashboard, Tasks, Deal/Lead detail) — same bridge surface.
-    useShell: bridge,
-    useNotify: () => ({ emitNotification: () => {} }),
-    useIdentity: () => ({ user: { id: 'u1', email: 'a@b.com', full_name: 'A' } }),
-    useOrganization: () => ({ currentOrg: { id: 'org-1' } }),
-    useCurrentEntity: () => ({ setCurrentEntity: () => {} }),
-    useSandboxLimit: () => ({ isSandboxMode: false, sandboxEntryLimit: 0, isLimited: false }),
-    useActivity: () => ({ recordActivity: async () => {} }),
-    useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),
-    QUOTA_EXCEEDED_EVENT: 'so360:quota-exceeded',
-    buildQuotaExceededDetail: (d: unknown) => d,
-  };
-});
+  }),
+  useActivity: () => ({ recordActivity: async () => {} }),
 
-// Pages reached through the router call many service methods on mount; any
-// method not pinned here resolves to an empty list so the routes settle. The
-// dashboard stats call resolves to null (the "couldn't load" state).
-vi.mock('./services/crmService', () => {
-  const pinned: Record<string, unknown> = {
+  useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
+
+vi.mock('./services/crmService', async (importOriginal) => {
+  // Setters are what App itself calls; pages rendered behind a route also
+  // fetch on mount, so any other crmService read resolves empty
+  // (an empty list that also reads as an empty `{ data, total }` page).
+  const base: Record<string, unknown> = {
     setTenantId: vi.fn(),
     setOrgId: vi.fn(),
     setAccessToken: vi.fn(),
     setUser: vi.fn(),
-    getDashboardStats: vi.fn().mockResolvedValue(null),
-    getSettings: vi.fn().mockResolvedValue(null),
   };
-  const auto = (target: Record<string, unknown>) => new Proxy(target, {
-    get(t, key: string) {
-      if (!(key in t)) t[key] = typeof key === 'string' && key !== 'then' ? vi.fn().mockResolvedValue([]) : undefined;
-      return t[key];
-    },
+  const crmService = new Proxy(base, {
+    get: (t, k: string) => (k in t || k === 'then' ? t[k] : (t[k] = vi.fn().mockResolvedValue(Object.assign([], { data: [], total: 0 })))),
   });
-  const nested = () => new Proxy({} as Record<string, unknown>, {
-    get(t, key: string) {
-      if (key === 'then') return undefined;
-      if (!(key in t)) t[key] = auto({});
-      return t[key];
-    },
-  });
-  return { crmService: auto(pinned), settingsApi: nested(), activitiesApi: auto({}) };
+  return { ...(await importOriginal<Record<string, unknown>>()), crmService };
 });
 
 import App from './App';

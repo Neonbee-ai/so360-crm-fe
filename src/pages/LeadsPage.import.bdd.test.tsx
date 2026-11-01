@@ -31,7 +31,7 @@ vi.mock('react-router-dom', () => ({
   useLocation: () => ({ pathname: '/crm/leads', search: '' }),
 }));
 
-vi.mock('@so360/shell-context', () => ({
+vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOriginal<any>()),
   useDatasetSchema: () => ({ fields: [], isLoading: false, error: null }),
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useNotify: () => ({ emitNotification: vi.fn().mockResolvedValue(undefined) }),
@@ -177,8 +177,10 @@ describe('Given the Leads page header', () => {
 });
 
 describe('Given the Leads page export / import RBAC (a25bf315)', () => {
-  // ExportMenu is a single named "Export leads" trigger button (CSV / Excel / PDF menu).
+  // ExportMenu is a Comb Menu whose trigger Button carries the "Export leads" name.
   const exportGroup = () => screen.queryByRole('button', { name: 'Export leads' });
+  // Bulk actions only render with the grid, which the template hides while the list is empty.
+  const withOneLead = () => mockGetLeads.mockResolvedValue([{ id: 'l1', company_name: 'Acme', contact_name: 'Ann', status: 'New' }]);
   const importBtn = () => screen.queryByRole('button', { name: /^import$/i });
   const bulkLabels = () => screen.queryAllByTestId('bulk-action').map((b) => b.textContent);
 
@@ -190,8 +192,9 @@ describe('Given the Leads page export / import RBAC (a25bf315)', () => {
       const newLead = await screen.findByText('New Lead');
       expect(exportGroup()).toBeNull();
       expect(importBtn()).toBeNull();
-      // New Lead is the only primary action and no secondary (export) control is left behind.
-      const header = newLead.closest('header') as HTMLElement;
+      // No empty wrapper left behind: New Lead is the only primary action and the
+      // secondary-actions slot is not rendered at all.
+      const header = newLead.closest('[data-slot="header"]') as HTMLElement;
       expect(header.querySelector('[data-slot="primary"]')?.querySelectorAll('button')).toHaveLength(1);
       expect(header.querySelector('[data-slot="secondary"]')?.querySelectorAll('button').length ?? 0).toBe(0);
     });
@@ -222,8 +225,7 @@ describe('Given the Leads page export / import RBAC (a25bf315)', () => {
   describe('When the user selects rows without leads.export', () => {
     it('Then the bulk Export action is not offered', async () => {
       flags.denied.add('leads.export');
-      // The grid (and its bulk bar) only renders once there are rows to select.
-      mockGetLeads.mockResolvedValue([{ id: 'l1', company_name: 'Acme Corp', status: 'New' }]);
+      withOneLead();
       render(<LeadsPage />);
       await screen.findByTestId('lead-row');
       expect(bulkLabels()).toContain('Status');
@@ -233,7 +235,7 @@ describe('Given the Leads page export / import RBAC (a25bf315)', () => {
 
   describe('When the user selects rows with leads.export', () => {
     it('Then the bulk Export action is offered', async () => {
-      mockGetLeads.mockResolvedValue([{ id: 'l1', company_name: 'Acme Corp', status: 'New' }]);
+      withOneLead();
       render(<LeadsPage />);
       await screen.findByTestId('lead-row');
       expect(bulkLabels()).toContain('Export');

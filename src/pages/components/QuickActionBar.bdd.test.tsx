@@ -27,21 +27,29 @@ const ACTION_NAMES = [
     'Add Document',
 ];
 
-/** The actions live in one header "Log activity" menu (Comb): open it, then pick the item. */
+// The actions live in a "Log activity" menu: open it, then pick the item.
+// The menu closes after each pick, so every pick reopens it first.
+const openMenu = () => {
+    const trigger = screen.getByRole('button', { name: /Log activity/ });
+    if (trigger.getAttribute('aria-expanded') !== 'true') fireEvent.click(trigger);
+};
 const pick = (name: string) => {
-    if (!screen.queryByRole('menu')) fireEvent.click(screen.getByRole('button', { name: /Log activity/i }));
-    return screen.getByRole('menuitem', { name });
+    openMenu();
+    fireEvent.click(screen.getByRole('menuitem', { name }));
 };
 
 describe('Given the quick action bar', () => {
-    it('When rendered / Then every action is an ordinary menu item, not a link that navigates', () => {
+    it('When rendered / Then every action is an ordinary button, not a link that navigates', () => {
         render(<QuickActionBar {...handlers()} />);
-        const trigger = screen.getByRole('button', { name: /Log activity/i });
+        const trigger = screen.getByRole('button', { name: /Log activity/ });
         expect(trigger.getAttribute('type')).toBe('button');
+        openMenu();
         for (const name of ACTION_NAMES) {
-            expect(pick(name)).toBeInTheDocument();
+            const button = screen.getByRole('menuitem', { name });
+            expect(button).toBeInTheDocument();
+            // A link would change the route; these actions never do.
+            expect(button.tagName).toBe('BUTTON');
         }
-        // A link would change the route; these actions never do.
         expect(screen.queryAllByRole('link')).toHaveLength(0);
     });
 
@@ -55,7 +63,7 @@ describe('Given the quick action bar', () => {
     ] as const)('When %s is clicked / Then only its own handler runs', (name, key) => {
         const props = handlers();
         render(<QuickActionBar {...props} />);
-        fireEvent.click(pick(name));
+        pick(name);
 
         expect(props[key]).toHaveBeenCalledTimes(1);
         for (const [otherKey, fn] of Object.entries(props)) {
@@ -71,8 +79,8 @@ describe('Given an impatient double click on a quick action', () => {
     it('When clicked twice in quick succession / Then the action runs once', () => {
         const props = handlers();
         render(<QuickActionBar {...props} />);
-        fireEvent.click(pick('Schedule Meeting'));
-        fireEvent.click(pick('Schedule Meeting'));
+        pick('Schedule Meeting');
+        pick('Schedule Meeting');
 
         expect(props.onScheduleMeeting).toHaveBeenCalledTimes(1);
     });
@@ -80,9 +88,9 @@ describe('Given an impatient double click on a quick action', () => {
     it('When clicked again after the guard window / Then it opens again', () => {
         const props = handlers();
         render(<QuickActionBar {...props} />);
-        fireEvent.click(pick('Schedule Meeting'));
+        pick('Schedule Meeting');
         vi.setSystemTime(Date.now() + DOUBLE_CLICK_GUARD_MS + 1);
-        fireEvent.click(pick('Schedule Meeting'));
+        pick('Schedule Meeting');
 
         // Closing a modal and asking for it again must always work — the old
         // wiring silently ignored every click after the first.
@@ -93,8 +101,8 @@ describe('Given an impatient double click on a quick action', () => {
         const props = handlers();
         render(<QuickActionBar {...props} />);
 
-        fireEvent.click(pick('Create Task'));
-        fireEvent.click(pick('Schedule Meeting'));
+        pick('Create Task');
+        pick('Schedule Meeting');
 
         expect(props.onCreateTask).toHaveBeenCalledTimes(1);
         expect(props.onScheduleMeeting).toHaveBeenCalledTimes(1);

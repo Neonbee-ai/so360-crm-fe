@@ -15,7 +15,7 @@ const h = vi.hoisted(() => ({
 
 vi.mock('react-router-dom', () => ({ useNavigate: () => h.navigate }));
 
-vi.mock('@so360/shell-context', () => ({
+vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOriginal<any>()),
     useShellBridge: () => ({
         permissionsLoaded: h.loaded,
         hasPermission: (p: string) => h.perms.has(p),
@@ -82,7 +82,7 @@ describe('Feature ImportHub uses Comb Buttons', () => {
         expect(opts[4]).toHaveTextContent('Opens People Connect import');
     });
 
-    it('Given no permissions When opened Then no option buttons exist (leads & clients need leads.import)', () => {
+    it('Given no permissions When opened Then no option buttons exist (leads and clients need leads.import)', () => {
         h.perms = new Set();
         renderHub();
         expect(within(screen.getByTestId('import-hub')).queryAllByRole('button')).toHaveLength(0);
