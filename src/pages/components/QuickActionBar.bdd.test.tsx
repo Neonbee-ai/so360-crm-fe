@@ -27,16 +27,21 @@ const ACTION_NAMES = [
     'Add Document',
 ];
 
+/** The actions live in one header "Log activity" menu (Comb): open it, then pick the item. */
+const pick = (name: string) => {
+    if (!screen.queryByRole('menu')) fireEvent.click(screen.getByRole('button', { name: /Log activity/i }));
+    return screen.getByRole('menuitem', { name });
+};
+
 describe('Given the quick action bar', () => {
-    it('When rendered / Then every action is an ordinary button, not a link that navigates', () => {
+    it('When rendered / Then every action is an ordinary menu item, not a link that navigates', () => {
         render(<QuickActionBar {...handlers()} />);
+        const trigger = screen.getByRole('button', { name: /Log activity/i });
+        expect(trigger.getAttribute('type')).toBe('button');
         for (const name of ACTION_NAMES) {
-            const button = screen.getByRole('button', { name });
-            expect(button).toBeInTheDocument();
-            // A link would change the route; these actions never do.
-            expect(button.tagName).toBe('BUTTON');
-            expect(button.getAttribute('type')).toBe('button');
+            expect(pick(name)).toBeInTheDocument();
         }
+        // A link would change the route; these actions never do.
         expect(screen.queryAllByRole('link')).toHaveLength(0);
     });
 
@@ -50,7 +55,7 @@ describe('Given the quick action bar', () => {
     ] as const)('When %s is clicked / Then only its own handler runs', (name, key) => {
         const props = handlers();
         render(<QuickActionBar {...props} />);
-        fireEvent.click(screen.getByRole('button', { name }));
+        fireEvent.click(pick(name));
 
         expect(props[key]).toHaveBeenCalledTimes(1);
         for (const [otherKey, fn] of Object.entries(props)) {
@@ -66,10 +71,8 @@ describe('Given an impatient double click on a quick action', () => {
     it('When clicked twice in quick succession / Then the action runs once', () => {
         const props = handlers();
         render(<QuickActionBar {...props} />);
-        const button = screen.getByRole('button', { name: 'Schedule Meeting' });
-
-        fireEvent.click(button);
-        fireEvent.click(button);
+        fireEvent.click(pick('Schedule Meeting'));
+        fireEvent.click(pick('Schedule Meeting'));
 
         expect(props.onScheduleMeeting).toHaveBeenCalledTimes(1);
     });
@@ -77,11 +80,9 @@ describe('Given an impatient double click on a quick action', () => {
     it('When clicked again after the guard window / Then it opens again', () => {
         const props = handlers();
         render(<QuickActionBar {...props} />);
-        const button = screen.getByRole('button', { name: 'Schedule Meeting' });
-
-        fireEvent.click(button);
+        fireEvent.click(pick('Schedule Meeting'));
         vi.setSystemTime(Date.now() + DOUBLE_CLICK_GUARD_MS + 1);
-        fireEvent.click(button);
+        fireEvent.click(pick('Schedule Meeting'));
 
         // Closing a modal and asking for it again must always work — the old
         // wiring silently ignored every click after the first.
@@ -92,8 +93,8 @@ describe('Given an impatient double click on a quick action', () => {
         const props = handlers();
         render(<QuickActionBar {...props} />);
 
-        fireEvent.click(screen.getByRole('button', { name: 'Create Task' }));
-        fireEvent.click(screen.getByRole('button', { name: 'Schedule Meeting' }));
+        fireEvent.click(pick('Create Task'));
+        fireEvent.click(pick('Schedule Meeting'));
 
         expect(props.onCreateTask).toHaveBeenCalledTimes(1);
         expect(props.onScheduleMeeting).toHaveBeenCalledTimes(1);

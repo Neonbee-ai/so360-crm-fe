@@ -142,6 +142,17 @@ vi.mock('@so360/design-system', async (importOriginal) => {
   return {
     ...actual,
     toast: { ...actual.toast, success: mockShowSuccess, error: mockShowError },
+    // Mirror the real DS FileUpload contract: a role="button" drop zone that opens the hidden file input.
+    FileUpload: ({ 'aria-label': ariaLabel, prompt, disabled, accept, onChange }: any) => {
+      const inputRef = React.useRef<HTMLInputElement>(null);
+      return (
+        <div>
+          <div role="button" aria-label={ariaLabel} onClick={() => !disabled && inputRef.current?.click()}>{prompt}</div>
+          <input ref={inputRef} type="file" hidden accept={accept} disabled={disabled}
+            onChange={(e) => onChange?.(Array.from(e.target.files ?? []))} />
+        </div>
+      );
+    },
   };
 });
 
@@ -1428,7 +1439,7 @@ describe('LeadDetailPage', () => {
         fireEvent.click(screen.getByRole('button', { name: /Add Document/i }));
         await vi.advanceTimersByTimeAsync(500);
 
-        expect(await screen.findByText(/Upload Document/i)).toBeInTheDocument();
+        expect(await screen.findByLabelText(/Upload document/i)).toBeInTheDocument();
         expect(clickSpy).toHaveBeenCalled();
       } finally {
         clickSpy.mockRestore();

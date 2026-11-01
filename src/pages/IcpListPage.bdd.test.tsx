@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import React from 'react';
 
 const svc = vi.hoisted(() => ({
@@ -32,7 +32,14 @@ beforeEach(() => {
   svc.setDefault.mockResolvedValue({});
 });
 
-const openMenus = () => { if (screen.queryAllByRole('menu').length === 0) screen.queryAllByRole('button', { name: 'Row actions' }).forEach((b) => fireEvent.click(b)); };
+// The DataTable row menu is single-open: opening one row's menu closes the other.
+const openRow = (id: string) => fireEvent.click(screen.getByTestId(`icp-table-actions-${id}`));
+const rowItems = (id: string) => {
+  openRow(id);
+  const labels = within(screen.getByRole('menu')).getAllByRole('menuitem').map((m) => m.textContent);
+  openRow(id);
+  return labels;
+};
 
 describe('Given the ideal customer profiles list', () => {
   describe('When profiles exist', () => {
@@ -208,12 +215,8 @@ describe('Given row rendering edge cases', () => {
     it('Then it has no Set as default action while others do', async () => {
       render(<IcpListPage />);
       await screen.findByTestId('icp-row-i1');
-      openMenus();
-      expect(screen.getAllByText('Set as default')).toHaveLength(1);
-      expect(screen.getAllByText('Edit')).toHaveLength(2);
-      fireEvent.click(screen.getByTestId('icp-table-actions-i1'));
-      fireEvent.click(screen.getByTestId('icp-table-actions-i2'));
-      expect(screen.getAllByText('Archive')).toHaveLength(2);
+      expect(rowItems('i1')).toEqual(['Edit', 'Archive']);
+      expect(rowItems('i2')).toEqual(['Edit', 'Set as default', 'Archive']);
     });
   });
 });
@@ -241,6 +244,7 @@ describe('Given set-default and archive outcomes', () => {
     it('Then a success toast names the profile', async () => {
       render(<IcpListPage />);
       await screen.findByTestId('icp-row-i2');
+      openRow('i2');
       fireEvent.click(screen.getByText('Set as default'));
       await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Founders is now the default profile'));
     });
@@ -250,6 +254,7 @@ describe('Given set-default and archive outcomes', () => {
       svc.setDefault.mockRejectedValueOnce(new Error('denied'));
       render(<IcpListPage />);
       await screen.findByTestId('icp-row-i2');
+      openRow('i2');
       fireEvent.click(screen.getByText('Set as default'));
       await waitFor(() => expect(toast.error).toHaveBeenCalledWith('denied'));
       expect(svc.list).toHaveBeenCalledTimes(1);
@@ -260,6 +265,7 @@ describe('Given set-default and archive outcomes', () => {
       svc.setDefault.mockRejectedValueOnce({});
       render(<IcpListPage />);
       await screen.findByTestId('icp-row-i2');
+      openRow('i2');
       fireEvent.click(screen.getByText('Set as default'));
       await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Could not set default'));
     });
@@ -268,8 +274,8 @@ describe('Given set-default and archive outcomes', () => {
     it('Then a success toast shows', async () => {
       render(<IcpListPage />);
       await screen.findByTestId('icp-row-i1');
-      openMenus();
-      fireEvent.click(screen.getAllByText('Archive')[1]);
+      openRow('i2');
+      fireEvent.click(screen.getByText('Archive'));
       fireEvent.click(screen.getByTestId('confirm-yes'));
       await waitFor(() => expect(svc.archive).toHaveBeenCalledWith('i2'));
       expect(toast.success).toHaveBeenCalledWith('Profile archived');
@@ -296,8 +302,8 @@ describe('Given permission and bridge variations', () => {
       render(<IcpListPage />);
       await screen.findByTestId('icp-row-i2');
       expect(screen.getByText('New ICP')).toBeTruthy();
-      openMenus();
-      expect(screen.getAllByText('Edit')).toHaveLength(2);
+      expect(rowItems('i1')).toEqual(['Edit', 'Archive']);
+      expect(rowItems('i2')).toEqual(['Edit', 'Set as default', 'Archive']);
     });
   });
   describe('When the bridge has no hasPermission function', () => {
@@ -306,9 +312,8 @@ describe('Given permission and bridge variations', () => {
       render(<IcpListPage />);
       await screen.findByTestId('icp-row-i2');
       expect(screen.getByText('New ICP')).toBeTruthy();
-      fireEvent.click(screen.getByTestId('icp-table-actions-i1'));
-      openMenus();
-      expect(screen.getAllByText('Archive')).toHaveLength(2);
+      expect(rowItems('i1')).toEqual(['Edit', 'Archive']);
+      expect(rowItems('i2')).toEqual(['Edit', 'Set as default', 'Archive']);
     });
   });
   describe('When the user can only read', () => {
@@ -336,10 +341,8 @@ describe('Given permission and bridge variations', () => {
       allow('linkedin_sync.update');
       render(<IcpListPage />);
       await screen.findByTestId('icp-row-i2');
-      openMenus();
-      expect(screen.getAllByText('Edit')).toHaveLength(2);
-      expect(screen.getByText('Set as default')).toBeTruthy();
-      expect(screen.queryByText('Archive')).toBeNull();
+      expect(rowItems('i1')).toEqual(['Edit']);
+      expect(rowItems('i2')).toEqual(['Edit', 'Set as default']);
     });
   });
   describe('When the user can only delete', () => {
@@ -347,11 +350,8 @@ describe('Given permission and bridge variations', () => {
       allow('linkedin_sync.delete');
       render(<IcpListPage />);
       await screen.findByTestId('icp-row-i2');
-      fireEvent.click(screen.getByTestId('icp-table-actions-i1'));
-      openMenus();
-      expect(screen.getAllByText('Archive')).toHaveLength(2);
-      expect(screen.queryByText('Edit')).toBeNull();
-      expect(screen.queryByText('Set as default')).toBeNull();
+      expect(rowItems('i1')).toEqual(['Archive']);
+      expect(rowItems('i2')).toEqual(['Archive']);
     });
   });
   describe('When the list is empty and the user can create', () => {

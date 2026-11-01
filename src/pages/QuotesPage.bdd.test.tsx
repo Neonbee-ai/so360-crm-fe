@@ -487,9 +487,10 @@ describe('QuoteStatusCell', () => {
 
     it.each(['rejected', 'converted', 'expired'])('When %s badge clicked / Then no dropdown appears', async (status) => {
       const user = userEvent.setup();
-      render(<QuoteStatusCell quote={makeQuote(status)} isActionLoading={false} onAction={vi.fn()} />);
-      const badge = screen.getByRole('button');
-      await user.click(badge);
+      const { container } = render(<QuoteStatusCell quote={makeQuote(status)} isActionLoading={false} onAction={vi.fn()} />);
+      // Terminal states render a plain, non-interactive badge (no menu trigger).
+      expect(screen.queryByRole('button')).not.toBeInTheDocument();
+      await user.click(container.firstElementChild as HTMLElement);
       // no transition option should appear
       expect(screen.queryByText('Submit for Approval')).not.toBeInTheDocument();
       expect(screen.queryByText('Approve')).not.toBeInTheDocument();

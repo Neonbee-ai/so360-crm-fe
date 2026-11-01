@@ -11,6 +11,7 @@ const mockCrmService = vi.hoisted(() => ({
   getActivitiesByLeadId: vi.fn(),
   getActivitiesByLeadIdPaginated: vi.fn(),
   getDealsByLeadId: vi.fn(),
+  getDocumentsByLeadId: vi.fn(() => Promise.resolve([])),
   getLeadById: vi.fn(),
   getPartners: vi.fn(),
   getSettings: vi.fn(),
@@ -36,6 +37,11 @@ const mockCrmService = vi.hoisted(() => ({
 
 vi.mock('../services/crmService', () => ({
   crmService: mockCrmService,
+  settingsApi: {
+    sourceTypes: { getAll: vi.fn(() => Promise.resolve([])) },
+    scoringRules: { recalculate: vi.fn(() => Promise.resolve(undefined)) },
+  },
+  activitiesApi: { getByLeadId: vi.fn(), create: vi.fn(), update: vi.fn(), delete: vi.fn() },
 }));
 
 vi.mock('react-router-dom', () => ({
@@ -71,6 +77,7 @@ vi.mock('@so360/shell-context', () => ({
   useSandboxLimit: () => ({ isSandboxMode: false, sandboxEntryLimit: 1000, limitItems: (items: any[]) => items, isLimited: false }),
   ShellContext: React.createContext({}),
   useIdentity: () => ({ user: { id: 'mock-user-id', email: 'test@test.com', full_name: 'Test User' } }),
+  useDatasetSchema: () => ({ fields: [], isLoading: false, error: null }),
 }));
 
 vi.mock('../hooks/useShellBridge', () => ({

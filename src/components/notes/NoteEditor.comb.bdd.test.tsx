@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, within, waitFor } from '@testing-library/react';
+import { render, screen, within, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import NoteEditor from './NoteEditor';
 
@@ -175,42 +175,51 @@ describe('Feature NoteEditor toolbar uses Comb IconButtons', () => {
   });
 
   describe('Scenario Link prompt', () => {
-    it('Given Link clicked When prompt is cancelled Then no link is added and onChange is not called', async () => {
-      vi.spyOn(window, 'prompt').mockReturnValue(null);
+    // The Link URL is asked for in a DS PromptDialog (Modal + TextField), not window.prompt.
+    const linkDialog = () => screen.getByRole('dialog', { name: 'Link URL' });
+    const linkInput = () => within(linkDialog()).getByLabelText('Link URL');
+    const submitLink = (url: string) => {
+      fireEvent.change(linkInput(), { target: { value: url } });
+      fireEvent.submit(linkDialog().querySelector('form')!);
+    };
+
+    it('Given Link clicked When the dialog is cancelled Then no link is added and onChange is not called', async () => {
       const onChange = vi.fn();
       const user = userEvent.setup();
       render(<NoteEditor value="<p>Text</p>" onChange={onChange} />);
       await user.click(screen.getByRole('button', { name: 'Link' }));
+      await user.click(within(linkDialog()).getByRole('button', { name: 'Close' }));
+      expect(screen.queryByRole('dialog', { name: 'Link URL' })).toBeNull();
       expect(onChange).not.toHaveBeenCalled();
     });
 
     it('Given selected text When a URL is entered Then the link is applied', async () => {
-      vi.spyOn(window, 'prompt').mockReturnValue('https://neonbee.app');
       const onChange = vi.fn();
       const user = userEvent.setup();
       render(<NoteEditor value="<p>Text</p>" onChange={onChange} />);
       await user.tripleClick(screen.getByText('Text'));
       await user.click(screen.getByRole('button', { name: 'Link' }));
+      submitLink('https://neonbee.app');
       await waitFor(() => expect(onChange.mock.calls.at(-1)?.[0]).toContain('href="https://neonbee.app"'));
+      expect(screen.queryByRole('dialog', { name: 'Link URL' })).toBeNull();
     });
 
-    it('Given a link under caret When prompt returns empty Then the link is removed', async () => {
-      vi.spyOn(window, 'prompt').mockReturnValue('');
+    it('Given a link under caret When the URL is cleared Then the link is removed', async () => {
       const onChange = vi.fn();
       const user = userEvent.setup();
       render(<NoteEditor value='<p><a href="https://a.co">go</a></p>' onChange={onChange} />);
       await user.click(screen.getByText('go'));
       await user.click(screen.getByRole('button', { name: 'Link' }));
+      submitLink('');
       await waitFor(() => expect(onChange.mock.calls.at(-1)?.[0]).not.toContain('href'));
     });
 
-    it('Given a link under caret When Link is clicked Then prompt defaults to the existing href', async () => {
-      const spy = vi.spyOn(window, 'prompt').mockReturnValue(null);
+    it('Given a link under caret When Link is clicked Then the dialog defaults to the existing href', async () => {
       const user = userEvent.setup();
       render(<NoteEditor value='<p><a href="https://a.co">go</a></p>' onChange={vi.fn()} />);
       await user.click(screen.getByText('go'));
       await user.click(screen.getByRole('button', { name: 'Link' }));
-      expect(spy).toHaveBeenCalledWith('Link URL', 'https://a.co');
+      expect(linkInput()).toHaveValue('https://a.co');
     });
   });
 

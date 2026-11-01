@@ -624,9 +624,13 @@ describe('QuoteDetailPage', () => {
 // Print button only opens a print dialog and cannot produce one.
 describe('Given a saved quote', () => {
   beforeEach(() => {
-    // customer_id is what triggers resolving the customer record — the nested
-    // `customer` object alone is not enough.
-    mockGetQuoteById.mockResolvedValue({ ...quoteData, customer_id: 'c1' });
+    // crm-be embeds the resolved customer on the quote (b7ab30b); the page uses
+    // that embed and only falls back to getLeadById when it is absent.
+    mockGetQuoteById.mockResolvedValue({
+      ...quoteData,
+      customer_id: 'c1',
+      customer: { id: 'c1', company_name: 'Acme', contact_email: 'buyer@acme.example' },
+    });
     mockGetLeadById.mockResolvedValue({ id: 'c1', company_name: 'Acme', contact_email: 'buyer@acme.example' });
     mockSendQuote.mockReset();
   });
@@ -674,6 +678,7 @@ describe('Given a saved quote', () => {
   });
 
   it('When the recipient is blank / Then sending is disabled rather than failing server-side', async () => {
+    mockGetQuoteById.mockResolvedValue({ ...quoteData, customer_id: 'c1', customer: { id: 'c1', company_name: 'Acme' } });
     mockGetLeadById.mockResolvedValue({ id: 'c1', company_name: 'Acme' });
     await openDialog();
     const button = screen.getByText('Send quotation').closest('button')!;

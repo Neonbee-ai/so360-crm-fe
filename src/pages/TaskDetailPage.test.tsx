@@ -74,7 +74,7 @@ describe('Given TaskDetailPage', () => {
     mockGetTaskById.mockResolvedValue(undefined);
     render(<TaskDetailPage />);
     await waitFor(() => {
-      expect(screen.getByText(/not found/i)).toBeInTheDocument();
+      expect(screen.getByText('Task not found.')).toBeInTheDocument();
     });
   });
 

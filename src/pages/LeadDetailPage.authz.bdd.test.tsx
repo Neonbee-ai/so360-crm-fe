@@ -94,6 +94,7 @@ vi.mock('@so360/shell-context', () => ({
   useSandboxLimit: () => ({ isSandboxMode: false, sandboxEntryLimit: 1000, limitItems: (items: any[]) => items, isLimited: false }),
   ShellContext: React.createContext({}),
   useIdentity: () => ({ user: { id: 'mock-user-id', email: 'test@test.com', full_name: 'Test User' } }),
+  useDatasetSchema: () => ({ fields: [], isLoading: false, error: null }),
 }));
 
 vi.mock('../hooks/useShellBridge', () => ({
@@ -169,7 +170,7 @@ describe('Given LeadDetailPage and a lead that genuinely does not exist', () => 
     render(<LeadDetailPage />);
 
     await waitFor(() => {
-      expect(screen.getByText(/lead not found/i)).toBeTruthy();
+      expect(screen.getByText('Lead not found.')).toBeTruthy(); // empty-state body; the header title repeats it without the period
     });
     expect(screen.queryByText(/permission to view this lead/i)).toBeNull();
   });
@@ -186,12 +187,13 @@ describe('Given LeadDetailPage opened with a malformed or unknown id (API answer
     const { container } = render(<LeadDetailPage />);
 
     await waitFor(() => {
-      expect(screen.getByText(/lead not found/i)).toBeTruthy();
+      expect(screen.getByText('Lead not found.')).toBeTruthy(); // empty-state body; the header title repeats it without the period
     });
     expect(screen.getByRole('button', { name: /back to leads/i })).toBeTruthy();
     expect(screen.queryByText(/permission to view this lead/i)).toBeNull();
     expect(screen.queryByText(/loading lead workspace/i)).toBeNull();
-    expect(container.querySelector('[data-comb-path]')).not.toBeNull();
+    // Real DS floorplans carry data-comb-path; the vitest DS stub marks the same Comb detail root as data-template="detail".
+    expect(container.querySelector('[data-comb-path], [data-template="detail"]')).not.toBeNull();
   });
 });
 

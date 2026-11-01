@@ -7,6 +7,11 @@ const mockCrmService = vi.hoisted(() => ({
   getPipeline: vi.fn(),
   updateDealStage: vi.fn(),
   getUsers: vi.fn().mockResolvedValue([]),
+  // CreateDealModal loads its dependencies on open.
+  getSettings: vi.fn().mockResolvedValue({ deal_stages: [], deal_custom_fields: [] }),
+  getSalesReps: vi.fn().mockResolvedValue([]),
+  getCustomers: vi.fn().mockResolvedValue([]),
+  getLeadById: vi.fn().mockResolvedValue(null),
 }));
 
 vi.mock('../services/crmService', () => ({

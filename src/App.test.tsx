@@ -16,10 +16,8 @@ const shellState: {
   permissionsLoaded: true,
 };
 
-vi.mock('@so360/shell-context', () => ({
-  useDatasetSchema: () => ({ fields: [], isLoading: false, error: null }),
-  useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
-  useShellBridge: () => ({
+vi.mock('@so360/shell-context', () => {
+  const bridge = () => ({
     currentTenant: { id: 'tenant-1' },
     currentOrg: { id: 'org-1' },
     accessToken: 'tok',
@@ -31,10 +29,24 @@ vi.mock('@so360/shell-context', () => ({
     permissionsLoaded: shellState.permissionsLoaded,
     hasPermission: (code: string) => shellState.hasPermission(code),
     hasAnyPermission: (...codes: string[]) => codes.some(c => shellState.hasPermission(c)),
-  }),
-  useActivity: () => ({ recordActivity: async () => {} }),
-
-  useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
+  });
+  return {
+    useDatasetSchema: () => ({ fields: [], isLoading: false, error: null }),
+    useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
+    useShellBridge: bridge,
+    // Pages call useShell() directly (Dashboard, Tasks, Deal/Lead detail) — same bridge surface.
+    useShell: bridge,
+    useNotify: () => ({ emitNotification: () => {} }),
+    useIdentity: () => ({ user: { id: 'u1', email: 'a@b.com', full_name: 'A' } }),
+    useOrganization: () => ({ currentOrg: { id: 'org-1' } }),
+    useCurrentEntity: () => ({ setCurrentEntity: () => {} }),
+    useSandboxLimit: () => ({ isSandboxMode: false, sandboxEntryLimit: 0, isLimited: false }),
+    useActivity: () => ({ recordActivity: async () => {} }),
+    useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),
+    QUOTA_EXCEEDED_EVENT: 'so360:quota-exceeded',
+    buildQuotaExceededDetail: (d: unknown) => d,
+  };
+});
 
 vi.mock('./services/crmService', () => ({
   crmService: {

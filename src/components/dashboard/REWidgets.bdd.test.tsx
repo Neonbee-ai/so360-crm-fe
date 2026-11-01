@@ -21,6 +21,14 @@ vi.mock('../../services/reWidgetsService', async (importActual) => {
     const actual = await importActual<typeof import('../../services/reWidgetsService')>();
     return { ...actual, reWidgetsService: { get: (...a: any[]) => mockGet(...a) } };
 });
+// The shared DS stub's GridItem drops `span`; expose it so the widget layout can be asserted.
+vi.mock('@so360/design-system', async (importActual) => {
+    const actual = await importActual<Record<string, unknown>>();
+    return {
+        ...actual,
+        GridItem: ({ span, children }: any) => <div data-testid="grid-item" data-span={String(span)}>{children}</div>,
+    };
+});
 
 import REWidgets from './REWidgets';
 import { normalizeREWidgets } from '../../services/reWidgetsService';
@@ -238,9 +246,8 @@ describe('Given the Top agents leaderboard card', () => {
         it('Then the card spans the full widget row', async () => {
             render(<REWidgets />);
             const card = await screen.findByTestId('re-widget-agents');
-            expect(card.className).toMatch(/md:col-span-2/);
-            expect(card.className).toMatch(/xl:col-span-4/);
-            expect(screen.getByTestId('re-widget-sources').className).not.toMatch(/col-span/);
+            expect(card.closest('[data-testid="grid-item"]')).toHaveAttribute('data-span', 'full');
+            expect(screen.getByTestId('re-widget-sources').closest('[data-testid="grid-item"]')).toHaveAttribute('data-span', '3');
         });
     });
 

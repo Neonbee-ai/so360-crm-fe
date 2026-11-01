@@ -51,12 +51,14 @@ describe('NoteEditor', () => {
       expect(screen.getByTestId('note-editor')).toBeInTheDocument();
     });
 
-    it('When Link is clicked / Then it prompts for a URL', async () => {
+    it('When Link is clicked / Then it prompts for a URL in a dialog (not window.prompt)', async () => {
       const promptSpy = vi.spyOn(window, 'prompt').mockReturnValue(null);
       const user = userEvent.setup();
       render(<NoteEditor value="<p>Text</p>" onChange={vi.fn()} />);
       await user.click(screen.getByLabelText('Link'));
-      expect(promptSpy).toHaveBeenCalledWith('Link URL', 'https://');
+      const dialog = screen.getByRole('dialog', { name: 'Link URL' });
+      expect(within(dialog).getByLabelText('Link URL')).toHaveValue('https://');
+      expect(promptSpy).not.toHaveBeenCalled();
       promptSpy.mockRestore();
     });
   });

@@ -812,7 +812,9 @@ describe('Lead Detail — readability and header layout', () => {
     it('When the tabs render / Then Overview is first and Activity is last', async () => {
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
-      const tabs = screen.getAllByRole('tab').map(t => t.textContent?.trim());
+      // Scope to the workspace tab bar: the Lead information card has its own DS Tabs (Full Profile / Business Profile).
+      const workspaceTabs = document.querySelector('[data-slot="tabs"]') as HTMLElement;
+      const tabs = Array.from(workspaceTabs.querySelectorAll('[role="tab"]')).map(t => t.textContent?.trim());
       expect(tabs[0]).toBe('Overview');
       expect(tabs[tabs.length - 1]).toBe('Activity');
     });

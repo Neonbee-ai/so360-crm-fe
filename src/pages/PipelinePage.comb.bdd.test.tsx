@@ -209,6 +209,8 @@ describe('Feature: Pipeline stage colour token fallback', () => {
       withStages([{ id: 'a', name: 'A', deals: [] }]);
       const user = userEvent.setup();
       render(<PipelinePage />);
+      // Initial load is debounced (300ms); a filter applied before it fires coalesces into one fetch.
+      await waitFor(() => expect(mockGetPipeline).toHaveBeenCalledTimes(1));
       await user.click(await screen.findByTestId('apply-owner-filter'));
       await waitFor(() => expect(mockGetPipeline).toHaveBeenCalledTimes(2));
       expect(kanbanProps.stages[0].color).toBe(MUTED);

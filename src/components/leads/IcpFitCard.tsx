@@ -35,7 +35,7 @@ export default function IcpFitCard({ meta }: { meta?: Record<string, any> | null
   const date = formatDate(meta?.last_synced_at) ?? formatDate(meta?.synced_at);
 
   return (
-    <div data-testid="icp-fit-card">
+    <section data-testid="icp-fit-card">
       <Card title="ICP fit" actions={<Badge tone={BAND_TONE[band]} data-testid="badge-icp-fit-band">{FIT_BAND_LABELS[band]}</Badge>}>
         <p className="text-3xl font-bold text-fg" data-testid="icp-fit-score"><CountUp value={`${score} / 100`} /></p>
         {meta?.icp_name && <p className="mt-1 text-xs text-fg-muted" data-testid="icp-fit-name">{String(meta.icp_name)}</p>}
@@ -51,6 +51,6 @@ export default function IcpFitCard({ meta }: { meta?: Record<string, any> | null
         )}
         {date && <p className="mt-4 text-xs text-fg-muted" data-testid="icp-fit-source">{`Source: LinkedIn · ${date}`}</p>}
       </Card>
-    </div>
+    </section>
   );
 }

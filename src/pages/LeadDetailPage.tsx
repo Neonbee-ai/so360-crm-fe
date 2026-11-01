@@ -15,7 +15,7 @@ import { crmService, activitiesApi, settingsApi } from '../services/crmService';
 import { PromptDialog } from '../components/PromptDialog';
 import { PartnerSearchDropdown } from '../components/common/PartnerSearchDropdown';
 import { useCRMFormatters } from '../utils/formatters';
-import { isTaskLocked } from '../utils/taskUtils';
+import { isTaskLocked, TASK_LOCKED_HINT } from '../utils/taskUtils';
 import { validateEmailRequired } from '../utils/emailValidation';
 import { validatePhone } from '../utils/phoneValidation';
 import { validateFirstNameRequired, validateLastName } from '../utils/leadFieldValidation';
@@ -1852,6 +1852,9 @@ const LeadDetailPage = () => {
                                                         <IconButton label="Edit Task" variant="ghost" icon={<Edit2 size={12} />}
                                                             onClick={() => !isTaskLocked(task.status) && setEditingTask(task)}
                                                             disabled={isTaskLocked(task.status)}
+                                                            // Disabled buttons get no DS tooltip; keep the native hint so users learn why Edit is locked.
+                                                            title={isTaskLocked(task.status) ? TASK_LOCKED_HINT : undefined}
+                                                            hideTooltip={isTaskLocked(task.status)}
                                                         />
                                                     </div>
                                                 </div>
