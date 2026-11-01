@@ -200,7 +200,8 @@ describe('LeadDetailPage — document upload handler', () => {
             });
 
             await waitFor(() => expect(screen.queryByText(/Uploading/i)).not.toBeInTheDocument());
-            expect(screen.getByText(/Upload Document/i)).toBeInTheDocument();
+            // DS FileUpload: idle = the labelled picker is enabled again (prompt text is a DS detail).
+            expect(screen.getByLabelText(/Upload document/i)).not.toBeDisabled();
         });
 
         it('When the upload succeeds / Then no error toast is shown', async () => {
@@ -254,7 +255,8 @@ describe('LeadDetailPage — document upload handler', () => {
             });
 
             await waitFor(() => expect(screen.queryByText(/Uploading/i)).not.toBeInTheDocument());
-            expect(screen.getByText(/Upload Document/i)).toBeInTheDocument();
+            // DS FileUpload: idle = the labelled picker is enabled again (prompt text is a DS detail).
+            expect(screen.getByLabelText(/Upload document/i)).not.toBeDisabled();
         });
 
         it('When uploadDocument throws / Then the document list remains empty', async () => {

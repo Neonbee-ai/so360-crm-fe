@@ -18,6 +18,7 @@ interface ImportMetaEnv {
     readonly VITE_SO360_SIGN_API?: string;
     readonly VITE_SO360_PROJECTS_API?: string;
     readonly VITE_SO360_MARKETING_API?: string;
+    readonly VITE_SO360_PEOPLE_API?: string;
     // Add more env variables as needed
 }
 
