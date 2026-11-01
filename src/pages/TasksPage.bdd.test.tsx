@@ -320,6 +320,19 @@ describe('TasksPage', () => {
       expect(container.textContent).toContain('Overdue');
     });
 
+    it('When due date cell renders (Pulse 96ba2819) / Then date and Overdue badge are stacked, never one wrapping row', async () => {
+      render(<TasksPage />);
+      await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
+      const dueDateCol = tableProps.columns[1];
+      expect(dueDateCol.widthClassName).toContain('whitespace-nowrap');
+      const { container } = render(dueDateCol.accessor(makeTasks()[2]));
+      const root = container.firstElementChild as HTMLElement;
+      expect(root.className).toContain('flex-col');
+      expect(root.className).toContain('whitespace-nowrap');
+      expect(root.children.length).toBe(2);
+      expect(root.children[1].textContent).toContain('Overdue');
+    });
+
     it('When Associated With column renders task with deal / Then shows deal name', async () => {
       render(<TasksPage />);
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());

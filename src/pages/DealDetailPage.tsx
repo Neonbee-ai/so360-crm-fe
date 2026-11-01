@@ -201,7 +201,12 @@ const DealDetailPage = () => {
                 setTasks(tasksData);
 
                 // Fetch lead context if exists
-                if (dealData.lead_id) {
+                // GET /deals/:id embeds `lead` (null when the linked lead was
+                // deleted), so no separate GET /leads/:id that would 404.
+                // Older backends omit the key: fall back to fetching it.
+                if ((dealData as any).lead !== undefined) {
+                    setAssociatedLead((dealData as any).lead ?? undefined);
+                } else if (dealData.lead_id) {
                     const leadData = await crmService.getLeadById(dealData.lead_id);
                     setAssociatedLead(leadData);
                 }

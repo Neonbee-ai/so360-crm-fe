@@ -32,6 +32,17 @@ const statusConfig: Record<QuoteStatus, { bg: string; text: string; label: strin
     expired: { bg: 'bg-fg-muted/20', text: 'text-fg-subtle', label: 'Expired', tone: 'neutral' },
 };
 
+/**
+ * Read mode drops line-item columns no line uses (Stock without catalogue items, 0% discount, 0% tax), like Zoho/QuickBooks,
+ * so the table fits the card and Amount is never clipped. Totals still show discount and tax. Edit mode keeps every column.
+ */
+function quoteLineColumnHasData(key: string, lines: Array<{ item_id?: string | null; discount_percent?: number | null; tax_rate?: number | null }>): boolean {
+    if (key === 'stock') return lines.some((l) => !!l.item_id);
+    if (key === 'discount_percent') return lines.some((l) => Number(l.discount_percent) > 0);
+    if (key === 'tax_rate') return lines.some((l) => Number(l.tax_rate) > 0);
+    return true;
+}
+
 const QuoteDetailPage = () => {
     const [confirm, confirmDialog] = useConfirm();
     const { id } = useParams<{ id: string }>();
@@ -729,7 +740,7 @@ const QuoteDetailPage = () => {
                             rows={lines.map((line, index) => ({ line, index }))}
                             rowKey={(r) => r.line.id || `new-${r.index}`}
                             emptyState={<span className="text-fg-subtle">No line items added yet</span>}
-                            columns={[
+                            columns={([
                                 {
                                     key: 'description',
                                     header: 'Description',
@@ -774,8 +785,8 @@ const QuoteDetailPage = () => {
                                             {line.item_image_url && (
                                                 <img src={line.item_image_url} alt="" className="w-8 h-8 rounded object-cover flex-shrink-0 mt-0.5" />
                                             )}
-                                            <div className="min-w-0">
-                                                <span className="text-fg block">{line.description}</span>
+                                            <div className="min-w-0 max-w-[28rem]" data-testid="quote-line-description">
+                                                <span className="text-fg block whitespace-normal [overflow-wrap:anywhere]">{line.description}</span>
                                                 {line.sku && (
                                                     <span className="flex items-center gap-1 mt-0.5">
                                                         <Badge size="sm" tone="neutral">{line.sku}</Badge>
@@ -895,7 +906,7 @@ const QuoteDetailPage = () => {
                                         <IconButton label={`Remove line ${index + 1}`} variant="danger" icon={<Trash2 className="w-4 h-4" />} onClick={() => removeLine(index)} />
                                     ),
                                 }] : []),
-                            ] as DataTableColumn<QuoteLineRow>[]}
+                            ] as DataTableColumn<QuoteLineRow>[]).filter((c) => isEditing || quoteLineColumnHasData(c.key, lines))}
                         />
 
                         {/* Totals */}

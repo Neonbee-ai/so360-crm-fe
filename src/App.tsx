@@ -180,7 +180,7 @@ const IcpListPage = lazy(() => import('./pages/IcpListPage'));
 const IcpFormPage = lazy(() => import('./pages/IcpFormPage'));
 const SettingsRoute = () => {
     const navigate = useNavigate();
-    return <SettingsPage onOpenIcps={() => navigate('/crm/settings/icps')} onOpenDataSettings={() => navigate('/settings/data')} onOpenEstimator={() => navigate('/crm/settings/estimator')} />;
+    return <SettingsPage onOpenIcps={() => navigate('/crm/settings/icps')} onOpenDataSettings={() => navigate('/settings/data')} onOpenEstimator={() => navigate('/crm/settings/estimator')} onOpenFlow={() => navigate('/flow')} />;
 };
 const PartnersPage = lazy(() => import('./pages/PartnersPage'));
 const PartnerDetailPage = lazy(() => import('./pages/PartnerDetailPage'));

@@ -816,6 +816,27 @@ describe('DealDetailPage', () => {
     });
   });
 
+  describe('Given the deal response embeds its lead', () => {
+    it('When the linked lead was deleted (lead: null) / Then does not call GET /leads/:id', async () => {
+      mockGetDealById.mockResolvedValue(makeDeal({ lead_id: 'lead-gone', lead: null }));
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+      expect(mockGetLeadById).not.toHaveBeenCalled();
+    });
+
+    it('When the embedded lead is present / Then uses it without a second request', async () => {
+      mockGetDealById.mockResolvedValue(makeDeal({ lead: associatedLead }));
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+      expect(mockGetLeadById).not.toHaveBeenCalled();
+    });
+
+    it('When an older backend omits lead / Then falls back to fetching it by lead_id', async () => {
+      render(<DealDetailPage />);
+      await waitFor(() => expect(mockGetLeadById).toHaveBeenCalledWith('lead-1'));
+    });
+  });
+
   describe('Given deal with owner avatar', () => {
     it('When owner has avatar_url / Then renders avatar image', async () => {
       mockGetDealById.mockResolvedValue(makeDeal({ owner: owner2, owner_id: 'u2' }));
