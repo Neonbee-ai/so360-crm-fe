@@ -13,6 +13,8 @@ const mockSendQuote = vi.fn();
 const mockGetLeadById = vi.fn();
 
 vi.mock('../services/crmService', () => ({
+  // ProposalEstimatorPanel (estimatorService) reads crmApiClient from this module.
+  crmApiClient: { get: vi.fn().mockResolvedValue({}), post: vi.fn().mockResolvedValue({}), put: vi.fn().mockResolvedValue({}) },
   crmService: {
     getQuoteById: (...a: any[]) => mockGetQuoteById(...a),
     updateQuote: (...a: any[]) => mockUpdateQuote(...a),
@@ -270,7 +272,7 @@ describe('QuoteDetailPage', () => {
       render(<QuoteDetailPage />);
       await waitFor(() => screen.getByText(longText));
       const wrap = screen.getAllByTestId('quote-line-description')[0];
-      expect(wrap).toHaveClass('min-w-0', 'max-w-[28rem]');
+      expect(wrap).toHaveClass('min-w-0', 'max-w-md');
       expect(screen.getByText(longText)).toHaveClass('whitespace-normal', '[overflow-wrap:anywhere]');
     });
   });
