@@ -132,6 +132,14 @@ const QuoteDetailPage = () => {
         }).catch(() => {});
     }, [lines]);
 
+    // The customer record resolves after the quote, so the dialog can open
+    // before it arrives. Fill the blank recipient once it lands (fires only on
+    // customer change, so a recipient the user cleared stays cleared).
+    useEffect(() => {
+        const email = customer?.contact_email;
+        if (email) setSendTo(prev => prev || email);
+    }, [customer]);
+
     const openSendModal = () => {
         // Prefill with the address on file; the user can redirect it to a
         // procurement mailbox, which is common for B2B quotes.

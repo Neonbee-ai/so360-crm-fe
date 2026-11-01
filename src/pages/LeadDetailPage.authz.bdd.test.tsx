@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import { vi, describe, test, expect, beforeEach } from 'vitest';
 import LeadDetailPage from './LeadDetailPage';
 
@@ -169,7 +169,7 @@ describe('Given LeadDetailPage and a lead that genuinely does not exist', () => 
     render(<LeadDetailPage />);
 
     await waitFor(() => {
-      expect(screen.getByText(/lead not found/i)).toBeTruthy();
+      expect(screen.getByText('Lead not found.')).toBeTruthy();
     });
     expect(screen.queryByText(/permission to view this lead/i)).toBeNull();
   });
@@ -186,9 +186,10 @@ describe('Given LeadDetailPage opened with a malformed or unknown id (API answer
     const { container } = render(<LeadDetailPage />);
 
     await waitFor(() => {
-      expect(screen.getByText(/lead not found/i)).toBeTruthy();
+      expect(screen.getByText('Lead not found.')).toBeTruthy();
     });
-    expect(screen.getByRole('button', { name: /back to leads/i })).toBeTruthy();
+    // The trail has its own back control; the way back asserted here is the not-found state's action.
+    expect(within(screen.getByTestId('empty-state')).getByRole('button', { name: /back to leads/i })).toBeTruthy();
     expect(screen.queryByText(/permission to view this lead/i)).toBeNull();
     expect(screen.queryByText(/loading lead workspace/i)).toBeNull();
     expect(container.querySelector('[data-comb-path]')).not.toBeNull();

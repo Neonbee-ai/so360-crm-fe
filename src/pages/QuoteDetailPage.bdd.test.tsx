@@ -626,7 +626,8 @@ describe('Given a saved quote', () => {
   beforeEach(() => {
     // customer_id is what triggers resolving the customer record — the nested
     // `customer` object alone is not enough.
-    mockGetQuoteById.mockResolvedValue({ ...quoteData, customer_id: 'c1' });
+    // No embedded `customer` (older crm-be) so the page resolves it via getLeadById.
+    mockGetQuoteById.mockResolvedValue({ ...quoteData, customer: undefined, customer_id: 'c1' });
     mockGetLeadById.mockResolvedValue({ id: 'c1', company_name: 'Acme', contact_email: 'buyer@acme.example' });
     mockSendQuote.mockReset();
   });
@@ -646,6 +647,16 @@ describe('Given a saved quote', () => {
   it('When the dialog opens / Then the recipient is prefilled from the linked customer', async () => {
     await openDialog();
     const input = document.querySelector('input[type="email"]') as HTMLInputElement;
+    await waitFor(() => expect(input.value).toBe('buyer@acme.example'));
+  });
+
+  it('When the dialog opens before the customer record arrives / Then the recipient fills in once it lands', async () => {
+    let resolveCustomer: (v: unknown) => void = () => {};
+    mockGetLeadById.mockReturnValue(new Promise(r => { resolveCustomer = r; }));
+    await openDialog();
+    const input = document.querySelector('input[type="email"]') as HTMLInputElement;
+    expect(input.value).toBe('');
+    resolveCustomer({ id: 'c1', company_name: 'Acme', contact_email: 'buyer@acme.example' });
     await waitFor(() => expect(input.value).toBe('buyer@acme.example'));
   });
 

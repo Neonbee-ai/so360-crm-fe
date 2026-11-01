@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 
@@ -812,7 +812,9 @@ describe('Lead Detail — readability and header layout', () => {
     it('When the tabs render / Then Overview is first and Activity is last', async () => {
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
-      const tabs = screen.getAllByRole('tab').map(t => t.textContent?.trim());
+      // Scope to the page-level tab strip; the Lead information card has its own inner Tabs.
+      const pageTabs = document.querySelector('[data-slot="tabs"]') as HTMLElement;
+      const tabs = within(pageTabs).getAllByRole('tab').map(t => t.textContent?.trim());
       expect(tabs[0]).toBe('Overview');
       expect(tabs[tabs.length - 1]).toBe('Activity');
     });

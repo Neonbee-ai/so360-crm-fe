@@ -202,4 +202,19 @@ describe('Given DashboardPage — error handling', () => {
     render(<DashboardPage />);
     expect(screen.getByText('Loading insights...')).toBeInTheDocument();
   });
+
+  it('When the stats read fails / Then a retry notice renders instead of crashing', async () => {
+    mockGetDashboardStats.mockRejectedValue(new Error('stats down'));
+    render(<DashboardPage />);
+    expect(await screen.findByText('Dashboard insights could not be loaded.')).toBeInTheDocument();
+  });
+
+  it('When the stats read returns nothing / Then Retry fetches again', async () => {
+    mockGetDashboardStats.mockResolvedValue(null);
+    render(<DashboardPage />);
+    await screen.findByText('Dashboard insights could not be loaded.');
+    const calls = mockGetDashboardStats.mock.calls.length;
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    await waitFor(() => expect(mockGetDashboardStats.mock.calls.length).toBe(calls + 1));
+  });
 });

@@ -177,7 +177,10 @@ describe('Given the Leads page header', () => {
 });
 
 describe('Given the Leads page export / import RBAC (a25bf315)', () => {
-  const exportGroup = () => screen.queryByRole('group', { name: 'Export leads' });
+  // ExportMenu is a Comb Menu whose trigger Button carries the "Export leads" name.
+  const exportGroup = () => screen.queryByRole('button', { name: 'Export leads' });
+  // Bulk actions only render with the grid, which the template hides while the list is empty.
+  const withOneLead = () => mockGetLeads.mockResolvedValue([{ id: 'l1', company_name: 'Acme', contact_name: 'Ann', status: 'New' }]);
   const importBtn = () => screen.queryByRole('button', { name: /^import$/i });
   const bulkLabels = () => screen.queryAllByTestId('bulk-action').map((b) => b.textContent);
 
@@ -189,8 +192,11 @@ describe('Given the Leads page export / import RBAC (a25bf315)', () => {
       const newLead = await screen.findByText('New Lead');
       expect(exportGroup()).toBeNull();
       expect(importBtn()).toBeNull();
-      // No empty wrapper left behind: New Lead is the only control in the header actions.
-      expect(newLead.closest('div.flex.items-center.gap-2')?.querySelectorAll('button')).toHaveLength(1);
+      // No empty wrapper left behind: New Lead is the only primary action and the
+      // secondary-actions slot is not rendered at all.
+      const header = newLead.closest('[data-slot="header"]') as HTMLElement;
+      expect(header.querySelector('[data-slot="primary"]')?.querySelectorAll('button')).toHaveLength(1);
+      expect(header.querySelector('[data-slot="secondary"]')?.querySelectorAll('button').length ?? 0).toBe(0);
     });
   });
 
@@ -219,8 +225,9 @@ describe('Given the Leads page export / import RBAC (a25bf315)', () => {
   describe('When the user selects rows without leads.export', () => {
     it('Then the bulk Export action is not offered', async () => {
       flags.denied.add('leads.export');
+      withOneLead();
       render(<LeadsPage />);
-      await screen.findByText('New Lead');
+      await screen.findByTestId('lead-row');
       expect(bulkLabels()).toContain('Status');
       expect(bulkLabels()).not.toContain('Export');
     });
@@ -228,8 +235,9 @@ describe('Given the Leads page export / import RBAC (a25bf315)', () => {
 
   describe('When the user selects rows with leads.export', () => {
     it('Then the bulk Export action is offered', async () => {
+      withOneLead();
       render(<LeadsPage />);
-      await screen.findByText('New Lead');
+      await screen.findByTestId('lead-row');
       expect(bulkLabels()).toContain('Export');
     });
   });

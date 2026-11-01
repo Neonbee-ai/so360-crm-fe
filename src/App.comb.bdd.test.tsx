@@ -37,14 +37,21 @@ vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOri
 
   useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
-vi.mock('./services/crmService', () => ({
-  crmService: {
+vi.mock('./services/crmService', async (importOriginal) => {
+  // Setters are what App itself calls; pages rendered behind a route also
+  // fetch on mount, so any other crmService read resolves empty
+  // (an empty list that also reads as an empty `{ data, total }` page).
+  const base: Record<string, unknown> = {
     setTenantId: vi.fn(),
     setOrgId: vi.fn(),
     setAccessToken: vi.fn(),
     setUser: vi.fn(),
-  },
-}));
+  };
+  const crmService = new Proxy(base, {
+    get: (t, k: string) => (k in t || k === 'then' ? t[k] : (t[k] = vi.fn().mockResolvedValue(Object.assign([], { data: [], total: 0 })))),
+  });
+  return { ...(await importOriginal<Record<string, unknown>>()), crmService };
+});
 
 import App from './App';
 

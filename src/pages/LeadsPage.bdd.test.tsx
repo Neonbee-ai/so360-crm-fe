@@ -229,6 +229,10 @@ beforeEach(async () => {
     if (p.filter && p.filter.includes('company_name')) rows = [leads[1]];
     else if (p.filter && p.filter.includes('is_null')) rows = all.filter((l: any) => !l.owner);
     if (p.owner_id) rows = rows.filter((l: any) => l.owner?.id === p.owner_id);
+    // Search, status and creator are server-side params since leads paging moved to the API.
+    if (p.q) { const q = String(p.q).toLowerCase(); rows = rows.filter((l: any) => `${l.contact_name} ${l.company_name}`.toLowerCase().includes(q)); }
+    if (p.status) rows = rows.filter((l: any) => l.status === p.status);
+    if (p.created_by) rows = rows.filter((l: any) => l.creator?.id === p.created_by);
     const skip = p.skip ?? 0;
     return { data: rows.slice(skip, skip + (p.take ?? rows.length)), total: rows.length };
   });

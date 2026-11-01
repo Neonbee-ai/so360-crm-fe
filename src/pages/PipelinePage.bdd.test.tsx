@@ -425,7 +425,8 @@ describe('PipelinePage', () => {
     it('When the pipeline is filtering / Then the board wrapper still carries its measured height alongside the dimmed state', async () => {
       const user = userEvent.setup();
       render(<PipelinePage />);
-      await waitFor(() => expect(screen.getByTestId('deal-filters')).toBeInTheDocument());
+      // Comb toolbar filters render before the first fetch; wait for the board so the click is a refilter.
+      await screen.findByTestId('kanban');
       await user.click(screen.getByTestId('apply-owner-filter'));
       const boardWrapper = screen.getByTestId('kanban').parentElement!;
       expect(boardWrapper.style.height).toBeTruthy();

@@ -453,9 +453,11 @@ describe('CRM Quote Approval Workflow BDD Specifications', () => {
       await waitFor(() => {
         expect(screen.getByText('Enterprise License')).toBeInTheDocument();
         expect(screen.getByText('Acme Corp')).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /^approve$/i })).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /^reject$/i })).toBeInTheDocument();
       });
+      // Comb: Approve / Reject live in the DataTable row-actions menu.
+      fireEvent.click(screen.getAllByLabelText('Row actions')[0]);
+      expect(screen.getByRole('menuitem', { name: /^approve$/i })).toBeInTheDocument();
+      expect(screen.getByRole('menuitem', { name: /^reject$/i })).toBeInTheDocument();
     });
 
     it('Given Approvals tab in QuotesPage, When Quick Approve is clicked, Then approves quote and refreshes inbox', async () => {
@@ -478,8 +480,8 @@ describe('CRM Quote Approval Workflow BDD Specifications', () => {
 
       fireEvent.click(await screen.findByRole('radio', { name: /^Approvals/ }));
 
-      await waitFor(() => screen.getByRole('button', { name: /^approve$/i }));
-      fireEvent.click(screen.getByRole('button', { name: /^approve$/i }));
+      fireEvent.click((await screen.findAllByLabelText('Row actions'))[0]);
+      fireEvent.click(screen.getByRole('menuitem', { name: /^approve$/i }));
 
       await waitFor(() => {
         expect(mockApproveQuote).toHaveBeenCalledWith('quote-100');
