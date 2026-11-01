@@ -270,7 +270,7 @@ describe('QuoteDetailPage', () => {
       render(<QuoteDetailPage />);
       await waitFor(() => screen.getByText(longText));
       const wrap = screen.getAllByTestId('quote-line-description')[0];
-      expect(wrap).toHaveClass('min-w-0', 'max-w-[28rem]');
+      expect(wrap).toHaveClass('min-w-0', 'max-w-md');
       expect(screen.getByText(longText)).toHaveClass('whitespace-normal', '[overflow-wrap:anywhere]');
     });
   });
