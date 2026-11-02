@@ -18,6 +18,7 @@ import { quoteToDocumentData } from '../utils/quoteToDocumentData';
 import ExportMenu from '../components/ExportMenu';
 import { CrmScope } from '../utils/crmScope';
 import { Modal } from '../components/common/Modal';
+import { newIdempotencyKey } from '../utils/idempotencyKey';
 
 /** DS Badge tone per quote status (rendered through the standard StatusBadge). */
 export const QUOTE_STATUS_TONES: Record<QuoteStatus, BadgeTone> = {
@@ -343,6 +344,15 @@ const QuotesPage = () => {
     const createInFlightRef = useRef(false);
     const [isCreatingQuote, setIsCreatingQuote] = useState(false);
 
+    // Idempotency-Key for this form session (Pulse 3f510e56): a retry of the same
+    // create reuses it, so crm-be returns the quote it may already have made
+    // (lost response, timeout) instead of a duplicate. A new key is minted when
+    // the modal opens or the form changes, and after a successful create.
+    const createIdempotencyKeyRef = useRef<string | null>(null);
+    useEffect(() => {
+        createIdempotencyKeyRef.current = null;
+    }, [isCreateModalOpen, selectedDealId, manualQuoteNumber, quoteAutoNumbering]);
+
     const handleCreateQuote = async () => {
         if (createInFlightRef.current) return;
         if (!selectedDealId) return;
@@ -350,11 +360,13 @@ const QuotesPage = () => {
         if (!quoteAutoNumbering && !quoteNumber) return;
         createInFlightRef.current = true;
         setIsCreatingQuote(true);
+        if (!createIdempotencyKeyRef.current) createIdempotencyKeyRef.current = newIdempotencyKey();
         try {
             const newQuote = await crmService.createQuote({
                 deal_id: selectedDealId,
                 ...(quoteAutoNumbering ? {} : { quote_number: quoteNumber }),
-            });
+            }, { idempotencyKey: createIdempotencyKeyRef.current });
+            createIdempotencyKeyRef.current = null;
             recordActivity({ eventType: 'quote.created', eventCategory: 'crm', description: `Created quote for deal`, resourceType: 'quote', resourceId: newQuote.id }).catch(() => {});
             navigate(`/crm/quotes/${newQuote.id}`);
         } catch (err: any) {

@@ -87,7 +87,7 @@ describe('QuotesPage — quote number follows Settings → Documents → Numberi
       expect(screen.queryByLabelText(/Quote Number \(manual\)/)).not.toBeInTheDocument();
       await user.click(screen.getByRole('button', { name: 'Create Quote' }));
 
-      await waitFor(() => expect(mockCreateQuote).toHaveBeenCalledWith({ deal_id: 'deal-1' }));
+      await waitFor(() => expect(mockCreateQuote).toHaveBeenCalledWith({ deal_id: 'deal-1' }, { idempotencyKey: expect.any(String) }));
     });
   });
 
@@ -118,7 +118,7 @@ describe('QuotesPage — quote number follows Settings → Documents → Numberi
       await user.click(screen.getByRole('button', { name: 'Create Quote' }));
 
       await waitFor(() =>
-        expect(mockCreateQuote).toHaveBeenCalledWith({ deal_id: 'deal-1', quote_number: 'QT-501' }),
+        expect(mockCreateQuote).toHaveBeenCalledWith({ deal_id: 'deal-1', quote_number: 'QT-501' }, { idempotencyKey: expect.any(String) }),
       );
       await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/crm/quotes/q-new'));
     });
