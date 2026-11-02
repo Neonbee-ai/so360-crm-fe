@@ -222,7 +222,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
   useEffect(() => {
     let cancelled = false;
     Promise.all([
-      crmService.getUsers(),
+      crmService.getUsers().catch(() => []),
       crmService.getPartners().catch(() => [] as Lead[]),
       settingsApi.sourceTypes.getAll().catch(() => [] as SourceTypeOption[]),
       crmService.getSettings().catch(() => null),

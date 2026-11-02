@@ -97,7 +97,7 @@ vi.mock('./components/ActivityHistoryDrawer', () => ({
 vi.mock('./components/TaskModal', () => ({ default: ({ onClose }: any) => <div data-testid="task-modal"><button onClick={onClose}>Close</button></div> }));
 
 const shellCtl = vi.hoisted(() => ({ signEnabled: false, canEditDeal: true }));
-vi.mock('@so360/shell-context', () => ({
+vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOriginal<any>()),
   useShell: () => ({
     isModuleEnabled: (m: string) => m === 'sign' && shellCtl.signEnabled,
     permissionsLoaded: true,
@@ -493,7 +493,8 @@ describe('DealDetailPage', () => {
       mockGetDealById.mockResolvedValue(null);
       const { container } = render(<DealDetailPage />);
       await waitFor(() => expect(screen.getByText('Deal not found.')).toBeInTheDocument());
-      expect(container.querySelector('[data-comb-path]')).not.toBeNull();
+      // Real DS floorplans carry data-comb-path; the vitest DS stub marks the same Comb detail root as data-template="detail".
+      expect(container.querySelector('[data-comb-path], [data-template="detail"]')).not.toBeNull();
     });
   });
 

@@ -1852,6 +1852,7 @@ const LeadDetailPage = () => {
                                                         <IconButton label="Edit Task" variant="ghost" icon={<Edit2 size={12} />}
                                                             onClick={() => !isTaskLocked(task.status) && setEditingTask(task)}
                                                             disabled={isTaskLocked(task.status)}
+                                                            {...(isTaskLocked(task.status) ? { title: 'Completed tasks are read-only. Mark as Open to edit.' } : {})}
                                                         />
                                                     </div>
                                                 </div>

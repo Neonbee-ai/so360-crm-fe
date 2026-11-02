@@ -29,7 +29,7 @@ vi.mock('react-router-dom', () => ({
   Link: ({ children, to, ...props }: any) => <a href={to} {...props}>{children}</a>,
 }));
 
-vi.mock('@so360/shell-context', () => ({
+vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOriginal<any>()),
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   ShellContext: React.createContext({ user: { id: 'u1' } }),
   useActivity: () => ({ recordActivity: async () => {} }),
@@ -74,7 +74,7 @@ describe('Given TaskDetailPage', () => {
     mockGetTaskById.mockResolvedValue(undefined);
     render(<TaskDetailPage />);
     await waitFor(() => {
-      expect(screen.getByText(/not found/i)).toBeInTheDocument();
+      expect(screen.getByText('Task not found.')).toBeInTheDocument();
     });
   });
 

@@ -154,12 +154,15 @@ describe('Given the CRM dashboard', () => {
 describe('Given the dashboard header period switcher', () => {
     describe('When the user picks Monthly and then Yearly again', () => {
         it('Then stats are refetched for the monthly and then the yearly period', async () => {
+            // A user-driven period change is a first-paint fetch (not a silent refresh):
+            // getDashboardStats(params, { onKpis }) streams KPIs before team/reminders.
+            const firstPaint = expect.objectContaining({ onKpis: expect.any(Function) });
             render(<DashboardPage />);
             await ready();
             fireEvent.click(screen.getByRole('radio', { name: 'Monthly' }));
-            await waitFor(() => expect(mockGetDashboardStats).toHaveBeenLastCalledWith(expect.objectContaining({ period: 'monthly' })));
+            await waitFor(() => expect(mockGetDashboardStats).toHaveBeenLastCalledWith(expect.objectContaining({ period: 'monthly' }), firstPaint));
             fireEvent.click(screen.getByRole('radio', { name: 'Yearly' }));
-            await waitFor(() => expect(mockGetDashboardStats).toHaveBeenLastCalledWith(expect.objectContaining({ period: 'yearly' })));
+            await waitFor(() => expect(mockGetDashboardStats).toHaveBeenLastCalledWith(expect.objectContaining({ period: 'yearly' }), firstPaint));
             expect(screen.getByRole('radio', { name: 'Yearly' })).toHaveAttribute('aria-checked', 'true');
         });
     });

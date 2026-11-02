@@ -27,7 +27,7 @@ vi.mock('react-router-dom', () => ({
   useLocation: () => ({ pathname: '/crm/quotes', search: '', hash: '', state: null, key: 'test' }),
 }));
 
-vi.mock('@so360/shell-context', () => ({
+vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOriginal<any>()),
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useActivity: () => ({ recordActivity: async () => {} }),
   useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
@@ -488,7 +488,9 @@ describe('QuoteStatusCell', () => {
     it.each(['rejected', 'converted', 'expired'])('When %s badge clicked / Then no dropdown appears', async (status) => {
       const user = userEvent.setup();
       render(<QuoteStatusCell quote={makeQuote(status)} isActionLoading={false} onAction={vi.fn()} />);
-      const badge = screen.getByRole('button');
+      // Terminal quotes render a plain status pill, not a menu trigger.
+      expect(screen.queryByRole('button')).not.toBeInTheDocument();
+      const badge = screen.getByTitle(new RegExp(status, 'i'));
       await user.click(badge);
       // no transition option should appear
       expect(screen.queryByText('Submit for Approval')).not.toBeInTheDocument();

@@ -13,7 +13,7 @@ export default defineConfig({
       '@so360/design-system': path.join(stubs, 'design-system.ts'),
       '@so360/formatters': path.join(stubs, 'formatters.ts'),
       '@so360/event-bus': path.join(stubs, 'event-bus.ts'),
-      '@ds-real': path.resolve(__dirname, '../../so360-shell-fe/packages/design-system/src'),
+      '@ds-real': path.resolve(__dirname, 'src/test/ds-real'),
       'lucide-react': path.join(stubs, 'lucide-react.tsx'),
     },
   },
@@ -23,6 +23,11 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
     testTimeout: 15000,
+    hookTimeout: 20000,
+    teardownTimeout: 10000,
+    // Forks with a larger heap: CI workers wedged under memory pressure (35-min hang).
+    pool: 'forks',
+    poolOptions: { forks: { execArgv: ['--max-old-space-size=4096'] } },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov', 'html'],

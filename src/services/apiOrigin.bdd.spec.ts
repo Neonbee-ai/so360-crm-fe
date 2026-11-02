@@ -107,7 +107,8 @@ const stripComments = (s: string) =>
   s.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
 
 const sourceFiles = readdirSync(srcDir, { recursive: true, encoding: 'utf8' })
-  .filter((p) => /\.tsx?$/.test(p) && !/\.(spec|test)\.tsx?$/.test(p))
+  // App source only: src/test holds vendored test doubles (e.g. ds-real) that never ship.
+  .filter((p) => /\.tsx?$/.test(p) && !/\.(spec|test)\.tsx?$/.test(p) && !/^test[\\/]/.test(p))
   .map((p) => join(srcDir, p));
 
 const codeOf = (f: string) => stripComments(readFileSync(f, 'utf8'));

@@ -13,6 +13,8 @@ const mockSendQuote = vi.fn();
 const mockGetLeadById = vi.fn();
 
 vi.mock('../services/crmService', () => ({
+  // ProposalEstimatorPanel (estimatorService) reads crmApiClient from this module.
+  crmApiClient: { get: vi.fn().mockResolvedValue({}), post: vi.fn().mockResolvedValue({}), put: vi.fn().mockResolvedValue({}) },
   crmService: {
     getQuoteById: (...a: any[]) => mockGetQuoteById(...a),
     updateQuote: (...a: any[]) => mockUpdateQuote(...a),
@@ -31,7 +33,7 @@ vi.mock('react-router-dom', () => ({
   useNavigate: () => vi.fn(),
 }));
 
-vi.mock('@so360/shell-context', () => ({
+vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOriginal<any>()),
   useBusinessSettings: () => ({
     settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' },
   }),
@@ -270,7 +272,7 @@ describe('QuoteDetailPage', () => {
       render(<QuoteDetailPage />);
       await waitFor(() => screen.getByText(longText));
       const wrap = screen.getAllByTestId('quote-line-description')[0];
-      expect(wrap).toHaveClass('min-w-0', 'max-w-[28rem]');
+      expect(wrap).toHaveClass('min-w-0', 'max-w-md');
       expect(screen.getByText(longText)).toHaveClass('whitespace-normal', '[overflow-wrap:anywhere]');
     });
   });
@@ -624,7 +626,8 @@ describe('Given a saved quote', () => {
   beforeEach(() => {
     // customer_id is what triggers resolving the customer record — the nested
     // `customer` object alone is not enough.
-    mockGetQuoteById.mockResolvedValue({ ...quoteData, customer_id: 'c1' });
+    // No embedded `customer` (older crm-be) so the page resolves it via getLeadById.
+    mockGetQuoteById.mockResolvedValue({ ...quoteData, customer: undefined, customer_id: 'c1' });
     mockGetLeadById.mockResolvedValue({ id: 'c1', company_name: 'Acme', contact_email: 'buyer@acme.example' });
     mockSendQuote.mockReset();
   });
@@ -644,6 +647,16 @@ describe('Given a saved quote', () => {
   it('When the dialog opens / Then the recipient is prefilled from the linked customer', async () => {
     await openDialog();
     const input = document.querySelector('input[type="email"]') as HTMLInputElement;
+    await waitFor(() => expect(input.value).toBe('buyer@acme.example'));
+  });
+
+  it('When the dialog opens before the customer record arrives / Then the recipient fills in once it lands', async () => {
+    let resolveCustomer: (v: unknown) => void = () => {};
+    mockGetLeadById.mockReturnValue(new Promise(r => { resolveCustomer = r; }));
+    await openDialog();
+    const input = document.querySelector('input[type="email"]') as HTMLInputElement;
+    expect(input.value).toBe('');
+    resolveCustomer({ id: 'c1', company_name: 'Acme', contact_email: 'buyer@acme.example' });
     await waitFor(() => expect(input.value).toBe('buyer@acme.example'));
   });
 

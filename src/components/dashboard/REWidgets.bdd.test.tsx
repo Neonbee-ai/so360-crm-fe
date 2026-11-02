@@ -5,7 +5,7 @@ import React from 'react';
 const flags = vi.hoisted(() => ({ on: new Set<string>(), loaded: true, throws: false }));
 const mockGet = vi.hoisted(() => vi.fn());
 
-vi.mock('@so360/shell-context', () => ({
+vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOriginal<any>()),
     useShellBridge: () => {
         if (flags.throws) throw new Error('no shell bridge');
         return {
@@ -238,8 +238,8 @@ describe('Given the Top agents leaderboard card', () => {
         it('Then the card spans the full widget row', async () => {
             render(<REWidgets />);
             const card = await screen.findByTestId('re-widget-agents');
-            expect(card.className).toMatch(/md:col-span-2/);
-            expect(card.className).toMatch(/xl:col-span-4/);
+            // Comb Grid: the leaderboard sits in a full-width Grid.Item (span="full").
+            expect(card.closest('[data-testid="grid-item"]')).toHaveAttribute('data-span', 'full');
             expect(screen.getByTestId('re-widget-sources').className).not.toMatch(/col-span/);
         });
     });

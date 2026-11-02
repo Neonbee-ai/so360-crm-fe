@@ -37,7 +37,7 @@ vi.mock('react-router-dom', () => ({
   Link: ({ children, to, ...props }: any) => <a href={to} {...props}>{children}</a>,
 }));
 
-vi.mock('@so360/shell-context', () => ({
+vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOriginal<any>()),
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   ShellContext: React.createContext({ user: { id: 'user-1' } }),
   useActivity: () => ({ recordActivity: (...a: any[]) => mockRecordActivity(...a) }),
@@ -123,7 +123,8 @@ describe('TaskDetailPage', () => {
       mockGetTaskById.mockResolvedValue(null);
       const { container } = render(<TaskDetailPage />);
       await waitFor(() => expect(screen.getByText('Task not found.')).toBeInTheDocument());
-      expect(container.querySelector('[data-comb-path]')).not.toBeNull();
+      // Real DS floorplans carry data-comb-path; the vitest DS stub marks the same Comb detail root as data-template="detail".
+      expect(container.querySelector('[data-comb-path], [data-template="detail"]')).not.toBeNull();
     });
   });
 

@@ -27,7 +27,7 @@ vi.mock('react-router-dom', () => ({
   useNavigate: () => mockNavigate,
 }));
 
-vi.mock('@so360/shell-context', () => ({
+vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOriginal<any>()),
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useNotify: () => ({ emitNotification: mockEmitNotification }),
   useActivity: () => ({ recordActivity: mockRecordActivity }),
@@ -209,6 +209,8 @@ describe('Feature: Pipeline stage colour token fallback', () => {
       withStages([{ id: 'a', name: 'A', deals: [] }]);
       const user = userEvent.setup();
       render(<PipelinePage />);
+      // Filters render before the debounced first fetch; a click then would just replace it.
+      await waitFor(() => expect(mockGetPipeline).toHaveBeenCalledTimes(1));
       await user.click(await screen.findByTestId('apply-owner-filter'));
       await waitFor(() => expect(mockGetPipeline).toHaveBeenCalledTimes(2));
       expect(kanbanProps.stages[0].color).toBe(MUTED);

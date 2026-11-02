@@ -27,12 +27,21 @@ vi.mock('react-router-dom', () => ({
     Link: ({ children, to, ...props }: any) => <a href={to} {...props}>{children}</a>,
     useNavigate: () => vi.fn(),
 }));
-vi.mock('@so360/shell-context', () => ({
+vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOriginal<any>()),
     useBusinessSettings: () => ({ settings: { base_currency: 'AED', document_language: 'en-US' } }),
     useShell: () => ({ isModuleEnabled: () => false, isFeatureHidden: () => false }),
     useShellBridge: () => ({ effectiveFlagsLoaded: flags.loaded, isFeatureEnabled: (k: string) => flags.on.has(k) }),
     useActivity: () => ({ recordActivity: async () => {} }),
 }));
+
+// The shared DS stub drops `leadingIcon`; the Customize icon moved there (r17), so render it here.
+vi.mock('@so360/design-system', async (importOriginal) => {
+    const actual = await importOriginal<any>();
+    return {
+        ...actual,
+        Button: ({ leadingIcon, children, ...rest }: any) => actual.Button({ ...rest, children: <>{leadingIcon}{children}</> }),
+    };
+});
 
 import DashboardPage from './DashboardPage';
 
@@ -71,6 +80,7 @@ describe('Feature: Dashboard Customize button (Comb Button)', () => {
             expect(btn).toHaveAttribute('data-variant', 'secondary');
             expect(btn).toHaveAttribute('type', 'button');
             expect(btn).toHaveTextContent('Customize');
+            // Icon is passed as the Button's leadingIcon.
             expect(btn.querySelector('svg')).not.toBeNull();
         });
         it('Given the flag is on When rendered Then the button is enabled and the panel is closed', async () => {

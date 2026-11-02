@@ -18,6 +18,8 @@ const mockGetStockAvailability = vi.fn();
 const mockGetLeadById = vi.fn();
 
 vi.mock('../services/crmService', () => ({
+  // ProposalEstimatorPanel (estimatorService) reads crmApiClient from this module.
+  crmApiClient: { get: vi.fn().mockResolvedValue({}), post: vi.fn().mockResolvedValue({}), put: vi.fn().mockResolvedValue({}) },
   crmService: {
     getQuoteById: (...a: any[]) => mockGetQuoteById(...a),
     updateQuote: vi.fn(),

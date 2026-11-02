@@ -132,6 +132,14 @@ const QuoteDetailPage = () => {
         }).catch(() => {});
     }, [lines]);
 
+    // The customer record resolves after the quote, so the dialog can open
+    // before it arrives. Fill the blank recipient once it lands (fires only on
+    // customer change, so a recipient the user cleared stays cleared).
+    useEffect(() => {
+        const email = customer?.contact_email;
+        if (email) setSendTo(prev => prev || email);
+    }, [customer]);
+
     const openSendModal = () => {
         // Prefill with the address on file; the user can redirect it to a
         // procurement mailbox, which is common for B2B quotes.
@@ -785,7 +793,7 @@ const QuoteDetailPage = () => {
                                             {line.item_image_url && (
                                                 <img src={line.item_image_url} alt="" className="w-8 h-8 rounded object-cover flex-shrink-0 mt-0.5" />
                                             )}
-                                            <div className="min-w-0 max-w-[28rem]" data-testid="quote-line-description">
+                                            <div className="min-w-0 max-w-md" data-testid="quote-line-description">
                                                 <span className="text-fg block whitespace-normal [overflow-wrap:anywhere]">{line.description}</span>
                                                 {line.sku && (
                                                     <span className="flex items-center gap-1 mt-0.5">

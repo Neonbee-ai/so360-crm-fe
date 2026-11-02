@@ -62,7 +62,9 @@ vi.mock('react-router-dom', () => ({
   Link: ({ children, to, ...props }: any) => <a href={to} {...props}>{children}</a>,
 }));
 
-vi.mock('@so360/shell-context', () => ({
+vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOriginal<any>()),
+  // DlCustomFieldsPanel (custom fields tab) reads dataset fields.
+  useDatasetSchema: () => ({ fields: [], isLoading: false, error: null }),
   useShell: () => ({ isModuleEnabled: () => false, user: { id: 'u1' } }),
   useCurrentEntity: () => ({ setCurrentEntity: vi.fn() }),
   useActivity: () => ({ recordActivity: async () => {} }),
@@ -172,7 +174,7 @@ describe('Given LeadDetailPage', () => {
     mockGetLeadById.mockResolvedValue(undefined);
     render(<LeadDetailPage />);
     await waitFor(() => {
-      expect(screen.getByText(/not found/i)).toBeInTheDocument();
+      expect(screen.getByText('Lead not found.')).toBeInTheDocument();
     });
   });
 
