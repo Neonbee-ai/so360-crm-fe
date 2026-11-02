@@ -35,13 +35,13 @@ export const LeadAttributionCard: React.FC<{ lead: Partial<Lead> | null | undefi
     const entries = attributionEntries(lead);
     if (entries.length === 0) return null;
     return (
-        <section data-testid="lead-attribution-card" className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm">
-            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Source &amp; attribution</h3>
-            <dl className="space-y-2">
+        <section data-testid="lead-attribution-card" className="bg-surface border border-line rounded-nb-lg p-nb-6">
+            <h3 className="text-xs font-semibold text-fg-muted uppercase mb-nb-4">Source &amp; attribution</h3>
+            <dl className="space-y-nb-2">
                 {entries.map((e) => (
-                    <div key={String(e.key)} className="flex items-start justify-between gap-3">
-                        <dt className="text-[10px] font-black uppercase tracking-widest text-slate-500 whitespace-nowrap">{e.label}</dt>
-                        <dd className="text-xs font-bold text-slate-300 text-right break-all" data-testid={`attr-${String(e.key)}`}>{e.value}</dd>
+                    <div key={String(e.key)} className="flex items-start justify-between gap-nb-3">
+                        <dt className="text-xs font-semibold uppercase text-fg-muted whitespace-nowrap">{e.label}</dt>
+                        <dd className="text-xs font-medium text-fg-subtle text-right break-all" data-testid={`attr-${String(e.key)}`}>{e.value}</dd>
                     </div>
                 ))}
             </dl>

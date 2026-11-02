@@ -66,7 +66,7 @@ describe('Feature: Campaign ROI report', () => {
             expect(within(rows[0]).getByText('Marina Q4')).toBeInTheDocument();
             expect(within(rows[0]).getByText('utm: marina_q4')).toBeInTheDocument();
             expect(within(rows[0]).getByText('200.0%')).toBeInTheDocument();
-            expect(within(rows[1]).getByText('-100.0%')).toHaveClass('text-rose-400');
+            expect(within(rows[1]).getByText('-100.0%')).toHaveClass('text-danger');
         });
     });
 
@@ -162,7 +162,7 @@ describe('Feature: Campaign ROI report', () => {
             const cells = within(screen.getByTestId('campaign-roi-row')).getAllByRole('cell');
             const roiCell = cells[cells.length - 1];
             expect(roiCell).toHaveTextContent('—');
-            expect(roiCell).not.toHaveClass('text-rose-400');
+            expect(roiCell).not.toHaveClass('text-danger');
             expect(within(cells[0]).queryByText(/utm:/)).not.toBeInTheDocument();
         });
     });
