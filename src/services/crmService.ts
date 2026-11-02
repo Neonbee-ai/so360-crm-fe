@@ -3,6 +3,7 @@ import { createRequestCache } from './requestCache';
 import { notifyQuotaExceeded } from './quotaExceeded';
 import { plainErrorText } from '../utils/apiErrorMessage';
 import { isUuid } from '../utils/fieldPresentation';
+import { planAllows, PLAN_FLAGS } from './planGate';
 
 // Lead/Deal detail pages and the dashboard each fetch CRM settings (8 parallel
 // requests) and the user list on mount. Both are org-static within a session,
@@ -1135,6 +1136,10 @@ export const timelineApi = {
         entityId: string,
         filters: TimelineFilters = {},
     ): Promise<{ data: EntityTimelineEvent[]; nextCursor: string | null; summary: EntityTimelineSummary }> => {
+        // Plan excludes the audit trail: show an empty timeline, never a 403.
+        if (!planAllows(PLAN_FLAGS.AUDIT_TRAIL)) {
+            return { data: [], nextCursor: null, summary: {} as EntityTimelineSummary };
+        }
         return apiClient.get(`/audit-trail/${entityType}/${entityId}/timeline`, filters);
     },
 };
@@ -1419,6 +1424,7 @@ export const settingsApi = {
 // ============================================================================
 export const partnersApi = {
     getAll: async (params?: { search?: string; partner_type?: string; skip?: number; take?: number }) => {
+        if (!planAllows(PLAN_FLAGS.PARTNERS)) return [] as any[];
         return apiClient.get<any[]>('/partners', params);
     },
     create: async (data: any) => {
@@ -1743,6 +1749,17 @@ export const crmService = {
             if (params?.week) queryParams.append('week', params.week.toString());
             if (opts?.fresh) queryParams.append('fresh', '1');
 
+            // Plan excludes CRM analytics: zeroed KPIs + real tasks, no 403s.
+            if (!planAllows(PLAN_FLAGS.ANALYTICS)) {
+                return {
+                    financials: { totalRevenue: 0, pipelineValue: 0, avgDealSize: 0, winRate: 0 },
+                    counts: { leads: 0, deals: 0, tasks: 0, reminders: 0 },
+                    teamStats: [],
+                    monthlyRevenue: new Array(12).fill(0),
+                    reminders: [],
+                    analyticsLocked: true,
+                };
+            }
             const dashboardRequest = apiClient.get<any>(`/analytics/dashboard?${queryParams.toString()}`);
             if (opts?.onKpis) {
                 const onKpis = opts.onKpis;
@@ -2049,7 +2066,9 @@ export const crmService = {
                 apiClient.get<any[]>('/settings/source-types'),
                 apiClient.get<any[]>('/settings/scoring-rules'),
                 apiClient.get<any[]>('/settings/score-categories'),
-                apiClient.get<DealNamingConfig>('/settings/deal-naming'),
+                planAllows(PLAN_FLAGS.DEAL_NAMING)
+                    ? apiClient.get<DealNamingConfig>('/settings/deal-naming')
+                    : Promise.resolve(DEFAULT_DEAL_NAMING_CONFIG),
             ]);
 
             const stages = stagesResult.status === 'fulfilled' ? stagesResult.value : [];
@@ -2105,6 +2124,7 @@ export const crmService = {
     // Deal Naming Convention
     getDealNamingSettings: async (): Promise<DealNamingConfig> => {
         try {
+            if (!planAllows(PLAN_FLAGS.DEAL_NAMING)) return DEFAULT_DEAL_NAMING_CONFIG;
             return await apiClient.get<DealNamingConfig>('/settings/deal-naming');
         } catch (error) {
             console.error('[CRM] Failed to fetch deal naming settings', error);
