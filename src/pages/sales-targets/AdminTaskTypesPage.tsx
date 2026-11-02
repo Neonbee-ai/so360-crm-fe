@@ -22,6 +22,10 @@ const CRM_TABLE_RULES = [
   { label: 'Deal Won', rule: { table: 'deals', owner_col: 'owner_person_id', date_col: 'won_at' } },
 ];
 
+// Mirror crm-be CreateTaskTypeDto @MaxLength limits so over-long input is capped client-side, not a 400.
+export const NAME_MAX = 100;
+export const UNIT_MAX = 50;
+
 const EMPTY_FORM = {
   name: '',
   source: 'MANUAL',
@@ -62,6 +66,7 @@ export default function AdminTaskTypesPage() {
   useEffect(load, []);
 
   const handleSave = async () => {
+    if (form.name.length > NAME_MAX || form.unit.length > UNIT_MAX) return;
     setSaving(true);
     try {
       const preset = CRM_TABLE_RULES.find(r => r.label === form.crm_table_rule_preset);
@@ -225,7 +230,8 @@ export default function AdminTaskTypesPage() {
                 label="Name"
                 placeholder="e.g. LinkedIn DM Sent"
                 value={form.name}
-                onChange={(e: any) => setForm(f => ({ ...f, name: e.target.value }))}
+                maxLength={NAME_MAX}
+                onChange={(e: any) => setForm(f => ({ ...f, name: String(e.target.value).slice(0, NAME_MAX) }))}
               />
 
               <Select
@@ -274,7 +280,8 @@ export default function AdminTaskTypesPage() {
                 label="Unit (display label)"
                 placeholder="e.g. DMs, proposals, leads"
                 value={form.unit}
-                onChange={(e: any) => setForm(f => ({ ...f, unit: e.target.value }))}
+                maxLength={UNIT_MAX}
+                onChange={(e: any) => setForm(f => ({ ...f, unit: String(e.target.value).slice(0, UNIT_MAX) }))}
               />
 
               <div>

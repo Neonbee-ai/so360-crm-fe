@@ -1,4 +1,5 @@
 import { crmApiClient, crmNeuraClient, crmMarketingClient } from './crmService';
+import { planAllows, planHasModule, PLAN_FLAGS } from './planGate';
 
 /**
  * Ideal Customer Profiles (LinkedIn fit scoring). crm-be has no /v1 prefix.
@@ -147,6 +148,7 @@ export function toIcpBody(v: IcpFormValues) {
 
 export const icpService = {
     list: async (): Promise<Icp[]> => {
+        if (!planAllows(PLAN_FLAGS.LINKEDIN_SYNC)) return [];
         const r = await crmApiClient.get<Icp[]>('/linkedin-sync/icps');
         return Array.isArray(r) ? r : [];
     },
@@ -156,6 +158,9 @@ export const icpService = {
     archive: (id: string) => crmApiClient.delete<unknown>(`/linkedin-sync/icps/${id}`),
     /** Marketing audiences for the auto-list picker (marketing-be GET /v1/marketing/audiences). */
     audiences: async (): Promise<{ id: string; name: string }[]> => {
+        // Cross-module: the Shell fails open on flags the CRM plan never lists,
+        // so also require the Marketing module itself.
+        if (!planHasModule('marketing') || !planAllows(PLAN_FLAGS.MARKETING_AUDIENCES)) return [];
         const r = await crmMarketingClient.get<unknown>('/v1/marketing/audiences');
         const rows = Array.isArray(r) ? r : (r as any)?.data ?? (r as any)?.items;
         return Array.isArray(rows) ? rows : [];

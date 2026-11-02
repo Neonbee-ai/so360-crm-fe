@@ -5,6 +5,7 @@ import { CombScope, FeatureRoute, PortalProvider, Button, Skeleton } from '@so36
 import { CrossLinkProvider } from '@so360/cross-link';
 import { crmService } from './services/crmService';
 import { salesTargetService } from './services/salesTargetService';
+import { setPlanFeatureReader } from './services/planGate';
 import { CrmScope, crmPortalRoot } from './utils/crmScope';
 import { preloadRouteChunk } from './utils/routePreload';
 
@@ -21,6 +22,15 @@ const CrmShellInitializer = ({ children }: { children: React.ReactNode }) => {
     // Access context directly to avoid throwing if provider is missing
     const shell = useShellBridge();
     const [isSynced, setIsSynced] = React.useState(false);
+
+    // Plan gate for service calls: optional panels skip plan-gated routes the
+    // tenant's plan excludes instead of drawing a 403 (fails open until loaded).
+    const bridge = shell as any;
+    setPlanFeatureReader(bridge ? {
+        loaded: bridge.effectiveFlagsLoaded !== false,
+        isFeatureEnabled: bridge.isFeatureEnabled,
+        isModuleEnabled: bridge.isModuleEnabled,
+    } : null);
 
     useEffect(() => {
         if (shell?.currentTenant?.id && shell?.currentOrg?.id && shell?.accessToken) {
