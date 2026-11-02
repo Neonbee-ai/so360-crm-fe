@@ -162,7 +162,7 @@ function composeAddress(customer: Partial<Lead> | null | undefined): string | un
         pick('address_line1') || pick('street') || pick('address'),
         pick('city'),
         pick('state'),
-        [pick('country'), pick('postal_code') || pick('zip')].filter(Boolean).join(' '),
+        [pick('country'), pick('pin_code') || pick('postal_code') || pick('zip')].filter(Boolean).join(' '),
     ].filter(Boolean);
     return parts.length ? parts.join(', ') : undefined;
 }
@@ -180,18 +180,27 @@ export function buildBuyerParty(
     quote: Quote,
     customer?: Partial<Lead> | null,
 ): DocumentParty {
+    // A lead row names its email `email`; crm-be also mirrors it as
+    // `contact_email`. Read both so a customer from either source prints, and
+    // fall back to the contact person and the deal's `company` snapshot so a
+    // quote raised from a deal never prints "Not specified" for a known party.
+    const raw = (customer ?? {}) as Record<string, unknown>;
+    const deal = (quote.deal ?? {}) as Record<string, unknown>;
+    const str = (v: unknown): string => (typeof v === 'string' ? v.trim() : '');
     const name =
-        customer?.company_name ||
-        quote.customer_name ||
-        quote.deal?.company_name ||
-        quote.deal?.name ||
+        str(customer?.company_name) ||
+        str(customer?.contact_name) ||
+        str(quote.customer_name) ||
+        str(deal.company_name) ||
+        str(deal.company) ||
+        str(deal.name) ||
         '';
 
     return {
         name,
         address: composeAddress(customer),
         tax_number: customer?.tax_id || undefined,
-        email: customer?.contact_email || undefined,
+        email: str(customer?.contact_email) || str(raw.email) || undefined,
         phone: customer?.phone || undefined,
     };
 }
