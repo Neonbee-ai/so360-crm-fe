@@ -59,6 +59,7 @@ import NoteReplyComposer from '../components/notes/NoteReplyComposer';
 import { ExecutiveSummaryPanel } from '../components/ExecutiveSummaryPanel';
 import { MergeLeadPanel } from '../components/leads/MergeLeadPanel';
 import { DuplicateLeadWarning } from '../components/leads/DuplicateLeadWarning';
+import { LeadAttributionCard } from '../components/leads/LeadAttributionCard';
 import { parseDuplicateLead, type DuplicateLeadInfo } from '../services/leadDedupService';
 
 type TabType = 'overview' | 'activity' | 'notes' | 'tasks' | 'documents' | 'products' | 'feedback' | 'calls' | 'audit' | 'stakeholders' | 'emails' | 'meetings' | 'maintenance';
@@ -166,6 +167,7 @@ const LeadDetailPage = () => {
     const { isModuleEnabled } = useShell();
     const { setCurrentEntity } = useCurrentEntity();
     const shell = useShellBridge();
+    const canSeeAttribution = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:utm_attribution') ?? false);
     const canCreateDeal = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('deals.create') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:deals:create') ?? true);
     const canPromoteLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.convert') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:promote') ?? true);
     const canQualifyLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.update') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:qualify') ?? true);
@@ -1035,6 +1037,9 @@ const LeadDetailPage = () => {
                         {!isCustomerDetailRoute && <IcpFitCard meta={lead.custom_fields} />}
 
                         {isCustomerDetailRoute && contactFeedEnabled && <ContactFeedPanel entityType="lead" entityId={lead.id} />}
+
+                        {/* RE §26 Source & attribution (flag-gated) */}
+                        {canSeeAttribution && <LeadAttributionCard lead={lead} />}
 
                         {/* Deals */}
                         <Card title={`Deals (${associatedDeals.length})`}>

@@ -98,6 +98,8 @@ const LeadsPage = () => {
   const { recordActivity } = useActivity();
   const shell = useShellBridge();
   const canCreateLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.create') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:create') ?? true);
+  // RE §26 — UTM / ad attribution filters; off unless the flag is explicitly on.
+  const canFilterAttribution = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:utm_attribution') ?? false);
   const canUpdateLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.update') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:update') ?? true);
   // Destructive action — gate on the delete permission, fail closed, independent
   // of canUpdateLead. Mirrors LeadDetailPage.tsx's canDeleteLead; the backend
@@ -655,7 +657,7 @@ const LeadsPage = () => {
         key: 'advanced', label: 'Advanced', type: 'custom',
         formatValue: () => `Advanced (${advancedFilter ? countActiveRules(advancedFilter) : 0})`,
         render: () => (
-          <LeadFilterBuilder value={advancedFilter} onApply={handleApplyAdvancedFilter} onClose={() => undefined} />
+          <LeadFilterBuilder value={advancedFilter} onApply={handleApplyAdvancedFilter} onClose={() => undefined} includeAttribution={canFilterAttribution} />
         ),
       },
     ],
