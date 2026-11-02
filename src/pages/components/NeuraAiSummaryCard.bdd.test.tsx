@@ -34,9 +34,18 @@ describe('NeuraAiSummaryCard', () => {
         vi.mocked(inboxIntegrationApi.getConversationsForLead).mockResolvedValue({ data: [], total: 0 });
     });
 
-    describe('Given the card mounts for a lead', () => {
-        it('When it loads / Then shows a loading state, then the summary', async () => {
+    describe('Given the card mounts for a lead with no cached summary', () => {
+        it('When it mounts / Then NO LLM call is made and no busy indicator holds the page', () => {
             render(<NeuraAiSummaryCard {...defaultProps} />);
+            expect(neuraAiService.createConversation).not.toHaveBeenCalled();
+            expect(neuraAiService.sendMessage).not.toHaveBeenCalled();
+            expect(document.querySelector('[aria-busy="true"]')).toBeNull();
+            expect(screen.getByRole('button', { name: 'Generate summary' })).toBeInTheDocument();
+        });
+
+        it('When Generate summary is clicked / Then shows a loading state, then the summary', async () => {
+            render(<NeuraAiSummaryCard {...defaultProps} />);
+            fireEvent.click(screen.getByRole('button', { name: 'Generate summary' }));
             expect(screen.getByText('Neura AI is reviewing this lead…')).toBeInTheDocument();
 
             await waitFor(() =>
@@ -44,8 +53,9 @@ describe('NeuraAiSummaryCard', () => {
             );
         });
 
-        it('When it loads / Then starts a conversation scoped to this lead automatically (no button click)', async () => {
+        it('When Generate summary is clicked / Then starts a conversation scoped to this lead', async () => {
             render(<NeuraAiSummaryCard {...defaultProps} />);
+            fireEvent.click(screen.getByRole('button', { name: 'Generate summary' }));
             await waitFor(() => expect(neuraAiService.createConversation).toHaveBeenCalledWith('Neura AI · Lead Acme Corp'));
             expect(neuraAiService.sendMessage).toHaveBeenCalledWith(
                 'conv-1',
@@ -57,10 +67,29 @@ describe('NeuraAiSummaryCard', () => {
         it('When a Neura AI conversation is already cached for this lead / Then reuses it instead of creating a new one', async () => {
             sessionStorage.setItem('neura_ai_conversation:lead-1', 'conv-cached');
             render(<NeuraAiSummaryCard {...defaultProps} />);
+            fireEvent.click(screen.getByRole('button', { name: 'Generate summary' }));
 
             await waitFor(() => expect(neuraAiService.sendMessage).toHaveBeenCalled());
             expect(neuraAiService.createConversation).not.toHaveBeenCalled();
             expect(neuraAiService.sendMessage.mock.calls[0][0]).toBe('conv-cached');
+        });
+
+        it('When the cached summary is older than the TTL / Then it is not shown and Generate is offered', () => {
+            sessionStorage.setItem('neura_ai_summary:lead-1', JSON.stringify({ text: 'Stale.', at: Date.now() - 11 * 60 * 1000 }));
+            render(<NeuraAiSummaryCard {...defaultProps} />);
+            expect(screen.queryByText('Stale.')).toBeNull();
+            expect(screen.getByRole('button', { name: 'Generate summary' })).toBeInTheDocument();
+        });
+
+        it('When the cache entry is unreadable / Then Generate is offered without a crash', () => {
+            sessionStorage.setItem('neura_ai_summary:lead-1', '{not json');
+            render(<NeuraAiSummaryCard {...defaultProps} />);
+            expect(screen.getByRole('button', { name: 'Generate summary' })).toBeInTheDocument();
+        });
+
+        it('When the entity is a deal / Then the prompt line names the deal', () => {
+            render(<NeuraAiSummaryCard {...defaultProps} entity="deals" />);
+            expect(screen.getByText('Get a quick AI summary of this deal.')).toBeInTheDocument();
         });
     });
 
@@ -74,6 +103,7 @@ describe('NeuraAiSummaryCard', () => {
             });
 
             render(<NeuraAiSummaryCard {...defaultProps} />);
+            fireEvent.click(screen.getByRole('button', { name: 'Generate summary' }));
 
             await waitFor(() => expect(neuraAiService.sendMessage).toHaveBeenCalled());
             const [, prompt] = vi.mocked(neuraAiService.sendMessage).mock.calls[0];
@@ -86,6 +116,7 @@ describe('NeuraAiSummaryCard', () => {
     describe('Given Inbox is disabled for the org', () => {
         it('When the summary is requested / Then Inbox is never called and no Inbox context is sent', async () => {
             render(<NeuraAiSummaryCard {...defaultProps} isInboxEnabled={false} />);
+            fireEvent.click(screen.getByRole('button', { name: 'Generate summary' }));
 
             await waitFor(() => expect(neuraAiService.sendMessage).toHaveBeenCalled());
             expect(inboxIntegrationApi.getConversationsForLead).not.toHaveBeenCalled();
@@ -99,6 +130,7 @@ describe('NeuraAiSummaryCard', () => {
             vi.mocked(inboxIntegrationApi.getConversationsForLead).mockRejectedValue(new Error('403 Forbidden'));
 
             render(<NeuraAiSummaryCard {...defaultProps} />);
+            fireEvent.click(screen.getByRole('button', { name: 'Generate summary' }));
 
             await waitFor(() =>
                 expect(screen.getByText('Acme Corp is an active opportunity in Negotiation.')).toBeInTheDocument(),
@@ -112,6 +144,7 @@ describe('NeuraAiSummaryCard', () => {
         it('When clicked / Then regenerates the summary', async () => {
             const user = userEvent.setup();
             render(<NeuraAiSummaryCard {...defaultProps} />);
+            fireEvent.click(screen.getByRole('button', { name: 'Generate summary' }));
             await waitFor(() => screen.getByText('Acme Corp is an active opportunity in Negotiation.'));
 
             vi.mocked(neuraAiService.sendMessage).mockResolvedValueOnce({
@@ -155,6 +188,7 @@ describe('NeuraAiSummaryCard', () => {
         it('When the conversation id exists in localStorage / Then it is reused across sessions (one conversation per lead)', async () => {
             localStorage.setItem('neura_ai_conversation:lead-1', 'conv-durable');
             render(<NeuraAiSummaryCard {...defaultProps} />);
+            fireEvent.click(screen.getByRole('button', { name: 'Generate summary' }));
             await waitFor(() => expect(neuraAiService.sendMessage).toHaveBeenCalled());
             expect(neuraAiService.createConversation).not.toHaveBeenCalled();
             expect(vi.mocked(neuraAiService.sendMessage).mock.calls[0][0]).toBe('conv-durable');
@@ -166,6 +200,7 @@ describe('NeuraAiSummaryCard', () => {
             vi.mocked(neuraAiService.sendMessage).mockRejectedValueOnce(new Error('down'));
 
             render(<NeuraAiSummaryCard {...defaultProps} />);
+            fireEvent.click(screen.getByRole('button', { name: 'Generate summary' }));
 
             await waitFor(() =>
                 expect(screen.getByText('Could not generate a summary right now.')).toBeInTheDocument(),
@@ -174,19 +209,19 @@ describe('NeuraAiSummaryCard', () => {
     });
 
     describe('Given the viewed lead changes', () => {
-        it('When leadId prop changes / Then refetches the summary for the new lead', async () => {
+        it('When leadId prop changes / Then the previous summary is cleared and the new lead shows its own cache or Generate', async () => {
             const { rerender } = render(<NeuraAiSummaryCard {...defaultProps} />);
-            await waitFor(() => expect(neuraAiService.createConversation).toHaveBeenCalledWith('Neura AI · Lead Acme Corp'));
-
-            vi.mocked(neuraAiService.sendMessage).mockResolvedValueOnce({
-                userMessage: { id: 'um-3', role: 'user', content: 'Summarize' },
-                assistantMessage: { id: 'am-3', role: 'assistant', content: 'Beta Inc summary.' },
-            } as any);
+            fireEvent.click(screen.getByRole('button', { name: 'Generate summary' }));
+            await waitFor(() => expect(screen.getByText('Acme Corp is an active opportunity in Negotiation.')).toBeInTheDocument());
 
             rerender(<NeuraAiSummaryCard {...defaultProps} leadId="lead-2" leadLabel="Beta Inc" />);
+            expect(screen.queryByText('Acme Corp is an active opportunity in Negotiation.')).toBeNull();
+            expect(screen.getByRole('button', { name: 'Generate summary' })).toBeInTheDocument();
 
-            await waitFor(() => expect(neuraAiService.createConversation).toHaveBeenCalledWith('Neura AI · Lead Beta Inc'));
-            expect(screen.getByText('Beta Inc summary.')).toBeInTheDocument();
+            sessionStorage.setItem('neura_ai_summary:lead-3', JSON.stringify({ text: 'Gamma cached.', at: Date.now() }));
+            rerender(<NeuraAiSummaryCard {...defaultProps} leadId="lead-3" leadLabel="Gamma" />);
+            await waitFor(() => expect(screen.getByText('Gamma cached.')).toBeInTheDocument());
+            expect(neuraAiService.sendMessage).toHaveBeenCalledTimes(1);
         });
     });
 });

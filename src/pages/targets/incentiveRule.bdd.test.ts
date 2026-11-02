@@ -32,7 +32,7 @@ const err = (r: ReturnType<typeof buildIncentiveRulePayload>) => {
 
 describe('Given a rule with no name', () => {
   it('When it is saved / Then it is rejected', () => {
-    expect(err(buildIncentiveRulePayload(form({ name: '   ' })))).toMatch(/name/i);
+    expect(err(buildIncentiveRulePayload(form({ name: '   ' })))).toMatch(/name is required/i);
   });
 });
 

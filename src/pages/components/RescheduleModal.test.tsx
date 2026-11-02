@@ -23,8 +23,7 @@ describe('Given RescheduleModal', () => {
 
   it('When action / Then calls onClose when close button is clicked', () => {
     render(<RescheduleModal {...defaultProps} />);
-    const closeBtn = screen.getByTestId('icon-X');
-    fireEvent.click(closeBtn.closest('button')!);
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     expect(defaultProps.onClose).toHaveBeenCalled();
   });
 

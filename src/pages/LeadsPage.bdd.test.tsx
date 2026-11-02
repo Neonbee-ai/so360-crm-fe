@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 
@@ -21,6 +21,8 @@ const mockViewsUpdate = vi.fn();
 const mockViewsDuplicate = vi.fn();
 const mockViewsSetDefault = vi.fn();
 const mockGetLeadsPaged = vi.fn();
+const mockGetLeadStats = vi.fn();
+const mockGetLeadStatusCounts = vi.fn();
 
 const mockExportLeads = vi.fn();
 vi.mock('../services/exportService', async (importActual) => ({
@@ -32,10 +34,11 @@ vi.mock('../services/crmService', () => ({
   crmService: {
     getLeads: (...a: any[]) => mockGetLeads(...a),
     getLeadsPaged: (...a: any[]) => mockGetLeadsPaged(...a),
+    getLeadStats: (...a: any[]) => mockGetLeadStats(...a),
+    getLeadStatusCounts: (...a: any[]) => mockGetLeadStatusCounts(...a),
     getSettings: (...a: any[]) => mockGetSettings(...a),
     getUsers: (...a: any[]) => mockGetUsers(...a),
     getPartners: (...a: any[]) => mockGetPartners(...a),
-    getCustomerSegmentLeads: vi.fn().mockResolvedValue({ leads: [] }),
     updateLead: (...a: any[]) => mockUpdateLead(...a),
     logActivity: (...a: any[]) => mockLogActivity(...a),
     deleteLead: (...a: any[]) => mockDeleteLead(...a),
@@ -64,7 +67,8 @@ vi.mock('react-router-dom', () => ({
   useLocation: () => ({ pathname: '/crm/leads', search: '' }),
 }));
 
-vi.mock('@so360/shell-context', () => ({
+vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOriginal<any>()),
+  useDatasetSchema: () => ({ fields: [], isLoading: false, error: null }),
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useNotify: () => ({ emitNotification: vi.fn().mockResolvedValue(undefined) }),
   useActivity: () => ({ recordActivity: vi.fn().mockResolvedValue(undefined) }),
@@ -142,6 +146,7 @@ vi.mock('../components/leads/CreateLeadModal', () => ({
 }));
 
 import LeadsPage from './LeadsPage';
+import { toast } from '@so360/design-system';
 
 const settings = {
   deal_stages: [],
@@ -215,7 +220,22 @@ beforeEach(async () => {
   mockBulkDeleteLeads.mockResolvedValue({ requested: 1, deleted: ['l1'], failed: [] });
   mockBulkUpdateLeads.mockResolvedValue({ requested: 1, updated: ['l1'], failed: [] });
   mockBulkTagLeads.mockResolvedValue({ requested: 1, updated: ['l1'], failed: [] });
-  mockGetLeadsPaged.mockResolvedValue({ data: [leads[1]], total: 1 });
+  // Emulates the server: mockGetLeads is the dataset; owner/unassigned/advanced filters and skip/take apply here.
+  mockGetLeadStats.mockResolvedValue({ total: 3 });
+  mockGetLeadStatusCounts.mockResolvedValue({});
+  mockGetLeadsPaged.mockImplementation(async (p: any) => {
+    const all = await mockGetLeads();
+    let rows: any[] = all;
+    if (p.filter && p.filter.includes('company_name')) rows = [leads[1]];
+    else if (p.filter && p.filter.includes('is_null')) rows = all.filter((l: any) => !l.owner);
+    if (p.owner_id) rows = rows.filter((l: any) => l.owner?.id === p.owner_id);
+    // Search, status and creator are server-side params since leads paging moved to the API.
+    if (p.q) { const q = String(p.q).toLowerCase(); rows = rows.filter((l: any) => `${l.contact_name} ${l.company_name}`.toLowerCase().includes(q)); }
+    if (p.status) rows = rows.filter((l: any) => l.status === p.status);
+    if (p.created_by) rows = rows.filter((l: any) => l.creator?.id === p.created_by);
+    const skip = p.skip ?? 0;
+    return { data: rows.slice(skip, skip + (p.take ?? rows.length)), total: rows.length };
+  });
   mockViewsList.mockResolvedValue([]);
   mockViewsCreate.mockResolvedValue({ id: 'srv-1', name: 'Server View', config: { filters: {} } });
   mockViewsRemove.mockResolvedValue({ deleted: true });
@@ -235,11 +255,19 @@ describe('LeadsPage', () => {
       });
     });
 
+    it('When the page renders / Then per-status counts are requested for the lead stages without a status filter', async () => {
+      render(<LeadsPage />);
+      await waitFor(() => expect(mockGetLeadStatusCounts).toHaveBeenCalled());
+      const [stages, query] = mockGetLeadStatusCounts.mock.calls[0];
+      expect(stages.length).toBeGreaterThan(0);
+      expect(query).not.toHaveProperty('status');
+    });
+
     it('When searching by contact name / Then filters leads matching the search term', async () => {
       const user = userEvent.setup();
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      const searchInput = screen.getByPlaceholderText('Search leads...');
+      const searchInput = screen.getByPlaceholderText('Search leads…');
       await user.type(searchInput, 'Jane');
       await waitFor(() => {
         expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument();
@@ -251,7 +279,7 @@ describe('LeadsPage', () => {
       const user = userEvent.setup();
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      const searchInput = screen.getByPlaceholderText('Search leads...');
+      const searchInput = screen.getByPlaceholderText('Search leads…');
       await user.type(searchInput, 'Gamma');
       await waitFor(() => {
         expect(screen.getByTestId('lead-row-l3')).toBeInTheDocument();
@@ -264,7 +292,7 @@ describe('LeadsPage', () => {
       const user = userEvent.setup();
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      const statusSelect = screen.getByDisplayValue('All Statuses');
+      const statusSelect = screen.getByLabelText('Status');
       await user.selectOptions(statusSelect, 'Qualified');
       await waitFor(() => {
         expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument();
@@ -277,7 +305,7 @@ describe('LeadsPage', () => {
       const user = userEvent.setup();
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      const ownerSelect = screen.getByDisplayValue('All Owners');
+      const ownerSelect = screen.getByLabelText('Owner');
       await user.selectOptions(ownerSelect, 'u2');
       await waitFor(() => {
         expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument();
@@ -289,8 +317,8 @@ describe('LeadsPage', () => {
       const user = userEvent.setup();
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      await user.click(screen.getByText('More Filters'));
-      const creatorSelect = screen.getByDisplayValue('All');
+      await user.click(screen.getByTestId('filters-button'));
+      const creatorSelect = screen.getByLabelText('Created by');
       await user.selectOptions(creatorSelect, 'u2');
       await waitFor(() => {
         expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument();
@@ -302,10 +330,10 @@ describe('LeadsPage', () => {
       const user = userEvent.setup();
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      const statusSelect = screen.getByDisplayValue('All Statuses');
+      const statusSelect = screen.getByLabelText('Status');
       await user.selectOptions(statusSelect, 'Qualified');
-      await waitFor(() => expect(screen.getByText('Clear filters')).toBeInTheDocument());
-      await user.click(screen.getByText('Clear filters'));
+      await waitFor(() => expect(screen.getByText('Clear all')).toBeInTheDocument());
+      await user.click(screen.getByText('Clear all'));
       await waitFor(() => {
         expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument();
         expect(screen.getByTestId('lead-row-l3')).toBeInTheDocument();
@@ -329,67 +357,12 @@ describe('LeadsPage', () => {
     });
   });
 
-  describe('Given the compact KPI status chips', () => {
-    it('When the page renders / Then each chip shows the count for its stage', async () => {
-      render(<LeadsPage />);
-      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      expect(screen.getByText('3 Total')).toBeInTheDocument();
-      expect(screen.getByText('2 New')).toBeInTheDocument();
-      expect(screen.getByText('1 Qualified')).toBeInTheDocument();
-      expect(screen.getByText('0 Converted')).toBeInTheDocument();
-    });
-
-    it('When there are more than 4 lead stages / Then every stage still gets a chip (no truncation)', async () => {
-      mockGetSettings.mockResolvedValueOnce({
-        ...settings,
-        lead_stages: [
-          { id: 'new', name: 'New' },
-          { id: 'contacted', name: 'Contacted' },
-          { id: 'qualified', name: 'Qualified' },
-          { id: 'proposal', name: 'Proposal Sent' },
-          { id: 'negotiation', name: 'Negotiation' },
-          { id: 'converted', name: 'Converted' },
-          { id: 'lost', name: 'Lost' },
-        ],
-      });
-      render(<LeadsPage />);
-      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      expect(screen.getByText('0 Negotiation')).toBeInTheDocument();
-      expect(screen.getByText('0 Converted')).toBeInTheDocument();
-      expect(screen.getByText('0 Lost')).toBeInTheDocument();
-    });
-
-    it('When a stage chip is clicked / Then it applies the same status filter as the Status select', async () => {
-      const user = userEvent.setup();
-      render(<LeadsPage />);
-      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      await user.click(screen.getByText('1 Qualified'));
-      await waitFor(() => {
-        expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument();
-        expect(screen.getByTestId('lead-row-l2')).toBeInTheDocument();
-      });
-    });
-
-    it('When an active stage chip is clicked again / Then it resets the status filter to All', async () => {
-      const user = userEvent.setup();
-      render(<LeadsPage />);
-      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      await user.click(screen.getByText('1 Qualified'));
-      await waitFor(() => expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument());
-      await user.click(screen.getByText('1 Qualified'));
-      await waitFor(() => {
-        expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument();
-        expect(screen.getByTestId('lead-row-l2')).toBeInTheDocument();
-      });
-    });
-  });
-
   describe('Given no leads exist', () => {
     it('When the page renders / Then shows the empty state message', async () => {
       mockGetLeads.mockResolvedValue([]);
       render(<LeadsPage />);
       await waitFor(() => {
-        expect(screen.getByTestId('leads-grid')).toHaveTextContent('No leads found');
+        expect(screen.getByText('No leads yet')).toBeInTheDocument();
       });
     });
   });
@@ -407,10 +380,7 @@ describe('LeadsPage', () => {
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
       fireEvent.click(screen.getByTestId('delete-btn-l1'));
       await waitFor(() => expect(screen.getByText('Delete Lead')).toBeInTheDocument());
-      const confirmBtn = screen.getAllByText('Delete').find(
-        (el) => el.closest('button')?.className.includes('bg-red'),
-      );
-      fireEvent.click(confirmBtn!);
+      fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete' }));
       await waitFor(() => expect(mockDeleteLead).toHaveBeenCalledWith('l1'));
       await waitFor(() => expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument());
     });
@@ -458,44 +428,11 @@ describe('LeadsPage', () => {
     });
   });
 
-  describe('Given the leads KPI total chip (replaces the removed quota progress bar)', () => {
-    it('When 3 leads are loaded / Then the Total chip shows leads.length', async () => {
-      render(<LeadsPage />);
-      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      expect(screen.getByText('3 Total')).toBeInTheDocument();
-    });
-
-    it('When a lead is deleted / Then the Total chip decrements to reflect the new leads.length', async () => {
-      render(<LeadsPage />);
-      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      expect(screen.getByText('3 Total')).toBeInTheDocument();
-      fireEvent.click(screen.getByTestId('delete-btn-l1'));
-      await waitFor(() => expect(screen.getByText('Delete Lead')).toBeInTheDocument());
-      const confirmBtn = screen.getAllByText('Delete').find(
-        (el) => el.closest('button')?.className.includes('bg-red'),
-      );
-      fireEvent.click(confirmBtn!);
-      await waitFor(() => expect(mockDeleteLead).toHaveBeenCalledWith('l1'));
-      await waitFor(() => expect(screen.getByText('2 Total')).toBeInTheDocument());
-    });
-
-    it('When no leads exist / Then the Total chip shows 0', async () => {
-      mockGetLeads.mockResolvedValue([]);
-      render(<LeadsPage />);
-      await waitFor(() => expect(screen.getByText('0 Total')).toBeInTheDocument());
-    });
-
-    it('When the page loads / Then no quota progress bar is rendered', async () => {
-      render(<LeadsPage />);
-      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      expect(screen.queryByTestId('quota-bar')).not.toBeInTheDocument();
-    });
-  });
-
   describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
     it('When effectiveFlagsLoaded is false / Then New Lead button is absent', async () => {
       const { useShellBridge } = await import('@so360/shell-context');
-      vi.mocked(useShellBridge).mockReturnValueOnce({
+      // Persistent (not Once): the toolbar-slot ref callback re-renders the page on mount.
+      vi.mocked(useShellBridge).mockReturnValue({
         effectiveFlagsLoaded: false,
         permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => false,
       } as any);
@@ -520,42 +457,20 @@ describe('LeadsPage', () => {
     it('When Views button is clicked / Then shows saved views dropdown', async () => {
       const user = userEvent.setup();
       render(<LeadsPage />);
-      await user.click(screen.getByText('Views'));
+      await user.click(screen.getByText(/^Saved views/));
       expect(screen.getByText('Save current view')).toBeInTheDocument();
     });
   });
 
-  describe('Given only one filter/views popover may be open at a time', () => {
-    it('When More Filters is open and Views is clicked / Then More Filters closes and only Views stays open', async () => {
+  describe('Given the Views popover', () => {
+    it('When the saved views modal is open and Close is clicked / Then it closes', async () => {
       const user = userEvent.setup();
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      await user.click(screen.getByText('More Filters'));
-      expect(screen.getByText('Created By')).toBeInTheDocument();
-      await user.click(screen.getByText('Views'));
-      expect(screen.queryByText('Created By')).not.toBeInTheDocument();
+      await user.click(screen.getByText(/^Saved views/));
       expect(screen.getByText('Save current view')).toBeInTheDocument();
-    });
-
-    it('When Views is open and More Filters is clicked / Then Views closes and only More Filters stays open', async () => {
-      const user = userEvent.setup();
-      render(<LeadsPage />);
-      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      await user.click(screen.getByText('Views'));
-      expect(screen.getByText('Save current view')).toBeInTheDocument();
-      await user.click(screen.getByText('More Filters'));
-      expect(screen.queryByText('Save current view')).not.toBeInTheDocument();
-      expect(screen.getByText('Created By')).toBeInTheDocument();
-    });
-
-    it('When More Filters is open and an outside click occurs / Then it closes', async () => {
-      const user = userEvent.setup();
-      render(<LeadsPage />);
-      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      await user.click(screen.getByText('More Filters'));
-      expect(screen.getByText('Created By')).toBeInTheDocument();
-      fireEvent.mouseDown(document.body);
-      await waitFor(() => expect(screen.queryByText('Created By')).not.toBeInTheDocument());
+      await user.click(screen.getByLabelText('Close'));
+      await waitFor(() => expect(screen.queryByText('Save current view')).not.toBeInTheDocument());
     });
   });
 });
@@ -637,7 +552,7 @@ describe('LeadsPage — saved views (backend)', () => {
     const user = userEvent.setup();
     render(<LeadsPage />);
     await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-    await user.click(screen.getByText('Views'));
+    await user.click(screen.getByText(/^Saved views/));
     await waitFor(() => expect(screen.getByText('Server View')).toBeInTheDocument());
   });
 
@@ -645,9 +560,9 @@ describe('LeadsPage — saved views (backend)', () => {
     const user = userEvent.setup();
     render(<LeadsPage />);
     await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-    await user.click(screen.getByText('Views'));
+    await user.click(screen.getByText(/^Saved views/));
     await user.click(screen.getByText('Save current view'));
-    await user.type(screen.getByPlaceholderText('View name...'), 'My Hot Leads');
+    await user.type(screen.getByPlaceholderText('View name…'), 'My Hot Leads');
     await user.click(screen.getByText('Save'));
     await waitFor(() =>
       expect(mockViewsCreate).toHaveBeenCalledWith(expect.objectContaining({ name: 'My Hot Leads' })),
@@ -661,7 +576,7 @@ describe('LeadsPage — saved views (backend)', () => {
     const user = userEvent.setup();
     render(<LeadsPage />);
     await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-    await user.click(screen.getByText('Views'));
+    await user.click(screen.getByText(/^Saved views/));
     await waitFor(() => expect(screen.getByText('Doomed View')).toBeInTheDocument());
     // The delete (X) button sits next to the view name in the dropdown row.
     const row = screen.getByText('Doomed View').closest('div')!;
@@ -676,11 +591,11 @@ describe('LeadsPage — saved views (backend)', () => {
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
 
-      await user.click(screen.getByText('Advanced'));
+      await user.click(screen.getByTestId('filters-button'));
       await user.click(screen.getByText(/add condition/i));
       const rule = screen.getByTestId('filter-rule');
       fireEvent.change(rule.querySelector('input[aria-label="Value"]')!, { target: { value: 'Beta' } });
-      await user.click(screen.getByText(/^apply/i));
+      await user.click(screen.getAllByText(/^apply/i)[0]);
 
       await waitFor(() =>
         expect(mockGetLeadsPaged).toHaveBeenCalledWith(
@@ -694,10 +609,11 @@ describe('LeadsPage — saved views (backend)', () => {
       });
     });
 
-    it('does not call the paged endpoint when no advanced filter is set', async () => {
+    it('requests the list without a filter param when no advanced filter is set', async () => {
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      expect(mockGetLeadsPaged).not.toHaveBeenCalled();
+      expect(mockGetLeadsPaged).toHaveBeenCalled();
+      expect(mockGetLeadsPaged.mock.calls.every(([p]) => p.filter === undefined)).toBe(true);
     });
   });
 
@@ -766,7 +682,7 @@ describe('LeadsPage — saved views (backend)', () => {
     const openViews = async () => {
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      fireEvent.click(screen.getByText('Views'));
+      fireEvent.click(screen.getByText(/^Saved views/));
       await waitFor(() => expect(screen.getByText('Alpha')).toBeInTheDocument());
     };
 
@@ -807,8 +723,9 @@ describe('LeadsPage — saved views (backend)', () => {
       withView({ is_default: true });
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      await waitFor(() => expect(screen.getByText('Alpha')).toBeInTheDocument()); // active-view chip
-      fireEvent.click(screen.getByText('Alpha'));
+      await waitFor(() => expect(screen.getByText('Saved views (Alpha)')).toBeInTheDocument()); // active view in menu
+      fireEvent.click(screen.getByText('Saved views (Alpha)'));
+      await waitFor(() => expect(screen.getByText('Alpha')).toBeInTheDocument());
       await waitFor(() => expect(screen.getByLabelText('Default view')).toBeInTheDocument());
     });
   });
@@ -838,6 +755,32 @@ describe('LeadsPage — saved views (backend)', () => {
         expect(screen.getByTestId('lead-row-l1').textContent).toContain('Acme Corp'),
       );
     });
+  });
+});
+
+// ── Inline owner change (Pulse a21e3dd8) ──────────────────────────────────
+describe('LeadsPage — inline owner change', () => {
+  it('Given the owner PATCH fails / When the owner is changed inline / Then an error toast shows and the row keeps the old owner', async () => {
+    const errorSpy = vi.spyOn(toast, 'error');
+    mockUpdateLead.mockRejectedValueOnce(new Error('owner_id must be a valid user id'));
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+    const lead = capturedGridProps.leads.find((l: any) => l.id === 'l1');
+    await act(async () => { await capturedGridProps.context.onOwnerChange(lead, 'u2'); });
+    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('owner_id must be a valid user id'));
+    expect(screen.getByTestId('lead-row-l1').textContent).toContain('u1');
+    expect(mockLogActivity).not.toHaveBeenCalled();
+    errorSpy.mockRestore();
+  });
+
+  it('Given the owner is saved but the activity log fails / When the owner is changed inline / Then the row shows the new owner', async () => {
+    mockLogActivity.mockRejectedValueOnce(new Error('log down'));
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+    const lead = capturedGridProps.leads.find((l: any) => l.id === 'l1');
+    await act(async () => { await capturedGridProps.context.onOwnerChange(lead, 'u2'); });
+    expect(mockUpdateLead).toHaveBeenCalledWith('l1', { owner: expect.objectContaining({ id: 'u2' }) });
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1').textContent).toContain('u2'));
   });
 });
 
@@ -968,7 +911,7 @@ describe('Given the RE §26 utm_attribution flag gates the attribution filter fi
     const user = userEvent.setup();
     render(<LeadsPage />);
     await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-    await user.click(screen.getByText('Advanced'));
+    await user.click(screen.getByTestId('filters-button'));
     await user.click(screen.getByText(/add condition/i));
     const select = screen.getByTestId('filter-rule').querySelector('select[aria-label="Field"]')!;
     return Array.from(select.querySelectorAll('option')).map((o) => (o as HTMLOptionElement).value);
@@ -1013,8 +956,79 @@ describe('LeadsPage — export (RE §48)', () => {
     it('When CSV is clicked / Then leads are exported for the current status filter', async () => {
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      fireEvent.click(screen.getByRole('button', { name: 'Export leads as CSV' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Export leads' }));
+      fireEvent.click(screen.getByRole('menuitem', { name: 'CSV' }));
       await waitFor(() => expect(mockExportLeads).toHaveBeenCalledWith({ status: 'All' }, 'csv'));
     });
+  });
+});
+
+describe('LeadsPage - ListPageTemplate slots', () => {
+  it('Given leads load / When rendered / Then header has one primary New Lead and a toolbar slot', async () => {
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+    const primary = document.querySelector('[data-slot="primary"]') as HTMLElement;
+    expect(primary).toBeTruthy();
+    expect(within(primary).getByRole('button', { name: /new lead/i })).toBeInTheDocument();
+    expect(document.querySelectorAll('[data-slot="secondary"] button').length).toBeLessThanOrEqual(2);
+    expect(document.querySelector('[data-slot="toolbar"]')).toBeTruthy();
+  });
+
+  it('Given no leads exist / When rendered / Then the empty slot shows a New Lead CTA', async () => {
+    mockGetLeads.mockResolvedValue([]);
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByText('No leads yet')).toBeInTheDocument());
+    expect(within(document.querySelector('[data-slot="empty"]') as HTMLElement).getByRole('button', { name: /new lead/i })).toBeInTheDocument();
+  });
+});
+
+describe('LeadsPage — Comb list standard (views, counts, grid controls)', () => {
+  it('Given leads load / When rendered / Then no KPI strip is drawn and the Status filter is present', async () => {
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+    expect(document.querySelector('[data-slot="kpis"]')).toBeNull();
+    expect(screen.getByLabelText('Status')).toBeInTheDocument();
+  });
+
+  it('Given the views control / When rendered / Then it offers All, My and Unassigned (no Team) with My disabled without a user', async () => {
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('leads-scope-views')).toBeInTheDocument());
+    expect(screen.getByRole('radio', { name: 'All' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'My' })).toBeDisabled();
+    expect(screen.getByRole('radio', { name: 'Unassigned' })).toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: 'Team' })).not.toBeInTheDocument();
+  });
+
+  it('Given an unowned lead / When Unassigned is chosen / Then only leads without an owner remain', async () => {
+    mockGetLeads.mockResolvedValue([...leads, { ...leads[0], id: 'l4', company_name: 'Orphan Ltd', owner: undefined }]);
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l4')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('radio', { name: 'Unassigned' }));
+    await waitFor(() => {
+      expect(screen.getByTestId('lead-row-l4')).toBeInTheDocument();
+      expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('lead-row-l2')).not.toBeInTheDocument();
+    });
+  });
+
+  it('Given a signed-in user / When My is chosen / Then only that user\'s leads remain', async () => {
+    const shell = await import('@so360/shell-context');
+    vi.mocked(shell.useShellBridge).mockImplementation(() => ({
+      effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true,
+      isFeatureEnabled: () => true, isFeatureHidden: () => false, currentOrg: { id: 'org-1' }, user: { id: 'u2' },
+    } as any));
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('radio', { name: 'My' }));
+    await waitFor(() => {
+      expect(screen.getByTestId('lead-row-l2')).toBeInTheDocument();
+      expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument();
+    });
+  });
+
+  it('Given the toolbar / When rendered / Then a grid-controls slot is provided to the grid', async () => {
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+    expect(document.querySelector('[data-slot="grid-controls"]')).not.toBeNull();
   });
 });

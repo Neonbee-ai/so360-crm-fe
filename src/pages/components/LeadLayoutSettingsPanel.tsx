@@ -1,5 +1,7 @@
 import React from 'react';
-import { X, ChevronUp, ChevronDown, Eye, RefreshCw } from 'lucide-react';
+import { ChevronUp, ChevronDown, Eye, RefreshCw } from 'lucide-react';
+import { Button, IconButton } from '@so360/design-system';
+import { Modal } from '../../components/common/Modal';
 
 const SECTION_LABELS: Record<string, string> = {
     activity: 'Activity / Timeline',
@@ -29,42 +31,34 @@ interface Props {
 
 const LeadLayoutSettingsPanel: React.FC<Props> = ({ sections, onToggleVisible, onMove, onReset, onClose, labels = SECTION_LABELS, title = 'Layout Settings' }) => {
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
-            <div role="dialog" aria-label={title} className="bg-slate-950 border border-slate-800 rounded-2xl w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
-                <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
-                    <p className="text-xs font-black text-slate-50 uppercase tracking-widest">{title}</p>
-                    <button onClick={onClose} aria-label="Close" className="p-1.5 text-slate-500 hover:text-slate-200 rounded-lg hover:bg-slate-800"><X size={16} /></button>
-                </div>
+        <Modal
+            isOpen
+            onClose={onClose}
+            size="sm"
+            title={title}
+            bodyPadding={false}
+            data-testid="lead-layout-settings"
+            footer={
+                <Button type="button" variant="secondary" onClick={onReset}>
+                    <RefreshCw size={12} /> Reset to Default
+                </Button>
+            }
+        >
                 <div className="p-3 space-y-1 max-h-96 overflow-y-auto">
                     {sections.map((s, i) => (
-                        <div key={s.key} className="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-slate-900">
+                        <div key={s.key} className="flex items-center gap-2 px-2 py-2 rounded-nb hover:bg-surface">
                             <div className="flex flex-col">
-                                <button onClick={() => onMove(s.key, 'up')} aria-label={`Move ${labels[s.key] || s.key} up`} disabled={i === 0} className="text-slate-500 hover:text-slate-200 disabled:opacity-20">
-                                    <ChevronUp size={12} />
-                                </button>
-                                <button onClick={() => onMove(s.key, 'down')} aria-label={`Move ${labels[s.key] || s.key} down`} disabled={i === sections.length - 1} className="text-slate-500 hover:text-slate-200 disabled:opacity-20">
-                                    <ChevronDown size={12} />
-                                </button>
+                                <IconButton label={`Move ${labels[s.key] || s.key} up`} icon={<ChevronUp size={12} />} onClick={() => onMove(s.key, 'up')} disabled={i === 0} />
+                                <IconButton label={`Move ${labels[s.key] || s.key} down`} icon={<ChevronDown size={12} />} onClick={() => onMove(s.key, 'down')} disabled={i === sections.length - 1} />
                             </div>
-                            <span className={`flex-1 text-xs ${s.visible ? 'text-slate-200' : 'text-slate-600'}`}>
+                            <span className={`flex-1 text-xs ${s.visible ? 'text-fg' : 'text-fg-muted'}`}>
                                 {labels[s.key] || s.key}
                             </span>
-                            <button onClick={() => onToggleVisible(s.key)} aria-label={`${s.visible ? 'Hide' : 'Show'} ${labels[s.key] || s.key}`} aria-pressed={s.visible} className={s.visible ? 'text-blue-400' : 'text-slate-600'}>
-                                <Eye size={14} />
-                            </button>
+                            <IconButton label={`${s.visible ? 'Hide' : 'Show'} ${labels[s.key] || s.key}`} icon={<Eye size={14} />} onClick={() => onToggleVisible(s.key)} aria-pressed={s.visible} />
                         </div>
                     ))}
                 </div>
-                <div className="px-5 py-4 border-t border-slate-800">
-                    <button
-                        onClick={onReset}
-                        className="w-full flex items-center justify-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-200 py-2"
-                    >
-                        <RefreshCw size={12} /> Reset to Default
-                    </button>
-                </div>
-            </div>
-        </div>
+        </Modal>
     );
 };
 

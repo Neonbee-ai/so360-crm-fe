@@ -1,4 +1,5 @@
 import type { InventoryItem, ReservationStatus } from '../../types/crm';
+import { plainErrorText } from '../../utils/apiErrorMessage';
 
 /** Hold durations offered when attaching a unit. 48h is the default. */
 export const HOLD_HOUR_OPTIONS = [24, 48, 72, 168] as const;
@@ -67,5 +68,6 @@ export function unitBookingErrorMessage(e: unknown, fallback: string): string {
         const hay = [b.code, b.error, b.message, err.message].map((v) => (typeof v === 'string' ? v : '')).join(' ');
         if (hay.includes('UNIT_NOT_ALLOCATED')) return UNIT_NOT_ALLOCATED_MESSAGE;
     }
-    return err.message || fallback;
+    if (typeof err.status === 'number' && err.status >= 500) return fallback;
+    return plainErrorText(err.message, fallback);
 }

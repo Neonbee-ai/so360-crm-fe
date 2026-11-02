@@ -233,6 +233,37 @@ describe('useLeadGridPreferences — backend sync', () => {
     }, { timeout: 2000 });
   });
 
+  it('given a saved remote layout, when the page only loads, then no PUT is sent', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      okJson({ prefs: { columns: [{ key: 'company', visible: true, width: 222, pinned: false, order: 1 }], density: 'compact' } }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const { result } = renderHook(() => useLeadGridPreferences());
+    await waitFor(() => expect(result.current.density).toBe('compact'));
+    await new Promise((r) => setTimeout(r, 1000));
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'PUT')).toBe(false);
+  });
+
+  it('given no remote layout, when the page only loads, then no PUT is sent', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(okJson(null));
+    vi.stubGlobal('fetch', fetchMock);
+    renderHook(() => useLeadGridPreferences());
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    await new Promise((r) => setTimeout(r, 1000));
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'PUT')).toBe(false);
+  });
+
+  it('given a change reverted within the debounce, then no PUT is sent', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(okJson(null));
+    vi.stubGlobal('fetch', fetchMock);
+    const { result } = renderHook(() => useLeadGridPreferences());
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    act(() => { result.current.setDensity('compact'); });
+    act(() => { result.current.setDensity('comfortable'); });
+    await new Promise((r) => setTimeout(r, 1000));
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'PUT')).toBe(false);
+  });
+
   it('clears the backend layout on reset', async () => {
     const fetchMock = vi.fn().mockResolvedValue(okJson({}));
     vi.stubGlobal('fetch', fetchMock);

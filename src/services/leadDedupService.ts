@@ -76,3 +76,34 @@ export const leadDedupService = {
         });
     },
 };
+
+export interface RuleDuplicateInfo extends DuplicateLeadInfo {
+    code: 'DUPLICATE_PHONE' | 'DUPLICATE_COMPANY';
+    action: 'warn' | 'block';
+    canOverride: boolean;
+    /** Human label of the matched field. */
+    matchedOn: string;
+}
+
+const RULE_CODES = { DUPLICATE_PHONE: 'phone number', DUPLICATE_COMPANY: 'company name' } as const;
+
+/** Reads a per-org duplicate-rule rejection (phone / company name); null otherwise. */
+export function parseRuleDuplicate(err: unknown): RuleDuplicateInfo | null {
+    const e = err as { status?: number; body?: any } | null | undefined;
+    const body = e?.body;
+    const code = body?.code as keyof typeof RULE_CODES | undefined;
+    if (!code || !(code in RULE_CODES)) return null;
+    if (e?.status !== undefined && e.status !== 409) return null;
+    const id = body.existing_id ?? body.existing?.id;
+    if (typeof id !== 'string' || !id) return null;
+    const name = body.existing?.name ?? body.existing?.company_name;
+    return {
+        id,
+        name: typeof name === 'string' && name ? name : 'Existing lead',
+        owner_name: typeof body.existing?.owner_name === 'string' && body.existing.owner_name ? body.existing.owner_name : null,
+        code,
+        action: body.action === 'block' ? 'block' : 'warn',
+        canOverride: body.can_override === true,
+        matchedOn: RULE_CODES[code],
+    };
+}

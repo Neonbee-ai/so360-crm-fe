@@ -378,13 +378,10 @@ describe('CreateDealModal', () => {
     });
   });
 
-  describe('Given modal size constraint', () => {
-    it('When rendered / Then modal container has max-h-[90vh] to stay within viewport', () => {
+  describe('Given the modal is rendered', () => {
+    it('When rendered / Then it is shown as a dialog', () => {
       render(<CreateDealModal {...defaultProps} />);
-      const panels = Array.from(document.querySelectorAll('div')).filter(
-        el => el.className.includes('max-h-[90vh]'),
-      );
-      expect(panels.length).toBeGreaterThan(0);
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
   });
 

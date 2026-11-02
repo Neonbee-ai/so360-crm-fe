@@ -76,6 +76,8 @@ vi.mock('react-router-dom', () => ({
 }));
 
 vi.mock('@so360/shell-context', () => ({
+  // DlCustomFieldsPanel (custom fields tab) reads dataset fields.
+  useDatasetSchema: () => ({ fields: [], isLoading: false, error: null }),
   useCurrentEntity: () => ({ setCurrentEntity: vi.fn() }),
   useShellBridge: () => shellState.bridge,
   useShell: () => ({

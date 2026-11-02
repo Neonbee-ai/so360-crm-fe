@@ -263,7 +263,7 @@ export const UNIT_FIELDS: ImportField[] = [
     { key: 'built_up_area', label: 'Built-up area', aliases: ['bua', 'built up area'] },
     { key: 'plot_area', label: 'Plot area' },
     { key: 'area_sqft', label: 'Area (sqft)', aliases: ['area', 'sqft'] },
-    { key: 'view', label: 'View' },
+    { key: 'view', label: 'Property view' },
     { key: 'facing', label: 'Facing' },
     { key: 'parking', label: 'Parking', aliases: ['parking spaces'] },
     { key: 'price_per_sqft', label: 'Price per sqft', aliases: ['rate per sqft'] },

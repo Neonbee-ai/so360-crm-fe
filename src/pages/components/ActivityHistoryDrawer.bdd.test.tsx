@@ -1,6 +1,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import ActivityHistoryDrawer from './ActivityHistoryDrawer';
 import { activitiesApi, timelineApi } from '../../services/crmService';
@@ -123,12 +124,12 @@ describe('ActivityHistoryDrawer', () => {
         });
     });
 
-    describe('Given module filter buttons', () => {
+    describe('Given the module quick filter', () => {
         it('When CRM filter is clicked / Then re-queries scoped to the crm module', async () => {
             renderDrawer();
             await waitFor(() => screen.getByText('Outbound call logged'));
 
-            fireEvent.click(screen.getByRole('button', { name: 'CRM' }));
+            fireEvent.change(screen.getByTestId('filter-module'), { target: { value: 'crm' } });
 
             await waitFor(() =>
                 expect(timelineApi.getTimeline).toHaveBeenLastCalledWith('lead', 'lead-1', expect.objectContaining({ module: 'crm' })),
@@ -139,8 +140,8 @@ describe('ActivityHistoryDrawer', () => {
             renderDrawer();
             await waitFor(() => screen.getByText('Outbound call logged'));
 
-            fireEvent.click(screen.getByRole('button', { name: 'CRM' }));
-            fireEvent.click(screen.getByRole('button', { name: 'All' }));
+            fireEvent.change(screen.getByTestId('filter-module'), { target: { value: 'crm' } });
+            fireEvent.change(screen.getByTestId('filter-module'), { target: { value: '' } });
 
             await waitFor(() => expect(screen.getByText('Outbound call logged')).toBeInTheDocument());
             expect(screen.getByText('Note added')).toBeInTheDocument();
@@ -153,42 +154,16 @@ describe('ActivityHistoryDrawer', () => {
             renderDrawer({ onClose });
             await waitFor(() => screen.getByText('Activity History'));
 
-            const panel = document.querySelector('.fixed.right-0') as HTMLElement;
-            const closeBtn = panel.querySelector('button');
-            fireEvent.click(closeBtn!);
-            expect(onClose).toHaveBeenCalled();
-        });
-
-        it('When overlay is clicked / Then calls onClose', async () => {
-            const onClose = vi.fn();
-            renderDrawer({ onClose });
-            await waitFor(() => screen.getByText('Activity History'));
-
-            const overlay = document.querySelector('.fixed.inset-0');
-            if (overlay) fireEvent.click(overlay);
+            fireEvent.click(screen.getByRole('button', { name: 'Close' }));
             expect(onClose).toHaveBeenCalled();
         });
     });
 
-    describe('Given the drawer positioning relative to the fixed shell header', () => {
-        it('When open / Then the panel starts below the 56px glass-nav header (top-14, not top-0)', async () => {
+    describe('Given the DS Drawer shell', () => {
+        it('When open / Then it renders as the activity-history drawer dialog', async () => {
             renderDrawer();
             await waitFor(() => screen.getByText('Activity History'));
-
-            const panel = document.querySelector('.fixed.right-0');
-            expect(panel).not.toBeNull();
-            expect(panel).toHaveClass('top-14');
-            expect(panel).not.toHaveClass('top-0');
-        });
-
-        it('When open / Then the panel height is the remaining viewport below the header, not full height', async () => {
-            renderDrawer();
-            await waitFor(() => screen.getByText('Activity History'));
-
-            const panel = document.querySelector('.fixed.right-0');
-            expect(panel).not.toBeNull();
-            expect(panel).toHaveClass('h-[calc(100vh-3.5rem)]');
-            expect(panel).not.toHaveClass('h-full');
+            expect(screen.getByTestId('activity-history-drawer')).toHaveAttribute('role', 'dialog');
         });
     });
 
@@ -210,10 +185,14 @@ describe('ActivityHistoryDrawer', () => {
         });
     });
 
-    describe('Given the G8 Client 360 interaction-type chips', () => {
+    describe('Given the G8 Client 360 interaction-type filter (Filters drawer)', () => {
         const SUMMARY_WITH_COUNTS = {
             ...SUMMARY,
             type_counts: { call: 3, whatsapp: 2, email: 0, meeting: 1, booking: 4 },
+        };
+        const openTypes = async () => {
+            fireEvent.click(screen.getByTestId('filters-button'));
+            return screen.getByTestId('filter-types') as HTMLSelectElement;
         };
 
         beforeEach(() => {
@@ -224,85 +203,76 @@ describe('ActivityHistoryDrawer', () => {
             });
         });
 
-        it('When the drawer opens / Then every type chip renders, "All types" is pressed and no types filter is sent', async () => {
+        it('When the drawer opens / Then no types filter is sent and the drawer lists every type', async () => {
             renderDrawer();
             await waitFor(() => screen.getByText('Outbound call logged'));
 
-            for (const key of ['call', 'whatsapp', 'email', 'meeting', 'task', 'note', 'document', 'booking']) {
-                expect(screen.getByTestId(`type-chip-${key}`)).toHaveAttribute('aria-pressed', 'false');
-            }
-            expect(screen.getByRole('button', { name: 'All types' })).toHaveAttribute('aria-pressed', 'true');
+            const el = await openTypes();
+            expect(Array.from(el.options).map((o) => o.value)).toEqual(['call', 'whatsapp', 'email', 'meeting', 'task', 'note', 'document', 'booking']);
             expect(timelineApi.getTimeline).toHaveBeenLastCalledWith('lead', 'lead-1', expect.objectContaining({ types: undefined }));
         });
 
-        it('When summary.type_counts is present / Then chips show their counts (including zero) and omit counts for absent types', async () => {
+        it('When summary.type_counts is present / Then options show counts (including zero) and omit counts for absent types', async () => {
             renderDrawer();
             await waitFor(() => screen.getByText('Outbound call logged'));
 
-            expect(screen.getByTestId('type-chip-call')).toHaveTextContent('Calls(3)');
-            expect(screen.getByTestId('type-chip-whatsapp')).toHaveTextContent('WhatsApp(2)');
-            expect(screen.getByTestId('type-chip-email')).toHaveTextContent('Email(0)');
-            expect(screen.getByTestId('type-chip-booking')).toHaveTextContent('Bookings(4)');
-            expect(screen.getByTestId('type-chip-task')).toHaveTextContent(/^Tasks$/);
+            const el = await openTypes();
+            const label = (v: string) => Array.from(el.options).find((o) => o.value === v)?.textContent;
+            expect(label('call')).toBe('Calls (3)');
+            expect(label('whatsapp')).toBe('WhatsApp (2)');
+            expect(label('email')).toBe('Email (0)');
+            expect(label('booking')).toBe('Bookings (4)');
+            expect(label('task')).toBe('Tasks');
         });
 
-        it('When summary has no type_counts / Then chips render without counts', async () => {
+        it('When summary has no type_counts / Then options render without counts', async () => {
             vi.mocked(timelineApi.getTimeline).mockResolvedValue({ data: ALL_EVENTS, nextCursor: null, summary: SUMMARY } as any);
             renderDrawer();
             await waitFor(() => screen.getByText('Outbound call logged'));
-            expect(screen.getByTestId('type-chip-call')).toHaveTextContent(/^Calls$/);
+            const el = await openTypes();
+            expect(Array.from(el.options).find((o) => o.value === 'call')?.textContent).toBe('Calls');
         });
 
-        it('When Calls then WhatsApp are toggled on / Then the query sends types=call,whatsapp and both chips are pressed', async () => {
+        it('When Calls then WhatsApp are selected / Then the query sends types=call,whatsapp', async () => {
+            const user = userEvent.setup();
             renderDrawer();
             await waitFor(() => screen.getByText('Outbound call logged'));
 
-            fireEvent.click(screen.getByTestId('type-chip-call'));
+            const el = await openTypes();
+            await user.selectOptions(el, 'call');
             await waitFor(() =>
                 expect(timelineApi.getTimeline).toHaveBeenLastCalledWith('lead', 'lead-1', expect.objectContaining({ types: 'call' })),
             );
             await waitFor(() => expect(screen.queryByText('Note added')).not.toBeInTheDocument());
             expect(screen.getByText('Outbound call logged')).toBeInTheDocument();
 
-            fireEvent.click(screen.getByTestId('type-chip-whatsapp'));
+            await user.selectOptions(screen.getByTestId('filter-types'), 'whatsapp');
             await waitFor(() =>
                 expect(timelineApi.getTimeline).toHaveBeenLastCalledWith('lead', 'lead-1', expect.objectContaining({ types: 'call,whatsapp' })),
             );
-            expect(screen.getByTestId('type-chip-call')).toHaveAttribute('aria-pressed', 'true');
-            expect(screen.getByTestId('type-chip-whatsapp')).toHaveAttribute('aria-pressed', 'true');
-            expect(screen.getByRole('button', { name: 'All types' })).toHaveAttribute('aria-pressed', 'false');
         });
 
-        it('When a pressed chip is clicked again / Then it is toggled off and the types filter is dropped', async () => {
+        it('When a selected type chip is removed / Then the types filter is dropped', async () => {
+            const user = userEvent.setup();
             renderDrawer();
             await waitFor(() => screen.getByText('Outbound call logged'));
 
-            fireEvent.click(screen.getByTestId('type-chip-call'));
-            await waitFor(() => expect(screen.getByTestId('type-chip-call')).toHaveAttribute('aria-pressed', 'true'));
-            fireEvent.click(screen.getByTestId('type-chip-call'));
+            await user.selectOptions(await openTypes(), 'call');
+            const chip = await screen.findByRole('button', { name: 'Remove Interaction type filter' });
+            fireEvent.click(chip);
 
-            await waitFor(() => expect(screen.getByTestId('type-chip-call')).toHaveAttribute('aria-pressed', 'false'));
-            expect(timelineApi.getTimeline).toHaveBeenLastCalledWith('lead', 'lead-1', expect.objectContaining({ types: undefined }));
-        });
-
-        it('When "All types" is clicked after selecting chips / Then every chip is cleared and all events return', async () => {
-            renderDrawer();
-            await waitFor(() => screen.getByText('Outbound call logged'));
-
-            fireEvent.click(screen.getByTestId('type-chip-call'));
-            await waitFor(() => expect(screen.queryByText('Note added')).not.toBeInTheDocument());
-
-            fireEvent.click(screen.getByRole('button', { name: 'All types' }));
+            await waitFor(() =>
+                expect(timelineApi.getTimeline).toHaveBeenLastCalledWith('lead', 'lead-1', expect.objectContaining({ types: undefined })),
+            );
             await waitFor(() => expect(screen.getByText('Note added')).toBeInTheDocument());
-            expect(screen.getByRole('button', { name: 'All types' })).toHaveAttribute('aria-pressed', 'true');
-            expect(timelineApi.getTimeline).toHaveBeenLastCalledWith('lead', 'lead-1', expect.objectContaining({ types: undefined }));
         });
 
         it('When a type filter matches nothing / Then the "No matching activities" empty state is shown', async () => {
+            const user = userEvent.setup();
             renderDrawer();
             await waitFor(() => screen.getByText('Outbound call logged'));
 
-            fireEvent.click(screen.getByTestId('type-chip-booking'));
+            await user.selectOptions(await openTypes(), 'booking');
 
             await waitFor(() => expect(screen.getByText('No matching activities')).toBeInTheDocument());
             expect(screen.getByText('Try adjusting your search or filter.')).toBeInTheDocument();

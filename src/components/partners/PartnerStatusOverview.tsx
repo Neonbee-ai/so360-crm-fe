@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { Card } from '@so360/design-system';
 
 interface PartnerTypeOption {
     value: string;
@@ -18,14 +19,14 @@ interface PartnerStatusOverviewProps {
 // (not a fixed enum like fulfillment shipment statuses), so colors are assigned
 // by render order rather than hardcoded per-type.
 const PALETTE = [
-    { bar: 'bg-blue-500', dot: 'bg-blue-500' },
-    { bar: 'bg-emerald-500', dot: 'bg-emerald-500' },
-    { bar: 'bg-amber-500', dot: 'bg-amber-500' },
-    { bar: 'bg-purple-500', dot: 'bg-purple-500' },
-    { bar: 'bg-pink-500', dot: 'bg-pink-500' },
-    { bar: 'bg-teal-500', dot: 'bg-teal-500' },
+    { bar: 'bg-primary', dot: 'bg-primary' },
+    { bar: 'bg-success', dot: 'bg-success' },
+    { bar: 'bg-warning', dot: 'bg-warning' },
+    { bar: 'bg-info', dot: 'bg-info' },
+    { bar: 'bg-danger', dot: 'bg-danger' },
+    { bar: 'bg-fg-muted', dot: 'bg-fg-muted' },
 ];
-const FALLBACK_COLOR = { bar: 'bg-slate-500', dot: 'bg-slate-500' };
+const FALLBACK_COLOR = { bar: 'bg-fg-subtle', dot: 'bg-fg-subtle' };
 
 /**
  * Replaces the old 4-card Partner KPI grid (Total Partners / Total Deals /
@@ -61,13 +62,12 @@ export const PartnerStatusOverview: React.FC<PartnerStatusOverviewProps> = ({ pa
     const segments = orderedKeys.map(key => ({ key, count: counts[key] }));
 
     return (
-        <div className="bg-slate-900/50 rounded-xl border border-slate-800 p-4 mb-6">
-            <div className="flex items-center justify-between mb-2.5">
-                <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">Partner Type Distribution</span>
-                <span className="text-xs text-slate-500">{total} partner{total === 1 ? '' : 's'}</span>
-            </div>
+        <Card
+            title="Partner type distribution"
+            actions={<span className="text-xs text-fg-muted">{total} partner{total === 1 ? '' : 's'}</span>}
+        >
             <div
-                className="h-2 rounded-full bg-slate-800 overflow-hidden flex"
+                className="h-2 rounded-full bg-surface-raised overflow-hidden flex"
                 role="img"
                 aria-label={`Partner type distribution across ${total} partners`}
             >
@@ -87,14 +87,14 @@ export const PartnerStatusOverview: React.FC<PartnerStatusOverviewProps> = ({ pa
                     return (
                         <div key={key} className="flex items-center gap-1.5 text-xs">
                             <span className={`w-2 h-2 rounded-full ${colorFor(key).dot}`} />
-                            <span className="text-slate-400">{labelFor(key)}</span>
-                            <span className="text-slate-200 font-medium">{count}</span>
-                            <span className="text-slate-600">({pct}%)</span>
+                            <span className="text-fg-subtle">{labelFor(key)}</span>
+                            <span className="text-fg font-medium">{count}</span>
+                            <span className="text-fg-muted">({pct}%)</span>
                         </div>
                     );
                 })}
             </div>
-        </div>
+        </Card>
     );
 };
 

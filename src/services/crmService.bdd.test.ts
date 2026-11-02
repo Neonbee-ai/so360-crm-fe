@@ -231,3 +231,67 @@ describe('crmService — activitiesApi', () => {
     });
   });
 });
+
+describe('crmService — dashboard stats streaming + fresh (Pulse b671c161)', () => {
+  const analyticsStats = {
+    financials: { totalRevenue: 1000, pipelineValue: 5000, avgDealSize: 2000 },
+    metrics: { winRate: 60 },
+    counts: { totalLeads: 5, totalDeals: 3 },
+    chartData: { values: [1], labels: ['Jan'] },
+  };
+
+  it('Given onKpis / When the dashboard read answers / Then onKpis gets the KPI part with pending=true and empty team + reminders', async () => {
+    mockSuccess(analyticsStats);
+    mockSuccess([{ user: { id: 'u1', name: 'A', email: 'a@x' }, metrics: { won: 2, leads: 3, activityPoints: 4, conversionRate: 50 } }]);
+    mockSuccess([{ id: 't1', status: 'OPEN', type: 'REMINDER', due_date: '2026-01-01' }]);
+    const onKpis = vi.fn();
+    const result = await crmService.getDashboardStats({ period: 'monthly' }, { onKpis });
+    expect(onKpis).toHaveBeenCalledTimes(1);
+    const partial = onKpis.mock.calls[0][0];
+    expect(partial.pending).toBe(true);
+    expect(partial.financials.totalRevenue).toBe(1000);
+    expect(partial.teamStats).toEqual([]);
+    expect(partial.reminders).toEqual([]);
+    expect(result.pending).toBeUndefined();
+    expect(result.teamStats).toHaveLength(1);
+    expect(result.reminders).toHaveLength(1);
+  });
+
+  it('Given onKpis throws / When the dashboard read answers / Then the full stats still resolve', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    mockSuccess(analyticsStats);
+    mockSuccess([]);
+    mockSuccess([]);
+    const result = await crmService.getDashboardStats({ period: 'monthly' }, { onKpis: () => { throw new Error('boom'); } });
+    expect(result.financials.totalRevenue).toBe(1000);
+    spy.mockRestore();
+  });
+
+  it('Given the dashboard read fails / When onKpis is set / Then onKpis is not called and zeros are returned', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    mockError(500, { message: 'down' });
+    mockSuccess([]);
+    mockSuccess([]);
+    const onKpis = vi.fn();
+    const result = await crmService.getDashboardStats({ period: 'monthly' }, { onKpis });
+    expect(onKpis).not.toHaveBeenCalled();
+    expect(result.financials.totalRevenue).toBe(0);
+    spy.mockRestore();
+  });
+
+  it('Given fresh=true / When getDashboardStats is called / Then the dashboard URL carries fresh=1', async () => {
+    mockSuccess(analyticsStats);
+    mockSuccess([]);
+    mockSuccess([]);
+    await crmService.getDashboardStats({ period: 'monthly' }, { fresh: true });
+    expect(String(fetchMock.mock.calls[0][0])).toContain('fresh=1');
+  });
+
+  it('Given no opts / When getDashboardStats is called / Then the dashboard URL has no fresh flag', async () => {
+    mockSuccess(analyticsStats);
+    mockSuccess([]);
+    mockSuccess([]);
+    await crmService.getDashboardStats({ period: 'monthly' });
+    expect(String(fetchMock.mock.calls[0][0])).not.toContain('fresh=');
+  });
+});

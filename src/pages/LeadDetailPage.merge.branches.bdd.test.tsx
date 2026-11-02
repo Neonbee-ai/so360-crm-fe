@@ -84,6 +84,8 @@ vi.mock('react-router-dom', () => ({
 }));
 
 vi.mock('@so360/shell-context', () => ({
+  // DlCustomFieldsPanel (custom fields tab) reads dataset fields.
+  useDatasetSchema: () => ({ fields: [], isLoading: false, error: null }),
   useCurrentEntity: () => ({ setCurrentEntity: vi.fn() }),
   useShellBridge: () => ({
     tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee',
@@ -210,7 +212,7 @@ describe('Given the merge panel is open', () => {
     await renderLoaded();
     fireEvent.click(screen.getByRole('button', { name: 'Merge' }));
     expect(screen.getByTestId('merge-lead-panel')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Close merge panel' }));
+    fireEvent.click(within(screen.getByTestId('merge-lead-panel')).getByRole('button', { name: 'Close' }));
     await waitFor(() => expect(screen.queryByTestId('merge-lead-panel')).toBeNull());
     expect(mockMerge).not.toHaveBeenCalled();
     expect(mockPublish).not.toHaveBeenCalled();

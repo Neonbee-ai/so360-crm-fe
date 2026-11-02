@@ -67,10 +67,11 @@ describe('Given the superseded Sales Target Engine pages', () => {
     },
   );
 
-  it('When the router is read / Then it still has no catch-all, which is why the redirects matter', () => {
-    // If a `path="*"` is ever added, these redirects become a nicety rather
-    // than a necessity — and whoever adds it should see this note.
-    expect(app()).not.toContain('path="*"');
+  it('When the router is read / Then its catch-all renders CRM Not Found (redirects still keep old links useful)', () => {
+    // 7581e8b added a `path="*"` catch-all, so an unmatched path now shows
+    // CrmNotFound instead of a blank pane. The redirects remain so stale
+    // bookmarks land on the successor page, not on a 404.
+    expect(app()).toMatch(/path="\*"\s+element=\{<CrmNotFound/);
   });
 
   it.each(RETIRED.filter((r) => r.supersededBy))(

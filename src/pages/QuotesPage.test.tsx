@@ -35,11 +35,15 @@ vi.mock('@so360/formatters', () => ({
   }),
 }));
 
-vi.mock('../components/common/Table', () => ({
-  Table: ({ data, isLoading, emptyMessage }: any) => (
-    <div data-testid="table">{isLoading ? 'Loading...' : data.length === 0 ? emptyMessage : `${data.length} rows`}</div>
-  ),
-}));
+vi.mock('@so360/design-system', async (importOriginal) => {
+  const actual: any = await importOriginal();
+  return {
+    ...actual,
+    DataTable: ({ rows, loading, emptyState }: any) => (
+      <div data-testid="table">{loading ? 'Loading...' : rows.length === 0 ? emptyState : `${rows.length} rows`}</div>
+    ),
+  };
+});
 
 import QuotesPage from './QuotesPage';
 

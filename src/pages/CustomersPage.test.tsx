@@ -4,13 +4,11 @@ import React from 'react';
 
 const mockGetCustomers = vi.fn();
 const mockGetCustomerStats = vi.fn();
-const mockGetCustomerSegmentCustomers = vi.fn();
 
 vi.mock('../services/crmService', () => ({
   crmService: {
     getCustomers: (...args: any[]) => mockGetCustomers(...args),
     getCustomerStats: (...args: any[]) => mockGetCustomerStats(...args),
-    getCustomerSegmentCustomers: (...args: any[]) => mockGetCustomerSegmentCustomers(...args),
     getPartners: () => Promise.resolve([]),
   },
 }));
@@ -30,13 +28,17 @@ vi.mock('@so360/shell-context', () => ({
   useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),
   useSandboxLimit: () => ({ isSandboxMode: false, sandboxEntryLimit: 0, isLimited: false }),}));
 
-vi.mock('../components/common/Table', () => ({
-  Table: ({ data, isLoading, emptyMessage }: any) => (
-    <div data-testid="table">
-      {isLoading ? 'Loading...' : data.length === 0 ? emptyMessage : `${data.length} rows`}
-    </div>
-  ),
-}));
+vi.mock('@so360/design-system', async (importOriginal) => {
+  const actual: any = await importOriginal();
+  return {
+    ...actual,
+    DataTable: ({ rows, loading, emptyState }: any) => (
+      <div data-testid="table">
+        {loading ? 'Loading...' : rows.length === 0 ? emptyState : `${rows.length} rows`}
+      </div>
+    ),
+  };
+});
 
 import CustomersPage from './CustomersPage';
 
@@ -67,11 +69,11 @@ describe('Given CustomersPage', () => {
     });
   });
 
-  it('When action / Then displays stats', async () => {
-    mockGetCustomerStats.mockResolvedValue({ total: 42 });
+  it('When action / Then shows stats as filter option counts', async () => {
+    mockGetCustomerStats.mockResolvedValue({ total: 42, b2b_count: 7 });
     render(<CustomersPage />);
     await waitFor(() => {
-      expect(screen.getByTestId('summary-metric-chip-total')).toHaveTextContent('42');
+      expect(screen.getByLabelText('Category').querySelector('option[value="b2b"]')).toHaveAttribute('data-count', '7');
     });
   });
 });

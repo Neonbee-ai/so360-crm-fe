@@ -59,7 +59,7 @@ const rule = (over: Partial<AssignmentRule> = {}): AssignmentRule => ({
 
 const renderTab = async () => {
     render(<AssignmentRulesSettingsTab canWrite />);
-    await waitFor(() => expect(screen.queryByTestId('icon-Loader2')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByTestId('skeleton')).not.toBeInTheDocument());
 };
 
 const reassignInput = () => screen.getByLabelText('Reassign if not contacted within (minutes)');

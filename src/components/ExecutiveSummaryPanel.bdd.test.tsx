@@ -187,7 +187,7 @@ describe('ExecutiveSummaryPanel', () => {
       render(<ExecutiveSummaryPanel lead={lead} deals={deals} tasks={tasks} />);
 
       // Should show up to 3 stages (order depends on insertion)
-      const pipelineArea = screen.getByText(/Pipeline Health/).closest('div')?.textContent;
+      const pipelineArea = screen.getByText(/Pipeline health/).closest('div')?.textContent;
       expect(pipelineArea).toBeTruthy();
     });
   });
@@ -680,7 +680,7 @@ describe('ExecutiveSummaryPanel', () => {
 
       render(<ExecutiveSummaryPanel lead={lead} deals={deals} tasks={tasks} />);
 
-      expect(screen.getByText('Executive Summary')).toBeInTheDocument();
+      expect(screen.getByText('Executive summary')).toBeInTheDocument();
     });
 
     it('When deals have undefined activities / Then renders without crashing', () => {
@@ -690,7 +690,7 @@ describe('ExecutiveSummaryPanel', () => {
 
       render(<ExecutiveSummaryPanel lead={lead} deals={deals} tasks={tasks} />);
 
-      expect(screen.getByText('Executive Summary')).toBeInTheDocument();
+      expect(screen.getByText('Executive summary')).toBeInTheDocument();
     });
 
     it('When deal value is undefined / Then treats as zero', () => {

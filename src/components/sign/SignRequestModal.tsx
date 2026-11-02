@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { X, Loader2, AlertCircle, FileSignature } from 'lucide-react';
+import { Loader2, AlertCircle, FileSignature } from 'lucide-react';
+import { Button, TextField, Select } from '@so360/design-system';
+import { Modal } from '../common/Modal';
 
 interface Props {
     onClose: () => void;
@@ -95,75 +97,81 @@ const SignRequestModal: React.FC<Props> = ({ onClose, prefillName, prefillEmail,
     const busy = phase === 'loading' || phase === 'sending';
 
     return (
-        <div className="fixed inset-0 bg-black/50 z-[600] flex items-center justify-center p-4"
-            onClick={e => { if (e.target === e.currentTarget && !busy) onClose(); }}>
-            <div className="bg-white rounded-lg w-full max-w-md shadow-2xl flex flex-col max-h-[90vh]">
-                <header className="flex items-center justify-between px-5 py-4 border-b">
-                    <div className="flex items-center gap-2">
-                        <FileSignature className="w-4 h-4 text-blue-600" />
-                        <h2 className="text-base font-semibold text-gray-900">Request Signature</h2>
-                    </div>
-                    <button type="button" onClick={onClose} disabled={busy} className="text-gray-400 hover:text-gray-700">
-                        <X className="w-4 h-4" />
-                    </button>
-                </header>
+        <Modal
+            isOpen
+            onClose={onClose}
+            size="md"
+            dismissible={!busy}
+            data-testid="sign-request-modal"
+            title={
+                <span className="flex items-center gap-2">
+                    <FileSignature className="w-4 h-4 text-primary" />
+                    Request Signature
+                </span>
+            }
+            footer={
+                <>
+                    <Button type="button" variant="secondary" onClick={onClose} disabled={busy}>Cancel</Button>
+                    <Button type="button" variant="primary" onClick={handleSend} disabled={busy || !valid}>
+                        {phase === 'sending' && <Loader2 className="w-4 h-4 animate-spin" />}
+                        {phase === 'done' ? 'Sent ✓' : phase === 'sending' ? 'Sending…' : 'Send for signature'}
+                    </Button>
+                </>
+            }
+        >
+                <div className="space-y-4">
+                    <Select
+                        name="sign-template"
+                        label="Template"
+                        value={templateId}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setTemplateId(e.target.value)}
+                        disabled={busy || templates.length === 0}
+                        placeholder={phase === 'loading' ? 'Loading…' : templates.length === 0 ? 'No templates available' : undefined}
+                        options={templates.map(t => ({ value: t.id, label: t.name }))}
+                    />
 
-                <div className="px-5 py-5 space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Template</label>
-                        <select value={templateId} onChange={e => setTemplateId(e.target.value)}
-                            disabled={busy || templates.length === 0}
-                            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
-                            {phase === 'loading' && <option>Loading…</option>}
-                            {phase !== 'loading' && templates.length === 0 && <option>No templates available</option>}
-                            {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                        </select>
-                    </div>
+                    <TextField
+                        name="sign-signer-name"
+                        label="Signer name"
+                        type="text"
+                        value={signerName}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSignerName(e.target.value)}
+                        disabled={busy}
+                        placeholder="Full name"
+                    />
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Signer name</label>
-                        <input type="text" value={signerName} onChange={e => setSignerName(e.target.value)}
-                            disabled={busy} placeholder="Full name"
-                            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" />
-                    </div>
+                    <TextField
+                        name="sign-signer-email"
+                        label="Signer email"
+                        type="email"
+                        value={signerEmail}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSignerEmail(e.target.value)}
+                        disabled={busy}
+                        placeholder="email@example.com"
+                    />
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Signer email</label>
-                        <input type="email" value={signerEmail} onChange={e => setSignerEmail(e.target.value)}
-                            disabled={busy} placeholder="email@example.com"
-                            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Expires in</label>
-                        <select value={expiresInDays} onChange={e => setExpiresInDays(e.target.value)}
-                            disabled={busy} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
-                            <option value="3">3 days</option>
-                            <option value="7">7 days</option>
-                            <option value="14">14 days</option>
-                            <option value="30">30 days</option>
-                            <option value="">No expiry</option>
-                        </select>
-                    </div>
+                    <Select
+                        name="sign-expires-in"
+                        label="Expires in"
+                        value={expiresInDays}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setExpiresInDays(e.target.value)}
+                        disabled={busy}
+                        options={[
+                            { value: '3', label: '3 days' },
+                            { value: '7', label: '7 days' },
+                            { value: '14', label: '14 days' },
+                            { value: '30', label: '30 days' },
+                            { value: '', label: 'No expiry' },
+                        ]}
+                    />
 
                     {error && (
-                        <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-md px-3 py-2 text-xs text-red-700">
+                        <div className="flex items-start gap-2 bg-danger-container border border-danger-container rounded-md px-3 py-2 text-xs text-danger-on-container">
                             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /><span>{error}</span>
                         </div>
                     )}
                 </div>
-
-                <footer className="flex items-center justify-end gap-2 px-5 py-3 border-t">
-                    <button type="button" onClick={onClose} disabled={busy}
-                        className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</button>
-                    <button type="button" onClick={handleSend} disabled={busy || !valid}
-                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white rounded-md px-4 py-2 text-sm font-medium">
-                        {phase === 'sending' && <Loader2 className="w-4 h-4 animate-spin" />}
-                        {phase === 'done' ? 'Sent ✓' : phase === 'sending' ? 'Sending…' : 'Send for signature'}
-                    </button>
-                </footer>
-            </div>
-        </div>
+        </Modal>
     );
 };
 

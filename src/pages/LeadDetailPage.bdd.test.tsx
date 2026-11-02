@@ -109,6 +109,14 @@ vi.mock('./components/QuickActionBar', () => ({
   ),
 }));
 vi.mock('./components/LeadLayoutSettingsPanel', () => ({ default: () => null }));
+vi.mock('../components/customFields/DlCustomFieldsPanel', () => ({
+  DL_CUSTOM_FIELDS_FLAG: 'submodule:crm:dl_custom_fields',
+  DlCustomFieldsPanel: ({ recordId }: any) => <div data-testid="dl-custom-fields-panel">DL fields for {recordId}</div>,
+}));
+
+vi.mock('../components/customFields/PartnerDlCustomFields', () => ({
+  PartnerDlCustomFields: ({ corePartnerId }: any) => <div data-testid="partner-dl-custom-fields-panel">Partner fields for {corePartnerId}</div>,
+}));
 
 const mockNavigate = vi.fn();
 let mockPathname = '/crm/leads/lead-1';
@@ -119,11 +127,11 @@ vi.mock('react-router-dom', () => ({
   Link: ({ children, to, ...props }: any) => <a href={to} {...props}>{children}</a>,
 }));
 
-vi.mock('@so360/shell-context', () => ({
+vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOriginal<any>()),
   useShell: () => ({ isModuleEnabled: () => false }),
   useCurrentEntity: () => ({ setCurrentEntity: mockSetCurrentEntity }),
   useActivity: () => ({ recordActivity: async () => {} }),
-  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
+  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: (k: string) => k !== 'submodule:crm:dl_custom_fields', isFeatureHidden: () => false })),
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
@@ -134,6 +142,17 @@ vi.mock('@so360/design-system', async (importOriginal) => {
   return {
     ...actual,
     toast: { ...actual.toast, success: mockShowSuccess, error: mockShowError },
+    // Mirror the real DS FileUpload contract: a role="button" drop zone that opens the hidden file input.
+    FileUpload: ({ 'aria-label': ariaLabel, prompt, disabled, accept, onChange }: any) => {
+      const inputRef = React.useRef<HTMLInputElement>(null);
+      return (
+        <div>
+          <div role="button" aria-label={ariaLabel} onClick={() => !disabled && inputRef.current?.click()}>{prompt}</div>
+          <input ref={inputRef} type="file" hidden accept={accept} disabled={disabled}
+            onChange={(e) => onChange?.(Array.from(e.target.files ?? []))} />
+        </div>
+      );
+    },
   };
 });
 
@@ -188,7 +207,8 @@ vi.mock('../utils/formatters', () => ({
   useCRMCurrencySymbol: () => '$',
 }));
 
-import LeadDetailPage from './LeadDetailPage';
+import LeadDetailPage, { sortNotesNewestFirst } from './LeadDetailPage';
+import { mockConfirm } from '../test/__mocks__/design-system';
 
 const owner = { id: 'u1', full_name: 'Test Owner', email: 'owner@test.com', avatar_url: null };
 
@@ -299,7 +319,7 @@ beforeEach(async () => {
   // Re-apply the default useShellBridge implementation so tests that call mockReturnValue don't bleed through
   const shell = await import('@so360/shell-context');
   mockUseShellBridge = vi.mocked(shell.useShellBridge);
-  mockUseShellBridge.mockImplementation(() => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
+  mockUseShellBridge.mockImplementation(() => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: (k: string) => k !== 'submodule:crm:dl_custom_fields', isFeatureHidden: () => false }));
   mockPathname = '/crm/leads/lead-1';
   mockGetLeadById.mockResolvedValue(makeLead());
   mockGetDealsByLeadId.mockResolvedValue(associatedDeals);
@@ -401,12 +421,14 @@ describe('LeadDetailPage', () => {
         events: [sampleEvent('call:c1', { title: 'Outbound call logged', description: 'Intro call completed' })],
       }));
       render(<LeadDetailPage />);
-      await waitFor(() => expect(screen.getByText('Outbound call logged')).toBeInTheDocument());
+      fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
+      await waitFor(() => expect(screen.getAllByText('Outbound call logged').length).toBeGreaterThan(0));
       expect(screen.getByText('Intro call completed')).toBeInTheDocument();
     });
 
     it('When the page loads / Then shows lead score based on scoring rules', async () => {
       render(<LeadDetailPage />);
+      fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
       await waitFor(() => {
         const scoreElements = screen.getAllByText(/\d+/);
         expect(scoreElements.length).toBeGreaterThan(0);
@@ -434,7 +456,7 @@ describe('LeadDetailPage', () => {
       await waitFor(() => expect(screen.getByPlaceholderText('Add a private note about this lead...')).toBeInTheDocument());
       const textarea = screen.getByPlaceholderText('Add a private note about this lead...');
       fireEvent.change(textarea, { target: { value: 'Important lead update' } });
-      await user.click(screen.getByText('Save Note'));
+      await user.click(screen.getByText('Save note'));
       await waitFor(() => expect(mockCreateNote).toHaveBeenCalledWith({ lead_id: 'lead-1', content: 'Important lead update' }));
     });
 
@@ -444,7 +466,7 @@ describe('LeadDetailPage', () => {
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
       await user.click(screen.getByText('Notes'));
-      await waitFor(() => expect(screen.getByText('No notes captured for this lead yet.')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText('No notes yet')).toBeInTheDocument());
     });
 
     it('When no notes exist on the customer route / Then the empty state is entity-agnostic', async () => {
@@ -454,8 +476,8 @@ describe('LeadDetailPage', () => {
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
       await user.click(screen.getByText('Notes'));
-      await waitFor(() => expect(screen.getByText('No notes captured for this customer yet.')).toBeInTheDocument());
-      expect(screen.queryByText('No notes captured for this lead yet.')).not.toBeInTheDocument();
+      await waitFor(() => expect(screen.getByText('Notes captured for this customer will appear here.')).toBeInTheDocument());
+      expect(screen.queryByText('Notes captured for this lead will appear here.')).not.toBeInTheDocument();
     });
 
     it('When switching to notes tab / Then each top-level note renders in its own card container', async () => {
@@ -464,8 +486,8 @@ describe('LeadDetailPage', () => {
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
       await user.click(screen.getByText('Notes'));
       await waitFor(() => expect(screen.getByText('Hot lead from conference')).toBeInTheDocument());
-      const noteOneCard = screen.getByText('Hot lead from conference').closest('div.bg-slate-900\\/40');
-      const noteTwoCard = screen.getByText('Needs follow up').closest('div.bg-slate-900\\/40');
+      const noteOneCard = screen.getByText('Hot lead from conference').closest('div[class*="group/note"]');
+      const noteTwoCard = screen.getByText('Needs follow up').closest('div[class*="group/note"]');
       expect(noteOneCard).not.toBeNull();
       expect(noteTwoCard).not.toBeNull();
       expect(noteOneCard).not.toBe(noteTwoCard);
@@ -491,7 +513,7 @@ describe('LeadDetailPage', () => {
       // Reply lives inside its own indented/nested container, distinct from the parent note card
       const replyContainer = screen.getByText('Following up now').closest('div.border-l-2');
       expect(replyContainer).not.toBeNull();
-      expect(replyContainer?.className).toContain('border-slate-700/60');
+      expect(replyContainer?.className).toContain('border-line');
       // Composer is collapsed by default — only the "Reply" trigger is present
       expect(screen.getByTestId('open-reply-n1')).toBeInTheDocument();
       expect(screen.queryByPlaceholderText(/Reply… use @ to mention someone/)).not.toBeInTheDocument();
@@ -533,7 +555,7 @@ describe('LeadDetailPage', () => {
       await waitFor(() => expect(screen.getByText('First reply')).toBeInTheDocument());
       expect(screen.getByText('Second reply')).toBeInTheDocument();
       // "Test Owner" appears once for the note itself, and once for the grouped reply run (not once per reply)
-      const noteCard = screen.getByText('Hot lead from conference').closest('div.bg-slate-900\\/40') as HTMLElement;
+      const noteCard = screen.getByText('Hot lead from conference').closest('div[class*="group/note"]') as HTMLElement;
       expect(within(noteCard).getAllByText('Test Owner')).toHaveLength(2);
     });
 
@@ -575,7 +597,7 @@ describe('LeadDetailPage', () => {
     });
 
     it('When a note is deleted and confirmed / Then it calls deleteNote and removes the note', async () => {
-      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+      mockConfirm.mockResolvedValue(true);
       const user = userEvent.setup();
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
@@ -584,11 +606,10 @@ describe('LeadDetailPage', () => {
       await user.click(screen.getByTestId('delete-note-n1'));
       await waitFor(() => expect(mockDeleteNote).toHaveBeenCalledWith('n1'));
       await waitFor(() => expect(screen.queryByText('Hot lead from conference')).not.toBeInTheDocument());
-      confirmSpy.mockRestore();
     });
 
     it('When a note delete is not confirmed / Then deleteNote is not called', async () => {
-      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+      mockConfirm.mockResolvedValue(false);
       const user = userEvent.setup();
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
@@ -597,7 +618,94 @@ describe('LeadDetailPage', () => {
       await user.click(screen.getByTestId('delete-note-n1'));
       expect(mockDeleteNote).not.toHaveBeenCalled();
       expect(screen.getByText('Hot lead from conference')).toBeInTheDocument();
-      confirmSpy.mockRestore();
+    });
+  });
+
+  // Task 8a7f43ff: newest note first in the Notes tab.
+  describe('Given notes ordering on the Notes tab', () => {
+    const renderedNoteContents = () => screen.getAllByTestId('note-content').map((el) => el.textContent);
+
+    it('When the lead payload lists notes oldest-first / Then the Notes tab shows the newest note at the top', async () => {
+      mockGetLeadById.mockResolvedValue(makeLead({
+        notes: [
+          { id: 'n1', content: 'Oldest note', author: owner, created_at: '2025-01-02T10:00:00Z' },
+          { id: 'n2', content: 'Middle note', author: owner, created_at: '2025-01-03T10:00:00Z' },
+          { id: 'n3', content: 'Newest note', author: owner, created_at: '2025-01-04T10:00:00Z' },
+        ],
+      }));
+      const user = userEvent.setup();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      await user.click(screen.getByText('Notes'));
+      await waitFor(() => expect(screen.getByText('Newest note')).toBeInTheDocument());
+      expect(renderedNoteContents()).toEqual(['Newest note', 'Middle note', 'Oldest note']);
+    });
+
+    it('When a new note is saved / Then it appears at the top of the Notes list above existing notes', async () => {
+      mockCreateNote.mockResolvedValueOnce({ id: 'nn1', content: 'Brand new note', author: owner, created_at: '2025-01-05T10:00:00Z' });
+      const user = userEvent.setup();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      await user.click(screen.getByText('Notes'));
+      await waitFor(() => expect(screen.getByText('Needs follow up')).toBeInTheDocument());
+      fireEvent.change(screen.getByPlaceholderText('Add a private note about this lead...'), { target: { value: 'Brand new note' } });
+      await user.click(screen.getByText('Save note'));
+      await waitFor(() => expect(screen.getByText('Brand new note')).toBeInTheDocument());
+      expect(renderedNoteContents()).toEqual(['Brand new note', 'Needs follow up', 'Hot lead from conference']);
+    });
+
+    it('When a note has replies / Then the replies stay in chronological order under their note', async () => {
+      mockGetLeadById.mockResolvedValue(makeLead({
+        notes: [
+          {
+            id: 'n1', content: 'Older note', author: owner, created_at: '2025-01-02T10:00:00Z',
+            replies: [
+              { id: 'r1', content: 'First reply', author: owner, created_at: '2025-01-02T11:00:00Z' },
+              { id: 'r2', content: 'Second reply', author: owner, created_at: '2025-01-02T12:00:00Z' },
+            ],
+          },
+          { id: 'n2', content: 'Newer note', author: owner, created_at: '2025-01-03T10:00:00Z' },
+        ],
+      }));
+      const user = userEvent.setup();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      await user.click(screen.getByText('Notes'));
+      await waitFor(() => expect(screen.getByText('Second reply')).toBeInTheDocument());
+      expect(renderedNoteContents()).toEqual(['Newer note', 'Older note', 'First reply', 'Second reply']);
+    });
+  });
+
+  describe('Given the sortNotesNewestFirst helper', () => {
+    it('When notes have different timestamps / Then they are ordered newest to oldest without mutating the input', () => {
+      const input = [
+        { id: 'a', created_at: '2025-01-01T00:00:00Z' },
+        { id: 'c', created_at: '2025-01-03T00:00:00Z' },
+        { id: 'b', created_at: '2025-01-02T00:00:00Z' },
+      ];
+      expect(sortNotesNewestFirst(input).map((n) => n.id)).toEqual(['c', 'b', 'a']);
+      expect(input.map((n) => n.id)).toEqual(['a', 'c', 'b']);
+    });
+
+    it('When two notes share a timestamp / Then the one later in the list (added later) comes first', () => {
+      const input = [
+        { id: 'first', created_at: '2025-01-01T00:00:00Z' },
+        { id: 'second', created_at: '2025-01-01T00:00:00Z' },
+      ];
+      expect(sortNotesNewestFirst(input).map((n) => n.id)).toEqual(['second', 'first']);
+    });
+
+    it('When a note has a missing or invalid timestamp / Then it sorts after dated notes', () => {
+      const input = [
+        { id: 'missing' },
+        { id: 'invalid', created_at: 'not-a-date' },
+        { id: 'dated', created_at: '2025-01-01T00:00:00Z' },
+      ];
+      expect(sortNotesNewestFirst(input).map((n) => n.id)).toEqual(['dated', 'invalid', 'missing']);
+    });
+
+    it('When the list is empty / Then it returns an empty list', () => {
+      expect(sortNotesNewestFirst([])).toEqual([]);
     });
   });
 
@@ -620,7 +728,7 @@ describe('LeadDetailPage', () => {
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
       await user.click(screen.getByText(/Tasks \(2\)/));
       await waitFor(() => expect(screen.getByText('Call back')).toBeInTheDocument());
-      const checkboxes = screen.getAllByRole('button').filter(b => b.className.includes('rounded border'));
+      const checkboxes = screen.getAllByRole('button', { name: /Mark task (not )?done/ });
       fireEvent.click(checkboxes[0]);
       await waitFor(() => expect(mockUpdateTask).toHaveBeenCalledWith('t1', { status: 'DONE' }));
     });
@@ -631,7 +739,7 @@ describe('LeadDetailPage', () => {
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
       await user.click(screen.getByText(/Tasks \(0\)/));
-      await waitFor(() => expect(screen.getByText('No active tasks or follow-ups.')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText('No active tasks or follow-ups')).toBeInTheDocument());
     });
 
     it('When Add Task is clicked / Then opens task creation modal', async () => {
@@ -639,8 +747,8 @@ describe('LeadDetailPage', () => {
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
       await user.click(screen.getByText(/Tasks \(2\)/));
-      await waitFor(() => expect(screen.getByText('Add Task')).toBeInTheDocument());
-      await user.click(screen.getByText('Add Task'));
+      await waitFor(() => expect(screen.getByText('Add task')).toBeInTheDocument());
+      await user.click(screen.getByText('Add task'));
       await waitFor(() => expect(screen.getByTestId('task-modal')).toBeInTheDocument());
     });
 
@@ -707,12 +815,70 @@ describe('LeadDetailPage', () => {
       const user = userEvent.setup();
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
-      const additionalTab = screen.getByText('Additional Info');
+      const additionalTab = screen.getByRole('tab', { name: 'Additional Info' });
       await user.click(additionalTab);
       await waitFor(() => {
         expect(screen.getByText('Priority Level')).toBeInTheDocument();
         expect(screen.getByText('High')).toBeInTheDocument();
       });
+    });
+  });
+
+  describe('Given the Data Layer custom fields flag is ON (HubSpot: custom properties visible on the record page)', () => {
+    const flagOn = () => mockUseShellBridge.mockImplementation(() => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
+
+    it('When the lead detail opens / Then the DL custom fields panel is visible without clicking any tab', async () => {
+      flagOn();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      expect(await screen.findByTestId('dl-custom-fields-panel')).toBeInTheDocument();
+    });
+
+    it('When the lead detail opens / Then the legacy Additional Info tab is not offered', async () => {
+      flagOn();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      expect(screen.queryByRole('tab', { name: 'Additional Info' })).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Given a CRM customer linked to a Core partner and the Data Layer flag is ON', () => {
+    const flagOn = () => mockUseShellBridge.mockImplementation(() => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
+
+    it('When /crm/customers/:id opens / Then the core.partner custom fields of the linked partner are shown', async () => {
+      flagOn();
+      mockPathname = '/crm/customers/lead-1';
+      mockGetLeadById.mockResolvedValue(makeLead({ core_partner_id: 'core-p-1' }));
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      expect(await screen.findByText('Partner fields for core-p-1')).toBeInTheDocument();
+    });
+
+    it('When the customer has no Core link / Then no partner panel is shown', async () => {
+      flagOn();
+      mockPathname = '/crm/customers/lead-1';
+      mockGetLeadById.mockResolvedValue(makeLead({ core_partner_id: null }));
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      expect(screen.queryByTestId('partner-dl-custom-fields-panel')).not.toBeInTheDocument();
+    });
+
+    it('When a lead (not customer) route opens / Then the partner panel is not shown', async () => {
+      flagOn();
+      mockPathname = '/crm/leads/lead-1';
+      mockGetLeadById.mockResolvedValue(makeLead({ core_partner_id: 'core-p-1' }));
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      expect(screen.queryByTestId('partner-dl-custom-fields-panel')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Given the Data Layer custom fields flag is OFF', () => {
+    it('When the lead detail opens / Then the DL panel is not rendered and the legacy tab remains', async () => {
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      expect(screen.queryByTestId('dl-custom-fields-panel')).not.toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: 'Additional Info' })).toBeInTheDocument();
     });
   });
 
@@ -733,7 +899,8 @@ describe('LeadDetailPage', () => {
       mockGetActivitiesByLeadIdPaginated.mockResolvedValue({ data: [], total: 0 });
       mockGetDocumentsByLeadId.mockResolvedValue([]);
       render(<LeadDetailPage />);
-      await waitFor(() => expect(screen.getByText('No activities logged yet.')).toBeInTheDocument());
+      fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
+      await waitFor(() => expect(screen.getAllByText('No activities logged yet').length).toBeGreaterThan(0));
     });
   });
 
@@ -742,6 +909,16 @@ describe('LeadDetailPage', () => {
       mockGetLeadById.mockReturnValue(new Promise(() => {}));
       render(<LeadDetailPage />);
       expect(screen.getByText('Loading lead workspace...')).toBeInTheDocument();
+    });
+  });
+
+  describe('Given the lead record loads but supporting calls are still pending', () => {
+    it('When partners and users have not answered / Then the lead workspace renders without waiting for them', async () => {
+      mockGetPartners.mockReturnValue(new Promise(() => {}));
+      mockGetUsers.mockReturnValue(new Promise(() => {}));
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getAllByText('John Doe').length).toBeGreaterThan(0));
+      expect(screen.queryByText('Loading lead workspace...')).not.toBeInTheDocument();
     });
   });
 
@@ -758,15 +935,15 @@ describe('LeadDetailPage', () => {
       mockGetLeadById.mockResolvedValue(null);
       render(<LeadDetailPage />);
       await waitFor(() => {
-        expect(screen.getAllByText('Back to Leads')[0]).toBeInTheDocument();
+        expect(screen.getAllByRole('button', { name: 'Back to Leads' })[0]).toBeInTheDocument();
       });
     });
 
     it('When Back to Leads is clicked / Then it navigates to /crm/leads, not the dashboard', async () => {
       mockGetLeadById.mockResolvedValue(null);
       render(<LeadDetailPage />);
-      await waitFor(() => expect(screen.getAllByText('Back to Leads')[0]).toBeInTheDocument());
-      fireEvent.click(screen.getAllByText('Back to Leads')[0]);
+      await waitFor(() => expect(screen.getAllByRole('button', { name: 'Back to Leads' })[0]).toBeInTheDocument());
+      fireEvent.click(screen.getAllByRole('button', { name: 'Back to Leads' })[0]);
       expect(mockNavigate).toHaveBeenCalledWith('/crm/leads');
     });
   });
@@ -775,16 +952,16 @@ describe('LeadDetailPage', () => {
     it('When the header Back is clicked from /crm/leads/:id / Then it navigates to /crm/leads, not the dashboard', async () => {
       mockPathname = '/crm/leads/lead-1';
       render(<LeadDetailPage />);
-      await waitFor(() => expect(screen.getAllByText('Back')[0]).toBeInTheDocument());
-      fireEvent.click(screen.getAllByText('Back')[0]);
+      await waitFor(() => expect(screen.getAllByLabelText('Back to Leads')[0]).toBeInTheDocument());
+      fireEvent.click(screen.getAllByLabelText('Back to Leads')[0]);
       expect(mockNavigate).toHaveBeenCalledWith('/crm/leads');
     });
 
     it('When the header Back is clicked from /crm/customers/:id / Then it navigates to /crm/customers, not the dashboard', async () => {
       mockPathname = '/crm/customers/lead-1';
       render(<LeadDetailPage />);
-      await waitFor(() => expect(screen.getAllByText('Back')[0]).toBeInTheDocument());
-      fireEvent.click(screen.getAllByText('Back')[0]);
+      await waitFor(() => expect(screen.getAllByLabelText('Back to Customers')[0]).toBeInTheDocument());
+      fireEvent.click(screen.getAllByLabelText('Back to Customers')[0]);
       expect(mockNavigate).toHaveBeenCalledWith('/crm/customers');
     });
   });
@@ -794,7 +971,7 @@ describe('LeadDetailPage', () => {
       const user = userEvent.setup();
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
-      await user.click(screen.getByLabelText('Delete'));
+      await user.click(screen.getByRole('button', { name: 'Delete' }));
       await waitFor(() => {
         const deleteTexts = screen.getAllByText(/Delete/);
         expect(deleteTexts.length).toBeGreaterThan(0);
@@ -844,7 +1021,7 @@ describe('LeadDetailPage', () => {
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
       await user.click(screen.getByText(/Tasks \(1\)/));
-      await waitFor(() => expect(screen.getByText('Due Reminders')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText('Due reminders')).toBeInTheDocument());
     });
   });
 
@@ -915,6 +1092,172 @@ describe('LeadDetailPage', () => {
     });
   });
 
+  // Task 29299155: an edited lead must not look saved until the server has
+  // stored it and the persisted record is back on screen.
+  describe('Given the profile editor is saving', () => {
+    // The editor validates before saving; the shared fixture has no first name.
+    const editableLead = (overrides: any = {}) =>
+      makeLead({ first_name: 'John', last_name: 'Doe', phone: '+91 9876543210', ...overrides });
+
+    const deferred = <T,>() => {
+      let resolve!: (v: T) => void;
+      let reject!: (e: unknown) => void;
+      const promise = new Promise<T>((res, rej) => { resolve = res; reject = rej; });
+      return { promise, resolve, reject };
+    };
+
+    const openEditor = async () => {
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      fireEvent.click(document.querySelector('[title="Edit Intelligence"]') as HTMLElement);
+      await waitFor(() => expect(document.querySelector('[title="Save Changes"]')).not.toBeNull());
+    };
+
+    const clickSave = () =>
+      fireEvent.click(document.querySelector('[title="Save Changes"]') as HTMLElement);
+
+    const changeEmail = (from: string, to: string) =>
+      fireEvent.change(screen.getByDisplayValue(from), { target: { value: to } });
+
+    beforeEach(() => {
+      mockGetLeadById.mockResolvedValue(editableLead());
+    });
+
+    it('When Save is clicked / Then the button turns into a disabled, busy spinner until the save settles', async () => {
+      const update = deferred<any>();
+      mockUpdateLead.mockReturnValueOnce(update.promise);
+      await openEditor();
+
+      clickSave();
+
+      const savingBtn = await waitFor(() => {
+        const btn = document.querySelector('[title="Saving…"]') as HTMLButtonElement | null;
+        expect(btn).not.toBeNull();
+        return btn!;
+      });
+      expect(savingBtn).toBeDisabled();
+      expect(savingBtn).toHaveAttribute('aria-busy', 'true');
+      expect(savingBtn.querySelector('.animate-spin')).not.toBeNull();
+
+      update.resolve({});
+      await waitFor(() => expect(document.querySelector('[title="Edit Intelligence"]')).not.toBeNull());
+      expect(document.querySelector('[title="Edit Intelligence"]')).not.toBeDisabled();
+      expect(document.querySelector('[title="Edit Intelligence"]')).toHaveAttribute('aria-busy', 'false');
+    });
+
+    it('When Save is clicked again while the first save is in flight / Then only one update is sent', async () => {
+      const update = deferred<any>();
+      mockUpdateLead.mockReturnValueOnce(update.promise);
+      await openEditor();
+
+      clickSave();
+      await waitFor(() => expect(document.querySelector('[title="Saving…"]')).not.toBeNull());
+      fireEvent.click(document.querySelector('[title="Saving…"]') as HTMLElement);
+      fireEvent.click(document.querySelector('[title="Saving…"]') as HTMLElement);
+
+      expect(mockUpdateLead).toHaveBeenCalledTimes(1);
+      update.resolve({});
+      await waitFor(() => expect(document.querySelector('[title="Edit Intelligence"]')).not.toBeNull());
+      expect(mockUpdateLead).toHaveBeenCalledTimes(1);
+    });
+
+    it('When the update succeeds / Then edit mode stays open until the persisted lead has been reloaded', async () => {
+      await openEditor();
+      const fetchesBeforeSave = mockGetLeadById.mock.calls.length;
+      const reload = deferred<any>();
+      mockGetLeadById.mockReturnValueOnce(reload.promise);
+
+      clickSave();
+
+      await waitFor(() => expect(mockUpdateLead).toHaveBeenCalledTimes(1));
+      await waitFor(() => expect(mockGetLeadById).toHaveBeenCalledTimes(fetchesBeforeSave + 1));
+      // Update is done but the reload is not: still saving, still editing.
+      expect(document.querySelector('[title="Saving…"]')).not.toBeNull();
+      expect(document.querySelector('[title="Edit Intelligence"]')).toBeNull();
+
+      reload.resolve(editableLead());
+      await waitFor(() => expect(document.querySelector('[title="Edit Intelligence"]')).not.toBeNull());
+    });
+
+    it('When the email is edited and saved / Then the value shown afterwards is the one the server returns on reload', async () => {
+      await openEditor();
+      changeEmail('john@acme.com', 'new@acme.com');
+      mockGetLeadById.mockResolvedValue(editableLead({ contact_email: 'new@acme.com' }));
+
+      clickSave();
+
+      await waitFor(() => expect(document.querySelector('[title="Edit Intelligence"]')).not.toBeNull());
+      expect(mockUpdateLead).toHaveBeenCalledWith('lead-1', expect.objectContaining({ contact_email: 'new@acme.com' }));
+      expect(screen.getByText('new@acme.com')).toBeInTheDocument();
+      expect(screen.queryByText('john@acme.com')).not.toBeInTheDocument();
+    });
+
+    it('When the server rejects the save with a 4xx message / Then that message is shown, the editor stays open with the entered email, and Save is usable again', async () => {
+      const err = Object.assign(new Error('Email is invalid for this org'), { status: 422 });
+      mockUpdateLead.mockRejectedValueOnce(err);
+      await openEditor();
+      changeEmail('john@acme.com', 'typed@acme.com');
+
+      clickSave();
+
+      await waitFor(() => expect(mockShowError).toHaveBeenCalledWith('Email is invalid for this org'));
+      const btn = document.querySelector('[title="Save Changes"]') as HTMLButtonElement;
+      expect(btn).not.toBeNull();
+      expect(btn).not.toBeDisabled();
+      expect(screen.getByDisplayValue('typed@acme.com')).toBeInTheDocument();
+    });
+
+    it('When the save fails without a client-error status / Then a generic failure toast is shown and the editor stays open', async () => {
+      mockUpdateLead.mockRejectedValueOnce(new Error('socket hang up'));
+      await openEditor();
+
+      clickSave();
+
+      await waitFor(() => expect(mockShowError).toHaveBeenCalledWith('Failed to save changes.'));
+      const btn = document.querySelector('[title="Save Changes"]') as HTMLButtonElement;
+      expect(btn).not.toBeNull();
+      expect(btn).not.toBeDisabled();
+    });
+
+    it('When the update succeeds but the reload fails / Then edit mode stays open with the typed edits and an error is shown', async () => {
+      await openEditor();
+      changeEmail('john@acme.com', 'typed@acme.com');
+      mockGetLeadById.mockRejectedValueOnce(new Error('network down'));
+
+      clickSave();
+
+      await waitFor(() => expect(mockShowError).toHaveBeenCalledWith(expect.stringContaining('could not be reloaded')));
+      expect(mockUpdateLead).toHaveBeenCalledTimes(1);
+      const btn = document.querySelector('[title="Save Changes"]') as HTMLButtonElement;
+      expect(btn).not.toBeNull();
+      expect(btn).not.toBeDisabled();
+      expect(document.querySelector('[title="Edit Intelligence"]')).toBeNull();
+      expect(screen.getByDisplayValue('typed@acme.com')).toBeInTheDocument();
+    });
+
+    it('When the update and the reload both succeed / Then edit mode closes and no reload error is shown', async () => {
+      await openEditor();
+      mockShowError.mockClear();
+
+      clickSave();
+
+      await waitFor(() => expect(document.querySelector('[title="Edit Intelligence"]')).not.toBeNull());
+      expect(mockShowError).not.toHaveBeenCalled();
+    });
+
+    it('When a field fails validation / Then no update is sent and the button never enters the saving state', async () => {
+      await openEditor();
+      changeEmail('john@acme.com', 'not-an-email');
+
+      clickSave();
+
+      await waitFor(() => expect(mockShowError).toHaveBeenCalledWith('Please correct the highlighted fields.'));
+      expect(mockUpdateLead).not.toHaveBeenCalled();
+      expect(document.querySelector('[title="Saving…"]')).toBeNull();
+      expect(document.querySelector('[title="Save Changes"]')).not.toBeDisabled();
+    });
+  });
+
   describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
     it('When effectiveFlagsLoaded is explicitly false / Then Create Deal button is absent', async () => {
       mockUseShellBridge.mockReturnValue({ effectiveFlagsLoaded: false, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true } as any);
@@ -940,35 +1283,41 @@ describe('LeadDetailPage', () => {
     it('When events are loaded / Then shows "Showing latest N"', async () => {
       mockUseEntityTimeline.mockReturnValue(makeTimelineState({ events: [sampleEvent('e1'), sampleEvent('e2')] }));
       render(<LeadDetailPage />);
-      await waitFor(() => expect(screen.getByText(/Showing latest 2/)).toBeInTheDocument());
+      fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
+      await waitFor(() => expect(screen.getAllByText('Event e1').length).toBeGreaterThan(0));
+      expect(screen.getAllByText('Event e2').length).toBeGreaterThan(0);
     });
 
     it('When no events are loaded / Then shows the empty timeline message', async () => {
       mockUseEntityTimeline.mockReturnValue(makeTimelineState({ events: [] }));
       render(<LeadDetailPage />);
-      await waitFor(() => expect(screen.getByText('No activities logged yet.')).toBeInTheDocument());
+      fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
+      await waitFor(() => expect(within(screen.getByRole('main')).getByText('No activities logged yet')).toBeInTheDocument());
     });
 
     it('When the timeline is loading / Then shows a spinner instead of the empty state', async () => {
       mockUseEntityTimeline.mockReturnValue(makeTimelineState({ loading: true }));
       render(<LeadDetailPage />);
+      fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
-      expect(screen.queryByText('No activities logged yet.')).not.toBeInTheDocument();
+      expect(within(screen.getByRole('main')).queryByText('No activities logged yet')).not.toBeInTheDocument();
     });
 
     it('When View All History is clicked / Then opens ActivityHistoryDrawer', async () => {
       const user = userEvent.setup();
       render(<LeadDetailPage />);
-      await waitFor(() => expect(screen.getByText('View All History')).toBeInTheDocument());
-      await user.click(screen.getByText('View All History'));
+      fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
+      await waitFor(() => expect(screen.getByText('View all history')).toBeInTheDocument());
+      await user.click(screen.getByText('View all history'));
       await waitFor(() => expect(screen.getByTestId('activity-history-drawer')).toBeInTheDocument());
     });
 
     it('When drawer is open and Close Drawer is clicked / Then drawer is dismissed', async () => {
       const user = userEvent.setup();
       render(<LeadDetailPage />);
-      await waitFor(() => expect(screen.getByText('View All History')).toBeInTheDocument());
-      await user.click(screen.getByText('View All History'));
+      fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
+      await waitFor(() => expect(screen.getByText('View all history')).toBeInTheDocument());
+      await user.click(screen.getByText('View all history'));
       await waitFor(() => expect(screen.getByTestId('activity-history-drawer')).toBeInTheDocument());
       await user.click(screen.getByText('Close Drawer'));
       await waitFor(() => expect(screen.queryByTestId('activity-history-drawer')).not.toBeInTheDocument());
@@ -979,8 +1328,9 @@ describe('LeadDetailPage', () => {
       mockUseEntityTimeline.mockReturnValue(makeTimelineState({ events: [sampleEvent('e1')], hasMore: true, loadMore: mockLoadMore }));
       const user = userEvent.setup();
       render(<LeadDetailPage />);
-      await waitFor(() => expect(screen.getByText('Load More →')).toBeInTheDocument());
-      await user.click(screen.getByText('Load More →'));
+      fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
+      await waitFor(() => expect(screen.getByText('Load more')).toBeInTheDocument());
+      await user.click(screen.getByText('Load more'));
       expect(mockLoadMore).toHaveBeenCalled();
     });
 
@@ -998,64 +1348,46 @@ describe('LeadDetailPage', () => {
         },
       }));
       render(<LeadDetailPage />);
+      fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
       await waitFor(() => expect(screen.getByText('Healthy')).toBeInTheDocument());
     });
   });
 
-  // Regression: the detail cards must be split across a two-column grid (main
-  // workspace + context sidebar). Before the fix the page rendered only the
-  // `lg:col-span-2` main column, leaving the third grid track empty so every
-  // card stacked into a single column. The Deal detail page never regressed.
+  // Regression: the detail cards must be split across main workspace + context
+  // rail (Comb DetailPageTemplate slots) so cards do not stack in one column.
   describe('Given the detail page layout', () => {
-    // Returns the outer grid that wraps the detail cards (parent of col-span-2).
-    const getDetailGrid = (container: HTMLElement): HTMLElement => {
-      const mainColumn = container.querySelector('.lg\\:col-span-2');
-      expect(mainColumn).not.toBeNull();
-      return mainColumn!.parentElement as HTMLElement;
-    };
-
-    it('When the lead loads / Then the cards are wrapped in a 3-track responsive grid', async () => {
-      const { container } = render(<LeadDetailPage />);
-      await waitFor(() => expect(container.querySelector('.lg\\:col-span-2')).not.toBeNull());
-      expect(getDetailGrid(container).className).toContain('lg:grid-cols-3');
+    const slots = (container: HTMLElement) => ({
+      main: container.querySelector('[data-slot="main"]') as HTMLElement | null,
+      rail: container.querySelector('[data-slot="rail"]') as HTMLElement | null,
     });
 
-    it('When the lead loads / Then the grid renders TWO columns (main + sidebar), not one', async () => {
+    it('When the lead loads / Then it renders the Comb detail template', async () => {
       const { container } = render(<LeadDetailPage />);
-      await waitFor(() => expect(container.querySelector('.lg\\:col-span-2')).not.toBeNull());
-      // Pre-fix this was 1 (single column); the fix adds the sidebar sibling.
-      expect(getDetailGrid(container).children.length).toBe(2);
+      await waitFor(() => expect(container.querySelector('[data-template="detail"]')).not.toBeNull());
     });
 
-    it('When the lead loads / Then the first column is the main col-span-2 workspace', async () => {
+    it('When the lead loads / Then it renders TWO regions (main + rail), not one', async () => {
       const { container } = render(<LeadDetailPage />);
-      await waitFor(() => expect(container.querySelector('.lg\\:col-span-2')).not.toBeNull());
-      const grid = getDetailGrid(container);
-      expect((grid.children[0] as HTMLElement).className).toContain('lg:col-span-2');
+      await waitFor(() => expect(slots(container).main).not.toBeNull());
+      expect(slots(container).rail).not.toBeNull();
     });
 
-    it('When the lead loads / Then the second column is the context sidebar (not col-span-2)', async () => {
+    it('When the lead loads / Then the main region holds the tab workspace, not the rail cards', async () => {
       const { container } = render(<LeadDetailPage />);
-      await waitFor(() => expect(container.querySelector('.lg\\:col-span-2')).not.toBeNull());
-      const sidebar = getDetailGrid(container).children[1] as HTMLElement;
-      expect(sidebar.className).toContain('space-y-8');
-      expect(sidebar.className).not.toContain('lg:col-span-2');
+      await waitFor(() => expect(slots(container).main).not.toBeNull());
+      expect(slots(container).main!.textContent).not.toContain('Assigned owner');
     });
 
-    it('When the lead loads / Then context cards (Assigned Owner) live in the sidebar, not the main column', async () => {
+    it('When the lead loads / Then context cards (Assigned Owner) live in the rail, not the main column', async () => {
       const { container } = render(<LeadDetailPage />);
-      await waitFor(() => expect(container.querySelector('.lg\\:col-span-2')).not.toBeNull());
-      const sidebar = getDetailGrid(container).children[1] as HTMLElement;
-      expect(sidebar.textContent).toContain('Assigned Owner');
+      await waitFor(() => expect(slots(container).rail?.textContent).toContain('Assigned owner'));
     });
 
-    it('When viewed as a customer route (same component) / Then it also renders the two-column grid', async () => {
+    it('When viewed as a customer route (same component) / Then it also renders main + rail', async () => {
       mockPathname = '/crm/customers/lead-1';
       const { container } = render(<LeadDetailPage />);
-      await waitFor(() => expect(container.querySelector('.lg\\:col-span-2')).not.toBeNull());
-      const grid = getDetailGrid(container);
-      expect(grid.className).toContain('lg:grid-cols-3');
-      expect(grid.children.length).toBe(2);
+      await waitFor(() => expect(slots(container).main).not.toBeNull());
+      expect(slots(container).rail).not.toBeNull();
     });
   });
 
@@ -1107,7 +1439,7 @@ describe('LeadDetailPage', () => {
         fireEvent.click(screen.getByRole('button', { name: /Add Document/i }));
         await vi.advanceTimersByTimeAsync(500);
 
-        expect(await screen.findByText(/Upload Document/i)).toBeInTheDocument();
+        expect(await screen.findByLabelText(/Upload document/i)).toBeInTheDocument();
         expect(clickSpy).toHaveBeenCalled();
       } finally {
         clickSpy.mockRestore();
@@ -1166,15 +1498,15 @@ describe('LeadDetailPage', () => {
       await waitFor(() => expect(screen.getByText('Acme Corp')).toBeInTheDocument());
 
       fireEvent.click(screen.getByRole('button', { name: /Schedule Meeting/i }));
-      expect(await screen.findByText(/schedule meeting/i, { selector: 'p' })).toBeInTheDocument();
+      expect(within(await screen.findByRole('dialog')).getByRole('heading', { name: /schedule meeting/i })).toBeInTheDocument();
 
       // Close, then ask again. The old flag-based wiring was already `true`,
       // so the second click silently did nothing at all.
       fireEvent.click(screen.getByRole('button', { name: /Cancel/i }));
-      await waitFor(() => expect(screen.queryByText(/schedule meeting/i, { selector: 'p' })).toBeNull());
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
 
       fireEvent.click(screen.getByRole('button', { name: /Schedule Meeting/i }));
-      expect(await screen.findByText(/schedule meeting/i, { selector: 'p' })).toBeInTheDocument();
+      expect(within(await screen.findByRole('dialog')).getByRole('heading', { name: /schedule meeting/i })).toBeInTheDocument();
     });
   });
 });

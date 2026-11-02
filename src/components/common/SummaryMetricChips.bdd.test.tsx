@@ -24,7 +24,7 @@ describe('SummaryMetricChips', () => {
           chips={[{ key: 'new', label: 'New', count: 2, active: true }]}
         />,
       );
-      expect(screen.getByTestId('summary-metric-chip-new').className).toContain('bg-blue-500/10');
+      expect(screen.getByTestId('summary-metric-chip-new')).toHaveAttribute('aria-pressed', 'true');
     });
 
     it('When a chip has an onClick / Then clicking it invokes the handler', () => {

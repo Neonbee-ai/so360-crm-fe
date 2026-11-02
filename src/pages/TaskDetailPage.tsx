@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { createPortal } from 'react-dom';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
     CheckCircle2, Circle, Calendar,
@@ -12,11 +11,12 @@ import { Loader2 } from 'lucide-react';
 import TaskModal from './components/TaskModal';
 import { RescheduleModal } from './components/RescheduleModal';
 import { ShellContext, useActivity, useShellBridge } from '@so360/shell-context';
-import { toast, getErrorMessage, CrossLinkChip } from '@so360/design-system';
-import DetailBackLink from '../components/common/DetailBackLink';
+import { toast, getErrorMessage, CrossLinkChip, DetailPageTemplate, Button, Card, Badge, StatusBadge, EmptyState, Alert, IconButton, Textarea, RadioGroup, Skeleton } from '@so360/design-system';
+import { CrmScope } from '../utils/crmScope';
 import { useCRMFormatters } from '../utils/formatters';
 import { isTaskLocked, canRescheduleTask, canEditTask, isTaskOverdue, TASK_LOCKED_HINT } from '../utils/taskUtils';
 import { dueDateCalendarDay, hasTimeComponent } from '../utils/datetime';
+import { Modal } from '../components/common/Modal';
 
 const TaskDetailPage = () => {
     const { id = '' } = useParams<{ id: string }>();
@@ -181,19 +181,20 @@ const TaskDetailPage = () => {
 
     if (isLoading) {
         return (
-            <div className="h-full flex items-center justify-center text-slate-500 gap-3">
-                <Loader2 className="animate-spin" />
-                <span>Loading task details...</span>
+            <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4">
+                <Skeleton variant="rect" />
+                <Skeleton variant="text" lines={3} />
+                <span className="sr-only">Loading task details...</span>
             </div>
         );
     }
 
     if (!task) {
         return (
-            <div className="p-8 text-center text-slate-500">
-                <p>Task not found.</p>
-                <button onClick={() => navigate('/crm/tasks')} className="text-blue-500 hover:underline mt-4 inline-block">Back to Tasks</button>
-            </div>
+            // Comb root (data-comb-path) so readiness checks settle on a bad/missing id instead of spinning.
+            <DetailPageTemplate title="Task not found" trail={[{ label: 'Tasks', to: '/crm/tasks' }]}>
+                <EmptyState title="Task not found." action={{ label: 'Back to Tasks', onClick: () => navigate('/crm/tasks') }} />
+            </DetailPageTemplate>
         );
     }
 
@@ -203,232 +204,213 @@ const TaskDetailPage = () => {
     const canReschedule = canRescheduleTask(task.status);
 
     return (
-        <div className="p-8 max-w-4xl mx-auto">
-            <header className="mb-8">
-                <DetailBackLink fallbackTo="/crm/tasks" className="mb-4" />
-                <div className="flex justify-between items-start">
-                    <div className="flex items-start gap-4">
-                        <button className="mt-1 text-slate-500 hover:text-blue-400 transition-colors">
-                            {task.status === 'DONE' ? <CheckCircle2 size={32} className="text-emerald-500" /> : <Circle size={32} />}
-                        </button>
-                        <div>
-                            <div className="flex items-center gap-3">
-                                <h1 className={`text-4xl font-black tracking-tight ${task.status === 'DONE' ? 'text-slate-500 line-through' : 'text-slate-50'}`}>
-                                    {task.title}
-                                </h1>
-                                {/* Task-level actions are grouped together so users find
-                                    them in a single place instead of scanning the page. */}
-                                <div className="flex items-center gap-1" data-testid="task-actions">
-                                    <button
-                                        onClick={() => canEdit && setIsEditingTask(true)}
-                                        disabled={!canEdit}
-                                        aria-label="Edit Task"
-                                        title={canEdit ? 'Edit Task' : TASK_LOCKED_HINT}
-                                        className="p-1.5 text-slate-500 hover:text-blue-400 hover:bg-slate-800 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-slate-500 disabled:hover:bg-transparent"
-                                    >
-                                        <Edit2 size={16} />
-                                    </button>
-                                    {canCreateTask && (
-                                        <button
-                                            onClick={() => setShowDeleteConfirm(true)}
-                                            aria-label="Delete Task"
-                                            title="Delete Task"
-                                            className="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-all"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
-                                    )}
-                                </div>
+        <DetailPageTemplate
+            trail={[{ label: 'Tasks', to: '/crm/tasks' }]}
+            title={task.title}
+            status={
+                <span className="flex items-center gap-nb-2">
+                    <StatusBadge
+                        status={task.status}
+                        size="sm"
+                        map={{ done: 'success', in_progress: 'warning', on_hold: 'warning', cancelled: 'danger' }}
+                    />
+                    {isOverdue && (
+                        <Badge size="sm" tone="danger"><AlertCircle size={12} /> Overdue</Badge>
+                    )}
+                </span>
+            }
+            primaryAction={
+                <Button
+                    onClick={() => canEdit && setIsEditingTask(true)}
+                    disabled={!canEdit}
+                    aria-label="Edit Task"
+                    title={canEdit ? 'Edit Task' : TASK_LOCKED_HINT}
+                ><Edit2 size={14} />
+                    Edit
+                </Button>
+            }
+            secondaryActions={[
+                <Button key="toggle" variant="secondary" onClick={handleTaskToggle}>
+                    {task.status === 'DONE' ? 'Mark as Open' : 'Mark as Complete'}
+                </Button>,
+                <Button
+                    key="reschedule"
+                    variant="secondary"
+                    onClick={() => canReschedule && setIsRescheduling(true)}
+                    disabled={!canReschedule}
+                    title={canReschedule ? 'Reschedule this task' : TASK_LOCKED_HINT}
+                >
+                    Reschedule
+                </Button>,
+            ]}
+            overflowActions={canCreateTask ? [{ label: 'Delete Task', danger: true, onSelect: () => setShowDeleteConfirm(true) }] : []}
+            sidePanel={
+                <div className="flex flex-col gap-nb-3">
+                    <Card title="Assignee">
+                        <div className="flex items-center gap-nb-3">
+                            <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-line bg-surface-raised text-fg">
+                                {task.assigned_to.avatar_url ? <img src={task.assigned_to.avatar_url} alt={task.assigned_to.full_name} /> : task.assigned_to.full_name.charAt(0)}
                             </div>
-                            <div className="flex items-center gap-3 mt-2">
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border ${task.status === 'DONE' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : task.status === 'IN_PROGRESS' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : task.status === 'ON_HOLD' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : task.status === 'CANCELLED' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-slate-800 text-slate-400 border-slate-700'
-                                    }`}>
-                                    {task.status}
-                                </span>
-                                {isOverdue && (
-                                    <span className="flex items-center gap-1 text-rose-400 text-[10px] font-black uppercase tracking-widest bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded">
-                                        <AlertCircle size={12} /> Overdue
-                                    </span>
-                                )}
+                            <div className="min-w-0">
+                                <p className="truncate text-sm font-medium text-fg">{task.assigned_to.full_name}</p>
+                                <p className="text-xs text-fg-muted">Sales Representative</p>
                             </div>
                         </div>
-                    </div>
+                    </Card>
+
+                    <Card title="Schedule">
+                        <p className="text-xs text-fg-muted">Due date</p>
+                        <p className={`text-sm ${isOverdue ? 'text-danger' : 'text-fg'}`}>
+                            {formatters.formatDate(dueDateCalendarDay(task.due_date), { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                            {/* The time appears only when the user chose one. */}
+                            {hasTimeComponent(task.due_date) && (
+                                <span className="ml-2 text-fg-subtle">{formatters.formatDate(task.due_date, { hour: 'numeric', minute: '2-digit' })}</span>
+                            )}
+                        </p>
+                        {isLocked && (
+                            <p className="mt-nb-2 text-xs text-fg-muted" data-testid="task-locked-hint">
+                                {TASK_LOCKED_HINT}
+                            </p>
+                        )}
+                    </Card>
                 </div>
-            </header>
+            }
+        >
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="md:col-span-2 space-y-8">
-                    <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-                        <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest mb-6 border-b border-slate-800 pb-2">Related Information</h3>
-                        <div className="space-y-6">
-                            {(task.deal_name || task.deal_id) && (
-                                <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-blue-400 shrink-0">
-                                        <Briefcase size={20} />
-                                    </div>
-                                    <div className="min-w-0">
-                                        <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Associated Deal</span>
-                                        <Link to={`/deals/${task.deal_id}`} className="text-lg font-bold text-slate-50 hover:text-blue-400 transition-colors truncate block">
-                                            {task.deal_name || 'View Deal'}
-                                        </Link>
-                                    </div>
-                                </div>
-                            )}
-
-                            {(task.lead_id) && !task.deal_id && (
-                                <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-blue-400 shrink-0">
-                                        <UserIcon size={20} />
-                                    </div>
-                                    <div className="min-w-0">
-                                        <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Related Lead</span>
-                                        <Link to={`/crm/leads/${task.lead_id}`} className="text-lg font-bold text-slate-50 hover:text-blue-400 transition-colors truncate block">
-                                            View Lead
-                                        </Link>
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-amber-400 shrink-0">
-                                    <Calendar size={20} />
-                                </div>
-                                <div>
-                                    <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Due Date</span>
-                                    <p className={`text-lg font-bold ${isOverdue ? 'text-rose-400' : 'text-slate-50'}`}>
-                                        {formatters.formatDate(dueDateCalendarDay(task.due_date), { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                                        {/* The time appears only when the user chose one. */}
-                                        {hasTimeComponent(task.due_date) && (
-                                            <span className="ml-2 text-slate-400">{formatters.formatDate(task.due_date, { hour: 'numeric', minute: '2-digit' })}</span>
-                                        )}
-                                    </p>
+            <div className="flex flex-col gap-nb-3">
+                <Card title="Related information">
+                    <div className="flex flex-col gap-nb-4">
+                        {(task.deal_name || task.deal_id) && (
+                            <div className="flex items-center gap-nb-3">
+                                <Briefcase size={18} className="shrink-0 text-fg-muted" />
+                                <div className="min-w-0">
+                                    <span className="block text-xs text-fg-muted">Associated deal</span>
+                                    <Link to={`/deals/${task.deal_id}`} className="block truncate text-sm font-medium text-fg hover:text-primary">
+                                        {task.deal_name || 'View Deal'}
+                                    </Link>
                                 </div>
                             </div>
+                        )}
+
+                        {(task.lead_id) && !task.deal_id && (
+                            <div className="flex items-center gap-nb-3">
+                                <UserIcon size={18} className="shrink-0 text-fg-muted" />
+                                <div className="min-w-0">
+                                    <span className="block text-xs text-fg-muted">Related lead</span>
+                                    <Link to={`/crm/leads/${task.lead_id}`} className="block truncate text-sm font-medium text-fg hover:text-primary">
+                                        View Lead
+                                    </Link>
+                                </div>
+                            </div>
+                        )}
 
                             {/* Project connection status. `sync_status` is only present
                                 once the task has (or once had) a Project connection —
                                 absent/undefined means unaffected behavior, no UI at all. */}
                             {task.sync_status === 'connected' && (
                                 <div className="flex items-center gap-4" data-testid="project-sync-connected">
-                                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 shrink-0">
+                                    <div className="size-10 rounded-xl bg-success/10 flex items-center justify-center text-success shrink-0">
                                         <Link2 size={20} />
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Connected to Project</span>
+                                        <span className="text-xs text-fg-muted block mb-1">Connected to Project</span>
                                         <div className="flex items-center gap-3 flex-wrap">
                                             {task.project_id && <CrossLinkChip type="projects.project" id={task.project_id} />}
                                             {task.last_synced_at && (
-                                                <span className="text-xs text-slate-500">
+                                                <span className="text-xs text-fg-muted">
                                                     Last synced {formatters.formatDate(task.last_synced_at, { hour: 'numeric', minute: '2-digit' })}
                                                 </span>
                                             )}
                                         </div>
                                     </div>
-                                    <button
+                                    <IconButton
+                                        label="Disconnect from Project"
+                                        variant="danger"
+                                        icon={<Unlink size={16} />}
                                         onClick={() => { setDisconnectMode('keep_but_disconnect'); setShowDisconnectConfirm(true); }}
-                                        className="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-all shrink-0"
-                                        aria-label="Disconnect from Project"
-                                        title="Disconnect from Project"
-                                    >
-                                        <Unlink size={16} />
-                                    </button>
+                                    />
                                 </div>
                             )}
 
                             {task.sync_status === 'sync_failed' && (
                                 <div className="flex items-center gap-4" data-testid="project-sync-failed">
-                                    <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-400 shrink-0">
+                                    <div className="size-10 rounded-xl bg-danger/10 flex items-center justify-center text-danger shrink-0">
                                         <AlertCircle size={20} />
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <span className="text-[10px] font-bold text-rose-400 uppercase block mb-1">Sync Failed</span>
-                                        <span className="text-sm text-slate-400">This task couldn't be synchronized with its Project.</span>
+                                        <span className="text-xs text-danger block mb-1">Sync Failed</span>
+                                        <span className="text-sm text-fg-subtle">This task couldn't be synchronized with its Project.</span>
                                     </div>
-                                    <button
-                                        onClick={handleRetrySync}
-                                        disabled={isRetryingSync}
-                                        className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-black uppercase tracking-widest bg-blue-600/10 border border-blue-600/20 rounded-lg text-blue-400 hover:bg-blue-600/20 transition-colors disabled:opacity-50 shrink-0"
-                                    >
+                                    <Button variant="secondary" size="sm" onClick={handleRetrySync} disabled={isRetryingSync}>
                                         {isRetryingSync ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
                                         Retry Sync
-                                    </button>
+                                    </Button>
                                 </div>
                             )}
 
                             {task.sync_status === 'disconnected' && (
-                                <p className="text-xs text-slate-600 italic" data-testid="project-sync-disconnected">
+                                <p className="text-xs text-fg-muted italic" data-testid="project-sync-disconnected">
                                     Previously connected to a Project.
                                 </p>
                             )}
-                        </div>
-                    </section>
+                    </div>
+                </Card>
 
-                    <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-                        <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest mb-4 border-b border-slate-800 pb-2">Description</h3>
-                        <p className={`text-slate-300 leading-relaxed ${!task.description ? 'italic' : ''}`}>
-                            {task.description || 'No additional description provided for this task.'}
-                        </p>
-                    </section>
+                <Card title="Description">
+                    <p className={`text-sm leading-relaxed text-fg-subtle ${!task.description ? 'italic' : ''}`}>
+                        {task.description || 'No additional description provided for this task.'}
+                    </p>
+                </Card>
 
-                    {/* Notes & Comments Section */}
-                    <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-                        <div className="flex items-center justify-between mb-4 border-b border-slate-800 pb-2">
-                            <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest">Notes & Comments</h3>
-                            {/* Only one Cancel exists in this section — inside the editor.
-                                The header keeps a single "open editor" affordance. */}
-                            {canCreateTask && !notesError && !isAddingNote && (
-                                <button
-                                    onClick={() => setIsAddingNote(true)}
-                                    className="text-xs text-blue-400 hover:text-blue-300 font-bold"
-                                >
-                                    + Add Note
-                                </button>
-                            )}
-                        </div>
-
+                {/* Notes & Comments Section */}
+                <Card
+                    title="Notes & Comments"
+                    actions={canCreateTask && !notesError && !isAddingNote ? (
+                        <Button variant="secondary" onClick={() => setIsAddingNote(true)}>+ Add Note</Button>
+                    ) : undefined}
+                >
                         {notesError && (
-                            <div className="bg-slate-800/60 border border-slate-700 rounded-lg p-3 mb-4 flex items-center justify-between gap-3">
-                                <p className="text-xs text-slate-400">{notesError}</p>
-                                <button
-                                    onClick={handleRetryNotes}
-                                    disabled={isRetryingNotes}
-                                    className="text-xs text-blue-400 hover:text-blue-300 font-bold shrink-0 disabled:opacity-50"
-                                >
-                                    {isRetryingNotes ? 'Retrying…' : 'Retry'}
-                                </button>
-                            </div>
+                            <Alert
+                                variant="warning"
+                                className="mb-nb-3"
+                                action={{
+                                    label: isRetryingNotes ? 'Retrying…' : 'Retry',
+                                    onClick: () => { if (!isRetryingNotes) handleRetryNotes(); },
+                                }}
+                            >
+                                {notesError}
+                            </Alert>
                         )}
 
                         {/* Collapsed state: a compact input that expands into the full
                             editor on click, so the section stays quiet when idle. */}
                         {canCreateTask && !notesError && !isAddingNote && (
-                            <button
+                            <Button variant="secondary"
                                 type="button"
                                 onClick={() => setIsAddingNote(true)}
                                 data-testid="note-composer-trigger"
-                                className="w-full text-left bg-slate-950 border border-slate-800 hover:border-blue-500/50 text-slate-500 rounded-lg px-4 py-2.5 text-sm mb-4 transition-colors"
+                                className="w-full !justify-start !text-left"
                             >
                                 Add a note or comment...
-                            </button>
+                            </Button>
                         )}
 
                         {isAddingNote && (
-                            <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 mb-4">
-                                <textarea
+                            <div className="mb-nb-3 border-b border-line pb-nb-3">
+                                <Textarea
+                                    name="task-new-note"
                                     autoFocus
                                     value={newNote}
                                     onChange={(e) => setNewNote(e.target.value)}
                                     placeholder="Add a note or comment..."
-                                    className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-lg px-4 py-3 outline-none focus:border-blue-500 resize-none h-24"
+                                    rows={4}
                                 />
                                 <div className="flex justify-end gap-2 mt-2">
-                                    <button
-                                        onClick={() => { setNewNote(''); setIsAddingNote(false); }}
-                                        className="px-4 py-2 text-slate-400 hover:text-slate-50 text-sm"
-                                    >
+                                    <Button variant="secondary" onClick={() => { setNewNote(''); setIsAddingNote(false); }}>
                                         Cancel
-                                    </button>
-                                    <button
+                                    </Button>
+                                    <Button
+                                        variant="primary"
                                         onClick={async () => {
                                             if (!task || !newNote.trim()) return;
                                             try {
@@ -442,20 +424,17 @@ const TaskDetailPage = () => {
                                                 toast.error(getErrorMessage(error, 'Failed to add note. Please try again.'));
                                             }
                                         }}
-                                        className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold text-sm"
                                     >
                                         Add Note
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
                         )}
 
-                        <div className="space-y-3">
+                        <div className="divide-y divide-line">
                             {notes.length === 0 ? (
                                 !notesError && (
-                                    <p className="text-slate-500 text-sm italic">
-                                        No notes added yet. Add the first note to collaborate with your team.
-                                    </p>
+                                    <EmptyState title="No notes added yet. Add the first note to collaborate with your team." />
                                 )
                             ) : (
                                 notes.map(note => {
@@ -463,95 +442,42 @@ const TaskDetailPage = () => {
                                     const isEdited = !!note.updated_at && note.updated_at !== note.created_at;
 
                                     return (
-                                        <div key={note.id} className="bg-slate-900/50 border border-slate-800 rounded-lg p-4 group">
+                                        <div key={note.id} className="group py-nb-3 first:pt-0 last:pb-0">
                                             <div className="flex items-start justify-between mb-2">
                                                 <div className="flex items-center gap-2">
-                                                    <div className="w-6 h-6 rounded-full bg-blue-600/20 flex items-center justify-center overflow-hidden">
+                                                    <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
                                                         {note.author?.avatar_url ? (
                                                             <img src={note.author.avatar_url} alt={note.author?.full_name || 'User'} className="w-full h-full object-cover" />
                                                         ) : (
-                                                            <span className="text-xs font-bold text-blue-400">
+                                                            <span className="text-xs font-bold text-primary">
                                                                 {note.author?.full_name?.[0] || 'U'}
                                                             </span>
                                                         )}
                                                     </div>
-                                                    <span className="text-sm font-medium text-slate-300">
+                                                    <span className="text-sm font-medium text-fg-subtle">
                                                         {note.author?.full_name || 'Unknown User'}
                                                     </span>
                                                 </div>
                                                 <div className="flex items-center gap-3">
-                                                    <span className="text-xs text-slate-500">
+                                                    <span className="text-xs text-fg-muted">
                                                         {formatters.formatDate(note.created_at)}
                                                         {isEdited && <span className="italic"> · Edited</span>}
                                                     </span>
                                                     {isAuthor && (
                                                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            <button
-                                                                onClick={() => setEditingNote({ id: note.id, content: note.content })}
-                                                                className="text-slate-500 hover:text-blue-400 p-1 transition-colors"
-                                                                title="Edit note"
-                                                            >
-                                                                <Edit2 size={14} />
-                                                            </button>
-                                                            <button
-                                                                onClick={() => setDeleteNoteId(note.id)}
-                                                                className="text-slate-500 hover:text-rose-400 p-1 transition-colors"
-                                                                title="Delete note"
-                                                            >
-                                                                <Trash2 size={14} />
-                                                            </button>
+                                                            <IconButton label="Edit note" icon={<Edit2 size={14} />} onClick={() => setEditingNote({ id: note.id, content: note.content })} />
+                                                            <IconButton label="Delete note" variant="danger" icon={<Trash2 size={14} />} onClick={() => setDeleteNoteId(note.id)} />
                                                         </div>
                                                     )}
                                                 </div>
                                             </div>
-                                            <p className="text-sm text-slate-300 whitespace-pre-wrap">{note.content}</p>
+                                            <p className="text-sm text-fg-subtle whitespace-pre-wrap">{note.content}</p>
                                         </div>
                                     );
                                 })
                             )}
                         </div>
-                    </section>
-                </div>
-
-                <div className="space-y-8">
-                    <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-                        <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest mb-6">Assignee</h3>
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden border-2 border-slate-700">
-                                {task.assigned_to.avatar_url ? <img src={task.assigned_to.avatar_url} alt={task.assigned_to.full_name} /> : task.assigned_to.full_name.charAt(0)}
-                            </div>
-                            <div>
-                                <p className="font-bold text-slate-50">{task.assigned_to.full_name}</p>
-                                <p className="text-xs text-slate-500">Sales Representative</p>
-                            </div>
-                        </div>
-                    </section>
-
-                    <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-                        <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest mb-4">Task Actions</h3>
-                        <div className="space-y-2">
-                            <button
-                                onClick={handleTaskToggle}
-                                className={`w-full py-2 rounded-lg text-xs font-bold transition-all shadow-lg active:scale-95 text-white ${task.status === 'DONE' ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/20' : 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/20'}`}
-                            >
-                                {task.status === 'DONE' ? 'Mark as Open' : 'Mark as Complete'}
-                            </button>
-                            <button
-                                onClick={() => canReschedule && setIsRescheduling(true)}
-                                disabled={!canReschedule}
-                                title={canReschedule ? 'Reschedule this task' : TASK_LOCKED_HINT}
-                                className="w-full bg-slate-700/60 hover:bg-slate-600/60 text-slate-200 py-2 rounded-lg text-xs font-bold transition-all border border-slate-600/50 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-slate-700/60"
-                            >
-                                Reschedule
-                            </button>
-                            {isLocked && (
-                                <p className="text-[10px] text-slate-500 leading-snug pt-1" data-testid="task-locked-hint">
-                                    {TASK_LOCKED_HINT}
-                                </p>
-                            )}
-                        </div>
-                    </section>
-                </div>
+                </Card>
             </div>
 
             {/* Task Edit Modal */}
@@ -581,34 +507,21 @@ const TaskDetailPage = () => {
             )}
 
             {/* Edit Note Modal */}
-            {editingNote && createPortal(
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[600]">
-                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
-                        <div className="flex items-start gap-3 mb-4">
-                            <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
-                                <Edit2 className="text-blue-400" size={20} />
-                            </div>
-                            <div className="flex-1">
-                                <h3 className="text-lg font-bold text-slate-50 mb-1">Edit Note</h3>
-                                <p className="text-sm text-slate-400">
-                                    Update your note content below.
-                                </p>
-                            </div>
-                        </div>
-                        <textarea
+            <Modal isOpen={!!editingNote} onClose={() => setEditingNote(null)} title="Edit Note" size="md">
+                {editingNote && (
+                    <div className="flex flex-col gap-nb-3">
+                        <p className="text-sm text-fg-subtle">Update your note content below.</p>
+                        <Textarea
+                            name="task-edit-note"
                             value={editingNote.content}
                             onChange={(e) => setEditingNote({ ...editingNote, content: e.target.value })}
-                            className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-lg px-4 py-3 outline-none focus:border-blue-500 resize-none h-32 mb-4"
                             placeholder="Note content..."
+                            rows={6}
                         />
-                        <div className="flex gap-3 justify-end">
-                            <button
-                                onClick={() => setEditingNote(null)}
-                                className="px-4 py-2 bg-slate-700/60 hover:bg-slate-600/60 text-slate-200 rounded-lg font-bold text-sm transition-all border border-slate-600/50"
-                            >
-                                Cancel
-                            </button>
-                            <button
+                        <div className="flex gap-nb-2 justify-end">
+                            <Button variant="secondary" onClick={() => setEditingNote(null)}>Cancel</Button>
+                            <Button
+                                variant="primary"
                                 onClick={async () => {
                                     if (!editingNote.content.trim()) {
                                         toast.warning('Note content cannot be empty.');
@@ -624,39 +537,25 @@ const TaskDetailPage = () => {
                                         toast.error(getErrorMessage(error, 'Failed to update note. Please try again.'));
                                     }
                                 }}
-                                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold text-sm transition-all shadow-lg shadow-blue-500/20 active:scale-95"
                             >
                                 Save Changes
-                            </button>
+                            </Button>
                         </div>
                     </div>
-                </div>,
-                document.body
-            )}
+                )}
+            </Modal>
 
             {/* Delete Note Confirmation Modal */}
-            {deleteNoteId && createPortal(
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[600]">
-                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
-                        <div className="flex items-start gap-3 mb-4">
-                            <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center shrink-0">
-                                <Trash2 className="text-rose-400" size={20} />
-                            </div>
-                            <div>
-                                <h3 className="text-lg font-bold text-slate-50 mb-1">Delete Note</h3>
-                                <p className="text-sm text-slate-400">
-                                    Are you sure you want to delete this note? This action cannot be undone.
-                                </p>
-                            </div>
-                        </div>
-                        <div className="flex gap-3 justify-end">
-                            <button
-                                onClick={() => setDeleteNoteId(null)}
-                                className="px-4 py-2 bg-slate-700/60 hover:bg-slate-600/60 text-slate-200 rounded-lg font-bold text-sm transition-all border border-slate-600/50"
-                            >
-                                Cancel
-                            </button>
-                            <button
+            <Modal isOpen={!!deleteNoteId} onClose={() => setDeleteNoteId(null)} title="Delete Note" size="md">
+                {deleteNoteId && (
+                    <div className="flex flex-col gap-nb-3">
+                        <p className="text-sm text-fg-subtle">
+                            Are you sure you want to delete this note? This action cannot be undone.
+                        </p>
+                        <div className="flex gap-nb-2 justify-end">
+                            <Button variant="secondary" onClick={() => setDeleteNoteId(null)}>Cancel</Button>
+                            <Button
+                                variant="danger"
                                 onClick={async () => {
                                     try {
                                         await crmService.deleteNote(deleteNoteId);
@@ -668,108 +567,55 @@ const TaskDetailPage = () => {
                                         toast.error(getErrorMessage(error, 'Failed to delete note. Please try again.'));
                                     }
                                 }}
-                                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-bold text-sm transition-all shadow-lg shadow-rose-500/20 active:scale-95"
                             >
                                 Delete Note
-                            </button>
+                            </Button>
                         </div>
                     </div>
-                </div>,
-                document.body
-            )}
+                )}
+            </Modal>
 
             {/* Disconnect from Project Confirmation Modal */}
-            {showDisconnectConfirm && createPortal(
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[600]">
-                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
-                        <div className="flex items-start gap-3 mb-4">
-                            <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center shrink-0">
-                                <Unlink className="text-rose-400" size={20} />
-                            </div>
-                            <div>
-                                <h3 className="text-lg font-bold text-slate-50 mb-1">Disconnect from Project</h3>
-                                <p className="text-sm text-slate-400">
-                                    Choose what happens to the linked Project task.
-                                </p>
-                            </div>
-                        </div>
-                        <div className="space-y-2 mb-4">
-                            <label className="flex items-start gap-3 p-3 rounded-xl border border-slate-800 hover:border-slate-700 cursor-pointer">
-                                <input
-                                    type="radio"
-                                    name="disconnect-mode"
-                                    checked={disconnectMode === 'keep_but_disconnect'}
-                                    onChange={() => setDisconnectMode('keep_but_disconnect')}
-                                    className="mt-1"
-                                />
-                                <span>
-                                    <span className="block text-sm font-bold text-slate-200">Keep Project task, just disconnect</span>
-                                    <span className="block text-xs text-slate-500">The Project task stays as-is; this CRM task stops syncing with it.</span>
-                                </span>
-                            </label>
-                            <label className="flex items-start gap-3 p-3 rounded-xl border border-slate-800 hover:border-slate-700 cursor-pointer">
-                                <input
-                                    type="radio"
-                                    name="disconnect-mode"
-                                    checked={disconnectMode === 'remove_project_task'}
-                                    onChange={() => setDisconnectMode('remove_project_task')}
-                                    className="mt-1"
-                                />
-                                <span>
-                                    <span className="block text-sm font-bold text-slate-200">Remove the Project task too</span>
-                                    <span className="block text-xs text-slate-500">Deletes the connected task on the Project side as well.</span>
-                                </span>
-                            </label>
-                        </div>
-                        <div className="flex gap-3 justify-end">
-                            <button
-                                onClick={() => setShowDisconnectConfirm(false)}
-                                disabled={isDisconnecting}
-                                className="px-4 py-2 bg-slate-700/60 hover:bg-slate-600/60 text-slate-200 rounded-lg font-bold text-sm transition-all border border-slate-600/50 disabled:opacity-50"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleDisconnect}
-                                disabled={isDisconnecting}
-                                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-bold text-sm transition-all shadow-lg shadow-rose-500/20 active:scale-95 disabled:opacity-50 flex items-center gap-2"
-                            >
-                                {isDisconnecting && <Loader2 size={12} className="animate-spin" />}
-                                Disconnect
-                            </button>
-                        </div>
+            <Modal isOpen={showDisconnectConfirm} onClose={() => setShowDisconnectConfirm(false)} title="Disconnect from Project" size="md">
+                <div className="flex flex-col gap-nb-3">
+                    <p className="text-sm text-fg-subtle">Choose what happens to the linked Project task.</p>
+                    <div className="flex flex-col gap-nb-2">
+                        <CrmScope>
+                            <RadioGroup
+                                name="disconnect-mode"
+                                label="Disconnect mode"
+                                value={disconnectMode}
+                                onChange={(v: string) => setDisconnectMode(v as typeof disconnectMode)}
+                                options={[
+                                    { value: 'keep_but_disconnect', label: 'Keep Project task, just disconnect', description: 'The Project task stays as-is; this CRM task stops syncing with it.' },
+                                    { value: 'remove_project_task', label: 'Remove the Project task too', description: 'Deletes the connected task on the Project side as well.' },
+                                ]}
+                            />
+                        </CrmScope>
                     </div>
-                </div>,
-                document.body
-            )}
+                    <div className="flex gap-nb-2 justify-end">
+                        <Button variant="secondary" onClick={() => setShowDisconnectConfirm(false)} disabled={isDisconnecting}>Cancel</Button>
+                        <Button variant="danger" onClick={handleDisconnect} disabled={isDisconnecting}>
+                            {isDisconnecting && <Loader2 size={12} className="animate-spin" />}
+                            Disconnect
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
 
             {/* Delete Confirmation Dialog */}
-            {showDeleteConfirm && createPortal(
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
-                    <div className="bg-slate-900 border border-slate-700/50 rounded-2xl w-full max-w-md p-6 shadow-2xl">
-                        <h3 className="text-lg font-bold text-slate-50 mb-2">Delete Task</h3>
-                        <p className="text-slate-400 mb-6">
-                            Are you sure you want to delete this task? This action cannot be undone.
-                        </p>
-                        <div className="flex justify-end gap-3">
-                            <button
-                                onClick={() => setShowDeleteConfirm(false)}
-                                className="px-4 py-2 text-slate-400 hover:text-slate-50"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleDelete}
-                                className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold"
-                            >
-                                Delete
-                            </button>
-                        </div>
+            <Modal isOpen={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)} title="Delete Task" size="md">
+                <div className="flex flex-col gap-nb-3">
+                    <p className="text-fg-subtle">
+                        Are you sure you want to delete this task? This action cannot be undone.
+                    </p>
+                    <div className="flex justify-end gap-nb-2">
+                        <Button variant="secondary" onClick={() => setShowDeleteConfirm(false)}>Cancel</Button>
+                        <Button variant="danger" onClick={handleDelete}>Delete</Button>
                     </div>
-                </div>,
-                document.body
-            )}
-        </div>
+                </div>
+            </Modal>
+        </DetailPageTemplate>
     );
 };
 

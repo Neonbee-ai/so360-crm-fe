@@ -3,6 +3,7 @@ import {
   TrendingUp, TrendingDown, AlertCircle, Clock, CheckCircle2,
   DollarSign, Zap, Activity, Calendar
 } from 'lucide-react';
+import { Badge, Card, CountUp, Grid, GridItem } from '@so360/design-system';
 import { Lead, Deal, Task } from '../types/crm';
 import { useCRMFormatters } from '../utils/formatters';
 
@@ -29,36 +30,29 @@ interface RiskBadge {
   icon: React.ReactNode;
 }
 
-const KPICard: React.FC<KPICardProps> = ({ label, value, trend, icon, color }) => {
-  const colorClasses = {
-    blue: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-    emerald: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-    amber: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-    purple: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-  };
-
+const KPICard: React.FC<KPICardProps> = ({ label, value, trend, icon }) => {
   const trendColorClasses = {
-    up: 'text-emerald-400',
-    down: 'text-rose-400',
-    neutral: 'text-slate-400',
+    up: 'text-success',
+    down: 'text-danger',
+    neutral: 'text-fg-subtle',
   };
 
   const trendBgClasses = {
-    up: 'bg-emerald-500/10',
-    down: 'bg-rose-500/10',
-    neutral: 'bg-slate-500/10',
+    up: 'bg-success/10',
+    down: 'bg-danger/10',
+    neutral: 'bg-fg-muted/10',
   };
 
   return (
-    <div className={`border rounded-2xl p-4 flex flex-col gap-3 ${colorClasses[color]}`}>
+    <div className="flex flex-col gap-nb-2 min-w-0">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{label}</span>
-        <div className="p-2 bg-slate-900/50 rounded-lg">{icon}</div>
+        <span className="text-xs font-medium text-fg-subtle">{label}</span>
+        <div className="p-2 bg-surface-raised rounded-nb">{icon}</div>
       </div>
       <div>
-        <div className="text-2xl font-black text-slate-50 leading-tight">{value}</div>
+        <div className="text-2xl font-medium text-fg leading-tight"><CountUp value={value} /></div>
         {trend && (
-          <div className={`flex items-center gap-1 mt-2 text-xs font-bold ${trendColorClasses[trend.direction]}`}>
+          <div className={`flex items-center gap-1 mt-2 text-xs font-medium ${trendColorClasses[trend.direction]}`}>
             {trend.direction === 'up' && <TrendingUp size={12} />}
             {trend.direction === 'down' && <TrendingDown size={12} />}
             <span>{trend.value}</span>
@@ -70,17 +64,12 @@ const KPICard: React.FC<KPICardProps> = ({ label, value, trend, icon, color }) =
 };
 
 const RiskBadgeComponent: React.FC<{ badge: RiskBadge }> = ({ badge }) => {
-  const colorMap = {
-    overdue: 'bg-rose-500/10 border-rose-500/20 text-rose-400',
-    stalled: 'bg-amber-500/10 border-amber-500/20 text-amber-400',
-    no_activity: 'bg-slate-500/10 border-slate-500/20 text-slate-400',
-  };
-
+  const tone = badge.type === 'overdue' ? 'danger' : badge.type === 'stalled' ? 'warning' : 'neutral';
   return (
-    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-[10px] font-bold uppercase tracking-widest ${colorMap[badge.type]}`}>
+    <Badge size="sm" tone={tone}>
       {badge.icon}
       <span>{badge.label}</span>
-    </div>
+    </Badge>
   );
 };
 
@@ -203,39 +192,25 @@ export const ExecutiveSummaryPanel: React.FC<ExecutiveSummaryPanelProps> = ({ le
   const dealCount = deals.length;
 
   return (
-    <div className="bg-gradient-to-br from-slate-900/80 to-slate-900/40 border border-slate-800 rounded-2xl p-6 mb-8 shadow-sm">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-800">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-500/10 rounded-lg">
-            <Activity size={16} className="text-blue-400" />
-          </div>
-          <div>
-            <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-              Executive Summary
-            </h2>
-            <p className="text-xs text-slate-500 mt-1">
-              {dealCount} {dealCount === 1 ? 'deal' : 'deals'} • {kpis.recentActivitiesCount} activities (30d)
-            </p>
-          </div>
-        </div>
-        {kpis.lastActivityDate && (
-          <div className="text-right">
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">
-              Last Activity
-            </span>
-            <span className="text-xs text-slate-400 font-bold mt-1 block">
-              {formatters.formatDate(kpis.lastActivityDate.toISOString())}
-            </span>
-          </div>
-        )}
-      </div>
+    <Card
+      title="Executive summary"
+      actions={
+        kpis.lastActivityDate ? (
+          <span className="text-xs text-fg-muted">
+            Last activity {formatters.formatDate(kpis.lastActivityDate.toISOString())}
+          </span>
+        ) : undefined
+      }
+    >
+      <p className="text-xs text-fg-muted mb-nb-3">
+        {dealCount} {dealCount === 1 ? 'deal' : 'deals'} • {kpis.recentActivitiesCount} activities (30d)
+      </p>
 
       {/* Risk Badges */}
       {riskBadges.length > 0 && (
-        <div className="mb-6 pb-6 border-b border-slate-800">
-          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">
-            Active Risks
+        <div className="mb-nb-3 pb-nb-3 border-b border-line">
+          <p className="text-xs font-medium text-fg-muted mb-3">
+            Active risks
           </p>
           <div className="flex flex-wrap gap-2">
             {riskBadges.map((badge, idx) => (
@@ -246,35 +221,35 @@ export const ExecutiveSummaryPanel: React.FC<ExecutiveSummaryPanelProps> = ({ le
       )}
 
       {/* KPI Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard
-          label="Total Deal Value"
+      <Grid gap="md">
+        <GridItem span={{ md: 4, lg: 3 }}><KPICard
+          label="Total deal value"
           value={formatters.formatCurrency(kpis.totalDealValue)}
           color="blue"
-          icon={<DollarSign size={16} className="text-blue-400" />}
-        />
+          icon={<DollarSign size={16} className="text-primary" />}
+        /></GridItem>
 
-        <KPICard
-          label="Pipeline Health"
+        <GridItem span={{ md: 4, lg: 3 }}><KPICard
+          label="Pipeline health"
           value={
             <span className="text-sm truncate" title={kpis.pipelineHealthLabel}>
               {kpis.pipelineHealthLabel}
             </span>
           }
           color="emerald"
-          icon={<CheckCircle2 size={16} className="text-emerald-400" />}
-        />
+          icon={<CheckCircle2 size={16} className="text-success" />}
+        /></GridItem>
 
-        <KPICard
-          label="Engagement Score"
+        <GridItem span={{ md: 4, lg: 3 }}><KPICard
+          label="Engagement score"
           value={`${kpis.engagementScore}/100`}
           trend={kpis.engagementTrend}
           color="amber"
-          icon={<Zap size={16} className="text-amber-400 fill-amber-400" />}
-        />
+          icon={<Zap size={16} className="text-warning fill-warning" />}
+        /></GridItem>
 
-        <KPICard
-          label="Sales Intelligence"
+        <GridItem span={{ md: 4, lg: 3 }}><KPICard
+          label="Sales intelligence"
           value={
             <div className="flex flex-col gap-2">
               <span className="text-sm">
@@ -282,14 +257,14 @@ export const ExecutiveSummaryPanel: React.FC<ExecutiveSummaryPanelProps> = ({ le
                   ? `${Math.floor((Date.now() - kpis.lastActivityDate.getTime()) / (1000 * 60 * 60 * 24))}d ago`
                   : 'Never'}
               </span>
-              <span className="text-[10px] text-slate-400">Last touch</span>
+              <span className="text-xs text-fg-subtle">Last touch</span>
             </div>
           }
           color="purple"
-          icon={<Activity size={16} className="text-purple-400" />}
-        />
-      </div>
-    </div>
+          icon={<Activity size={16} className="text-info" />}
+        /></GridItem>
+      </Grid>
+    </Card>
   );
 };
 
