@@ -216,9 +216,15 @@ const COL_DEFS: ColDef[] = [
     sortKey: 'company_name',
     render: (lead) => (
       <div className="flex flex-col gap-0.5 min-w-0">
-        <span className="font-semibold text-fg truncate leading-tight">
-          {lead.company_name}
-        </span>
+        {lead.company_name?.trim() ? (
+          <span className="font-semibold text-fg truncate leading-tight">
+            {lead.company_name}
+          </span>
+        ) : (
+          <span className="text-fg-muted italic truncate leading-tight" data-testid="lead-no-company">
+            No company name
+          </span>
+        )}
         {lead.type && (
           <span className="text-xs text-fg-muted font-medium">
             {lead.type}

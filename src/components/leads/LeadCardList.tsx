@@ -69,7 +69,11 @@ export default function LeadCardList({
 
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-semibold text-fg truncate">{lead.company_name}</span>
+                  {lead.company_name?.trim() ? (
+                    <span className="font-semibold text-fg truncate">{lead.company_name}</span>
+                  ) : (
+                    <span className="text-fg-muted italic truncate" data-testid="lead-no-company">No company name</span>
+                  )}
                   {showTemperature && (
                     <LeadTemperatureBadge temperature={lead.temperature} score={lead.temperature_score} className="ml-auto" />
                   )}
