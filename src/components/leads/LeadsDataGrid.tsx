@@ -52,6 +52,7 @@ import { groupLeadsBy, GROUP_BY_OPTIONS, type GroupByKey } from './leadGrouping'
 import { nextFocusIndex, scrollToRevealIndex } from './leadKeyboardNav';
 import { useIsNarrow } from './useIsNarrow';
 import LeadCardList from './LeadCardList';
+import LeadTemperatureBadge from './LeadTemperatureBadge';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -68,6 +69,8 @@ export interface GridContext {
   formatDate: (d: string) => string;
   /** Commit an inline cell edit. Optional so existing callers keep working. */
   onInlineEdit?: (lead: Lead, field: string, value: string) => void;
+  /** RE §20 — show the Hot/Warm/Cold badge (caller resolves the flag). */
+  showTemperature?: boolean;
   /** Active rating categories; present only when submodule:crm:lead_rating is enabled. Adds the Rating column. */
   ratings?: { id: string; label: string; color_token?: string | null }[];
 }
@@ -377,10 +380,13 @@ const COL_DEFS: ColDef[] = [
     defaultWidth: 120,
     minWidth: 90,
     sortKey: 'lead_score',
-    render: (lead) => {
+    render: (lead, ctx) => {
       const score = lead.auto_score ?? 0;
       return (
         <div className="flex items-center gap-2">
+          {ctx?.showTemperature && (
+            <LeadTemperatureBadge temperature={lead.temperature} score={lead.temperature_score} />
+          )}
           <div className="flex-1 h-1.5 bg-line rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full ${scoreBg(score)} transition-all`}
@@ -1458,6 +1464,7 @@ export function LeadsDataGrid({
           selectedIds={selectedIds}
           onToggleSelect={toggleSelect}
           onRowClick={onRowClick}
+          showTemperature={context.showTemperature}
         />
       ) : (
       <div

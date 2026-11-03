@@ -26,6 +26,7 @@ import { DlCustomFieldsPanel, DL_CUSTOM_FIELDS_FLAG } from '../customFields/DlCu
 import { useCrmFeatureFlag } from '../../hooks/useCrmFeatureFlag';
 import { useEntityTimeline } from '../../pages/components/timeline/useEntityTimeline';
 import { useCRMFormatters } from '../../utils/formatters';
+import { resolveLeadOwner } from '../../utils/resolveLeadOwner';
 import { formatFieldValue, visibleMetaEntries, EMPTY_VALUE } from '../../utils/fieldPresentation';
 
 type PanelTab = 'overview' | 'timeline' | 'sales' | 'tasks' | 'marketing' | 'audit';
@@ -284,7 +285,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
   // carry a stale "Unknown User" placeholder if it was mapped before the
   // shared users cache was warm.
   const ownerName = lead
-    ? (users.find((u) => u.id === lead.owner?.id)?.full_name ?? lead.owner?.full_name ?? '—')
+    ? (resolveLeadOwner(lead.owner, users)?.full_name ?? '—')
     : '—';
   const referredByName = lead?.referred_by
     ? (partners.find((p) => p.id === lead.referred_by)?.company_name ?? '—')
