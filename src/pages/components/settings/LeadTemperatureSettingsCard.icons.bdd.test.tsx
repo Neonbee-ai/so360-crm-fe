@@ -21,7 +21,16 @@ vi.mock('../../../services/leadTemperatureSettingsService', async (importActual)
     const actual = await importActual<typeof import('../../../services/leadTemperatureSettingsService')>();
     return { ...actual, leadTemperatureSettingsService: svc };
 });
-vi.mock('@so360/design-system', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+vi.mock('@so360/design-system', () => ({
+    toast: { success: vi.fn(), error: vi.fn() },
+    Button: ({ children, variant: _v, ...rest }: any) => <button {...rest}>{children}</button>,
+    TextField: ({ label, name, id, ...rest }: any) => (
+        <div>
+            <label htmlFor={id ?? name}>{label}</label>
+            <input id={id ?? name} name={name} {...rest} />
+        </div>
+    ),
+}));
 
 import LeadTemperatureSettingsCard from './LeadTemperatureSettingsCard';
 
