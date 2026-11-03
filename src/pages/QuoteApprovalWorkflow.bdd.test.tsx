@@ -16,6 +16,8 @@ const mockGetQuotes = vi.fn();
 const mockGetDeals = vi.fn();
 
 vi.mock('../services/crmService', () => ({
+  // ProposalEstimatorPanel (estimatorService) reads crmApiClient from this module.
+  crmApiClient: { get: vi.fn().mockResolvedValue({}), post: vi.fn().mockResolvedValue({}), put: vi.fn().mockResolvedValue({}) },
   crmService: {
     getQuoteById: (...a: any[]) => mockGetQuoteById(...a),
     updateQuote: (...a: any[]) => mockUpdateQuote(...a),
@@ -40,7 +42,7 @@ vi.mock('react-router-dom', () => ({
 
 let currentMockUser = { id: 'user-submitter-1', name: 'Submitter User' };
 
-vi.mock('@so360/shell-context', () => ({
+vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOriginal<any>()),
   useBusinessSettings: () => ({
     settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' },
   }),
@@ -75,7 +77,9 @@ vi.mock('@so360/formatters', () => ({
   }),
 }));
 
-vi.mock('@so360/design-system', () => ({
+vi.mock('@so360/design-system', async () => ({
+  ...(await import('../test/__mocks__/design-system')),
+  useConfirm: () => [vi.fn(async () => true), null],
   toast: {
     success: vi.fn(),
     error: vi.fn(),
@@ -439,20 +443,21 @@ describe('CRM Quote Approval Workflow BDD Specifications', () => {
 
       await waitFor(() => {
         expect(screen.getByText('All Quotes')).toBeInTheDocument();
-        expect(screen.getByText('Approvals')).toBeInTheDocument();
-        // Pending count badge = 1
-        expect(screen.getByTestId('approvals-pending-badge')).toHaveTextContent('1');
+        // Pending count rides in the Approvals view label: "Approvals (1)"
+        expect(screen.getByRole('radio', { name: 'Approvals (1)' })).toBeInTheDocument();
       });
 
-      // Switch to Approvals tab
-      fireEvent.click(screen.getByText('Approvals'));
+      // Switch to Approvals view
+      fireEvent.click(screen.getByRole('radio', { name: 'Approvals (1)' }));
 
       await waitFor(() => {
         expect(screen.getByText('Enterprise License')).toBeInTheDocument();
         expect(screen.getByText('Acme Corp')).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /^approve$/i })).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /^reject$/i })).toBeInTheDocument();
       });
+      // Comb: Approve / Reject live in the DataTable row-actions menu.
+      fireEvent.click(screen.getAllByLabelText('Row actions')[0]);
+      expect(screen.getByRole('menuitem', { name: /^approve$/i })).toBeInTheDocument();
+      expect(screen.getByRole('menuitem', { name: /^reject$/i })).toBeInTheDocument();
     });
 
     it('Given Approvals tab in QuotesPage, When Quick Approve is clicked, Then approves quote and refreshes inbox', async () => {
@@ -473,11 +478,10 @@ describe('CRM Quote Approval Workflow BDD Specifications', () => {
 
       render(<QuotesPage />);
 
-      await waitFor(() => screen.getByText('Approvals'));
-      fireEvent.click(screen.getByText('Approvals'));
+      fireEvent.click(await screen.findByRole('radio', { name: /^Approvals/ }));
 
-      await waitFor(() => screen.getByRole('button', { name: /^approve$/i }));
-      fireEvent.click(screen.getByRole('button', { name: /^approve$/i }));
+      fireEvent.click((await screen.findAllByLabelText('Row actions'))[0]);
+      fireEvent.click(screen.getByRole('menuitem', { name: /^approve$/i }));
 
       await waitFor(() => {
         expect(mockApproveQuote).toHaveBeenCalledWith('quote-100');

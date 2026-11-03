@@ -53,6 +53,8 @@ vi.mock('react-router-dom', () => ({
 }));
 
 vi.mock('@so360/shell-context', () => ({
+  // DlCustomFieldsPanel (custom fields tab) reads dataset fields.
+  useDatasetSchema: () => ({ fields: [], isLoading: false, error: null }),
     useShell: () => ({
         user: { id: 'u1', full_name: 'Test User', email: 'test@test.com' },
         tenant: { id: 'tenant-1' },
@@ -151,7 +153,7 @@ const defaultServiceMocks = (docs: any[]) => {
 async function renderAndOpenDocumentsTab() {
     render(<LeadDetailPage />);
     await waitFor(() => expect(screen.queryByText(/Loading lead workspace/i)).not.toBeInTheDocument());
-    const docsTab = screen.getByRole('button', { name: /Documents/i });
+    const docsTab = screen.getByRole('tab', { name: /Documents/i });
     await act(async () => { fireEvent.click(docsTab); });
 }
 

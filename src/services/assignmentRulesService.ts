@@ -18,10 +18,10 @@ import { crmApiClient } from './crmService';
 
 export type AssignmentTargetType = 'department' | 'users';
 export type AssignmentMethod = 'round_robin' | 'least_loaded' | 'fixed';
-export type AssignmentConditionOp = 'eq' | 'in' | 'contains';
+export type AssignmentConditionOp = 'eq' | 'in' | 'contains' | 'gt' | 'gte' | 'lt' | 'lte';
 
 export interface AssignmentCondition {
-    /** source | project | campaign | city | language | custom:<key> */
+    /** source | project | campaign | city | language | region | score | product | custom:<key> */
     field: string;
     op: AssignmentConditionOp;
     value: string | string[];
@@ -74,12 +74,19 @@ export const CONDITION_FIELDS: Array<{ value: string; label: string }> = [
     { value: 'campaign', label: 'Campaign' },
     { value: 'city', label: 'City' },
     { value: 'language', label: 'Language' },
+    { value: 'region', label: 'Region' },
+    { value: 'score', label: 'Lead score' },
+    { value: 'product', label: 'Product interest' },
 ];
 
 export const CONDITION_OPS: Array<{ value: AssignmentConditionOp; label: string }> = [
     { value: 'eq', label: 'is' },
     { value: 'in', label: 'is one of' },
     { value: 'contains', label: 'contains' },
+    { value: 'gt', label: 'is greater than' },
+    { value: 'gte', label: 'is at least' },
+    { value: 'lt', label: 'is less than' },
+    { value: 'lte', label: 'is at most' },
 ];
 
 export const ASSIGNMENT_METHODS: Array<{ value: AssignmentMethod; label: string }> = [

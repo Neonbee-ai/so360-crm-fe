@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 import UnifiedTimelinePanel from './UnifiedTimelinePanel';
+import { mockConfirm } from '../test/__mocks__/design-system';
 import { Activity, Note, Task, Attachment } from '../types/crm';
 
 // Mock the formatters
@@ -165,9 +166,9 @@ describe('UnifiedTimelinePanel', () => {
                     </Wrapper>
                 );
 
-                // Then - show loading spinner (check for animate-spin class or SVG)
-                const spinner = container.querySelector('.animate-spin');
-                expect(spinner).toBeInTheDocument();
+                // Then - show a loading skeleton
+                const skeleton = container.querySelector('[data-testid="skeleton"]');
+                expect(skeleton).toBeInTheDocument();
             });
         });
     });
@@ -188,21 +189,10 @@ describe('UnifiedTimelinePanel', () => {
                     </Wrapper>
                 );
 
-                // Click filter dropdown (find the button with "Filter:" text and click)
-                const filterButtons = screen.getAllByRole('button');
-                const filterButton = filterButtons.find(
-                    (btn) =>
-                        btn.textContent?.includes('Filter') &&
-                        btn.textContent?.includes('All')
-                );
-                expect(filterButton).toBeDefined();
-
-                // The dropdown in this simple implementation is shown via group-hover
-                // For testing purposes, we'll interact via the component state
-                // This test documents the expected behavior
-
-                // For now, let's verify the filter controls exist
-                expect(screen.getByText('Filter:')).toBeInTheDocument();
+                const select = screen.getByTestId('filter-type');
+                await user.selectOptions(select, 'activity');
+                expect((select as HTMLSelectElement).value).toBe('activity');
+                expect(screen.getAllByTestId(/^timeline-item-activity-/)).toHaveLength(1);
                 expect(screen.getByText('Sort:')).toBeInTheDocument();
             });
 
@@ -378,8 +368,8 @@ describe('UnifiedTimelinePanel', () => {
 
                 const item = container.querySelector('[data-testid*="task-task-1"]');
                 expect(item).toBeInTheDocument();
-                // Check for yellow badge color classes
-                const badges = item?.querySelectorAll('[class*="bg-yellow"]');
+                // DS Badge carries the tone
+                const badges = item?.querySelectorAll('[data-tone="warning"]');
                 expect(badges && badges.length > 0).toBe(true);
             });
 
@@ -399,8 +389,8 @@ describe('UnifiedTimelinePanel', () => {
 
                 const item = container.querySelector('[data-testid*="task-task-1"]');
                 expect(item).toBeInTheDocument();
-                // Check for green badge color classes
-                const badges = item?.querySelectorAll('[class*="emerald"]');
+                // DS Badge carries the tone
+                const badges = item?.querySelectorAll('[data-tone="success"]');
                 expect(badges && badges.length > 0).toBe(true);
             });
 
@@ -420,8 +410,8 @@ describe('UnifiedTimelinePanel', () => {
 
                 const item = container.querySelector('[data-testid*="task-task-1"]');
                 expect(item).toBeInTheDocument();
-                // Check for blue badge color classes
-                const badges = item?.querySelectorAll('[class*="blue"]');
+                // DS Badge carries the tone
+                const badges = item?.querySelectorAll('[data-tone="primary"]');
                 expect(badges && badges.length > 0).toBe(true);
             });
         });
@@ -476,7 +466,7 @@ describe('UnifiedTimelinePanel', () => {
         describe('Scenario: Note delete handler', () => {
             it('When note delete button clicked and confirmed, Then calls onNoteDelete', async () => {
                 const onNoteDelete = vi.fn();
-                global.confirm = vi.fn(() => true);
+                mockConfirm.mockResolvedValueOnce(true);
 
                 const { container } = render(
                     <Wrapper>
@@ -494,6 +484,34 @@ describe('UnifiedTimelinePanel', () => {
                 const deleteButtons = item?.querySelectorAll('button[title*="Delete"]');
 
                 expect(deleteButtons && deleteButtons.length > 0).toBe(true);
+            });
+        });
+
+        describe('Scenario: Note delete confirmation (useConfirm)', () => {
+            const renderWithNote = (onNoteDelete: () => void) => {
+                const { container } = render(
+                    <Wrapper>
+                        <UnifiedTimelinePanel activities={[]} notes={[mockNote]} tasks={[]} documents={[]} onNoteDelete={onNoteDelete} />
+                    </Wrapper>
+                );
+                const item = container.querySelector('[data-testid*="note-note-1"]');
+                return item?.querySelector('button[title*="Delete"]') as HTMLButtonElement;
+            };
+
+            it('Given confirm accepted, When delete clicked, Then onNoteDelete runs', async () => {
+                const onNoteDelete = vi.fn();
+                mockConfirm.mockResolvedValueOnce(true);
+                fireEvent.click(renderWithNote(onNoteDelete));
+                await waitFor(() => expect(onNoteDelete).toHaveBeenCalledWith(mockNote.id));
+            });
+
+            it('Given confirm cancelled, When delete clicked, Then onNoteDelete does not run', async () => {
+                const onNoteDelete = vi.fn();
+                mockConfirm.mockReset();
+                mockConfirm.mockResolvedValueOnce(false);
+                fireEvent.click(renderWithNote(onNoteDelete));
+                await waitFor(() => expect(mockConfirm).toHaveBeenCalled());
+                expect(onNoteDelete).not.toHaveBeenCalled();
             });
         });
 
@@ -595,7 +613,7 @@ describe('UnifiedTimelinePanel', () => {
 
             it('When document delete button clicked and confirmed, Then calls onDocumentDelete', async () => {
                 const onDocumentDelete = vi.fn();
-                global.confirm = vi.fn(() => true);
+                mockConfirm.mockResolvedValueOnce(true);
 
                 render(
                     <Wrapper>
@@ -695,7 +713,7 @@ describe('UnifiedTimelinePanel', () => {
 
                 // When no items match the current filter type
                 // Then should show "No items match your filter"
-                expect(screen.getByText('Filter:')).toBeInTheDocument();
+                expect(screen.getByTestId('filter-type')).toBeInTheDocument();
             });
         });
 

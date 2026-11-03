@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Sparkles, RefreshCw, AlertCircle, Loader2 } from 'lucide-react';
+import { Button, Card, IconButton, Skeleton } from '@so360/design-system';
+import { RefreshCw, AlertCircle } from 'lucide-react';
 import { neuraAiService, inboxIntegrationApi, NeuraEntityRef } from '../../services/crmService';
 
 interface Props {
@@ -7,10 +8,14 @@ interface Props {
     leadLabel: string;
     /** Org has the Inbox module enabled — gates the Inbox-communications fetch. */
     isInboxEnabled: boolean;
+    /** CRM entity being summarised. Defaults to a lead; a deal reuses the same card. */
+    entity?: 'leads' | 'deals' | 'partners';
 }
 
 const conversationStorageKey = (leadId: string) => `neura_ai_conversation:${leadId}`;
 const summaryCacheKey = (leadId: string) => `neura_ai_summary:${leadId}`;
+const PARTNER_SUMMARY_PROMPT = 'Summarize this partner for me: type, status, contact details, linked deals and commissions, recent activity, and any risks or next steps I should be aware of. Be concise.';
+const DEAL_SUMMARY_PROMPT = 'Summarize this deal for me: current stage, value, linked customer, recent activity, and any risks or next steps I should be aware of. Be concise.';
 /** A summary is reused for this long on revisits — every page mount used to
  *  fire a fresh identical LLM call (audited: 11 byte-identical asks in 5h). */
 const SUMMARY_TTL_MS = 10 * 60 * 1000;
@@ -40,12 +45,14 @@ async function buildInboxContext(leadId: string): Promise<string | null> {
     }
 }
 
-const NeuraAiSummaryCard: React.FC<Props> = ({ leadId, leadLabel, isInboxEnabled }) => {
+const NeuraAiSummaryCard: React.FC<Props> = ({ leadId, leadLabel, isInboxEnabled, entity = 'leads' }) => {
+    const isDeal = entity === 'deals';
+    const isPartner = entity === 'partners';
     const [summary, setSummary] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const entityRef: NeuraEntityRef = { module: 'crm', entity: 'leads', id: leadId, label: leadLabel };
+    const entityRef: NeuraEntityRef = { module: 'crm', entity, id: leadId, label: leadLabel };
     // Ref (not state): two rapid mounts (StrictMode / remount) both saw
     // isLoading=false and double-fired identical LLM calls.
     const inFlightRef = useRef(false);
@@ -75,13 +82,14 @@ const NeuraAiSummaryCard: React.FC<Props> = ({ leadId, leadLabel, isInboxEnabled
                 localStorage.getItem(conversationStorageKey(leadId)) ||
                 sessionStorage.getItem(conversationStorageKey(leadId));
             if (!conversationId) {
-                const conversation = await neuraAiService.createConversation(`Neura AI · Lead ${leadLabel || leadId}`);
+                const conversation = await neuraAiService.createConversation(`Neura AI · ${isDeal ? 'Deal' : isPartner ? 'Partner' : 'Lead'} ${leadLabel || leadId}`);
                 conversationId = conversation.id;
                 localStorage.setItem(conversationStorageKey(leadId), conversationId);
             }
 
-            const inboxContext = isInboxEnabled ? await buildInboxContext(leadId) : null;
-            const prompt = inboxContext ? `${SUMMARY_PROMPT}\n\n${inboxContext}` : SUMMARY_PROMPT;
+            const inboxContext = isInboxEnabled && !isDeal && !isPartner ? await buildInboxContext(leadId) : null;
+            const basePrompt = isDeal ? DEAL_SUMMARY_PROMPT : isPartner ? PARTNER_SUMMARY_PROMPT : SUMMARY_PROMPT;
+            const prompt = inboxContext ? `${basePrompt}\n\n${inboxContext}` : basePrompt;
 
             const result = await neuraAiService.sendMessage(conversationId, prompt, entityRef);
             setSummary(result.assistantMessage.content);
@@ -99,47 +107,48 @@ const NeuraAiSummaryCard: React.FC<Props> = ({ leadId, leadLabel, isInboxEnabled
         }
     }, [leadId, leadLabel, isInboxEnabled]); // eslint-disable-line react-hooks/exhaustive-deps
 
+    // On page entry only a cached summary is shown; generating one is an
+    // explicit action (Salesforce Einstein "Summarize" / HubSpot "Generate
+    // summary"). Auto-firing the LLM on mount held an aria-busy skeleton on
+    // every fresh record page for ~14s (AutoQA r18) and spent an LLM call per
+    // view. Runs only when the viewed lead changes.
     useEffect(() => {
-        fetchSummary();
-        // Refetch only when the viewed lead changes, not on every render —
-        // fetchSummary is intentionally excluded so a manual Refresh click
-        // (which reruns the same callback) doesn't also retrigger this effect.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        setError(null);
+        let cachedText: string | null = null;
+        try {
+            const cached = JSON.parse(sessionStorage.getItem(summaryCacheKey(leadId)) || 'null');
+            if (cached?.text && Date.now() - cached.at < SUMMARY_TTL_MS) cachedText = cached.text;
+        } catch { /* cache unreadable — wait for an explicit Generate */ }
+        setSummary(cachedText);
     }, [leadId]);
 
     return (
-        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm overflow-hidden relative">
-            <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                    <div className="bg-violet-500/10 text-violet-400 p-1.5 rounded-lg">
-                        <Sparkles size={14} />
-                    </div>
-                    <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Neura AI Summary</h3>
-                </div>
-                <button
-                    onClick={() => fetchSummary(true)}
-                    disabled={isLoading}
-                    title="Refresh summary"
-                    className="p-1.5 rounded-lg text-slate-500 hover:text-violet-400 hover:bg-violet-500/10 transition-all disabled:opacity-40"
-                >
-                    <RefreshCw size={12} className={isLoading ? 'animate-spin' : ''} />
-                </button>
-            </div>
-
+        <Card
+            padding="sm"
+            title="Neura AI summary"
+            actions={
+                <IconButton label="Refresh summary" title="Refresh summary" icon={<RefreshCw size={12} className={isLoading ? 'animate-spin' : ''} />} onClick={() => fetchSummary(true)} disabled={isLoading} />
+            }
+        >
             {isLoading && !summary ? (
-                <div className="flex items-center gap-2 text-slate-500 py-4">
-                    <Loader2 size={14} className="animate-spin" />
-                    <span className="text-xs">Neura AI is reviewing this lead…</span>
+                <div role="status" aria-busy="true" className="space-y-nb-2 text-fg-muted py-4">
+                    <Skeleton variant="text" lines={3} />
+                    <span className="text-xs">Neura AI is reviewing this {isDeal ? 'deal' : isPartner ? 'partner' : 'lead'}…</span>
                 </div>
             ) : error && !summary ? (
-                <div className="flex items-center gap-2 text-rose-400 py-2">
+                <div className="flex items-center gap-2 text-danger py-2">
                     <AlertCircle size={12} />
-                    <span className="text-[11px]">{error}</span>
+                    <span className="text-xs">{error}</span>
                 </div>
             ) : summary ? (
-                <p className="text-[12px] text-slate-300 leading-relaxed whitespace-pre-wrap">{summary}</p>
-            ) : null}
-        </section>
+                <p className="text-xs text-fg-subtle leading-relaxed whitespace-pre-wrap">{summary}</p>
+            ) : (
+                <div className="flex items-center justify-between gap-nb-2 py-nb-1">
+                    <span className="text-xs text-fg-muted">Get a quick AI summary of this {isDeal ? 'deal' : isPartner ? 'partner' : 'lead'}.</span>
+                    <Button variant="secondary" onClick={() => fetchSummary(true)}>Generate summary</Button>
+                </div>
+            )}
+        </Card>
     );
 };
 

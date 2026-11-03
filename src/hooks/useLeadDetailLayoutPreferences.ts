@@ -53,6 +53,9 @@ export function useLeadDetailLayoutPreferences() {
     const [sections, setSections] = useState<LayoutSectionPref[]>(loadSections);
     const [hydrated, setHydrated] = useState(false);
     const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // Last layout known to match the backend: mount-time local state, replaced
+    // by the remote layout on hydration.
+    const syncedRef = useRef<string>(JSON.stringify({ sections }));
 
     useEffect(() => {
         try {
@@ -71,6 +74,7 @@ export function useLeadDetailLayoutPreferences() {
                 if (!cancelled && rp?.sections && Array.isArray(rp.sections) && rp.sections.length) {
                     const keys = new Set(rp.sections.map((s) => s.key));
                     const merged = [...rp.sections, ...DEFAULT_SECTIONS.filter((s) => !keys.has(s.key))];
+                    syncedRef.current = JSON.stringify({ sections: merged });
                     setSections(merged);
                 }
             } catch {
@@ -82,10 +86,15 @@ export function useLeadDetailLayoutPreferences() {
         return () => { cancelled = true; };
     }, []);
 
+    // Only user changes are pushed: a layout equal to the synced one is
+    // skipped, so opening a lead/customer never issues a PUT.
     useEffect(() => {
         if (!hydrated) return;
+        const payload = JSON.stringify({ sections });
         if (saveTimer.current) clearTimeout(saveTimer.current);
+        if (payload === syncedRef.current) return;
         saveTimer.current = setTimeout(() => {
+            syncedRef.current = payload;
             crmService.gridColumns.save({ sections }, ENTITY_TYPE).catch(() => { /* offline */ });
         }, 800);
         return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };

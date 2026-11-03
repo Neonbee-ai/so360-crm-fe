@@ -37,6 +37,7 @@ export interface Attachment {
 
 export interface Lead {
     id: string;
+    core_partner_id?: string | null;
     company_name: string;
     first_name?: string;
     last_name?: string;
@@ -54,6 +55,9 @@ export interface Lead {
     notes: Note[];
     documents?: Attachment[];
     custom_fields?: Record<string, any>;
+    /** Data-layer custom fields keyed by field_key (flag submodule:crm:dl_custom_fields). */
+    dl_custom_fields?: Record<string, any>;
+    custom_fields_version?: number;
     creator?: User;
     customer_category?: 'b2b' | 'b2c';
     tax_id?: string;
@@ -66,7 +70,29 @@ export interface Lead {
     first_order_at?: string;
     channel?: string;
     auto_score?: number;
+    /** ICP best-match score (0-100). */
+    score?: number | null;
     score_breakdown?: ScoreBreakdownItem[];
+    // RE §26 acquisition attribution (crm-be migration 080)
+    utm_source?: string | null;
+    utm_medium?: string | null;
+    utm_campaign?: string | null;
+    utm_term?: string | null;
+    utm_content?: string | null;
+    ad_platform?: string | null;
+    ad_campaign_id?: string | null;
+    ad_set_id?: string | null;
+    ad_set_name?: string | null;
+    ad_id?: string | null;
+    ad_name?: string | null;
+    landing_page?: string | null;
+    referrer?: string | null;
+    gclid?: string | null;
+    fbclid?: string | null;
+    crm_campaign_id?: string | null;
+    /** Per-org rating (score band, or set by hand when rating_is_manual). */
+    rating_category_id?: string | null;
+    rating_is_manual?: boolean;
     /** RE §20 — band stored by crm-be (null until first computed). */
     temperature?: LeadTemperature | null;
     temperature_score?: number | null;
@@ -90,6 +116,8 @@ export interface FlowState {
     name: string;         // display name, e.g. 'Qualified'
     color: string;
     is_terminal: boolean;
+    /** Optional stage type from settings; the name is the fallback. */
+    type?: 'OPEN' | 'WON' | 'LOST';
     deals?: Deal[];
 }
 
@@ -121,6 +149,7 @@ export interface Deal {
     invoice_id?: string;
     invoice_number?: string;
     custom_fields?: Record<string, any>;
+    custom_fields_version?: number;
     created_at: string;
     fulfillment_status?: 'pending' | 'in_transit' | 'out_for_delivery' | 'delivered' | 'failed' | null;
 }
@@ -165,10 +194,10 @@ export const TASK_PRIORITY_OPTIONS: { value: TaskPriority; label: string }[] = [
 ];
 
 export const TASK_PRIORITY_STYLES: Record<TaskPriority, string> = {
-    LOW: 'bg-slate-700/40 text-slate-300',
-    MEDIUM: 'bg-sky-500/15 text-sky-400',
-    HIGH: 'bg-amber-500/15 text-amber-400',
-    CRITICAL: 'bg-rose-500/15 text-rose-400',
+    LOW: 'bg-surface-high text-fg-subtle',
+    MEDIUM: 'bg-info/15 text-info',
+    HIGH: 'bg-warning/15 text-warning',
+    CRITICAL: 'bg-danger/15 text-danger',
 };
 
 export interface Task {
@@ -188,6 +217,8 @@ export interface Task {
     assigned_to: User;
     created_at: string;
     reminder_minutes_before?: number;
+    reminder_at?: string | null;
+    reminder_offset_minutes?: number | null;
     // Project sync — populated once the connect-project migration lands on the
     // backend. Absent/undefined on a task means "no project connection", which
     // is the current unaffected behavior — every consumer must treat it that way.
@@ -219,6 +250,9 @@ export interface ScoreCategory {
     min_score: number;
     max_score: number | null;
     color: string;
+    /** Semantic colour token (Badge tone); wins over the legacy hex colour. */
+    color_token?: 'neutral' | 'info' | 'success' | 'warning' | 'danger' | 'primary' | null;
+    is_active?: boolean;
     sort_order: number;
 }
 
@@ -265,7 +299,7 @@ export const DEFAULT_DEAL_NAMING_CONFIG: DealNamingConfig = {
 };
 
 export interface CRMSettings {
-    deal_stages: { id: string; name: string; type: 'OPEN' | 'WON' | 'LOST' }[];
+    deal_stages: { id: string; name: string; type: 'OPEN' | 'WON' | 'LOST'; /** Win probability 0-100, null = not set. */ probability?: number | null }[];
     lead_stages: { id: string; name: string }[];
     default_owner_id: string;
     lead_sources: { id: string; name: string; archived: boolean }[];
@@ -369,6 +403,8 @@ export interface Quote {
     deal_id: string;
     deal?: Deal;
     customer_id?: string;
+    /** Linked customer's party summary, embedded by GET /quotes/:id; null when none or deleted. */
+    customer?: Pick<Lead, 'id' | 'company_name' | 'contact_name' | 'contact_email' | 'phone' | 'tax_id'> | null;
     customer_name?: string;
     title?: string;
     status: QuoteStatus;
@@ -399,6 +435,11 @@ export interface Quote {
     /** Buyer's own RFQ/PO number. */
     customer_reference?: string;
     valid_until?: string;
+    /** Server-derived: validity has lapsed on an open quote. */
+    is_expired?: boolean;
+    /** Server-derived status; 'expired' once an open quote lapses. */
+    effective_status?: QuoteStatus;
+    validity_days?: number;
     submitted_by?: string;
     current_approval_request_id?: string | null;
     current_approval_request?: {

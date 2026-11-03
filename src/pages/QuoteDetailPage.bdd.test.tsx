@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import React from 'react';
 
 const mockGetQuoteById = vi.fn();
@@ -13,6 +13,8 @@ const mockSendQuote = vi.fn();
 const mockGetLeadById = vi.fn();
 
 vi.mock('../services/crmService', () => ({
+  // ProposalEstimatorPanel (estimatorService) reads crmApiClient from this module.
+  crmApiClient: { get: vi.fn().mockResolvedValue({}), post: vi.fn().mockResolvedValue({}), put: vi.fn().mockResolvedValue({}) },
   crmService: {
     getQuoteById: (...a: any[]) => mockGetQuoteById(...a),
     updateQuote: (...a: any[]) => mockUpdateQuote(...a),
@@ -31,7 +33,7 @@ vi.mock('react-router-dom', () => ({
   useNavigate: () => vi.fn(),
 }));
 
-vi.mock('@so360/shell-context', () => ({
+vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOriginal<any>()),
   useBusinessSettings: () => ({
     settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' },
   }),
@@ -149,6 +151,129 @@ describe('QuoteDetailPage', () => {
       await waitFor(() => {
         expect(mockGetStockAvailability).toHaveBeenCalledWith(['i1']);
       });
+    });
+  });
+
+  // Task a171957e: the line Amount keeps the existing discount flow (Qty × Unit Price less the
+  // line discount) but never includes tax; tax shows only in the Tax row of the totals block.
+  describe('Given a quote line with a discount and tax', () => {
+    const taxedQuote = {
+      ...quoteData,
+      lines: [
+        { id: 'ql1', description: 'Harper 4 Seater Dining Table', quantity: 1, unit_price: 15999, line_total: 16990.94, discount_percent: 10, tax_rate: 18 },
+      ],
+    };
+    // In edit mode the description is an input, so fall back to its value.
+    const lineRow = () => (screen.queryByText('Harper 4 Seater Dining Table') ?? screen.getByDisplayValue('Harper 4 Seater Dining Table')).closest('tr') as HTMLElement;
+    const lineAmountCell = (row: HTMLElement) => within(row).getByTestId('quote-line-amount');
+    const grandTotalRow = () => screen.getAllByText('Total').map((el) => el.parentElement as HTMLElement).find((el) => el.tagName === 'DIV') as HTMLElement;
+
+    it('When rendered / Then the line column is labelled Amount, not Total', async () => {
+      mockGetQuoteById.mockResolvedValue(taxedQuote);
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Harper 4 Seater Dining Table'));
+      expect(screen.getByRole('columnheader', { name: 'Amount' })).toBeInTheDocument();
+      expect(screen.queryByRole('columnheader', { name: 'Total' })).not.toBeInTheDocument();
+    });
+
+    it('When rendered / Then the line Amount includes the discount but not the tax', async () => {
+      mockGetQuoteById.mockResolvedValue(taxedQuote);
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Harper 4 Seater Dining Table'));
+      expect(lineAmountCell(lineRow())).toHaveTextContent(/^\$14399\.1/);
+      expect(within(lineRow()).queryByText(/16990/)).not.toBeInTheDocument();
+    });
+
+    it('When rendered / Then the totals block is unchanged: Subtotal, Discount, Tax, and the final amount only in the last Total', async () => {
+      mockGetQuoteById.mockResolvedValue(taxedQuote);
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Harper 4 Seater Dining Table'));
+      expect(within(screen.getByText('Subtotal').parentElement as HTMLElement).getByText('$15999')).toBeInTheDocument();
+      expect(screen.getAllByText('Discount')).toHaveLength(1);
+      expect(within(screen.getByText('Discount').parentElement as HTMLElement).getByText(/^-\$1599\.9/)).toBeInTheDocument();
+      expect(within(screen.getByText('Tax').parentElement as HTMLElement).getByText(/^\$2591\.83/)).toBeInTheDocument();
+      // Same final figure as before the change: 15999 − 1599.90 + 2591.84.
+      expect(within(grandTotalRow()).getByText(/^\$16990\.93/)).toBeInTheDocument();
+    });
+
+    it('When Tax % is changed in edit mode / Then the line Amount stays the same and only the totals change', async () => {
+      mockGetQuoteById.mockResolvedValue(taxedQuote);
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Harper 4 Seater Dining Table'));
+      fireEvent.click(screen.getByText(/^edit$/i));
+      fireEvent.change(screen.getByDisplayValue('18'), { target: { value: '0' } });
+      await waitFor(() => expect(within(grandTotalRow()).getByText(/^\$14399\.1/)).toBeInTheDocument());
+      expect(lineAmountCell(lineRow())).toHaveTextContent(/^\$14399\.1/);
+    });
+
+    it('When Disc % is changed in edit mode / Then the line Amount and the Discount row both follow the discount, as before', async () => {
+      mockGetQuoteById.mockResolvedValue(taxedQuote);
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Harper 4 Seater Dining Table'));
+      fireEvent.click(screen.getByText(/^edit$/i));
+      fireEvent.change(screen.getByDisplayValue('10'), { target: { value: '20' } });
+      await waitFor(() => expect(within(screen.getByText('Discount').parentElement as HTMLElement).getByText(/^-\$3199\.8/)).toBeInTheDocument());
+      expect(lineAmountCell(lineRow())).toHaveTextContent(/^\$12799\.2/);
+    });
+
+    it('When there are several lines / Then each line shows its own after-discount amount without tax, and Subtotal is the sum of Qty × Unit Price', async () => {
+      mockGetQuoteById.mockResolvedValue({
+        ...quoteData,
+        lines: [
+          { id: 'a', description: 'Line A', quantity: 2, unit_price: 100, line_total: 236, discount_percent: 0, tax_rate: 18 },
+          { id: 'b', description: 'Line B', quantity: 3, unit_price: 50, line_total: 141.75, discount_percent: 10, tax_rate: 5 },
+        ],
+      });
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Line A'));
+      expect(lineAmountCell(screen.getByText('Line A').closest('tr') as HTMLElement)).toHaveTextContent(/^\$200$/);
+      expect(lineAmountCell(screen.getByText('Line B').closest('tr') as HTMLElement)).toHaveTextContent(/^\$135$/);
+      expect(within(screen.getByText('Subtotal').parentElement as HTMLElement).getByText('$350')).toBeInTheDocument();
+    });
+  });
+
+  describe('Given quote lines with no catalogue item, 0% discount and 0% tax', () => {
+    const plainQuote = { ...quoteData, lines: [{ id: 'qp1', description: 'AQA LED retrofit', quantity: 4, unit_price: 9000, line_total: 36000, discount_percent: 0, tax_rate: 0 }] };
+    it('When rendered read-only / Then the empty Stock, Disc % and Tax % columns are dropped and Amount stays visible', async () => {
+      mockGetQuoteById.mockResolvedValue(plainQuote);
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('AQA LED retrofit'));
+      expect(screen.queryByRole('columnheader', { name: 'Stock' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('columnheader', { name: 'Disc %' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('columnheader', { name: 'Tax %' })).not.toBeInTheDocument();
+      expect(screen.getByRole('columnheader', { name: 'Amount' })).toBeInTheDocument();
+    });
+    it('When the user switches to edit mode / Then every column is back so discount and tax can be entered', async () => {
+      mockGetQuoteById.mockResolvedValue(plainQuote);
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('AQA LED retrofit'));
+      fireEvent.click(screen.getByText(/^edit$/i));
+      await waitFor(() => expect(screen.getByRole('columnheader', { name: 'Disc %' })).toBeInTheDocument());
+      expect(screen.getByRole('columnheader', { name: 'Tax %' })).toBeInTheDocument();
+      expect(screen.getByRole('columnheader', { name: 'Stock' })).toBeInTheDocument();
+    });
+  });
+
+  describe('Given a quote line with a catalogue item, a discount and tax', () => {
+    it('When rendered read-only / Then Stock, Disc % and Tax % columns are shown', async () => {
+      mockGetQuoteById.mockResolvedValue({ ...quoteData, lines: [{ id: 'qd1', description: 'Harper', item_id: 'i1', quantity: 1, unit_price: 100, line_total: 100, discount_percent: 10, tax_rate: 18 }] });
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Harper'));
+      expect(screen.getByRole('columnheader', { name: 'Stock' })).toBeInTheDocument();
+      expect(screen.getByRole('columnheader', { name: 'Disc %' })).toBeInTheDocument();
+      expect(screen.getByRole('columnheader', { name: 'Tax %' })).toBeInTheDocument();
+    });
+  });
+
+  describe('Given a quote line with a very long description', () => {
+    const longText = 'AQA-' + 'x'.repeat(300);
+    it('When rendered read-only / Then the description wraps inside a capped column so Amount stays fully visible', async () => {
+      mockGetQuoteById.mockResolvedValue({ ...quoteData, lines: [{ id: 'ql9', description: longText, quantity: 1, unit_price: 10, line_total: 10 }] });
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText(longText));
+      const wrap = screen.getAllByTestId('quote-line-description')[0];
+      expect(wrap).toHaveClass('min-w-0', 'max-w-md');
+      expect(screen.getByText(longText)).toHaveClass('whitespace-normal', '[overflow-wrap:anywhere]');
     });
   });
 
@@ -501,7 +626,8 @@ describe('Given a saved quote', () => {
   beforeEach(() => {
     // customer_id is what triggers resolving the customer record — the nested
     // `customer` object alone is not enough.
-    mockGetQuoteById.mockResolvedValue({ ...quoteData, customer_id: 'c1' });
+    // No embedded `customer` (older crm-be) so the page resolves it via getLeadById.
+    mockGetQuoteById.mockResolvedValue({ ...quoteData, customer: undefined, customer_id: 'c1' });
     mockGetLeadById.mockResolvedValue({ id: 'c1', company_name: 'Acme', contact_email: 'buyer@acme.example' });
     mockSendQuote.mockReset();
   });
@@ -521,6 +647,16 @@ describe('Given a saved quote', () => {
   it('When the dialog opens / Then the recipient is prefilled from the linked customer', async () => {
     await openDialog();
     const input = document.querySelector('input[type="email"]') as HTMLInputElement;
+    await waitFor(() => expect(input.value).toBe('buyer@acme.example'));
+  });
+
+  it('When the dialog opens before the customer record arrives / Then the recipient fills in once it lands', async () => {
+    let resolveCustomer: (v: unknown) => void = () => {};
+    mockGetLeadById.mockReturnValue(new Promise(r => { resolveCustomer = r; }));
+    await openDialog();
+    const input = document.querySelector('input[type="email"]') as HTMLInputElement;
+    expect(input.value).toBe('');
+    resolveCustomer({ id: 'c1', company_name: 'Acme', contact_email: 'buyer@acme.example' });
     await waitFor(() => expect(input.value).toBe('buyer@acme.example'));
   });
 

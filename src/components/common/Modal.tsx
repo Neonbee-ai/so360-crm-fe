@@ -1,48 +1,49 @@
-import React, { useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { X } from 'lucide-react';
+import React from 'react';
+import { Modal as DsModal } from '@so360/design-system';
 
-const sizeClasses = { md: 'max-w-md', lg: 'max-w-lg', xl: 'max-w-xl' };
+type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl';
 
 interface ModalProps {
     isOpen: boolean;
     onClose: () => void;
-    title: string;
+    title: React.ReactNode;
     children: React.ReactNode;
-    size?: 'md' | 'lg' | 'xl';
+    size?: ModalSize;
+    /** Optional line under the title. */
+    subtitle?: React.ReactNode;
+    /** Sticky footer (actions right-aligned: secondary then primary). */
+    footer?: React.ReactNode;
+    /** When false, backdrop click / Escape / close button do nothing (e.g. while saving). Default true. */
+    dismissible?: boolean;
+    /** Body padding; set false when the content brings its own padding/sections. Default true. */
+    bodyPadding?: boolean;
+    'data-testid'?: string;
 }
 
-export const Modal = ({ isOpen, onClose, title, children, size = 'lg' }: ModalProps) => {
-    useEffect(() => {
-        if (isOpen) {
-            document.body.style.overflow = 'hidden';
-            return () => { document.body.style.overflow = ''; };
-        }
-    }, [isOpen]);
-
-    if (!isOpen) return null;
-
-    return createPortal(
-        <div className="fixed inset-0 z-[600] flex items-start justify-center p-6 overflow-y-auto">
-            <div
-                className="fixed inset-0 bg-black/60 backdrop-blur-sm"
-                onClick={onClose}
-            />
-            <div className={`relative bg-slate-900 border border-slate-800 rounded-2xl w-full ${sizeClasses[size]} shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col my-auto max-h-[90vh]`}>
-                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/50 shrink-0">
-                    <h3 className="text-xl font-bold text-slate-50">{title}</h3>
-                    <button
-                        onClick={onClose}
-                        className="p-1 hover:bg-slate-700/50 rounded-lg text-slate-400 hover:text-slate-50 transition-colors"
-                    >
-                        <X size={20} />
-                    </button>
-                </div>
-                <div className="p-6 overflow-y-auto flex-1 min-h-0">
-                    {children}
-                </div>
-            </div>
-        </div>,
-        document.body
-    );
-};
+/** Thin wrapper over the DS Modal (portals into the CRM scope root via PortalProvider). */
+export const Modal = ({ // comb-exception: thin adapter over the DS Modal (isOpen API); renaming would churn ~10 importers
+    isOpen,
+    onClose,
+    title,
+    children,
+    size = 'lg',
+    subtitle,
+    footer,
+    dismissible = true,
+    bodyPadding = true,
+    'data-testid': testId,
+}: ModalProps) => (
+    <DsModal
+        open={isOpen}
+        onClose={onClose}
+        title={title}
+        description={subtitle}
+        size={size}
+        footer={footer}
+        dismissible={dismissible}
+        bodyPadding={bodyPadding}
+        data-testid={testId}
+    >
+        {children}
+    </DsModal>
+);

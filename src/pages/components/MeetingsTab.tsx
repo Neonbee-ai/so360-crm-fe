@@ -1,19 +1,21 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Calendar, Plus, Loader2, MapPin, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { Calendar, Plus, MapPin, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { meetingsApi } from '../../services/crmService';
 import { Meeting } from '../../types/crm';
 import MeetingModal from './MeetingModal';
+import { PromptDialog } from '../../components/PromptDialog';
+import { useConfirm, Button, Badge, EmptyState, IconButton, Skeleton } from '@so360/design-system';
 
 interface Props {
     leadId?: string;
     dealId?: string;
 }
 
-const STATUS_STYLE: Record<string, string> = {
-    upcoming: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-    completed: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-    cancelled: 'bg-slate-800 text-slate-500 border-slate-700',
-    missed: 'bg-red-500/10 text-red-400 border-red-500/20',
+const STATUS_TONE: Record<string, 'primary' | 'success' | 'neutral' | 'danger'> = {
+    upcoming: 'primary',
+    completed: 'success',
+    cancelled: 'neutral',
+    missed: 'danger',
 };
 
 function formatDateTime(iso: string): string {
@@ -23,11 +25,13 @@ function formatDateTime(iso: string): string {
 }
 
 const MeetingsTab: React.FC<Props> = ({ leadId, dealId }) => {
+    const [confirm, confirmDialog] = useConfirm();
     const [meetings, setMeetings] = useState<Meeting[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);
     const [completingId, setCompletingId] = useState<string | null>(null);
+    const [completeTarget, setCompleteTarget] = useState<Meeting | null>(null);
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -42,14 +46,12 @@ const MeetingsTab: React.FC<Props> = ({ leadId, dealId }) => {
     useEffect(() => { load(); }, [load]);
 
     const handleCancel = async (meeting: Meeting) => {
-        if (!confirm(`Cancel "${meeting.title}"?`)) return;
+        if (!await confirm({ title: 'Cancel?', message: `Cancel "${meeting.title}"?`, intent: 'danger', confirmLabel: 'Cancel meeting' })) return;
         await meetingsApi.cancel(meeting.id);
         load();
     };
 
-    const handleComplete = async (meeting: Meeting) => {
-        const outcome = prompt('Meeting outcome:') || undefined;
-        const nextSteps = prompt('Next steps:') || undefined;
+    const handleComplete = async (meeting: Meeting, outcome?: string, nextSteps?: string) => {
         setCompletingId(meeting.id);
         try {
             await meetingsApi.complete(meeting.id, outcome, nextSteps);
@@ -61,47 +63,53 @@ const MeetingsTab: React.FC<Props> = ({ leadId, dealId }) => {
 
     return (
         <div className="space-y-4">
+            {confirmDialog}
+            <PromptDialog
+                open={!!completeTarget}
+                title="Complete meeting"
+                submitLabel="Complete"
+                fields={[
+                    { name: 'outcome', label: 'Meeting outcome', multiline: true },
+                    { name: 'nextSteps', label: 'Next steps', multiline: true },
+                ]}
+                onSubmit={async (v) => {
+                    const m = completeTarget;
+                    setCompleteTarget(null);
+                    if (m) await handleComplete(m, v.outcome || undefined, v.nextSteps || undefined);
+                }}
+                onClose={() => setCompleteTarget(null)}
+            />
             <div className="flex items-center justify-between">
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Meetings</p>
-                <button
-                    onClick={() => { setEditingMeeting(null); setShowModal(true); }}
-                    className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest"
-                >
-                    <Plus size={14} /> Schedule Meeting
-                </button>
+                <p className="text-xs font-medium text-fg-muted">Meetings</p>
+                <Button variant="primary" onClick={() => { setEditingMeeting(null); setShowModal(true); }}>
+                    <Plus size={14} /> Schedule meeting
+                </Button>
             </div>
 
             {loading ? (
-                <div className="flex justify-center py-10 text-slate-500"><Loader2 size={20} className="animate-spin" /></div>
+                <div className="py-nb-4"><Skeleton variant="text" lines={3} /></div>
             ) : meetings.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-10 text-slate-600">
-                    <Calendar size={24} className="mb-2" />
-                    <p className="text-xs">No meetings scheduled yet.</p>
-                </div>
+                <EmptyState icon={Calendar} title="No meetings scheduled yet" />
             ) : (
-                <div className="space-y-2">
+                <div className="divide-y divide-line">
                     {meetings.map((m) => (
-                        <div key={m.id} className="bg-slate-950/50 border border-slate-800/60 rounded-xl p-4">
+                        <div key={m.id} className="py-nb-3 first:pt-0 last:pb-0">
                             <div className="flex items-start justify-between gap-2">
                                 <div>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-xs font-bold text-slate-200">{m.title}</span>
-                                        <span className={`text-[9px] px-2 py-0.5 rounded-full border font-black uppercase tracking-widest ${STATUS_STYLE[m.status]}`}>{m.status}</span>
+                                        <span className="text-xs font-medium text-fg">{m.title}</span>
+                                        <Badge size="sm" tone={STATUS_TONE[m.status] ?? 'neutral'}>{m.status}</Badge>
                                     </div>
-                                    <p className="text-[10px] text-slate-500 mt-1 flex items-center gap-1">
+                                    <p className="text-xs text-fg-muted mt-1 flex items-center gap-1">
                                         <Clock size={11} /> {formatDateTime(m.scheduled_at)} · {m.duration_minutes} min
                                     </p>
-                                    {m.location && <p className="text-[10px] text-slate-500 mt-0.5 flex items-center gap-1"><MapPin size={11} /> {m.location}</p>}
-                                    {m.outcome && <p className="text-[10px] text-slate-400 mt-1">Outcome: {m.outcome}</p>}
+                                    {m.location && <p className="text-xs text-fg-muted mt-0.5 flex items-center gap-1"><MapPin size={11} /> {m.location}</p>}
+                                    {m.outcome && <p className="text-xs text-fg-subtle mt-1">Outcome: {m.outcome}</p>}
                                 </div>
                                 {m.status === 'upcoming' && (
                                     <div className="flex items-center gap-1 shrink-0">
-                                        <button onClick={() => handleComplete(m)} disabled={completingId === m.id} className="p-1.5 text-slate-500 hover:text-emerald-400 transition-colors" title="Mark completed">
-                                            <CheckCircle2 size={14} />
-                                        </button>
-                                        <button onClick={() => handleCancel(m)} className="p-1.5 text-slate-500 hover:text-red-400 transition-colors" title="Cancel">
-                                            <XCircle size={14} />
-                                        </button>
+                                        <IconButton label="Mark completed" title="Mark completed" icon={<CheckCircle2 size={14} />} onClick={() => setCompleteTarget(m)} disabled={completingId === m.id} />
+                                        <IconButton label="Cancel" title="Cancel" icon={<XCircle size={14} />} onClick={() => handleCancel(m)} />
                                     </div>
                                 )}
                             </div>
