@@ -17,6 +17,7 @@ import CallsTab from './components/CallsTab';
 import DealPaymentPlanPanel from './components/DealPaymentPlanPanel';
 import DealCommissionPanel from './components/DealCommissionPanel';
 import { useCrmFeatureFlag, RE_FLAGS } from '../hooks/useCrmFeatureFlag';
+import { EmailComposeButton } from '../components/emailCompose/EmailComposeButton';
 import { CrossLinkChip, toast, useConfirm, DetailPageTemplate, Button, IconButton, Card, EmptyState, Badge, Select, DatePicker, NumberInput, Textarea, Grid, GridItem, FileUpload } from '@so360/design-system';
 import { crmService, dealsApi, tasksApi, activitiesApi, TimelineEvent } from '../services/crmService';
 import { useCRMFormatters } from '../utils/formatters';
@@ -697,6 +698,7 @@ const DealDetailPage = () => {
                 </Button>
             ) : undefined}
             secondaryActions={[
+                <EmailComposeButton key="compose-email" entityType="deal" entityId={deal.id} />,
                 ...(FEATURES.DEAL_ESTIMATE_REQUEST ? [<Button key="estimate" variant="secondary" onClick={handleCreateEstimate}><FileText size={14} />Create Estimate</Button>] : []),
                 ...(FEATURES.DEAL_INVOICE_REQUEST ? [<Button key="invoice" variant="secondary" onClick={handleCreateInvoice}><Receipt size={14} />Create Invoice</Button>] : []),
             ]}

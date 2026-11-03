@@ -15,6 +15,7 @@ import {
 import { crmService, activitiesApi, settingsApi } from '../services/crmService';
 import { PromptDialog } from '../components/PromptDialog';
 import { PartnerSearchDropdown } from '../components/common/PartnerSearchDropdown';
+import { EmailComposeButton } from '../components/emailCompose/EmailComposeButton';
 import { useCRMFormatters } from '../utils/formatters';
 import { isTaskLocked } from '../utils/taskUtils';
 import { validateEmailRequired } from '../utils/emailValidation';
@@ -664,6 +665,7 @@ const LeadDetailPage = () => {
                     </Button>
                 ) : undefined}
                 secondaryActions={[
+                    <EmailComposeButton key="compose-email" entityType="lead" entityId={lead.id} />,
                     <QuickActionBar
                     key="log-activity"
                 onAddNote={() => {
