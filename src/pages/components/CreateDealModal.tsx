@@ -215,7 +215,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
             const fingerprint = JSON.stringify(payload);
             let attempt = submitAttemptRef.current;
             if (attempt?.fingerprint !== fingerprint) {
-                attempt = { key: crypto.randomUUID(), fingerprint };
+                attempt = { key: newIdempotencyKey(), fingerprint };
                 submitAttemptRef.current = attempt;
             }
             const deal = await dealsApi.create(payload, { idempotencyKey: attempt.key });
@@ -499,5 +499,12 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
         </Modal>
     );
 };
+
+
+// crypto.randomUUID is undefined on plain-HTTP LAN origins (insecure context).
+const newIdempotencyKey = (): string =>
+    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
 
 export default CreateDealModal;

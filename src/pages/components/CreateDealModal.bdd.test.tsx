@@ -482,4 +482,22 @@ describe('CreateDealModal', () => {
       await waitFor(() => expect(mockCreateDeal).toHaveBeenCalled());
     });
   });
+
+  describe('Given the page is served from an insecure context where crypto.randomUUID is unavailable', () => {
+    it('When the form is submitted / Then an Idempotency-Key is still sent', async () => {
+      const original = (globalThis.crypto as any).randomUUID;
+      Object.defineProperty(globalThis.crypto, 'randomUUID', { value: undefined, configurable: true });
+      try {
+        mockCreateDeal.mockResolvedValueOnce({ id: 'd1' });
+        render(<CreateDealModal {...defaultProps} />);
+        await waitFor(() => expect((document.querySelector('input[type="text"]') as HTMLInputElement).value).toBe('Acme - 20260804'));
+        fireEvent.submit(document.querySelector('form')!);
+        await waitFor(() => expect(mockCreateDeal).toHaveBeenCalledTimes(1));
+        expect(mockCreateDeal.mock.calls[0][1].idempotencyKey).toEqual(expect.any(String));
+        expect(mockCreateDeal.mock.calls[0][1].idempotencyKey.length).toBeGreaterThan(8);
+      } finally {
+        Object.defineProperty(globalThis.crypto, 'randomUUID', { value: original, configurable: true });
+      }
+    });
+  });
 });
