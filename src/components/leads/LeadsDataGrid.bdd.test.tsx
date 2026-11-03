@@ -103,6 +103,13 @@ describe('LeadsDataGrid — rendering', () => {
     expect(screen.getByText('Beta LLC')).toBeDefined();
   });
 
+  it('Given a lead without a company name / When the grid renders / Then a clear fallback is shown instead of a blank cell', () => {
+    const leads = [makeLead({ id: 'lead-blank', company_name: '   ' }), makeLead({ id: 'lead-null', company_name: null as unknown as string })];
+    render(<LeadsDataGrid leads={leads} context={buildContext()} onRowClick={vi.fn()} />);
+    expect(screen.getAllByTestId('lead-no-company')).toHaveLength(2);
+    expect(screen.getAllByText('No company name')).toHaveLength(2);
+  });
+
   it('shows empty state when no leads', () => {
     render(<LeadsDataGrid leads={[]} context={buildContext()} onRowClick={vi.fn()} />);
     expect(screen.getByText('No leads found')).toBeDefined();

@@ -44,6 +44,12 @@ describe('LeadCardList', () => {
     expect(within(screen.getByTestId('lead-card-l1')).getByText('72')).toBeInTheDocument();
   });
 
+  it('Given a lead without a company name / When the card renders / Then a clear fallback is shown', () => {
+    setup([makeLead({ id: 'l-blank', company_name: '' }), makeLead({ id: 'l-ok' })]);
+    expect(screen.getAllByTestId('lead-no-company')).toHaveLength(1);
+    expect(screen.getByText('No company name')).toBeInTheDocument();
+  });
+
   it('opens a lead when its card is tapped', () => {
     const { onRowClick } = setup([makeLead()]);
     fireEvent.click(screen.getByTestId('lead-card-l1'));
