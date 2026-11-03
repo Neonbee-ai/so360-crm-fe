@@ -408,10 +408,11 @@ class ApiClient {
         return { data: data as T, total: Number.isNaN(parsedTotal) ? null : parsedTotal };
     }
 
-    async post<T>(endpoint: string, data: any): Promise<T> {
+    async post<T>(endpoint: string, data: any, options?: { headers?: Record<string, string> }): Promise<T> {
         return this.request<T>(endpoint, {
             method: 'POST',
             body: JSON.stringify(data),
+            ...(options?.headers ? { headers: options.headers } : {}),
         });
     }
 
@@ -862,8 +863,12 @@ export const dealsApi = {
     /**
      * POST /deals - Create a new deal
      */
-    create: async (data: any): Promise<Deal> => {
-        const deal = await apiClient.post<any>('/deals', data);
+    create: async (data: any, options?: { idempotencyKey?: string }): Promise<Deal> => {
+        const deal = await apiClient.post<any>(
+            '/deals',
+            data,
+            options?.idempotencyKey ? { headers: { 'Idempotency-Key': options.idempotencyKey } } : undefined,
+        );
         return mapDealFromApi(deal);
     },
 

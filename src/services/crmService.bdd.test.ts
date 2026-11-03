@@ -121,6 +121,20 @@ describe('crmService — dealsApi', () => {
       const deal = await dealsApi.create({ name: 'New Deal', company: 'Acme', value: 1000 } as any);
       expect(deal.id).toBe('d-new');
     });
+
+    it('When create is called with an idempotency key / Then sends it as the Idempotency-Key header', async () => {
+      mockSuccess({ id: 'd-new', name: 'New Deal', stage: 'Lead' });
+      await dealsApi.create({ name: 'New Deal' } as any, { idempotencyKey: 'key-42' });
+      const [, init] = fetchMock.mock.calls.at(-1)!;
+      expect((init.headers as Record<string, string>)['Idempotency-Key']).toBe('key-42');
+    });
+
+    it('When create is called without a key / Then no Idempotency-Key header is sent', async () => {
+      mockSuccess({ id: 'd-new', name: 'New Deal', stage: 'Lead' });
+      await dealsApi.create({ name: 'New Deal' } as any);
+      const [, init] = fetchMock.mock.calls.at(-1)!;
+      expect((init.headers as Record<string, string>)['Idempotency-Key']).toBeUndefined();
+    });
   });
 });
 

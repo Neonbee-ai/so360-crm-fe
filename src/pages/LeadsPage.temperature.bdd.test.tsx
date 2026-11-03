@@ -64,6 +64,7 @@ vi.mock('../services/crmService', () => ({
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', () => ({
+  useNavigationType: () => 'POP',
   useNavigate: () => mockNavigate,
   useLocation: () => ({ pathname: '/crm/leads', search: '' }),
 }));
