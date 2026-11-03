@@ -141,7 +141,7 @@ describe('quoteToDocumentData > header & totals', () => {
         expect(d.subtotal).toBe(100);
     });
 
-    it('Then document_title is left unset so the template label wins', () => {
+    it('Given a quote with no title override, then document_title is left unset so the template label wins', () => {
         const d = quoteToDocumentData(baseQuote(), { currency: 'AED', seller: SELLER });
         expect(d.document_title).toBeUndefined();
     });
