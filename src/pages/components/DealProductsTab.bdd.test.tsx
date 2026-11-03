@@ -2,11 +2,11 @@
  * BDD Spec — DealProductsTab / AddProductModal
  *
  * Covers: products load on mount, empty state rendered, Add Product button opens modal,
- * modal container has max-h-[90vh] overflow-y-auto, modal closes on Cancel.
+ * modal is a labelled dialog with a Close control, modal closes on Cancel.
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 const mockGetDealProducts = vi.fn();
@@ -63,15 +63,13 @@ describe('Given DealProductsTab', () => {
             expect(screen.getByText(/Add Product to Deal/i)).toBeInTheDocument();
         });
 
-        it('When modal opens / Then container has max-h-[90vh] and overflow-y-auto', async () => {
+        it('When modal opens / Then it is a dialog with a Close control', async () => {
             render(<DealProductsTab dealId="deal-1" />);
             await waitFor(() => screen.getByRole('button', { name: /Add Product/i }));
             fireEvent.click(screen.getByRole('button', { name: /Add Product/i }));
-            const panels = Array.from(document.querySelectorAll('div')).filter(
-                el => el.className.includes('max-h-[90vh]'),
-            );
-            expect(panels.length).toBeGreaterThan(0);
-            expect(panels[0].className).toContain('overflow-y-auto');
+            const dialog = screen.getByRole('dialog');
+            expect(dialog).toBeInTheDocument();
+            expect(within(dialog).getByRole('button', { name: 'Close' })).toBeInTheDocument();
         });
 
         it('When the close button is clicked inside modal / Then modal closes', async () => {
@@ -79,7 +77,7 @@ describe('Given DealProductsTab', () => {
             await waitFor(() => screen.getByRole('button', { name: /Add Product/i }));
             fireEvent.click(screen.getByRole('button', { name: /Add Product/i }));
             expect(screen.getByText(/Add Product to Deal/i)).toBeInTheDocument();
-            fireEvent.click(screen.getByText('✕'));
+            fireEvent.click(screen.getByLabelText('Close'));
             expect(screen.queryByText(/Add Product to Deal/i)).not.toBeInTheDocument();
         });
     });
@@ -90,5 +88,27 @@ describe('Given the default (all flags on) shell in this spec', () => {
         render(<DealProductsTab dealId="deal-1" />);
         await waitFor(() => expect(mockApiGet).toHaveBeenCalledWith('/deals/deal-1/matching-units', { limit: 10 }));
         expect(screen.queryByTestId('matching-units-panel')).not.toBeInTheDocument();
+    });
+});
+
+describe('Given DealProductsTab AddProductModal source switch (SegmentedControl)', () => {
+    it('When opened for a deal with a lead / Then From Lead is selected and Search Inventory switches the source', async () => {
+        render(<DealProductsTab dealId="deal-1" leadId="lead-1" />);
+        await waitFor(() => screen.getByRole('button', { name: /Add Product/i }));
+        fireEvent.click(screen.getByRole('button', { name: /Add Product/i }));
+        const group = await screen.findByRole('radiogroup', { name: 'Product source' });
+        expect(group).toHaveAttribute('data-testid', 'deal-products-source');
+        expect(screen.getByRole('radio', { name: /From Lead/i })).toHaveAttribute('aria-checked', 'true');
+        fireEvent.click(screen.getByRole('radio', { name: /Search Inventory/i }));
+        expect(screen.getByRole('radio', { name: /Search Inventory/i })).toHaveAttribute('aria-checked', 'true');
+        expect(screen.getByRole('radio', { name: /From Lead/i })).toHaveAttribute('aria-checked', 'false');
+    });
+
+    it('When opened for a deal without a lead / Then no source switch is shown', async () => {
+        render(<DealProductsTab dealId="deal-1" />);
+        await waitFor(() => screen.getByRole('button', { name: /Add Product/i }));
+        fireEvent.click(screen.getByRole('button', { name: /Add Product/i }));
+        await screen.findByText(/Add Product to Deal/i);
+        expect(screen.queryByRole('radiogroup', { name: 'Product source' })).toBeNull();
     });
 });

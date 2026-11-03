@@ -43,16 +43,16 @@ describe('Given the remaining ReservationChip tones', () => {
             const chip = screen.getByTestId('reservation-chip');
             expect(chip).toHaveTextContent('Held');
             expect(chip).not.toHaveAttribute('title');
-            expect(chip.className).toMatch(/amber/);
+            expect(chip).toHaveAttribute('data-tone', 'warning');
             expect(screen.getByTestId('icon-Clock')).toBeInTheDocument();
         });
     });
 
     describe('When the unit is sold', () => {
-        it('Then the lock icon and emerald tone are used', () => {
+        it('Then the lock icon and success tone are used', () => {
             render(<ReservationChip status="sold" />);
             expect(screen.getByTestId('icon-Lock')).toBeInTheDocument();
-            expect(screen.getByTestId('reservation-chip').className).toMatch(/emerald/);
+            expect(screen.getByTestId('reservation-chip')).toHaveAttribute('data-tone', 'success');
         });
     });
 
@@ -61,7 +61,7 @@ describe('Given the remaining ReservationChip tones', () => {
             render(<ReservationChip status="released" expiresAt={null} />);
             const chip = screen.getByTestId('reservation-chip');
             expect(chip).toHaveTextContent('Released');
-            expect(chip.className).toMatch(/slate/);
+            expect(chip).toHaveAttribute('data-tone', 'neutral');
         });
     });
 

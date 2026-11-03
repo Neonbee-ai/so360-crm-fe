@@ -16,7 +16,8 @@ const shellState: {
   permissionsLoaded: true,
 };
 
-vi.mock('@so360/shell-context', () => ({
+vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOriginal<any>()),
+  useDatasetSchema: () => ({ fields: [], isLoading: false, error: null }),
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useShellBridge: () => ({
     currentTenant: { id: 'tenant-1' },
@@ -35,13 +36,27 @@ vi.mock('@so360/shell-context', () => ({
 
   useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
-vi.mock('./services/crmService', () => ({
-  crmService: {
+vi.mock('./services/crmService', async (importOriginal) => {
+  // Setters are what App itself calls; pages rendered behind a route also
+  // fetch on mount, so any other crmService read resolves empty
+  // (an empty list that also reads as an empty `{ data, total }` page).
+  const base: Record<string, unknown> = {
     setTenantId: vi.fn(),
     setOrgId: vi.fn(),
     setAccessToken: vi.fn(),
     setUser: vi.fn(),
-  },
+  };
+  const crmService = new Proxy(base, {
+    get: (t, k: string) => (k in t || k === 'then' ? t[k] : (t[k] = vi.fn().mockResolvedValue(Object.assign([], { data: [], total: 0 })))),
+  });
+  return { ...(await importOriginal<Record<string, unknown>>()), crmService };
+});
+
+// The campaign ROI page (lazy route) reads through crmCampaignService; stub the
+// report so the enabled-route test renders the page's empty state offline.
+vi.mock('./services/crmCampaignService', async (importActual) => ({
+  ...(await importActual<typeof import('./services/crmCampaignService')>()),
+  crmCampaignService: { roiReport: vi.fn().mockResolvedValue([]), campaignRoi: vi.fn() },
 }));
 
 import App from './App';
@@ -203,4 +218,37 @@ describe('Given the RE Phase C sales + commission report routes', () => {
       expect(await screen.findByText(/don't have access to this page/i)).toBeTruthy();
     },
   );
+});
+
+describe('Given the RE Phase D campaign ROI route', () => {
+  it('When /reports/campaign-roi is opened with the campaign ROI feature locked / Then the upgrade prompt is shown for that flag', async () => {
+    const asked: string[] = [];
+    shellState.getFeatureState = (flag) => { asked.push(flag); return 'locked'; };
+    render(
+      <MemoryRouter initialEntries={['/reports/campaign-roi']}>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText(/upgrade plan/i)).toBeTruthy();
+    expect(asked).toContain('submodule:crm:campaign_roi');
+  });
+
+  it('When /reports/campaign-roi is opened by a user without leads.read / Then the page is withheld with a notice', async () => {
+    shellState.hasPermission = (c) => c !== 'leads.read';
+    render(
+      <MemoryRouter initialEntries={['/reports/campaign-roi']}>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText(/don't have access to this page/i)).toBeTruthy();
+  });
+
+  it('When /reports/campaign-roi is opened with the feature enabled and leads.read granted / Then the Campaign ROI page loads', async () => {
+    render(
+      <MemoryRouter initialEntries={['/reports/campaign-roi']}>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByTestId('campaign-roi-empty')).toBeTruthy();
+  });
 });

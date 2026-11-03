@@ -155,7 +155,7 @@ describe('Given SignRequestModal renders', () => {
         await waitFor(() => screen.getByRole('option', { name: 'NDA Standard' }));
 
         // The backdrop is the fixed overlay div — click it directly
-        const backdrop = document.querySelector('.fixed.inset-0') as HTMLElement;
+        const backdrop = screen.getByRole('dialog').previousElementSibling as HTMLElement;
         fireEvent.click(backdrop);
 
         expect(onClose).toHaveBeenCalledTimes(1);
@@ -312,7 +312,7 @@ describe('Given modal controls', () => {
         // X button is the first button rendered (in the header)
         const xButton = buttons.find(btn => !btn.textContent?.trim() || btn.closest('header'));
         // More reliably: find the button that contains no meaningful text (just the icon)
-        const headerButtons = document.querySelectorAll('header button');
+        const headerButtons = screen.getByRole('dialog').querySelectorAll('button');
         expect(headerButtons.length).toBeGreaterThan(0);
         fireEvent.click(headerButtons[0]);
 

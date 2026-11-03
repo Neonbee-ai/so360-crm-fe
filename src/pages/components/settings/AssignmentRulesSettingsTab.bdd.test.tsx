@@ -113,6 +113,25 @@ describe('Given the Assignment settings tab', () => {
         });
     });
 
+    describe('When the list is refetched after a save', () => {
+        it('Then the rows stay on screen and no loading spinner replaces them', async () => {
+            render(<AssignmentRulesSettingsTab canWrite />);
+            await screen.findAllByTestId('assignment-rule-row');
+            let resolveList: (v: any) => void = () => {};
+            svc.list.mockReturnValueOnce(new Promise((r) => { resolveList = r; }));
+            fireEvent.click(screen.getByRole('button', { name: /add rule/i }));
+            fireEvent.change(screen.getByLabelText('Rule name'), { target: { value: 'Marina' } });
+            fireEvent.click(screen.getByRole('button', { name: /add condition/i }));
+            fireEvent.change(screen.getByLabelText('Condition 1 value'), { target: { value: 'google' } });
+            fireEvent.click(screen.getByTestId('user-selector'));
+            fireEvent.click(screen.getByRole('button', { name: /save rule/i }));
+            await waitFor(() => expect(svc.list).toHaveBeenCalledTimes(2));
+            expect(screen.getAllByTestId('assignment-rule-row')).toHaveLength(2);
+            resolveList([rule()]);
+            await waitFor(() => expect(screen.getAllByTestId('assignment-rule-row')).toHaveLength(1));
+        });
+    });
+
     describe('When an existing rule is switched to a department target', () => {
         it('Then the department selector replaces the people picker and the patch carries the department', async () => {
             render(<AssignmentRulesSettingsTab canWrite />);

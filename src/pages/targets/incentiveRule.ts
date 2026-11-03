@@ -54,7 +54,7 @@ export type BuildResult =
 
 export function buildIncentiveRulePayload(form: IncentiveRuleForm): BuildResult {
   const name = form.name.trim();
-  if (!name) return { ok: false, error: 'Give the rule a name.' };
+  if (!name) return { ok: false, error: 'Rule name is required.' };
 
   const payload: Record<string, any> = {
     name,

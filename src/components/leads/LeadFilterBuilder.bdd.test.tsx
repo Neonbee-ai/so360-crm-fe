@@ -105,4 +105,31 @@ describe('LeadFilterBuilder', () => {
     fireEvent.click(screen.getByText('Cancel'));
     expect(onClose).toHaveBeenCalledTimes(2);
   });
+
+  describe('Given the attribution filter flag (RE §26)', () => {
+    const fieldOptions = () => {
+      fireEvent.click(screen.getByText(/add condition/i));
+      const select = within(screen.getByTestId('filter-rule')).getByLabelText('Field') as HTMLSelectElement;
+      return Array.from(select.options).map((o) => o.value);
+    };
+
+    it('When includeAttribution is off, Then UTM fields are not offered', () => {
+      setup();
+      expect(fieldOptions()).not.toContain('utm_source');
+    });
+
+    it('When includeAttribution is on, Then UTM fields are offered and a UTM rule serialises', () => {
+      const onApply = vi.fn();
+      render(<LeadFilterBuilder value={null} onApply={onApply} onClose={vi.fn()} includeAttribution />);
+      expect(fieldOptions()).toEqual(expect.arrayContaining(['utm_source', 'ad_platform', 'crm_campaign_id']));
+      const rule = screen.getByTestId('filter-rule');
+      fireEvent.change(within(rule).getByLabelText('Field'), { target: { value: 'utm_source' } });
+      fireEvent.change(within(rule).getByLabelText('Value'), { target: { value: 'facebook' } });
+      fireEvent.click(screen.getByText(/^apply/i));
+      expect(onApply).toHaveBeenCalledWith({
+        combinator: 'and',
+        rules: [{ field: 'utm_source', op: 'contains', value: 'facebook' }],
+      });
+    });
+  });
 });

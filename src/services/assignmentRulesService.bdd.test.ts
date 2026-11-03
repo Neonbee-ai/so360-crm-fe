@@ -138,8 +138,8 @@ describe('Given reorder returns something that is not a list', () => {
 
 describe('Given the editor option catalogues', () => {
     it('Then fields, operators and methods carry the agreed values', () => {
-        expect(CONDITION_FIELDS.map(f => f.value)).toEqual(['source', 'project', 'campaign', 'city', 'language']);
-        expect(CONDITION_OPS.map(o => o.value)).toEqual(['eq', 'in', 'contains']);
+        expect(CONDITION_FIELDS.map(f => f.value)).toEqual(['source', 'project', 'campaign', 'city', 'language', 'region', 'score', 'product']);
+        expect(CONDITION_OPS.map(o => o.value)).toEqual(['eq', 'in', 'contains', 'gt', 'gte', 'lt', 'lte']);
         expect(ASSIGNMENT_METHODS.map(m => m.value)).toEqual(['round_robin', 'least_loaded', 'fixed']);
         expect(emptyRule()).toEqual({
             name: '', is_active: true, conditions: [], target_type: 'users', target_department_id: null,

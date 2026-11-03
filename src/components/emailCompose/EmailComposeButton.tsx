@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Mail } from 'lucide-react';
 import { useShellBridge } from '@so360/shell-context';
+import { Button } from '@so360/design-system';
 import { RE_FLAGS, useCrmFeatureFlag } from '../../hooks/useCrmFeatureFlag';
 import { EmailComposeModal } from './EmailComposeModal';
 import type { ComposeEntityType } from '../../services/emailComposeService';
@@ -26,15 +27,14 @@ export const EmailComposeButton: React.FC<EmailComposeButtonProps> = ({ entityTy
 
     return (
         <>
-            <button
-                type="button"
+            <Button
+                variant="secondary"
                 onClick={() => setOpen(true)}
                 aria-label="Compose Email"
                 title="Compose a tracked email"
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all"
             >
                 <Mail size={14} /> Compose Email
-            </button>
+            </Button>
             {open && (
                 <EmailComposeModal entityType={entityType} entityId={entityId} onClose={() => setOpen(false)} onSent={onSent} />
             )}

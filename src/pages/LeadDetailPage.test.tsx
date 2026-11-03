@@ -62,7 +62,9 @@ vi.mock('react-router-dom', () => ({
   Link: ({ children, to, ...props }: any) => <a href={to} {...props}>{children}</a>,
 }));
 
-vi.mock('@so360/shell-context', () => ({
+vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOriginal<any>()),
+  // DlCustomFieldsPanel (custom fields tab) reads dataset fields.
+  useDatasetSchema: () => ({ fields: [], isLoading: false, error: null }),
   useShell: () => ({ isModuleEnabled: () => false, user: { id: 'u1' } }),
   useCurrentEntity: () => ({ setCurrentEntity: vi.fn() }),
   useActivity: () => ({ recordActivity: async () => {} }),
@@ -172,7 +174,7 @@ describe('Given LeadDetailPage', () => {
     mockGetLeadById.mockResolvedValue(undefined);
     render(<LeadDetailPage />);
     await waitFor(() => {
-      expect(screen.getByText(/not found/i)).toBeInTheDocument();
+      expect(screen.getByText('Lead not found.')).toBeInTheDocument();
     });
   });
 
@@ -194,7 +196,8 @@ describe('Given LeadDetailPage', () => {
   it('When action / Then shows activity timeline on activity tab', async () => {
     render(<LeadDetailPage />);
     await waitFor(() => screen.getByText('Acme'));
-    expect(screen.getByText(/call logged/i)).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
+    expect(screen.getAllByText(/call logged/i).length).toBeGreaterThan(0);
   });
 
   it('When action / Then switches to notes tab', async () => {
@@ -242,7 +245,7 @@ describe('Given LeadDetailPage', () => {
   it('When action / Then displays back to leads link', async () => {
     render(<LeadDetailPage />);
     await waitFor(() => {
-      expect(screen.getAllByText('Back')[0]).toBeInTheDocument();
+      expect(screen.getAllByLabelText('Back to Leads')[0]).toBeInTheDocument();
     });
   });
 });

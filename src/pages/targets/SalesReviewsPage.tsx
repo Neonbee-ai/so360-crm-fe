@@ -3,13 +3,17 @@ import { useShellBridge } from '@so360/shell-context';
 import { targetPlanService } from '../../services/targetPlanService';
 import {
   EmptyState,
-  Panel,
+  ErrorState,
   PersonName,
-  PersonPicker,
+  loadDirectoryPeople,
+  personIdOf,
   formatPct,
   formatValue,
   reviewPeriodBounds,
 } from './targetUi';
+import { PeopleSelector, ListPageTemplate, Button, DataTable, TextField, Select, FormField, Modal, Drawer, Alert, Badge, SearchInput, Stack, Grid, GridItem } from '@so360/design-system';
+import { ClipboardList, Plus } from 'lucide-react';
+import type { DataTableColumn, FilterValues } from '@so360/design-system';
 
 /**
  * Monthly and quarterly sales reviews.
@@ -26,6 +30,8 @@ export default function SalesReviewsPage() {
   const shell = useShellBridge();
   const [reviews, setReviews] = useState<any[]>([]);
   const [active, setActive] = useState<any | null>(null);
+  const [search, setSearch] = useState('');
+  const [filters, setFilters] = useState<FilterValues>({ status: '', period_type: '' });
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +39,8 @@ export default function SalesReviewsPage() {
 
   // New-review form. The period is chosen as a month or a quarter rather than
   // as two free dates — see reviewPeriodBounds.
+  const [startOpen, setStartOpen] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [newPersonId, setNewPersonId] = useState('');
   const [newPeriodType, setNewPeriodType] = useState<'monthly' | 'quarterly'>(
     'monthly',
@@ -74,7 +82,7 @@ export default function SalesReviewsPage() {
   const startReview = async () => {
     if (!newPersonId || !bounds) return;
     setBusy(true);
-    setError(null);
+    setFormError(null);
     try {
       const created = await targetPlanService.createReview({
         person_id: newPersonId,
@@ -85,10 +93,11 @@ export default function SalesReviewsPage() {
         "Review opened, pre-filled with the period's numbers. Nothing is sent to People Connect until you finalize.",
       );
       setNewPersonId('');
+      setStartOpen(false);
       setActive(created);
       load();
     } catch (e: any) {
-      setError(e.message);
+      setFormError(e.message);
     } finally {
       setBusy(false);
     }
@@ -158,188 +167,210 @@ export default function SalesReviewsPage() {
     }
   };
 
-  if (loading) {
-    return <div className="p-6 text-sm text-slate-400">Loading reviews…</div>;
-  }
+  const monthOptions = (() => {
+    const now = new Date();
+    return Array.from({ length: 12 }, (_, i) => {
+      const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1));
+      return {
+        value: `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`,
+        label: d.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }),
+      };
+    });
+  })();
+
+  const openStart = () => {
+    setFormError(null);
+    setStartOpen(true);
+  };
+
+  const q = search.trim().toLowerCase();
+  const rows = reviews.filter(
+    (r) =>
+      (!filters.status || r.status === filters.status) &&
+      (!filters.period_type || r.period_type === filters.period_type) &&
+      (!q || String(r.period_start || '').toLowerCase().includes(q)),
+  );
+
+  const columns: DataTableColumn<any>[] = [
+    { key: 'period', header: 'Period', sortable: true, sortValue: (r) => r.period_start || '', render: (r) => <span className="text-fg">{r.period_start}</span> },
+    { key: 'type', header: 'Type', render: (r) => <span className="text-fg-subtle">{r.period_type}</span> },
+    { key: 'person', header: 'Person', render: (r) => <span className="text-fg-subtle"><PersonName id={r.person_id} /></span> },
+    { key: 'attainment', header: 'Attainment', align: 'right', sortable: true, sortValue: (r) => r.results?.headline?.attainment ?? 0, render: (r) => <span className="text-fg-subtle">{formatPct(r.results?.headline?.attainment)}</span> },
+    { key: 'status', header: 'Status', render: (r) => <Badge tone={r.status === 'finalized' ? 'success' : 'neutral'}>{r.status}</Badge> },
+    { key: 'evidence', header: 'HR evidence', render: (r) => (
+      <span className="text-xs">
+        {r.pc_synced_at ? (
+          <Badge tone="success">sent</Badge>
+        ) : r.status === 'finalized' ? (
+          <Badge tone={r.pc_sync_error ? 'danger' : 'warning'}>{r.pc_sync_error ? 'failed' : 'pending'}</Badge>
+        ) : (
+          <span className="text-fg-muted">—</span>
+        )}
+      </span>
+    ) },
+  ];
+
+  const needsSync = reviews.some((r) => r.status === 'finalized' && !r.pc_synced_at);
 
   return (
-    <div className="p-6 space-y-5">
-      <h1 className="text-lg font-semibold text-slate-100">Reviews</h1>
+    <>
+    <ListPageTemplate
+      trail={[{ label: 'Targets', to: '/crm/targets' }]}
+      title="Reviews"
+      count={reviews.length}
+      primaryAction={(
+        <Button variant="primary" onClick={openStart}>
+          <Plus size={16} aria-hidden="true" /> New review
+        </Button>
+      )}
+      search={<SearchInput value={search} onChange={setSearch} placeholder="Search by period…" />}
+      filterConfig={{
+        fields: [
+          { key: 'status', label: 'Status', type: 'select', options: [
+            { value: 'draft', label: 'Draft' },
+            { value: 'finalized', label: 'Finalized' },
+          ] },
+          { key: 'period_type', label: 'Type', type: 'select', options: [
+            { value: 'monthly', label: 'Monthly' },
+            { value: 'quarterly', label: 'Quarterly' },
+          ] },
+        ],
+        values: filters,
+        onChange: setFilters,
+        onClear: () => setFilters({ status: '', period_type: '' }),
+      }}
+      loading={loading}
+      isEmpty={!loading && !reviews.length}
+      empty={
+        error ? (
+          <ErrorState error={error} onRetry={load} />
+        ) : (
+          <EmptyState
+            icon={ClipboardList}
+            title="No reviews yet"
+            description="A review is created for a person and period, pre-filled with that period's numbers."
+            action={{ label: 'New review', onClick: openStart }}
+          />
+        )
+      }
+      isFilteredEmpty={!loading && reviews.length > 0 && !rows.length}
+      onClearFilters={() => { setFilters({ status: '', period_type: '' }); setSearch(''); }}
+    >
+      {error && !loading && reviews.length > 0 && <ErrorState error={error} onRetry={load} />}
+      {notice && <Alert variant="success">{notice}</Alert>}
+      {needsSync && (
+        <Alert
+          variant="warning"
+          action={{ label: 'Retry push', onClick: retrySync }}
+        >
+          Some finalized reviews have not reached People Connect, so they are
+          not yet usable as appraisal evidence.
+        </Alert>
+      )}
+      <DataTable
+        columns={columns}
+        rows={rows}
+        rowKey={(r: any) => r.id}
+        onRowClick={(r: any) => setActive(r)}
+        getRowProps={(r: any) => ({ 'data-testid': `review-row-${r.id}` })}
+      />
+    </ListPageTemplate>
 
-      {error && <div className="text-sm text-rose-300">{error}</div>}
-      {notice && <div className="text-sm text-emerald-300">{notice}</div>}
-
-      <Panel title="Start a review">
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="min-w-64">
-            <label className="block text-[11px] text-slate-400 mb-1">
-              Person
-            </label>
-            <PersonPicker value={newPersonId} onChange={setNewPersonId} />
-          </div>
-          <div>
-            <label className="block text-[11px] text-slate-400 mb-1">
-              Period
-            </label>
-            <select
-              className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
-              value={newPeriodType}
-              aria-label="Period type"
-              onChange={(e) => {
-                const next = e.target.value as 'monthly' | 'quarterly';
-                setNewPeriodType(next);
-                const now = new Date();
-                setNewAnchor(
-                  next === 'monthly'
-                    ? `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`
-                    : `${now.getUTCFullYear()}-Q${Math.floor(now.getUTCMonth() / 3) + 1}`,
-                );
-              }}
+      <Modal
+        open={startOpen}
+        onClose={() => setStartOpen(false)}
+        title="New review"
+        size="md"
+        dismissible={!busy}
+        footer={(
+          <>
+            <Button variant="secondary" onClick={() => setStartOpen(false)} disabled={busy}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={startReview}
+              disabled={busy || !newPersonId || !bounds}
             >
-              <option value="monthly">Monthly</option>
-              <option value="quarterly">Quarterly</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-[11px] text-slate-400 mb-1">
-              {newPeriodType === 'monthly' ? 'Month' : 'Quarter'}
-            </label>
-            {newPeriodType === 'monthly' ? (
-              <input
-                type="month"
-                aria-label="Month"
-                className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
-                value={newAnchor}
-                onChange={(e) => setNewAnchor(e.target.value)}
-              />
-            ) : (
-              <select
-                aria-label="Quarter"
-                className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
-                value={newAnchor}
-                onChange={(e) => setNewAnchor(e.target.value)}
-              >
-                {(() => {
-                  const y = new Date().getUTCFullYear();
-                  return [y, y - 1].flatMap((year) =>
-                    [1, 2, 3, 4].map((q) => (
-                      <option key={`${year}-Q${q}`} value={`${year}-Q${q}`}>
-                        {year} Q{q}
-                      </option>
-                    )),
-                  );
-                })()}
-              </select>
-            )}
-          </div>
-          <button
-            className="rounded bg-slate-700 px-3 py-1.5 text-sm text-slate-100 hover:bg-slate-600 disabled:opacity-50"
-            onClick={startReview}
-            disabled={busy || !newPersonId || !bounds}
-          >
-            Open review
-          </button>
+              Open review
+            </Button>
+          </>
+        )}
+      >
+        <div className="space-y-nb-3">
+          {formError && <div className="text-sm text-danger">{formError}</div>}
+          <FormField label="Person" name="review_person">
+            <PeopleSelector clearable loadOptions={loadDirectoryPeople} value={newPersonId} onChange={(id) => setNewPersonId(personIdOf(id))} />
+          </FormField>
+          <Select
+            name="review_period_type"
+            label="Period"
+            aria-label="Period type"
+            value={newPeriodType}
+            onChange={(e: any) => {
+              const next = e.target.value as 'monthly' | 'quarterly';
+              setNewPeriodType(next);
+              const now = new Date();
+              setNewAnchor(
+                next === 'monthly'
+                  ? `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`
+                  : `${now.getUTCFullYear()}-Q${Math.floor(now.getUTCMonth() / 3) + 1}`,
+              );
+            }}
+            options={[
+              { value: 'monthly', label: 'Monthly' },
+              { value: 'quarterly', label: 'Quarterly' },
+            ]}
+          />
+          {newPeriodType === 'monthly' ? (
+            <Select
+              name="review_month"
+              label="Month"
+              aria-label="Month"
+              value={newAnchor}
+              onChange={(e: any) => setNewAnchor(e.target.value)}
+              options={monthOptions}
+            />
+          ) : (
+            <Select
+              name="review_quarter"
+              label="Quarter"
+              aria-label="Quarter"
+              value={newAnchor}
+              onChange={(e: any) => setNewAnchor(e.target.value)}
+              options={(() => {
+                const y = new Date().getUTCFullYear();
+                return [y, y - 1].flatMap((year) =>
+                  [1, 2, 3, 4].map((q) => ({ value: `${year}-Q${q}`, label: `${year} Q${q}` })),
+                );
+              })()}
+            />
+          )}
           {bounds && (
-            <span className="text-xs text-slate-500">
+            <div className="text-xs text-fg-muted">
               {bounds.period_start} → {bounds.period_end}
-            </span>
+            </div>
           )}
         </div>
-      </Panel>
+      </Modal>
 
-      {reviews.some(
-        (r) => r.status === 'finalized' && !r.pc_synced_at,
-      ) && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded border border-amber-500/30 bg-amber-500/5 px-3 py-2">
-          <span className="text-xs text-amber-300">
-            Some finalized reviews have not reached People Connect, so they are
-            not yet usable as appraisal evidence.
-          </span>
-          <button
-            className="rounded bg-slate-700 px-3 py-1.5 text-xs text-slate-100 hover:bg-slate-600 disabled:opacity-50"
-            onClick={retrySync}
-            disabled={busy}
-          >
-            Retry push
-          </button>
-        </div>
-      )}
-
-      {!reviews.length ? (
-        <EmptyState message="No reviews yet. A review is created for a person and period, pre-filled with that period's numbers." />
-      ) : (
-        <Panel title="All reviews">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs text-slate-400 border-b border-slate-800">
-                  <th className="py-2 pr-4 font-medium">Period</th>
-                  <th className="py-2 pr-4 font-medium">Type</th>
-                  <th className="py-2 pr-4 font-medium">Person</th>
-                  <th className="py-2 pr-4 font-medium">Attainment</th>
-                  <th className="py-2 pr-4 font-medium">Status</th>
-                  <th className="py-2 font-medium">HR evidence</th>
-                </tr>
-              </thead>
-              <tbody>
-                {reviews.map((r) => (
-                  <tr
-                    key={r.id}
-                    className="border-b border-slate-800/60 hover:bg-slate-800/40 cursor-pointer"
-                    onClick={() => setActive(r)}
-                  >
-                    <td className="py-2 pr-4 text-slate-200">
-                      {r.period_start}
-                    </td>
-                    <td className="py-2 pr-4 text-slate-400">{r.period_type}</td>
-                    <td className="py-2 pr-4 text-slate-400">
-                      <PersonName id={r.person_id} />
-                    </td>
-                    <td className="py-2 pr-4 text-slate-300">
-                      {formatPct(r.results?.headline?.attainment)}
-                    </td>
-                    <td className="py-2 pr-4 text-slate-300">{r.status}</td>
-                    <td className="py-2 text-xs">
-                      {r.pc_synced_at ? (
-                        <span className="text-emerald-300">sent</span>
-                      ) : r.status === 'finalized' ? (
-                        <span className="text-amber-300">
-                          {r.pc_sync_error ? 'failed' : 'pending'}
-                        </span>
-                      ) : (
-                        <span className="text-slate-500">—</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Panel>
-      )}
-
-      {active && (
-        <Panel
-          title={`Review · ${active.period_start} → ${active.period_end}`}
-          action={
-            <button
-              className="text-xs text-slate-400 hover:text-slate-200"
-              onClick={() => setActive(null)}
-            >
-              Close
-            </button>
-          }
-        >
-          <div className="space-y-4">
-            <div className="flex flex-wrap gap-6 text-sm">
+      <Drawer
+        isOpen={!!active}
+        onClose={() => setActive(null)}
+        title={active ? `Review · ${active.period_start} → ${active.period_end}` : 'Review'}
+        size="lg"
+      >
+        {active && (
+          <Stack>
+            <Grid>
               <Block title="Results">
                 {(active.results?.metrics ?? []).map((m: any) => (
                   <div
                     key={m.metric}
                     className="flex items-center justify-between gap-6"
                   >
-                    <span className="text-slate-400">{m.metric}</span>
-                    <span className="text-slate-200">
+                    <span className="text-fg-subtle">{m.metric}</span>
+                    <span className="text-fg">
                       {formatValue(m.actual, m.unit, currency)} /{' '}
                       {formatValue(m.target, m.unit, currency)} ·{' '}
                       {formatPct(m.attainment)}
@@ -351,8 +382,8 @@ export default function SalesReviewsPage() {
               {active.pipeline?.applicable && (
                 <Block title="Pipeline">
                   <div className="flex items-center justify-between gap-6">
-                    <span className="text-slate-400">Total</span>
-                    <span className="text-slate-200">
+                    <span className="text-fg-subtle">Total</span>
+                    <span className="text-fg">
                       {formatValue(
                         active.pipeline.total_pipeline,
                         'currency',
@@ -361,8 +392,8 @@ export default function SalesReviewsPage() {
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-6">
-                    <span className="text-slate-400">Coverage</span>
-                    <span className="text-slate-200">
+                    <span className="text-fg-subtle">Coverage</span>
+                    <span className="text-fg">
                       {active.pipeline.coverage === null
                         ? '—'
                         : `${active.pipeline.coverage.toFixed(1)}×`}
@@ -373,35 +404,36 @@ export default function SalesReviewsPage() {
 
               <Block title="Win / Loss">
                 <div className="flex items-center justify-between gap-6">
-                  <span className="text-slate-400">Won / Lost</span>
-                  <span className="text-slate-200">
+                  <span className="text-fg-subtle">Won / Lost</span>
+                  <span className="text-fg">
                     {active.win_loss?.won_count ?? 0} /{' '}
                     {active.win_loss?.lost_count ?? 0}
                   </span>
                 </div>
                 <div className="flex items-center justify-between gap-6">
-                  <span className="text-slate-400">Top loss reason</span>
-                  <span className="text-slate-200">
+                  <span className="text-fg-subtle">Top loss reason</span>
+                  <span className="text-fg">
                     {active.win_loss?.top_reason?.label ?? '—'}
                   </span>
                 </div>
               </Block>
-            </div>
+            </Grid>
 
-            <div className="border-t border-slate-800 pt-3">
+            <div className="border-t border-line pt-3">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-slate-300">Action items</span>
+                <span className="text-sm text-fg-subtle">Action items</span>
                 {active.status !== 'finalized' && (
                   <div className="flex gap-2 text-xs">
                     {['Messaging', 'ICP', 'Pricing', 'Channel', 'Focus'].map(
                       (k) => (
-                        <button
+                        <Button
                           key={k}
-                          className="text-slate-400 hover:text-slate-200"
+                          variant="secondary"
+                          size="sm"
                           onClick={() => addActionItem(k)}
                         >
                           + {k}
-                        </button>
+                        </Button>
                       ),
                     )}
                   </div>
@@ -411,23 +443,26 @@ export default function SalesReviewsPage() {
               <div className="space-y-2">
                 {(active.action_items ?? []).map((a: any, i: number) => (
                   <div key={i} className="flex items-center gap-2">
-                    <span className="text-xs text-slate-500 w-20 shrink-0">
+                    <span className="text-xs text-fg-muted w-20 shrink-0">
                       {a.kind}
                     </span>
-                    <input
-                      className="flex-1 rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none disabled:opacity-60"
-                      value={a.text}
-                      disabled={active.status === 'finalized'}
-                      onChange={(e) => {
-                        const items = [...active.action_items];
-                        items[i] = { ...a, text: e.target.value };
-                        setActive({ ...active, action_items: items });
-                      }}
-                    />
+                    <div className="flex-1">
+                      <TextField
+                        name={`review_action_${i}`}
+                        aria-label={`Action item ${i + 1}`}
+                        value={a.text}
+                        disabled={active.status === 'finalized'}
+                        onChange={(e: any) => {
+                          const items = [...active.action_items];
+                          items[i] = { ...a, text: e.target.value };
+                          setActive({ ...active, action_items: items });
+                        }}
+                      />
+                    </div>
                   </div>
                 ))}
                 {!(active.action_items ?? []).length && (
-                  <div className="text-xs text-slate-500">
+                  <div className="text-xs text-fg-muted">
                     No action items yet. Keep this short — a review that becomes
                     a long form stops getting filled in honestly.
                   </div>
@@ -437,37 +472,35 @@ export default function SalesReviewsPage() {
 
             {active.status !== 'finalized' ? (
               <div className="flex justify-end gap-2">
-                <button
-                  className="rounded bg-slate-800 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-700 disabled:opacity-50"
+                <Button variant="secondary" size="sm"
                   onClick={saveDraft}
                   disabled={busy}
                 >
                   Save draft
-                </button>
-                <button
-                  className="rounded bg-slate-700 px-3 py-1.5 text-sm text-slate-100 hover:bg-slate-600 disabled:opacity-50"
+                </Button>
+                <Button variant="primary" size="sm"
                   onClick={() => finalize(active.id)}
                   disabled={busy}
                 >
                   Finalize
-                </button>
+                </Button>
               </div>
             ) : (
-              <div className="text-xs text-slate-500">
+              <div className="text-xs text-fg-muted">
                 Finalized{active.finalized_at ? ` on ${active.finalized_at.slice(0, 10)}` : ''} —
                 this review is now appraisal evidence and cannot be edited.
                 {active.pc_sync_error && (
-                  <span className="text-amber-300">
+                  <span className="text-warning">
                     {' '}
                     People Connect push failed: {active.pc_sync_error}
                   </span>
                 )}
               </div>
             )}
-          </div>
-        </Panel>
-      )}
-    </div>
+          </Stack>
+        )}
+      </Drawer>
+    </>
   );
 }
 
@@ -479,11 +512,11 @@ function Block({
   children: React.ReactNode;
 }) {
   return (
-    <div className="grow basis-64">
-      <div className="text-xs uppercase tracking-wide text-slate-500 mb-2">
+    <GridItem span={4}>
+      <div className="text-xs text-fg-muted mb-2">
         {title}
       </div>
       <div className="space-y-1">{children}</div>
-    </div>
+    </GridItem>
   );
 }

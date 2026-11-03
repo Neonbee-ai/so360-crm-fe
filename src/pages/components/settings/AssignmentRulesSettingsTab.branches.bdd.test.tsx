@@ -58,6 +58,7 @@ vi.mock('@so360/design-system', async (importActual) => {
 
 import { toast } from '@so360/design-system';
 import AssignmentRulesSettingsTab from './AssignmentRulesSettingsTab';
+import { mockConfirm } from '../../../test/__mocks__/design-system';
 
 const rule = (over: Partial<AssignmentRule> & Record<string, unknown> = {}): AssignmentRule => ({
     id: 'r1',
@@ -75,7 +76,7 @@ const rule = (over: Partial<AssignmentRule> & Record<string, unknown> = {}): Ass
 
 const renderTab = async (canWrite = true) => {
     const view = render(<AssignmentRulesSettingsTab canWrite={canWrite} />);
-    await waitFor(() => expect(screen.queryByTestId('icon-Loader2')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByTestId('skeleton')).not.toBeInTheDocument());
     return view;
 };
 
@@ -101,10 +102,10 @@ beforeEach(() => {
 });
 
 describe('Given the rules list is still loading', () => {
-    it('When list has not settled / Then a spinner shows and no list or empty state', () => {
+    it('When list has not settled / Then a skeleton shows and no list or empty state', () => {
         svc.list.mockReturnValueOnce(new Promise(() => {}));
         render(<AssignmentRulesSettingsTab canWrite />);
-        expect(screen.getByTestId('icon-Loader2')).toBeInTheDocument();
+        expect(screen.getAllByTestId('skeleton').length).toBeGreaterThan(0);
         expect(screen.queryByRole('list', { name: 'Assignment rules' })).not.toBeInTheDocument();
         expect(screen.queryByText(/No rules yet/)).not.toBeInTheDocument();
     });
@@ -411,16 +412,16 @@ describe('Given toggling a rule fails', () => {
 
 describe('Given deleting a rule', () => {
     it('When the confirm is declined / Then nothing is removed', async () => {
-        const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+        mockConfirm.mockResolvedValue(false);
         await renderTab();
         fireEvent.click(screen.getByRole('button', { name: 'Delete Facebook leads' }));
-        expect(confirm).toHaveBeenCalledWith('Delete the rule "Facebook leads"?');
+        expect(mockConfirm).toHaveBeenCalledWith(expect.objectContaining({ message: 'Delete the rule "Facebook leads"?', intent: 'danger' }));
         expect(svc.remove).not.toHaveBeenCalled();
         expect(screen.getAllByTestId('assignment-rule-row')).toHaveLength(2);
     });
 
     it('When the rule being edited is deleted / Then the editor closes too', async () => {
-        vi.spyOn(window, 'confirm').mockReturnValue(true);
+        mockConfirm.mockResolvedValue(true);
         await renderTab();
         fireEvent.click(screen.getByRole('button', { name: 'Edit Facebook leads' }));
         expect(screen.getByTestId('assignment-rule-editor')).toBeInTheDocument();
@@ -430,7 +431,7 @@ describe('Given deleting a rule', () => {
     });
 
     it('When a different rule is deleted while editing / Then the editor stays open', async () => {
-        vi.spyOn(window, 'confirm').mockReturnValue(true);
+        mockConfirm.mockResolvedValue(true);
         await renderTab();
         fireEvent.click(screen.getByRole('button', { name: 'Edit Facebook leads' }));
         fireEvent.click(screen.getByRole('button', { name: 'Delete Catch all' }));
@@ -439,7 +440,7 @@ describe('Given deleting a rule', () => {
     });
 
     it('When remove rejects / Then an error toast shows and the row stays', async () => {
-        vi.spyOn(window, 'confirm').mockReturnValue(true);
+        mockConfirm.mockResolvedValue(true);
         svc.remove.mockRejectedValueOnce(new Error('boom'));
         await renderTab();
         fireEvent.click(screen.getByRole('button', { name: 'Delete Facebook leads' }));

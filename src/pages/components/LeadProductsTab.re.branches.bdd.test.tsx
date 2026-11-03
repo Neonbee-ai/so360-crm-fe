@@ -4,7 +4,7 @@
  * scroll carrying the picked project.
  */
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -75,8 +75,7 @@ const openPicker = async () => {
 };
 
 const confirmAdd = () => {
-    const addButtons = screen.getAllByRole('button', { name: /^Add Product$/i });
-    fireEvent.click(addButtons[addButtons.length - 1]);
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^Add Product$/i }));
 };
 
 describe('Given property matching is on for a lead', () => {

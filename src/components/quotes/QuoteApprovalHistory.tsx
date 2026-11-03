@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
+import { Card, Badge } from '@so360/design-system';
 import {
   Clock,
   CheckCircle2,
   XCircle,
   ChevronDown,
   ChevronUp,
-  History,
   AlertCircle,
   User,
   ShieldCheck,
@@ -73,32 +73,32 @@ export const QuoteApprovalHistory: React.FC<QuoteApprovalHistoryProps> = ({
     switch (status) {
       case 'approved':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <Badge size="sm" tone="success">
             <CheckCircle2 className="w-3.5 h-3.5" />
             Approved
-          </span>
+          </Badge>
         );
       case 'rejected':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+          <Badge size="sm" tone="danger">
             <XCircle className="w-3.5 h-3.5" />
             Rejected
-          </span>
+          </Badge>
         );
       case 'withdrawn':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-500/10 text-slate-400 border border-slate-500/20">
+          <Badge size="sm" tone="neutral">
             <RotateCcw className="w-3.5 h-3.5" />
             Withdrawn
-          </span>
+          </Badge>
         );
       case 'pending':
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+          <Badge size="sm" tone="warning">
             <Clock className="w-3.5 h-3.5" />
             Pending Approval
-          </span>
+          </Badge>
         );
     }
   };
@@ -106,18 +106,16 @@ export const QuoteApprovalHistory: React.FC<QuoteApprovalHistoryProps> = ({
   const totalCycles = history.length;
 
   return (
-    <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <History className="w-5 h-5 text-blue-400" />
-          <h2 className="text-lg font-semibold text-slate-100">Approval History & Audit Trail</h2>
-        </div>
-        <span className="text-xs text-slate-400">
+    <Card
+      title="Approval History & Audit Trail"
+      actions={
+        <span className="text-xs text-fg-subtle">
           {totalCycles} {totalCycles === 1 ? 'Cycle' : 'Cycles'}
         </span>
-      </div>
-
-      <div className="space-y-3">
+      }
+      padding="none"
+    >
+      <div className="divide-y divide-line">
         {history.map((cycle, index) => {
           const cycleNumber = totalCycles - index;
           const isExpanded = !!expandedCycles[cycle.id];
@@ -127,90 +125,75 @@ export const QuoteApprovalHistory: React.FC<QuoteApprovalHistoryProps> = ({
           const totalApprovers = approvers.length;
 
           return (
-            <div
-              key={cycle.id}
-              className={`border rounded-lg transition-all ${
-                isCurrent
-                  ? 'border-blue-500/40 bg-slate-800/40'
-                  : 'border-slate-800 bg-slate-900/40'
-              }`}
-            >
+            <div key={cycle.id}>
               {/* Header / Click to expand */}
               <div
                 onClick={() => toggleCycle(cycle.id)}
-                className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-800/60 select-none transition-colors"
+                className="flex items-center justify-between p-nb-3 cursor-pointer hover:bg-surface-raised select-none transition-colors"
               >
-                <div className="flex items-center gap-3">
-                  <div className="flex flex-col">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-slate-200">
-                        Cycle {cycleNumber}
-                      </span>
-                      {isCurrent && (
-                        <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                          Current
-                        </span>
-                      )}
-                      {getStatusBadge(cycle.status)}
-                    </div>
-                    <span className="text-xs text-slate-400 mt-0.5">
-                      Requested {cycle.requested_at ? formatDate(cycle.requested_at) : formatDate(cycle.created_at || '')}
-                      {cycle.total_amount_snapshot != null && (
-                        <span> • Value: {formatCurrency(cycle.total_amount_snapshot)}</span>
-                      )}
-                    </span>
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-nb-2">
+                    <span className="font-medium text-fg">Cycle {cycleNumber}</span>
+                    {isCurrent && <Badge size="sm" tone="info">Current</Badge>}
+                    {getStatusBadge(cycle.status)}
                   </div>
+                  <span className="text-xs text-fg-subtle mt-0.5">
+                    Requested {cycle.requested_at ? formatDate(cycle.requested_at) : formatDate(cycle.created_at || '')}
+                    {cycle.total_amount_snapshot != null && (
+                      <span> • Value: {formatCurrency(cycle.total_amount_snapshot)}</span>
+                    )}
+                  </span>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-slate-400">
+                <div className="flex items-center gap-nb-3">
+                  <span className="text-xs text-fg-subtle">
                     {approvedCount}/{totalApprovers} approved
                   </span>
                   {isExpanded ? (
-                    <ChevronUp className="w-4 h-4 text-slate-400" />
+                    <ChevronUp className="w-4 h-4 text-fg-subtle" />
                   ) : (
-                    <ChevronDown className="w-4 h-4 text-slate-400" />
+                    <ChevronDown className="w-4 h-4 text-fg-subtle" />
                   )}
                 </div>
               </div>
 
               {/* Collapsible details */}
               {isExpanded && (
-                <div className="px-4 pb-4 pt-1 border-t border-slate-800/60 space-y-3">
+                <div className="px-nb-3 pb-nb-3 flex flex-col gap-nb-3">
                   {cycle.notes && (
-                    <div className="bg-slate-800/50 rounded p-3 text-xs text-slate-300 border border-slate-700/50">
-                      <span className="font-semibold text-slate-400 block mb-1">Submission Notes:</span>
+                    <div className="text-xs text-fg-subtle">
+                      <span className="font-medium text-fg-subtle block mb-1">Submission Notes:</span>
                       {cycle.notes}
                     </div>
                   )}
 
                   {/* Approvers progress */}
-                  <div className="space-y-2">
-                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+                  <div>
+                    <span className="text-xs font-medium text-fg-muted block mb-1">
                       Required Approvers
                     </span>
-                    <div className="divide-y divide-slate-800/60 rounded-lg border border-slate-800/80 bg-slate-900/60 overflow-hidden">
+                    <div className="divide-y divide-line">
                       {approvers.map((approver, aIdx) => (
                         <div
                           key={approver.id || `${approver.approver_user_id}-${aIdx}`}
-                          className="p-3 flex items-start justify-between gap-3 text-sm"
+                          className="py-nb-2 flex items-start justify-between gap-nb-3 text-sm"
                         >
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 text-xs">
+                          <div className="flex items-center gap-nb-2">
+                            <div className="w-7 h-7 rounded-full bg-surface-raised border border-line flex items-center justify-center text-fg-subtle text-xs">
                               <User className="w-3.5 h-3.5" />
                             </div>
                             <div>
-                              <div className="font-medium text-slate-200">
+                              <div className="font-medium text-fg">
                                 {approver.approver_name || 'Approver'}
                               </div>
                               {approver.approver_email && (
-                                <div className="text-xs text-slate-400">
+                                <div className="text-xs text-fg-subtle">
                                   {approver.approver_email}
                                 </div>
                               )}
                               {approver.notes && (
-                                <div className="mt-1 text-xs text-slate-300 bg-slate-800/60 p-1.5 rounded border border-slate-700/40">
-                                  <span className="font-medium text-slate-400">Comment: </span>
+                                <div className="mt-1 text-xs text-fg-subtle">
+                                  <span className="font-medium text-fg-subtle">Comment: </span>
                                   {approver.notes}
                                 </div>
                               )}
@@ -220,7 +203,7 @@ export const QuoteApprovalHistory: React.FC<QuoteApprovalHistoryProps> = ({
                           <div className="flex flex-col items-end gap-1">
                             {getStatusBadge(approver.status)}
                             {approver.decision_at && (
-                              <span className="text-[11px] text-slate-500">
+                              <span className="text-xs text-fg-muted">
                                 {formatDate(approver.decision_at)}
                               </span>
                             )}
@@ -235,6 +218,6 @@ export const QuoteApprovalHistory: React.FC<QuoteApprovalHistoryProps> = ({
           );
         })}
       </div>
-    </div>
+    </Card>
   );
 };

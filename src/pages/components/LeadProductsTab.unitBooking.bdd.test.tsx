@@ -2,7 +2,7 @@
  * BDD Spec — LeadProductsTab unit booking (flag `submodule:crm:unit_booking`)
  */
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -92,8 +92,7 @@ describe('Given unit booking is enabled for the tenant', () => {
             await openPicker();
             fireEvent.change(screen.getByLabelText('Hold for'), { target: { value: '72' } });
             fireEvent.click(screen.getByText('Unit A-101'));
-            const addButtons = screen.getAllByRole('button', { name: /^Add Product$/i });
-            fireEvent.click(addButtons[addButtons.length - 1]);
+            fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^Add Product$/i }));
             await waitFor(() => {
                 expect(mocks.addLeadProduct).toHaveBeenCalledWith('lead-1', expect.objectContaining({ item_id: 'u1', hold_hours: 72 }));
             });
@@ -103,8 +102,7 @@ describe('Given unit booking is enabled for the tenant', () => {
             mocks.addLeadProduct.mockRejectedValue(Object.assign(new Error('Unit A-101 is held on another lead until 30 Sep'), { status: 409 }));
             await openPicker();
             fireEvent.click(screen.getByText('Unit A-101'));
-            const addButtons = screen.getAllByRole('button', { name: /^Add Product$/i });
-            fireEvent.click(addButtons[addButtons.length - 1]);
+            fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^Add Product$/i }));
             expect(await screen.findByRole('alert')).toHaveTextContent('Unit A-101 is held on another lead until 30 Sep');
         });
 
@@ -112,8 +110,7 @@ describe('Given unit booking is enabled for the tenant', () => {
             mocks.addLeadProduct.mockRejectedValue(Object.assign(new Error('UNIT_NOT_ALLOCATED'), { status: 403, body: { statusCode: 403, code: 'UNIT_NOT_ALLOCATED', message: 'Unit is not allocated to the caller' } }));
             await openPicker();
             fireEvent.click(screen.getByText('Unit A-101'));
-            const addButtons = screen.getAllByRole('button', { name: /^Add Product$/i });
-            fireEvent.click(addButtons[addButtons.length - 1]);
+            fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^Add Product$/i }));
             expect(await screen.findByRole('alert')).toHaveTextContent("This unit isn't allocated to you — ask your manager");
         });
     });
@@ -140,8 +137,7 @@ describe('Given unit booking is disabled for the tenant', () => {
     it('When a product is attached / Then no hold_hours is sent', async () => {
         await openPicker();
         fireEvent.click(screen.getByText('Unit A-101'));
-        const addButtons = screen.getAllByRole('button', { name: /^Add Product$/i });
-        fireEvent.click(addButtons[addButtons.length - 1]);
+        fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^Add Product$/i }));
         await waitFor(() => expect(mocks.addLeadProduct).toHaveBeenCalled());
         expect(mocks.addLeadProduct.mock.calls[0][1]).not.toHaveProperty('hold_hours');
     });

@@ -1,7 +1,16 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useShellBridge } from '@so360/shell-context';
 import { targetPlanService } from '../../services/targetPlanService';
-import { EmptyState, Panel, formatPct, formatValue } from './targetUi';
+import {
+  EmptyState,
+  ErrorState,
+  UNLINKED_PROFILE_MESSAGE,
+  isUnlinkedPayload,
+  formatPct,
+  formatValue,
+} from './targetUi';
+import { ListPageTemplate, DataTable } from '@so360/design-system';
+import type { DataTableColumn } from '@so360/design-system';
 
 /**
  * Past-period performance.
@@ -35,7 +44,9 @@ export default function PerformanceHistoryPage() {
     setError(null);
     targetPlanService
       .myHistory(12)
-      .then(setData)
+      .then((d) =>
+        isUnlinkedPayload(d) ? setError(UNLINKED_PROFILE_MESSAGE) : setData(d),
+      )
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, []);
@@ -44,101 +55,71 @@ export default function PerformanceHistoryPage() {
     load();
   }, [load]);
 
-  if (loading) {
-    return <div className="p-6 text-sm text-slate-400">Loading history…</div>;
-  }
-  if (error) {
-    return <div className="p-6 text-sm text-rose-300">{error}</div>;
-  }
-  if (!data?.periods?.length) {
-    return (
-      <div className="p-6">
-        <EmptyState message="No completed periods yet. History appears once a target period closes." />
-      </div>
-    );
-  }
-
   // Metric columns are derived from the data, never hardcoded — the same
   // screen renders whatever metrics the org actually configured.
   const metricNames: string[] = Array.from(
     new Set(
-      data.periods.flatMap((p: any) =>
+      (data?.periods ?? []).flatMap((p: any) =>
         p.metrics.map((m: any) => m.metric_name),
       ),
     ),
   );
 
+  const columns: DataTableColumn<any>[] = [
+    { key: 'period', header: 'Period', sortable: true, sortValue: (p) => p.period_start, render: (p) => <span className="text-fg">{p.period_start}</span> },
+    ...metricNames.map((n): DataTableColumn<any> => ({
+      key: `m-${n}`,
+      header: n,
+      align: 'right',
+      render: (p) => {
+        const m = p.metrics.find((x: any) => x.metric_name === n);
+        return (
+          <span
+            className="text-fg-subtle"
+            title={m ? `${formatValue(m.actual, m.unit, currency)} of ${formatValue(m.target, m.unit, currency)}` : undefined}
+          >
+            {m ? formatPct(m.attainment) : '—'}
+          </span>
+        );
+      },
+    })),
+    { key: 'overall', header: 'Overall', align: 'right', sortable: true, sortValue: (p) => p.overall_attainment ?? 0, render: (p) => <span className="text-fg">{formatPct(p.overall_attainment)}</span> },
+    { key: 'changed', header: '', render: (p) => <span className="text-xs text-fg-muted">{p.plan_changed ? 'target changed' : ''}</span> },
+  ];
+
+  const periods: any[] = data?.periods ?? [];
+  const summary = periods.length
+    ? [
+        `Average ${formatPct(data.average)}`,
+        data.best ? `Best ${data.best.period_start} (${formatPct(data.best.overall_attainment)})` : null,
+        `Plan changes ${data.plan_changes}`,
+      ].filter(Boolean).join(' · ')
+    : undefined;
+
   return (
-    <div className="p-6 space-y-5">
-      <h1 className="text-lg font-semibold text-slate-100">
-        Performance History
-      </h1>
-
-      <Panel title="By period">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-xs text-slate-400 border-b border-slate-800">
-                <th className="py-2 pr-4 font-medium">Period</th>
-                {metricNames.map((n) => (
-                  <th key={n} className="py-2 pr-4 font-medium text-right">
-                    {n}
-                  </th>
-                ))}
-                <th className="py-2 pr-4 font-medium text-right">Overall</th>
-                <th className="py-2 font-medium" />
-              </tr>
-            </thead>
-            <tbody>
-              {data.periods.map((p: any) => (
-                <tr
-                  key={p.period_start}
-                  className="border-b border-slate-800/60"
-                >
-                  <td className="py-2 pr-4 text-slate-200">
-                    {p.period_start}
-                  </td>
-                  {metricNames.map((n) => {
-                    const m = p.metrics.find(
-                      (x: any) => x.metric_name === n,
-                    );
-                    return (
-                      <td
-                        key={n}
-                        className="py-2 pr-4 text-right text-slate-300"
-                        title={
-                          m
-                            ? `${formatValue(m.actual, m.unit, currency)} of ${formatValue(m.target, m.unit, currency)}`
-                            : undefined
-                        }
-                      >
-                        {m ? formatPct(m.attainment) : '—'}
-                      </td>
-                    );
-                  })}
-                  <td className="py-2 pr-4 text-right text-slate-100">
-                    {formatPct(p.overall_attainment)}
-                  </td>
-                  <td className="py-2 text-xs text-slate-500">
-                    {p.plan_changed ? 'target changed' : ''}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-slate-400">
-          <span>Average {formatPct(data.average)}</span>
-          {data.best && (
-            <span>
-              Best {data.best.period_start} (
-              {formatPct(data.best.overall_attainment)})
-            </span>
-          )}
-          <span>Plan changes {data.plan_changes}</span>
-        </div>
-      </Panel>
-    </div>
+    <ListPageTemplate
+      trail={[{ label: 'Targets', to: '/crm/targets' }]}
+      title="Performance History"
+      description={summary}
+      count={periods.length || undefined}
+      loading={loading}
+      isEmpty={!loading && (!!error || !periods.length)}
+      empty={
+        error ? (
+          <ErrorState error={error} onRetry={load} />
+        ) : (
+          <EmptyState
+            title="No completed periods yet"
+            description="History appears once a target period closes."
+          />
+        )
+      }
+    >
+      <DataTable
+        columns={columns}
+        rows={periods}
+        rowKey={(p: any) => p.period_start}
+      />
+    </ListPageTemplate>
   );
 }

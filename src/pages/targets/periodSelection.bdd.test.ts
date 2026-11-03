@@ -111,10 +111,11 @@ describe.each(PERIOD_PAGES)('Given %s', (file) => {
     // Loading, error and empty states all render {header}; without this a
     // period with no data removes the only way to leave it.
     const src = body();
-    const earlyReturns = src.split('return').filter((chunk, i) => i > 0 && /className="p-6/.test(chunk.slice(0, 200)));
-    expect(earlyReturns.length).toBeGreaterThan(1);
-    for (const chunk of earlyReturns) {
-      expect(chunk.slice(0, 400)).toContain('{header}');
+    const templates = src.match(/<DashboardPageTemplate\b[^>]*>/g) ?? [];
+    // loading, error, empty + the loaded view
+    expect(templates.length).toBeGreaterThan(1);
+    for (const tag of templates) {
+      expect(tag).toContain('filters={header}');
     }
   });
 });

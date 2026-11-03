@@ -111,11 +111,11 @@ describe('Given matching units with varied scores and sparse facts', () => {
                 unit({ item_id: 'lo', unit_number: 'LO', score: 49.6 }),
             ]);
             render(<MatchingUnitsPanel entity="lead" id="lead-1" existingItemIds={new Set()} onAttach={vi.fn()} />);
-            expect((await screen.findByText('75% match')).className).toMatch(/emerald/);
+            expect(await screen.findByText('75% match')).toHaveAttribute('data-tone', 'success');
             const fifties = screen.getAllByText('50% match');
             expect(fifties).toHaveLength(2);
-            expect(fifties[0].className).toMatch(/amber/);
-            expect(fifties[1].className).toMatch(/slate/);
+            expect(fifties[0]).toHaveAttribute('data-tone', 'warning');
+            expect(fifties[1]).toHaveAttribute('data-tone', 'neutral');
         });
     });
 

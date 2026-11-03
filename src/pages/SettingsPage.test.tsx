@@ -40,7 +40,7 @@ vi.mock('@so360/design-system', async (importOriginal) => {
 
 vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
-  useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
+  useShellBridge: () => ({ isFeatureEnabled: (k: string) => k !== 'submodule:crm:dl_custom_fields', isFeatureHidden: () => false }),
 }));
 
 import SettingsPage from './SettingsPage';
@@ -94,7 +94,7 @@ describe('Given SettingsPage', () => {
     render(<SettingsPage />);
     await waitFor(() => {
       expect(screen.getByDisplayValue('Lead')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('Won')).toBeInTheDocument();
+      expect(screen.getAllByDisplayValue('Won')[0]).toBeInTheDocument();
     });
   });
 
@@ -184,10 +184,8 @@ describe('Given SettingsPage', () => {
   it('When action / Then changes pipeline stage type', async () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
-    const triggers = screen.getAllByTestId('stage-status-trigger');
-    fireEvent.click(triggers[0]);
-    fireEvent.click(screen.getByTestId('stage-status-option-LOST'));
-    expect(screen.getAllByTestId('stage-status-trigger')[0]).toHaveTextContent('LOST');
+    fireEvent.change(screen.getAllByTestId('stage-status-select')[0], { target: { value: 'LOST' } });
+    expect(screen.getAllByTestId('stage-status-select')[0]).toHaveValue('LOST');
   });
 
   it('When action / Then switches to lead-stages tab and shows read-only Flow-sourced stages', async () => {

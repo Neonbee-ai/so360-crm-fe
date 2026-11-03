@@ -51,13 +51,13 @@ describe('NoteEditor', () => {
       expect(screen.getByTestId('note-editor')).toBeInTheDocument();
     });
 
+    // window.prompt was replaced by the Comb PromptDialog (a DS Modal with a Link URL field).
     it('When Link is clicked / Then it prompts for a URL', async () => {
-      const promptSpy = vi.spyOn(window, 'prompt').mockReturnValue(null);
       const user = userEvent.setup();
       render(<NoteEditor value="<p>Text</p>" onChange={vi.fn()} />);
       await user.click(screen.getByLabelText('Link'));
-      expect(promptSpy).toHaveBeenCalledWith('Link URL', 'https://');
-      promptSpy.mockRestore();
+      const dialog = await screen.findByRole('dialog', { name: 'Link URL' });
+      expect(within(dialog).getByLabelText('Link URL')).toHaveValue('https://');
     });
   });
 

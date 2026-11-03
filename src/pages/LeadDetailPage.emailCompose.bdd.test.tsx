@@ -88,6 +88,7 @@ vi.mock('@so360/shell-context', () => ({
   useOrganization: () => ({ id: '8317fe18-6ac4-4ac4-b71d-dc13122a905d', name: 'Test Org' }),
   useQuota: () => ({ quota: { max: 1000, used: 0 }, isExceeded: false, getQuota: vi.fn() }),
   useSandboxLimit: () => ({ isSandboxMode: false, sandboxEntryLimit: 1000, limitItems: (items: any[]) => items, isLimited: false }),
+  useDatasetSchema: () => ({ fields: [], isLoading: false, error: null }),
   ShellContext: React.createContext({}),
   useIdentity: () => ({ user: { id: 'mock-user-id', email: 'test@test.com', full_name: 'Test User' } }),
 }));
@@ -143,7 +144,7 @@ describe('Given LeadDetailPage for a readable lead (RE G9)', () => {
     test('Then no Compose Email action is mounted', async () => {
       mockCrmService.getLeadById.mockResolvedValueOnce(undefined);
       render(<LeadDetailPage />);
-      await waitFor(() => expect(screen.getByText(/lead not found/i)).toBeTruthy());
+      await waitFor(() => expect(screen.getByRole('heading', { name: /lead not found/i })).toBeTruthy());
       expect(screen.queryByTestId('email-compose-stub')).toBeNull();
     });
   });

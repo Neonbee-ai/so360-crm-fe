@@ -70,10 +70,10 @@ describe('Feature: Sales reports page', () => {
             for (const s of ['by_agent', 'by_project', 'by_developer', 'by_period', 'by_source', 'lost_reasons', 'reservations', 'agent_performance']) {
                 expect(screen.getByTestId(`sa-section-${s}`)).toBeInTheDocument();
             }
-            const perf = within(screen.getByRole('table', { name: 'Agent performance' }));
+            const perf = within(screen.getByTestId('sa-table-agent_performance'));
             expect(perf.getByText('40%')).toBeInTheDocument();
             expect(perf.getByText('7')).toBeInTheDocument();
-            expect(within(screen.getByRole('table', { name: 'Lost deals by reason' })).getByText('Price')).toBeInTheDocument();
+            expect(within(screen.getByTestId('sa-table-lost_reasons')).getByText('Price')).toBeInTheDocument();
         });
 
         it('When developers appear in the data / Then they become a Developer filter option', async () => {
@@ -98,7 +98,8 @@ describe('Feature: Sales reports page', () => {
             svc.get.mockResolvedValue(data);
             renderPage();
             await screen.findByTestId('sa-total-bookings');
-            fireEvent.click(screen.getByRole('button', { name: 'Export Sales by project as Excel' }));
+            fireEvent.click(screen.getByRole('button', { name: 'Export Sales by project' }));
+            fireEvent.click(screen.getByRole('menuitem', { name: 'Excel' }));
             await waitFor(() => expect(svc.exportSection).toHaveBeenCalledWith({}, 'month', 'by_project', 'xlsx'));
         });
     });
@@ -148,7 +149,7 @@ describe('Feature: Sales reports page', () => {
             renderPage();
             const section = await screen.findByTestId('sa-section-by_project');
             expect(within(section).getByText('Nothing to show.')).toBeInTheDocument();
-            expect(within(section).queryByRole('table')).toBeNull();
+            expect(within(section).queryByTestId('sa-table-by_project')).toBeNull();
         });
     });
 
@@ -179,10 +180,11 @@ describe('Feature: Sales reports page', () => {
             svc.get.mockResolvedValue(data);
             renderPage();
             await screen.findByTestId('sa-total-bookings');
-            fireEvent.change(screen.getByLabelText('To'), { target: { value: '2026-06-01' } });
+            fireEvent.click(screen.getByTestId('filters-button'));
+            fireEvent.change(screen.getByLabelText('Date range end'), { target: { value: '2026-06-01' } });
             await waitFor(() => expect(svc.get).toHaveBeenLastCalledWith({ to: '2026-06-01' }, 'month'));
             const calls = svc.get.mock.calls.length;
-            fireEvent.change(screen.getByLabelText('From'), { target: { value: '2026-06-10' } });
+            fireEvent.change(screen.getByLabelText('Date range start'), { target: { value: '2026-06-10' } });
             expect(await screen.findByRole('alert')).toHaveTextContent('The start date must be on or before the end date.');
             expect(svc.get).toHaveBeenCalledTimes(calls);
             expect(screen.queryByTestId('sa-total-bookings')).toBeNull();

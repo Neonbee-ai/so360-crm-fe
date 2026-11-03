@@ -5,7 +5,27 @@ import { render, screen, fireEvent, waitFor, renderHook, act } from '@testing-li
 const bridge = vi.hoisted(() => ({ value: {} as any }));
 vi.mock('@so360/shell-context', () => ({ useShellBridge: () => bridge.value }));
 
+vi.mock('@so360/design-system', async () => {
+    const R = await import('react');
+    return {
+        Button: ({ children, ...rest }: any) => R.createElement('button', { type: 'button', ...rest }, children),
+        Menu: ({ trigger, items }: any) => {
+            const [open, setOpen] = R.useState(false);
+            return R.createElement(R.Fragment, null,
+                R.cloneElement(trigger, { onClick: () => setOpen((v: boolean) => !v) }),
+                open ? R.createElement('div', { role: 'menu' }, items.map((i: any) =>
+                    R.createElement('div', { key: i.label, role: 'menuitem', 'aria-disabled': i.disabled ? 'true' : undefined,
+                        onClick: () => { if (!i.disabled) { i.onSelect(); setOpen(false); } } }, i.label))) : null);
+        },
+    };
+});
+
 import ExportMenu, { useCanExport } from './ExportMenu';
+
+const pick = (label: string, fmt: string) => {
+    fireEvent.click(screen.getByRole('button', { name: label }));
+    fireEvent.click(screen.getByRole('menuitem', { name: fmt }));
+};
 
 /** Feature: RE §48 export buttons and their permission / flag gating. */
 beforeEach(() => {
@@ -19,51 +39,49 @@ beforeEach(() => {
 
 describe('Feature: ExportMenu', () => {
     describe('Given the menu is shown', () => {
-        it('then one labelled button per format is offered', () => {
+        it('then a single labelled Export button offers CSV, Excel and PDF', () => {
             render(<ExportMenu label="Export leads" onExport={vi.fn()} />);
-            expect(screen.getByRole('group', { name: 'Export leads' })).toBeTruthy();
+            fireEvent.click(screen.getByRole('button', { name: 'Export leads' }));
             for (const f of ['CSV', 'Excel', 'PDF']) {
-                expect(screen.getByRole('button', { name: `Export leads as ${f}` }).textContent).toContain(f);
+                expect(screen.getByRole('menuitem', { name: f })).toBeTruthy();
             }
         });
     });
 
-    describe('When a format is clicked', () => {
-        it('then the export runs with that format and all buttons are disabled while busy', async () => {
+    describe('Given a formats subset is passed', () => {
+        it('then only those formats are offered', () => {
+            render(<ExportMenu label="Export quotes" formats={['csv']} onExport={vi.fn()} />);
+            fireEvent.click(screen.getByRole('button', { name: 'Export quotes' }));
+            expect(screen.getByRole('menuitem', { name: 'CSV' })).toBeTruthy();
+            expect(screen.queryByRole('menuitem', { name: 'PDF' })).toBeNull();
+            expect(screen.queryByRole('menuitem', { name: 'Excel' })).toBeNull();
+        });
+    });
+
+    describe('When a format is chosen', () => {
+        it('then the export runs with that format and the trigger is disabled while busy', async () => {
             let finish: () => void = () => {};
             const onExport = vi.fn(() => new Promise<void>((r) => { finish = r; }));
             render(<ExportMenu label="Export deals" onExport={onExport} />);
-            fireEvent.click(screen.getByRole('button', { name: 'Export deals as Excel' }));
+            pick('Export deals', 'Excel');
             expect(onExport).toHaveBeenCalledWith('xlsx');
-            await waitFor(() => expect((screen.getByRole('button', { name: 'Export deals as PDF' }) as HTMLButtonElement).disabled).toBe(true));
+            await waitFor(() => expect((screen.getByRole('button', { name: 'Export deals' }) as HTMLButtonElement).disabled).toBe(true));
             expect(screen.getByTestId('icon-Loader2')).toBeTruthy();
-            fireEvent.click(screen.getByRole('button', { name: 'Export deals as CSV' }));
             expect(onExport).toHaveBeenCalledTimes(1);
             finish();
-            await waitFor(() => expect((screen.getByRole('button', { name: 'Export deals as PDF' }) as HTMLButtonElement).disabled).toBe(false));
+            await waitFor(() => expect((screen.getByRole('button', { name: 'Export deals' }) as HTMLButtonElement).disabled).toBe(false));
             expect(screen.queryByRole('alert')).toBeNull();
         });
 
-        it('then a click handler re-entered while an export is running is ignored', async () => {
-            let finish: () => void = () => {};
-            const onExport = vi.fn(() => new Promise<void>((r) => { finish = r; }));
-            render(<ExportMenu label="Export deals" onExport={onExport} className="ml-2" />);
-            fireEvent.click(screen.getByRole('button', { name: 'Export deals as CSV' }));
-            const pdf = screen.getByRole('button', { name: 'Export deals as PDF' }) as HTMLButtonElement;
-            await waitFor(() => expect(pdf.disabled).toBe(true));
-            // A disabled button swallows DOM clicks, so drive React's handler directly
-            // to prove the busy guard itself blocks a second export.
-            const propsKey = Object.keys(pdf).find((k) => k.startsWith('__reactProps$'))!;
-            await act(async () => { (pdf as any)[propsKey].onClick(); });
-            expect(onExport).toHaveBeenCalledTimes(1);
-            expect(screen.getByRole('group', { name: 'Export deals' }).parentElement!.className).toContain('ml-2');
-            await act(async () => { finish(); });
+        it('then the className is applied to the wrapper', () => {
+            const { container } = render(<ExportMenu label="Export deals" onExport={vi.fn()} className="ml-2" />);
+            expect((container.firstChild as HTMLElement).className).toContain('ml-2');
         });
 
         it('then an explained 4xx is shown as the error', async () => {
             const onExport = vi.fn().mockRejectedValue(Object.assign(new Error('You do not have permission to export'), { status: 403 }));
             render(<ExportMenu label="Export sales" onExport={onExport} />);
-            fireEvent.click(screen.getByRole('button', { name: 'Export sales as CSV' }));
+            pick('Export sales', 'CSV');
             expect((await screen.findByRole('alert')).textContent).toBe('You do not have permission to export');
         });
 
@@ -72,9 +90,9 @@ describe('Feature: ExportMenu', () => {
                 .mockRejectedValueOnce(Object.assign(new Error('boom'), { status: 500 }))
                 .mockResolvedValueOnce(undefined);
             render(<ExportMenu label="Export sales" onExport={onExport} />);
-            fireEvent.click(screen.getByRole('button', { name: 'Export sales as PDF' }));
+            pick('Export sales', 'PDF');
             expect((await screen.findByRole('alert')).textContent).toBe('Export failed. Please try again.');
-            fireEvent.click(screen.getByRole('button', { name: 'Export sales as PDF' }));
+            pick('Export sales', 'PDF');
             await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
         });
     });

@@ -6,10 +6,6 @@ const mockGetSettings = vi.fn();
 const mockCreateLead = vi.fn();
 const mockRecordActivity = vi.fn();
 
-vi.mock('../common/Modal', () => ({
-  Modal: ({ isOpen, children, title }: any) => isOpen ? <div data-testid="modal"><h2>{title}</h2>{children}</div> : null,
-}));
-
 vi.mock('../../services/crmService', () => ({
   crmService: {
     getSettings: (...a: any[]) => mockGetSettings(...a),
@@ -28,11 +24,12 @@ vi.mock('../../services/crmService', () => ({
 }));
 
 vi.mock('@so360/shell-context', () => ({
+  useDatasetSchema: () => ({ fields: [], isLoading: false, error: null }),
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useNotify: () => ({ emitNotification: vi.fn().mockResolvedValue(undefined) }),
   useActivity: () => ({ recordActivity: (...a: any[]) => mockRecordActivity(...a) }),
   useIdentity: () => ({ user: { id: 'u1', full_name: 'Test User', email: 't@t.com' } }),
-  useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
+  useShellBridge: () => ({ isFeatureEnabled: (k: string) => k !== 'submodule:crm:dl_custom_fields', isFeatureHidden: () => false }),
 
   useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
@@ -59,13 +56,13 @@ describe('Given CreateLeadModal', () => {
     const { container } = render(
       <CreateLeadModal isOpen={false} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />,
     );
-    expect(container.querySelector('[data-testid="modal"]')).toBeNull();
+    expect(container.querySelector('[data-testid="create-lead-form-page"]')).toBeNull();
   });
 
   it('When action / Then renders form when open', async () => {
     render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
     await waitFor(() => {
-      expect(screen.getByTestId('modal')).toBeInTheDocument();
+      expect(screen.getByTestId('create-lead-form-page')).toBeInTheDocument();
     });
   });
 
@@ -100,7 +97,7 @@ describe('Given CreateLeadModal', () => {
 
   it('When action / Then shows duplicate warning', async () => {
     render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={['Acme']} />);
-    await waitFor(() => screen.getByTestId('modal'));
+    await waitFor(() => screen.getByTestId('create-lead-form-page'));
     const input = screen.getByPlaceholderText('e.g. Acme Corp');
     fireEvent.change(input, { target: { value: 'Acme' } });
     expect(screen.getByText(/potential duplicate/i)).toBeInTheDocument();
@@ -110,14 +107,14 @@ describe('Given CreateLeadModal', () => {
     const onSuccess = vi.fn();
     const onClose = vi.fn();
     render(<CreateLeadModal isOpen={true} onClose={onClose} onSuccess={onSuccess} existingLeads={[]} />);
-    await waitFor(() => screen.getByTestId('modal'));
+    await waitFor(() => screen.getByTestId('create-lead-form-page'));
 
     fireEvent.change(screen.getByPlaceholderText('e.g. Acme Corp'), { target: { value: 'NewCo' } });
     fireEvent.change(screen.getByPlaceholderText('e.g. John'), { target: { value: 'Alice' } });
     fireEvent.change(screen.getByPlaceholderText('name@company.com'), { target: { value: 'a@b.com' } });
     fireEvent.change(screen.getByPlaceholderText('+91 98765 43210'), { target: { value: '+91 9876543210' } });
 
-    const form = screen.getByTestId('modal').querySelector('form');
+    const form = screen.getByTestId('create-lead-form-page').querySelector('form');
     if (form) {
       fireEvent.submit(form);
     }
@@ -131,13 +128,13 @@ describe('Given CreateLeadModal', () => {
   it('When action / Then shows error on submit failure', async () => {
     mockCreateLead.mockRejectedValue(new Error('fail'));
     render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
-    await waitFor(() => screen.getByTestId('modal'));
+    await waitFor(() => screen.getByTestId('create-lead-form-page'));
 
     fireEvent.change(screen.getByPlaceholderText('e.g. Acme Corp'), { target: { value: 'NewCo' } });
     fireEvent.change(screen.getByPlaceholderText('e.g. John'), { target: { value: 'Alice' } });
     fireEvent.change(screen.getByPlaceholderText('name@company.com'), { target: { value: 'a@b.com' } });
     fireEvent.change(screen.getByPlaceholderText('+91 98765 43210'), { target: { value: '+91 9876543210' } });
-    const form = screen.getByTestId('modal').querySelector('form');
+    const form = screen.getByTestId('create-lead-form-page').querySelector('form');
     if (form) fireEvent.submit(form);
 
     await waitFor(() => {
@@ -154,7 +151,7 @@ describe('Given CreateLeadModal', () => {
 
   it('When action / Then fills in all form fields', async () => {
     render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
-    await waitFor(() => screen.getByTestId('modal'));
+    await waitFor(() => screen.getByTestId('create-lead-form-page'));
 
     fireEvent.change(screen.getByPlaceholderText('e.g. Acme Corp'), { target: { value: 'TestCo' } });
     const phoneField = document.querySelector('input[type="tel"]');
