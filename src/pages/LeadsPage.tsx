@@ -108,6 +108,8 @@ const LeadsPage = () => {
   const canDeleteLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.delete') ?? false);
   // Bulk import (A7) — flag-gated, and only for users holding leads.import
   // (admin-only by default; the backend enforces the same permission).
+  // RE §20 — Hot/Warm/Cold badge. Off unless the flag resolves true.
+  const showTemperature = useCrmFeatureFlag(RE_FLAGS.LEAD_TEMPERATURE);
   const bulkImportEnabled = useCrmFeatureFlag(RE_FLAGS.BULK_IMPORT);
   const canImportPermission = useCanExport('leads.import');
   const canImportLeads = canImportPermission && bulkImportEnabled;
@@ -591,7 +593,8 @@ const LeadsPage = () => {
     formatDate: formatters.formatDate,
     onInlineEdit: handleInlineEdit,
     ratings: ratingEnabled ? ratings : undefined,
-  }), [users, leadStages, canUpdateLead, canDeleteLead, handleOwnerChange, handleStatusChange, navigate, formatters, handleInlineEdit, ratingEnabled, ratings]);
+    showTemperature,
+  }), [showTemperature, users, leadStages, canUpdateLead, canDeleteLead, handleOwnerChange, handleStatusChange, navigate, formatters, handleInlineEdit, ratingEnabled, ratings]);
 
   const bulkActions = useMemo(() => [
     {

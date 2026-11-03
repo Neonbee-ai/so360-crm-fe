@@ -93,6 +93,20 @@ export interface Lead {
     /** Per-org rating (score band, or set by hand when rating_is_manual). */
     rating_category_id?: string | null;
     rating_is_manual?: boolean;
+    /** RE §20 — band stored by crm-be (null until first computed). */
+    temperature?: LeadTemperature | null;
+    temperature_score?: number | null;
+    temperature_factors?: LeadTemperatureFactors | null;
+}
+
+export type LeadTemperature = 'hot' | 'warm' | 'cold';
+
+export interface LeadTemperatureFactors {
+    budget_fit: number;
+    timeline: number;
+    engagement: number;
+    source_quality: number;
+    days_since_contact: number | null;
 }
 
 export type DealStage = 'Lead' | 'Qualified' | 'Proposal' | 'Negotiation' | 'Won' | 'Lost';

@@ -8,6 +8,7 @@
  */
 import { Check, Mail, Phone } from 'lucide-react';
 import type { Lead } from '../../types/crm';
+import LeadTemperatureBadge from './LeadTemperatureBadge';
 import { Badge, IconButton } from '@so360/design-system';
 
 interface LeadCardListProps {
@@ -15,6 +16,8 @@ interface LeadCardListProps {
   selectedIds: Set<string>;
   onToggleSelect: (id: string) => void;
   onRowClick: (lead: Lead) => void;
+  /** RE §20 — show the Hot/Warm/Cold badge (flag resolved by the caller). */
+  showTemperature?: boolean;
 }
 
 function contactName(lead: Lead): string {
@@ -33,6 +36,7 @@ export default function LeadCardList({
   selectedIds,
   onToggleSelect,
   onRowClick,
+  showTemperature = false,
 }: LeadCardListProps) {
   if (leads.length === 0) {
     return (
@@ -66,6 +70,9 @@ export default function LeadCardList({
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-semibold text-fg truncate">{lead.company_name}</span>
+                  {showTemperature && (
+                    <LeadTemperatureBadge temperature={lead.temperature} score={lead.temperature_score} className="ml-auto" />
+                  )}
                   {score > 0 && <span className={`text-xs font-bold shrink-0 ${scoreTone(score)}`}>{score}</span>}
                 </div>
                 {name && <p className="text-sm text-fg-subtle truncate">{name}</p>}

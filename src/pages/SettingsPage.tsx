@@ -14,6 +14,7 @@ import DuplicateRulesSettingsTab from './components/settings/DuplicateRulesSetti
 import QuoteApprovalSettingsTab from './components/settings/QuoteApprovalSettingsTab';
 import TaskReminderSettingsTab from './components/settings/TaskReminderSettingsTab';
 import SalesCommissionSettingsTab from './components/settings/SalesCommissionSettingsTab';
+import LeadTemperatureSettingsCard from './components/settings/LeadTemperatureSettingsCard';
 import { useCrmFeatureFlag, RE_FLAGS } from '../hooks/useCrmFeatureFlag';
 import { DL_CUSTOM_FIELDS_FLAG } from '../components/customFields/DlCustomFieldsPanel';
 
@@ -104,6 +105,7 @@ const SettingsPage = ({ onOpenIcps, onOpenDataSettings, onOpenEstimator, onOpenF
     const commissionsEnabled = useCrmFeatureFlag(RE_FLAGS.COMMISSIONS);
     const unitAllocationEnabled = useCrmFeatureFlag(RE_FLAGS.UNIT_ALLOCATION);
     const salesSettingsEnabled = commissionsEnabled || unitAllocationEnabled;
+    const leadTemperatureEnabled = useCrmFeatureFlag(RE_FLAGS.LEAD_TEMPERATURE);
     const [settings, setSettings] = useState<CRMSettings | null>(null);
     const [activeTab, setActiveTab] = useState<SettingsTab>('pipeline');
     const [isLoading, setIsLoading] = useState(true);
@@ -986,6 +988,7 @@ const SettingsPage = ({ onOpenIcps, onOpenDataSettings, onOpenEstimator, onOpenF
                 )}
                 {activeTab === 'scoring' && (
                     <div className="flex flex-col gap-nb-4">
+                        {leadTemperatureEnabled && <LeadTemperatureSettingsCard canWrite={canWriteSettings} />}
                         {/* ── Rules Section ── */}
                         <Card title="Lead Scoring Rules" padding="none" actions={(
                             <div className="flex items-center gap-2">
