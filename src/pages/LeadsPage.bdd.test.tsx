@@ -110,6 +110,7 @@ vi.mock('../components/leads/LeadsDataGrid', () => ({
           <div
             key={lead.id}
             data-testid={`lead-row-${lead.id}`}
+            data-owner-name={lead.owner?.full_name}
             onClick={() => props.onRowClick(lead)}
           >
             {lead.company_name} — {lead.status} — {lead.owner?.id}
@@ -354,6 +355,16 @@ describe('LeadsPage', () => {
       render(<LeadsPage />);
       await user.click(screen.getByText('New Lead'));
       expect(screen.getByTestId('create-lead-modal')).toBeInTheDocument();
+    });
+  });
+
+  describe('Given a lead whose owner was mapped before the users list loaded', () => {
+    it('When users arrive / Then the row shows the real owner, not the stale placeholder', async () => {
+      mockGetLeads.mockResolvedValue([{ ...leads[0], owner: { id: 'u1', full_name: 'Unknown User', email: '', avatar_url: '' } }]);
+      render(<LeadsPage />);
+      await waitFor(() => {
+        expect(screen.getByTestId('lead-row-l1')).toHaveAttribute('data-owner-name', 'Alice Rep');
+      });
     });
   });
 

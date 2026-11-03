@@ -922,6 +922,15 @@ describe('LeadDetailPage', () => {
     });
   });
 
+  describe('Given the lead was mapped with a stale owner placeholder', () => {
+    it('When the users list loads / Then the owner card shows the real owner name and email', async () => {
+      mockGetLeadById.mockResolvedValue(makeLead({ owner: { id: 'u1', full_name: 'Unknown User', email: '', avatar_url: '' } }));
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getAllByText('owner@test.com').length).toBeGreaterThan(0));
+      expect(screen.queryByText('Unknown User')).not.toBeInTheDocument();
+    });
+  });
+
   describe('Given the lead is not found', () => {
     it('When API returns null / Then shows not found state', async () => {
       mockGetLeadById.mockResolvedValue(null);
