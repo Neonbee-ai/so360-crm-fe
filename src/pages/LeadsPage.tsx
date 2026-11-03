@@ -25,6 +25,7 @@ import { ImportHub } from '../components/import/ImportHub';
 import { useCrmFeatureFlag, RE_FLAGS } from '../hooks/useCrmFeatureFlag';
 import { LeadsDataGrid, GridContext } from '../components/leads/LeadsDataGrid';
 import { LeadDetailPanel } from '../components/leads/LeadDetailPanel';
+import { withResolvedOwner } from '../utils/resolveLeadOwner';
 import LeadFilterBuilder from '../components/leads/LeadFilterBuilder';
 import { countActiveRules, type FilterGroup } from '../components/leads/leadFilterModel';
 import { buildLeadsQuery, DEFAULT_FILTERS, UNASSIGNED_OWNER, type FilterState } from './leadsListQuery';
@@ -302,7 +303,8 @@ const LeadsPage = () => {
   // Filtering/paging happen on the server; `leads` already is the filtered page.
   const sandboxTotal = isSandboxMode ? Math.min(total, sandboxEntryLimit) : total;
   const totalPages = Math.ceil(sandboxTotal / pageSize);
-  const paginatedLeads = leads;
+  // Owner identity comes from the users list so a lead mapped before users loaded never shows a stale placeholder.
+  const paginatedLeads = useMemo(() => leads.map((l) => withResolvedOwner(l, users)), [leads, users]);
 
   useEffect(() => { setCurrentPage(1); }, [filters]);
 

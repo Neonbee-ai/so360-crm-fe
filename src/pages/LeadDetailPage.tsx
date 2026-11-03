@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { eventBus } from '@so360/event-bus';
 import { publishLeadsChanged } from '../utils/leadEvents';
+import { resolveLeadOwner } from '../utils/resolveLeadOwner';
 import { useShell, useActivity, useShellBridge, useCurrentEntity } from '@so360/shell-context';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -225,6 +226,7 @@ const LeadDetailPage = () => {
     const [isChangingStatus, setIsChangingStatus] = useState(false);
     const [isChangingStage, setIsChangingStage] = useState(false);
     const [allUsers, setAllUsers] = useState<User[]>([]);
+    const owner = useMemo(() => resolveLeadOwner(lead?.owner, allUsers), [lead?.owner, allUsers]);
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [isCreatingTask, setIsCreatingTask] = useState(false);
     const [isCreatingDeal, setIsCreatingDeal] = useState(false);
@@ -762,18 +764,18 @@ const LeadDetailPage = () => {
                                         );
                                     })}
                                 </div>
-                            ) : lead.owner ? (
+                            ) : owner ? (
                                 <div className="flex items-center gap-nb-3">
                                     <div className="flex size-10 items-center justify-center overflow-hidden rounded-full bg-surface-raised text-sm font-medium text-fg">
-                                        {lead.owner.avatar_url ? (
-                                            <img src={lead.owner.avatar_url} alt={lead.owner.full_name} className="h-full w-full object-cover" />
+                                        {owner.avatar_url ? (
+                                            <img src={owner.avatar_url} alt={owner.full_name} className="h-full w-full object-cover" />
                                         ) : (
-                                            lead.owner.full_name?.charAt(0)
+                                            owner.full_name?.charAt(0)
                                         )}
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="truncate text-sm font-medium text-fg">{lead.owner.full_name}</p>
-                                        <p className="truncate text-xs text-fg-muted">{lead.owner.email}</p>
+                                        <p className="truncate text-sm font-medium text-fg">{owner.full_name}</p>
+                                        <p className="truncate text-xs text-fg-muted">{owner.email}</p>
                                     </div>
                                 </div>
                             ) : (
