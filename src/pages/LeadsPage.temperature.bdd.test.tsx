@@ -22,11 +22,20 @@ const mockViewsUpdate = vi.fn();
 const mockViewsDuplicate = vi.fn();
 const mockViewsSetDefault = vi.fn();
 const mockGetLeadsPaged = vi.fn();
+const mockGetLeadStats = vi.fn();
+const mockGetLeadStatusCounts = vi.fn();
+const mockExportLeads = vi.fn();
+vi.mock('../services/exportService', async (importActual) => ({
+  ...(await importActual<any>()),
+  exportService: { leads: (...a: any[]) => mockExportLeads(...a) },
+}));
 
 vi.mock('../services/crmService', () => ({
   crmService: {
     getLeads: (...a: any[]) => mockGetLeads(...a),
     getLeadsPaged: (...a: any[]) => mockGetLeadsPaged(...a),
+    getLeadStats: (...a: any[]) => mockGetLeadStats(...a),
+    getLeadStatusCounts: (...a: any[]) => mockGetLeadStatusCounts(...a),
     getSettings: (...a: any[]) => mockGetSettings(...a),
     getUsers: (...a: any[]) => mockGetUsers(...a),
     getPartners: (...a: any[]) => mockGetPartners(...a),
@@ -59,7 +68,8 @@ vi.mock('react-router-dom', () => ({
   useLocation: () => ({ pathname: '/crm/leads', search: '' }),
 }));
 
-vi.mock('@so360/shell-context', () => ({
+vi.mock('@so360/shell-context', async (importOriginal) => ({ ...(await importOriginal<any>()),
+  useDatasetSchema: () => ({ fields: [], isLoading: false, error: null }),
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useNotify: () => ({ emitNotification: vi.fn().mockResolvedValue(undefined) }),
   useActivity: () => ({ recordActivity: vi.fn().mockResolvedValue(undefined) }),
@@ -137,13 +147,12 @@ vi.mock('../components/leads/CreateLeadModal', () => ({
 }));
 
 import LeadsPage from './LeadsPage';
-import { listViewStorageKey } from '../hooks/useListViewState';
 
 /**
- * Feature: Hot / Warm / Cold filter on the leads list (RE plan E §20).
- * The filter and the grid badge exist only when
- * `submodule:crm:re_lead_temperature` is on. Filtering is over the bands
- * crm-be stored on each lead (tenant/org scoping is done by the BE read).
+ * Feature: Hot / Warm / Cold badge on the leads list (RE plan E §20).
+ * The grid badge exists only when
+ * `submodule:crm:re_lead_temperature` is on. Bands are the ones
+ * crm-be stored on each lead.
  */
 
 const lead = (id: string, company: string, temperature: string | null) => ({
@@ -167,6 +176,9 @@ beforeEach(() => {
   mockGetPartners.mockResolvedValue([]);
   mockGetSourceTypes.mockResolvedValue([]);
   mockViewsList.mockResolvedValue([]);
+  mockExportLeads.mockResolvedValue(undefined);
+  mockGetLeadStats.mockResolvedValue({ total: 4 });
+  mockGetLeadStatusCounts.mockResolvedValue({});
 });
 
 const loaded = async () => {
@@ -176,52 +188,22 @@ const loaded = async () => {
 
 describe('Given the leads list with lead temperature', () => {
   describe('When the flag is on', () => {
-    it('Then the temperature filter shows All, Hot, Warm and Cold and the grid is told to show badges', async () => {
+    it('Then the grid is told to show temperature badges', async () => {
       await loaded();
-      const select = screen.getByTestId('lead-temperature-filter') as HTMLSelectElement;
-      expect(Array.from(select.options).map((o) => o.textContent)).toEqual(['All Temperatures', 'Hot', 'Warm', 'Cold']);
-      expect(select.value).toBe('All');
       expect(capturedGridProps.context.showTemperature).toBe(true);
     });
 
-    it('Then choosing Hot keeps only hot leads', async () => {
+    it('Then there is no page-local temperature filter', async () => {
       await loaded();
-      fireEvent.change(screen.getByTestId('lead-temperature-filter'), { target: { value: 'hot' } });
-      await waitFor(() => expect(screen.queryByTestId('lead-row-w1')).not.toBeInTheDocument());
-      expect(screen.getByTestId('lead-row-h1')).toBeInTheDocument();
-      expect(screen.queryByTestId('lead-row-c1')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('lead-row-n1')).not.toBeInTheDocument();
-    });
-
-    it('Then going back to All restores every lead, including unbanded ones', async () => {
-      await loaded();
-      const select = screen.getByTestId('lead-temperature-filter');
-      fireEvent.change(select, { target: { value: 'cold' } });
-      await waitFor(() => expect(screen.queryByTestId('lead-row-h1')).not.toBeInTheDocument());
-      expect(screen.getByTestId('lead-row-c1')).toBeInTheDocument();
-      fireEvent.change(select, { target: { value: 'All' } });
-      await waitFor(() => expect(screen.getByTestId('lead-row-n1')).toBeInTheDocument());
-      expect(screen.getByTestId('lead-row-h1')).toBeInTheDocument();
-    });
-  });
-
-  describe('When the session restores filters saved before the temperature filter existed', () => {
-    it('Then the temperature filter falls back to All and every lead is listed', async () => {
-      sessionStorage.setItem(
-        listViewStorageKey('leads.filters'),
-        JSON.stringify({ search: '', status: 'All', owner: 'All', creator: 'All', dateRange: 'All', customDateStart: '', customDateEnd: '' }),
-      );
-      await loaded();
-      expect((screen.getByTestId('lead-temperature-filter') as HTMLSelectElement).value).toBe('All');
+      expect(screen.queryByTestId('lead-temperature-filter')).not.toBeInTheDocument();
       for (const id of ['h1', 'w1', 'c1', 'n1']) expect(screen.getByTestId(`lead-row-${id}`)).toBeInTheDocument();
     });
   });
 
   describe('When the flag is off', () => {
-    it('Then there is no temperature filter, no badges and every lead is listed', async () => {
+    it('Then no badges are shown and every lead is listed', async () => {
       flagState.temperatureOn = false;
       await loaded();
-      expect(screen.queryByTestId('lead-temperature-filter')).not.toBeInTheDocument();
       expect(capturedGridProps.context.showTemperature).toBe(false);
       for (const id of ['h1', 'w1', 'c1', 'n1']) expect(screen.getByTestId(`lead-row-${id}`)).toBeInTheDocument();
     });

@@ -60,7 +60,7 @@ beforeEach(() => {
 const openScoring = async () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByText('CRM Settings'));
-    fireEvent.click(screen.getByRole('button', { name: /lead scoring/i }));
+    fireEvent.click(screen.getByRole('tab', { name: /lead scoring/i }));
 };
 
 describe('Given CRM Settings → Lead Scoring', () => {
