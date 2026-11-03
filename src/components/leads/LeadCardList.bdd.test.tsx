@@ -34,7 +34,7 @@ const setup = (leads: Lead[], selected: string[] = []) => {
   return { onToggleSelect, onRowClick };
 };
 
-describe('LeadCardList', () => {
+describe('Given the LeadCardList', () => {
   it('renders a card per lead with company, contact and score', () => {
     setup([makeLead(), makeLead({ id: 'l2', company_name: 'Beta LLC' })]);
     expect(screen.getByTestId('lead-card-l1')).toBeInTheDocument();

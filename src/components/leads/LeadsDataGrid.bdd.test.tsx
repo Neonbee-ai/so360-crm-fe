@@ -80,7 +80,7 @@ function buildContext(overrides: Partial<GridContext> = {}): GridContext {
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
-describe('LeadsDataGrid — rendering', () => {
+describe('Given the LeadsDataGrid — rendering', () => {
   it('shows loading skeleton when isLoading=true', () => {
     render(
       <LeadsDataGrid
@@ -139,7 +139,7 @@ describe('LeadsDataGrid — rendering', () => {
   });
 });
 
-describe('LeadsDataGrid — row interaction', () => {
+describe('Given the LeadsDataGrid — row interaction', () => {
   it('calls onRowClick when row is clicked', () => {
     const onRowClick = vi.fn();
     const lead = makeLead();
@@ -176,7 +176,7 @@ describe('LeadsDataGrid — row interaction', () => {
 // Delete item was previously gated on canUpdate (leads.update), so a user with
 // update-but-not-delete permission could see and trigger it even though the
 // backend already rejects the call. It must now be gated on canDelete independently.
-describe('LeadsDataGrid — row context menu Delete permission gating', () => {
+describe('Given the LeadsDataGrid — row context menu Delete permission gating', () => {
   it('hides the row Delete item when canDelete=false, even if canUpdate=true', () => {
     const lead = makeLead();
     render(
@@ -221,7 +221,7 @@ describe('LeadsDataGrid — row context menu Delete permission gating', () => {
   });
 });
 
-describe('LeadsDataGrid — row selection', () => {
+describe('Given the LeadsDataGrid — row selection', () => {
   it('selects a row via checkbox', () => {
     const leads = [makeLead()];
     render(<LeadsDataGrid leads={leads} context={buildContext()} onRowClick={vi.fn()} />);
@@ -254,7 +254,7 @@ describe('LeadsDataGrid — row selection', () => {
   });
 });
 
-describe('LeadsDataGrid — inline cell editing', () => {
+describe('Given the LeadsDataGrid — inline cell editing', () => {
   it('opens an editor on double-click of an editable cell and commits on Enter', () => {
     const onInlineEdit = vi.fn();
     render(<LeadsDataGrid leads={[makeLead()]} context={buildContext({ onInlineEdit })} onRowClick={vi.fn()} />);
@@ -309,7 +309,7 @@ describe('LeadsDataGrid — inline cell editing', () => {
   });
 });
 
-describe('LeadsDataGrid — responsive', () => {
+describe('Given the LeadsDataGrid — responsive', () => {
   const setWidth = (w: number) =>
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: w });
 
@@ -333,7 +333,7 @@ describe('LeadsDataGrid — responsive', () => {
   });
 });
 
-describe('LeadsDataGrid — keyboard navigation', () => {
+describe('Given the LeadsDataGrid — keyboard navigation', () => {
   const twoLeads = () => [makeLead(), makeLead({ id: 'l2', company_name: 'Beta' })];
 
   it('ArrowDown focuses the first row and Enter opens it', () => {
@@ -385,7 +385,7 @@ describe('LeadsDataGrid — keyboard navigation', () => {
   });
 });
 
-describe('LeadsDataGrid — bulk action menus', () => {
+describe('Given the LeadsDataGrid — bulk action menus', () => {
   const selectAll = () => fireEvent.click(screen.getByTestId('bulk-select-all'));
 
   it('runs an immediate (onClick) bulk action', () => {
@@ -435,7 +435,7 @@ describe('LeadsDataGrid — bulk action menus', () => {
   });
 });
 
-describe('LeadsDataGrid — column controls', () => {
+describe('Given the LeadsDataGrid — column controls', () => {
   it('opens column manager modal on Columns button click', () => {
     render(<LeadsDataGrid leads={[makeLead()]} context={buildContext()} onRowClick={vi.fn()} />);
     fireEvent.click(screen.getByText('Columns'));
@@ -459,7 +459,7 @@ describe('LeadsDataGrid — column controls', () => {
   });
 });
 
-describe('LeadsDataGrid — sorting', () => {
+describe('Given the LeadsDataGrid — sorting', () => {
   it('renders multi-column sort controls', () => {
     const leads = [
       makeLead({ id: 'l1', company_name: 'Zebra Inc', created_at: '2024-02-01T00:00:00Z' }),
@@ -478,7 +478,7 @@ describe('LeadsDataGrid — sorting', () => {
   });
 });
 
-describe('LeadsDataGrid — inline edit permissions', () => {
+describe('Given the LeadsDataGrid — inline edit permissions', () => {
   it('renders status as select when canUpdate=true', () => {
     render(
       <LeadsDataGrid
@@ -504,7 +504,7 @@ describe('LeadsDataGrid — inline edit permissions', () => {
   });
 });
 
-describe('LeadsDataGrid — custom fields', () => {
+describe('Given the LeadsDataGrid — custom fields', () => {
   it('displays custom field values from lead.custom_fields', () => {
     const lead = makeLead({
       custom_fields: { industry: 'Retail', city: 'Dubai', priority: 'High' },
@@ -517,7 +517,7 @@ describe('LeadsDataGrid — custom fields', () => {
   });
 });
 
-describe('LeadsDataGrid — lead count display', () => {
+describe('Given the LeadsDataGrid — lead count display', () => {
   it('shows correct lead count in toolbar', () => {
     const leads = [makeLead(), makeLead({ id: 'l2', company_name: 'Beta' })];
     render(<LeadsDataGrid leads={leads} context={buildContext()} onRowClick={vi.fn()} />);
@@ -530,7 +530,7 @@ describe('LeadsDataGrid — lead count display', () => {
   });
 });
 
-describe('LeadsDataGrid — group by', () => {
+describe('Given the LeadsDataGrid — group by', () => {
   const twoStatuses = () => [
     makeLead({ id: 'g1', company_name: 'Acme Corp', status: 'New' }),
     makeLead({ id: 'g2', company_name: 'Beta LLC', status: 'Qualified' }),
@@ -582,7 +582,7 @@ describe('LeadsDataGrid — group by', () => {
   });
 });
 
-describe('LeadsDataGrid — compact controls slot (Comb toolbarEnd)', () => {
+describe('Given the LeadsDataGrid — compact controls slot (Comb toolbarEnd)', () => {
   it('Given a controls slot / When rendered / Then group, density and columns controls portal into it, compact', () => {
     const slot = document.createElement('div');
     document.body.appendChild(slot);
@@ -600,7 +600,7 @@ describe('LeadsDataGrid — compact controls slot (Comb toolbarEnd)', () => {
   });
 });
 
-describe('LeadsDataGrid — header and inline editors (Comb M3)', () => {
+describe('Given the LeadsDataGrid — header and inline editors (Comb M3)', () => {
   it('Given sortable columns / When rendered / Then headers are quiet text buttons, not bordered Button pills', () => {
     render(<LeadsDataGrid leads={[makeLead()]} context={buildContext()} onRowClick={vi.fn()} />);
     const sort = screen.getByTestId('sort-company_name');
