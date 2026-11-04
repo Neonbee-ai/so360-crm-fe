@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useNavigationType } from 'react-router-dom';
+import { shouldClearLeadSearch } from './leadSearchReset';
 import {
   Filter,
   Plus,
@@ -160,6 +161,14 @@ const LeadsPage = () => {
   // Filters — persisted so opening a lead and coming back keeps the list the
   // user built rather than resetting to every-lead, page 1.
   const [filters, setFilters] = usePersistedState<FilterState>('leads.filters', DEFAULT_FILTERS);
+  // The search box, unlike the other filters, clears on a fresh visit (sidebar /
+  // link = PUSH). Back from a lead (POP) or a reload keeps it; ?q= wins.
+  const navigationType = useNavigationType();
+  const clearSearchOnEntry = useRef(shouldClearLeadSearch(navigationType, location.search)).current;
+  useEffect(() => {
+    if (clearSearchOnEntry) setFilters((prev) => (prev.search ? { ...prev, search: '' } : prev));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Saved views
   const [savedViews, setSavedViews] = useState<SavedFilterView[]>(loadSavedViews);
@@ -242,7 +251,7 @@ const LeadsPage = () => {
 
   // Server-side paging: filters, search, owner/creator/rating, date range and the advanced tree
   // are all resolved by GET /leads?meta=true; only the visible page crosses the wire.
-  const [debouncedSearch, setDebouncedSearch] = useState(filters.search);
+  const [debouncedSearch, setDebouncedSearch] = useState(clearSearchOnEntry ? '' : filters.search);
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(filters.search), 300);
     return () => clearTimeout(t);

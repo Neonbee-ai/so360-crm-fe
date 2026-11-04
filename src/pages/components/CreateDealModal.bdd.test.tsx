@@ -212,6 +212,7 @@ describe('CreateDealModal', () => {
       await waitFor(() => {
         expect(mockCreateDeal).toHaveBeenCalledWith(
           expect.objectContaining({ owner_person_id: 'p1' }),
+          expect.objectContaining({ idempotencyKey: expect.any(String) }),
         );
       });
     });
@@ -224,6 +225,7 @@ describe('CreateDealModal', () => {
       await waitFor(() => {
         expect(mockCreateDeal).toHaveBeenCalledWith(
           expect.objectContaining({ company: 'Acme', lead_id: 'lead-1' }),
+          expect.objectContaining({ idempotencyKey: expect.any(String) }),
         );
       });
     });
@@ -262,6 +264,7 @@ describe('CreateDealModal', () => {
       await waitFor(() => {
         expect(mockCreateDeal).toHaveBeenCalledWith(
           expect.objectContaining({ value: 15000 }),
+          expect.objectContaining({ idempotencyKey: expect.any(String) }),
         );
       });
     });
@@ -324,6 +327,36 @@ describe('CreateDealModal', () => {
     });
   });
 
+  describe('Given a submit failed on the network', () => {
+    it('When the same form is submitted again / Then the retry reuses the same Idempotency-Key', async () => {
+      mockCreateDeal.mockRejectedValueOnce(new Error('timeout')).mockResolvedValueOnce({ id: 'd1' });
+      render(<CreateDealModal {...defaultProps} />);
+      await waitFor(() => expect((document.querySelector('input[type="text"]') as HTMLInputElement).value).toBe('Acme - 20260804'));
+      fireEvent.submit(document.querySelector('form')!);
+      await waitFor(() => expect(mockShowError).toHaveBeenCalled());
+      fireEvent.submit(document.querySelector('form')!);
+      await waitFor(() => expect(mockCreateDeal).toHaveBeenCalledTimes(2));
+      const firstKey = mockCreateDeal.mock.calls[0][1].idempotencyKey;
+      expect(firstKey).toEqual(expect.any(String));
+      expect(mockCreateDeal.mock.calls[1][1].idempotencyKey).toBe(firstKey);
+    });
+
+    it('When the form is edited and submitted again / Then a new Idempotency-Key is used', async () => {
+      mockCreateDeal.mockRejectedValueOnce(new Error('timeout')).mockResolvedValueOnce({ id: 'd1' });
+      render(<CreateDealModal {...defaultProps} />);
+      await waitFor(() => expect((document.querySelector('input[type="text"]') as HTMLInputElement).value).toBe('Acme - 20260804'));
+      fireEvent.submit(document.querySelector('form')!);
+      await waitFor(() => expect(mockShowError).toHaveBeenCalled());
+      const nameInput = document.querySelector('input[type="text"]') as HTMLInputElement;
+      fireEvent.change(nameInput, { target: { value: 'Renamed deal' } });
+      fireEvent.submit(document.querySelector('form')!);
+      await waitFor(() => expect(mockCreateDeal).toHaveBeenCalledTimes(2));
+      expect(mockCreateDeal.mock.calls[1][1].idempotencyKey).not.toBe(
+        mockCreateDeal.mock.calls[0][1].idempotencyKey,
+      );
+    });
+  });
+
   describe('Given a lead has no company name (nullable DB column)', () => {
     it('When companyName is null / Then submit succeeds and falls back to the lead name as company', async () => {
       render(
@@ -342,6 +375,7 @@ describe('CreateDealModal', () => {
       await waitFor(() => {
         expect(mockCreateDeal).toHaveBeenCalledWith(
           expect.objectContaining({ company: 'John Doe' }),
+          expect.objectContaining({ idempotencyKey: expect.any(String) }),
         );
       });
       expect(screen.queryByText('Please select a customer or enter a company name.')).not.toBeInTheDocument();
@@ -361,6 +395,7 @@ describe('CreateDealModal', () => {
             start_date: expect.any(String),
             expected_close: expect.any(String),
           }),
+          expect.objectContaining({ idempotencyKey: expect.any(String) }),
         );
       });
     });
@@ -373,6 +408,7 @@ describe('CreateDealModal', () => {
       await waitFor(() => {
         expect(mockCreateDeal).toHaveBeenCalledWith(
           expect.objectContaining({ lead_id: undefined }),
+          expect.objectContaining({ idempotencyKey: expect.any(String) }),
         );
       });
     });
@@ -432,6 +468,7 @@ describe('CreateDealModal', () => {
       await waitFor(() => {
         expect(mockCreateDeal).toHaveBeenCalledWith(
           expect.objectContaining({ owner_person_id: 'p1' }),
+          expect.objectContaining({ idempotencyKey: expect.any(String) }),
         );
       });
     });
@@ -443,6 +480,24 @@ describe('CreateDealModal', () => {
 
       fireEvent.submit(document.querySelector('form')!);
       await waitFor(() => expect(mockCreateDeal).toHaveBeenCalled());
+    });
+  });
+
+  describe('Given the page is served from an insecure context where crypto.randomUUID is unavailable', () => {
+    it('When the form is submitted / Then an Idempotency-Key is still sent', async () => {
+      const original = (globalThis.crypto as any).randomUUID;
+      Object.defineProperty(globalThis.crypto, 'randomUUID', { value: undefined, configurable: true });
+      try {
+        mockCreateDeal.mockResolvedValueOnce({ id: 'd1' });
+        render(<CreateDealModal {...defaultProps} />);
+        await waitFor(() => expect((document.querySelector('input[type="text"]') as HTMLInputElement).value).toBe('Acme - 20260804'));
+        fireEvent.submit(document.querySelector('form')!);
+        await waitFor(() => expect(mockCreateDeal).toHaveBeenCalledTimes(1));
+        expect(mockCreateDeal.mock.calls[0][1].idempotencyKey).toEqual(expect.any(String));
+        expect(mockCreateDeal.mock.calls[0][1].idempotencyKey.length).toBeGreaterThan(8);
+      } finally {
+        Object.defineProperty(globalThis.crypto, 'randomUUID', { value: original, configurable: true });
+      }
     });
   });
 });
