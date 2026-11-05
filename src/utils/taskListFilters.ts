@@ -17,7 +17,8 @@ export interface TaskListFilters {
     assignee: string;
     /**
      * Only tasks with a reminder. DECISION: "has a reminder" = the task has a
-     * reminder time (remind_at) or is of the Reminder type (server rule).
+     * reminder time (reminder_at), a lead time before due (reminder_offset_minutes)
+     * or is of the Reminder type (server rule).
      */
     hasReminder: boolean;
     /** Empty = the server's smart order. */

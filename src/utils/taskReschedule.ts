@@ -21,8 +21,9 @@ export function addCalendarDays(day: string, days: number): string {
  *  - date: the picked day.
  *
  * The time of day is kept. A task with no time of day stays date-only, so no
- * time is invented for it. The reminder lead time (reminder_minutes_before) is
- * untouched and the server re-derives remind_at from the new due date.
+ * time is invented for it. The reminder lead time (reminder_offset_minutes) is
+ * untouched, so an offset reminder follows the new due date; an absolute
+ * reminder_at stays as set (server rule: reminder_at wins).
  */
 export function rescheduleDueDate(
     task: { due_date?: string | null },
