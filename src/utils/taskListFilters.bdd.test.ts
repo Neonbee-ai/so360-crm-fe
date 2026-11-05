@@ -200,3 +200,28 @@ describe('Given the richer task types (Pulse 552552b8)', () => {
     expect(parseTaskListFilters(new URLSearchParams('type=FAX,DEMO')).types).toEqual(['DEMO']);
   });
 });
+
+describe('filtersFromFilterValues (552552b8 smart list FilterBar)', () => {
+    it('Given a full values object / When applied / Then every owned key maps to its filter, search/scope/sort kept', async () => {
+        const { filtersFromFilterValues, DEFAULT_TASK_FILTERS } = await import('./taskListFilters');
+        const base = { ...DEFAULT_TASK_FILTERS, scope: 'team' as const, search: 'acme', sort: 'due' as const };
+        const next = filtersFromFilterValues(base, {
+            type: ['CALL', 'DEMO'], priority: ['HIGH'], status: ['OPEN'], due: 'today', assignee: 'u2', reminder: '1', other: 'x',
+        });
+        expect(next).toMatchObject({
+            scope: 'team', search: 'acme', sort: 'due',
+            types: ['CALL', 'DEMO'], priorities: ['HIGH'], statuses: ['OPEN'], due: 'today', assignee: 'u2', hasReminder: true,
+        });
+    });
+
+    it('Given keys missing or null / When applied / Then those filters are cleared', async () => {
+        const { filtersFromFilterValues, DEFAULT_TASK_FILTERS } = await import('./taskListFilters');
+        const base = { ...DEFAULT_TASK_FILTERS, types: ['CALL'], due: 'overdue', hasReminder: true };
+        expect(filtersFromFilterValues(base, { due: null })).toMatchObject({ types: [], due: '', hasReminder: false });
+    });
+
+    it('Given a non-string scalar / When applied / Then it is treated as cleared', async () => {
+        const { filtersFromFilterValues, DEFAULT_TASK_FILTERS } = await import('./taskListFilters');
+        expect(filtersFromFilterValues({ ...DEFAULT_TASK_FILTERS, assignee: 'u1' }, { assignee: 42 }).assignee).toBe('');
+    });
+});

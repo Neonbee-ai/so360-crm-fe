@@ -12,6 +12,8 @@ const mockCrmService = vi.hoisted(() => ({
   getDeals: vi.fn(),
 }));
 
+// Legacy list path: the smart list (552552b8) is covered in tasks/SmartTasksList.bdd.test.tsx.
+vi.mock('./tasks/taskSmartListFlag', () => ({ TASK_SMART_LIST_FLAG: 'submodule:crm:task_smart_list', useTaskSmartListEnabled: () => false }));
 vi.mock('../services/crmService', () => ({
   crmService: mockCrmService,
 }));

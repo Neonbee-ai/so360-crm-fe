@@ -232,6 +232,24 @@ export function applyFilterChange(
     }
 }
 
+/** FilterBar keys the Tasks page owns; anything else in the values object is ignored. */
+export const TASK_FILTER_KEYS = ['type', 'priority', 'status', 'due', 'assignee', 'reminder'] as const;
+
+/**
+ * Applies the whole FilterBar values object (the DS ListFilters hands back the
+ * full set on every change); a missing or empty key clears that filter.
+ */
+export function filtersFromFilterValues(
+    f: TaskListFilters,
+    values: Record<string, unknown>,
+): TaskListFilters {
+    return TASK_FILTER_KEYS.reduce((acc, key) => {
+        const v = values[key];
+        const value = Array.isArray(v) ? v.map(String) : typeof v === 'string' ? v : null;
+        return applyFilterChange(acc, key, value);
+    }, f);
+}
+
 /** Clear all: drops every filter and the search but keeps the tab and the sort. */
 export function clearTaskFilters(f: TaskListFilters): TaskListFilters {
     return { ...DEFAULT_TASK_FILTERS, scope: f.scope, sort: f.sort, order: f.order };
