@@ -9,6 +9,7 @@ const createIcon = (name: string) => {
 // Exhaustive list of all lucide-react icons used across the CRM FE codebase.
 // No Proxy — explicit exports only, to avoid intercepting React internals.
 export const Search = createIcon('Search');
+export const Bell = createIcon('Bell');
 export const Filter = createIcon('Filter');
 export const Plus = createIcon('Plus');
 export const User = createIcon('User');

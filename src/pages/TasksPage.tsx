@@ -11,11 +11,13 @@ import { dueDateCalendarDay, hasTimeComponent } from '../utils/datetime';
 import TaskModal from './components/TaskModal';
 import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
 import { Modal } from '../components/common/Modal';
+import SmartTasksList from './tasks/SmartTasksList';
+import { useTaskSmartListEnabled } from './tasks/taskSmartListFlag';
 
 type SortField = 'title' | 'due_date' | 'status' | 'assigned_to' | 'associated_with';
 type SortDirection = 'asc' | 'desc' | null;
 
-const TasksPage = () => {
+const LegacyTasksPage = () => {
     const navigate = useNavigate();
     const formatters = useCRMFormatters();
     const shell = useShell();
@@ -477,5 +479,12 @@ const TasksPage = () => {
         </ListPageTemplate>
     );
 };
+
+/**
+ * Tasks route. With submodule:crm:task_smart_list on, renders the
+ * priority-driven list (Pulse 552552b8); off or still loading, the legacy
+ * list is unchanged.
+ */
+const TasksPage = () => (useTaskSmartListEnabled() ? <SmartTasksList /> : <LegacyTasksPage />);
 
 export default TasksPage;

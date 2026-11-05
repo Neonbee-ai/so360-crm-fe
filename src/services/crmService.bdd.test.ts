@@ -168,7 +168,8 @@ describe('crmService — dashboard stats', () => {
       };
       mockSuccess(analyticsStats);  // /analytics/dashboard
       mockSuccess([]);               // /analytics/performance
-      mockSuccess([]);               // getTasks
+      mockSuccess({ items: [], total: 0, counts: { overdue: 0, today: 0, next_7_days: 0, no_due_date: 0, done: 0, total: 0 }, page: 1, limit: 25, truncated: false });               // reminder list (GET /tasks/list)
+      mockSuccess({ items: [], total: 0, counts: { overdue: 0, today: 0, next_7_days: 0, no_due_date: 0, done: 0, total: 0 }, page: 1, limit: 25, truncated: false });               // open-task count (GET /tasks/list)
       const result = await crmService.getDashboardStats({ period: 'monthly' });
       expect(result.financials.totalRevenue).toBe(1000);
     });
@@ -257,7 +258,9 @@ describe('crmService — dashboard stats streaming + fresh (Pulse b671c161)', ()
   it('Given onKpis / When the dashboard read answers / Then onKpis gets the KPI part with pending=true and empty team + reminders', async () => {
     mockSuccess(analyticsStats);
     mockSuccess([{ user: { id: 'u1', name: 'A', email: 'a@x' }, metrics: { won: 2, leads: 3, activityPoints: 4, conversionRate: 50 } }]);
-    mockSuccess([{ id: 't1', status: 'OPEN', type: 'REMINDER', due_date: '2026-01-01' }]);
+    // Reminders + open count come from GET /tasks/list (two calls: reminders, then count).
+    mockSuccess({ items: [{ id: 't1', status: 'OPEN', type: 'REMINDER', due_date: '2026-01-01' }], total: 1 });
+    mockSuccess({ items: [], total: 1 });
     const onKpis = vi.fn();
     const result = await crmService.getDashboardStats({ period: 'monthly' }, { onKpis });
     expect(onKpis).toHaveBeenCalledTimes(1);
@@ -275,7 +278,8 @@ describe('crmService — dashboard stats streaming + fresh (Pulse b671c161)', ()
     const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     mockSuccess(analyticsStats);
     mockSuccess([]);
-    mockSuccess([]);
+    mockSuccess({ items: [], total: 0 });
+    mockSuccess({ items: [], total: 0 });
     const result = await crmService.getDashboardStats({ period: 'monthly' }, { onKpis: () => { throw new Error('boom'); } });
     expect(result.financials.totalRevenue).toBe(1000);
     spy.mockRestore();
@@ -285,7 +289,8 @@ describe('crmService — dashboard stats streaming + fresh (Pulse b671c161)', ()
     const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     mockError(500, { message: 'down' });
     mockSuccess([]);
-    mockSuccess([]);
+    mockSuccess({ items: [], total: 0 });
+    mockSuccess({ items: [], total: 0 });
     const onKpis = vi.fn();
     const result = await crmService.getDashboardStats({ period: 'monthly' }, { onKpis });
     expect(onKpis).not.toHaveBeenCalled();
@@ -296,7 +301,8 @@ describe('crmService — dashboard stats streaming + fresh (Pulse b671c161)', ()
   it('Given fresh=true / When getDashboardStats is called / Then the dashboard URL carries fresh=1', async () => {
     mockSuccess(analyticsStats);
     mockSuccess([]);
-    mockSuccess([]);
+    mockSuccess({ items: [], total: 0 });
+    mockSuccess({ items: [], total: 0 });
     await crmService.getDashboardStats({ period: 'monthly' }, { fresh: true });
     expect(String(fetchMock.mock.calls[0][0])).toContain('fresh=1');
   });
@@ -304,7 +310,8 @@ describe('crmService — dashboard stats streaming + fresh (Pulse b671c161)', ()
   it('Given no opts / When getDashboardStats is called / Then the dashboard URL has no fresh flag', async () => {
     mockSuccess(analyticsStats);
     mockSuccess([]);
-    mockSuccess([]);
+    mockSuccess({ items: [], total: 0 });
+    mockSuccess({ items: [], total: 0 });
     await crmService.getDashboardStats({ period: 'monthly' });
     expect(String(fetchMock.mock.calls[0][0])).not.toContain('fresh=');
   });

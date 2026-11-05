@@ -8,6 +8,8 @@ const mockGetUsers = vi.fn();
 const mockUpdateTask = vi.fn();
 const mockDeleteTask = vi.fn();
 
+// Legacy list path: the smart list (552552b8) is covered in tasks/SmartTasksList.bdd.test.tsx.
+vi.mock('./tasks/taskSmartListFlag', () => ({ TASK_SMART_LIST_FLAG: 'submodule:crm:task_smart_list', useTaskSmartListEnabled: () => false }));
 vi.mock('../services/crmService', () => ({
   crmService: {
     getTasks: (...a: any[]) => mockGetTasks(...a),
