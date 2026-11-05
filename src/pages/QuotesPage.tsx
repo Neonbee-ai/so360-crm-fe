@@ -338,10 +338,18 @@ const QuotesPage = () => {
         return effectiveQuotes.slice(start, start + pageSize);
     }, [effectiveQuotes, currentPage, pageSize]);
 
+    // One create per click burst: a ref (not state) so a second click/Enter in
+    // the same tick — before React re-renders the disabled button — is dropped.
+    const createInFlightRef = useRef(false);
+    const [isCreatingQuote, setIsCreatingQuote] = useState(false);
+
     const handleCreateQuote = async () => {
+        if (createInFlightRef.current) return;
         if (!selectedDealId) return;
         const quoteNumber = manualQuoteNumber.trim();
         if (!quoteAutoNumbering && !quoteNumber) return;
+        createInFlightRef.current = true;
+        setIsCreatingQuote(true);
         try {
             const newQuote = await crmService.createQuote({
                 deal_id: selectedDealId,
@@ -355,6 +363,9 @@ const QuotesPage = () => {
             if (/quote number is required/i.test(err?.message || '')) setQuoteAutoNumbering(false);
             setError(err.message || 'Failed to create quote');
             toast.error(err.message || 'Failed to create quote');
+        } finally {
+            createInFlightRef.current = false;
+            setIsCreatingQuote(false);
         }
     };
 
@@ -993,9 +1004,10 @@ const QuotesPage = () => {
                                 type="button"
                                 variant="primary"
                                 onClick={handleCreateQuote}
-                                disabled={!selectedDealId || (!quoteAutoNumbering && !manualQuoteNumber.trim())}
+                                disabled={isCreatingQuote || !selectedDealId || (!quoteAutoNumbering && !manualQuoteNumber.trim())}
+                                aria-busy={isCreatingQuote || undefined}
                             >
-                                Create Quote
+                                {isCreatingQuote ? 'Creating…' : 'Create Quote'}
                             </Button>
                         </>
                     }

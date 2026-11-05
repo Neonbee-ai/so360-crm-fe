@@ -1,4 +1,4 @@
-import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType, Lead, DealFilters, CRMSettings, InventoryItem, SalesRep, LeadProduct, DealProduct, LeadScoringRule, ScoreCategory, Stakeholder, StakeholderActivitySummary, Meeting, DealNamingConfig, DEFAULT_DEAL_NAMING_CONFIG, UpNextTask } from '../types/crm';
+import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType, Lead, DealFilters, CRMSettings, InventoryItem, SalesRep, LeadProduct, DealProduct, LeadScoringRule, ScoreCategory, Stakeholder, StakeholderActivitySummary, Meeting, MeetingProviderAvailability, DealNamingConfig, DEFAULT_DEAL_NAMING_CONFIG, UpNextTask } from '../types/crm';
 import { DASHBOARD_REMINDER_FILTERS, DASHBOARD_REMINDER_LIMIT, DEFAULT_TASK_FILTERS, toTaskListApiParams } from '../utils/taskListFilters';
 import { createRequestCache } from './requestCache';
 import { notifyQuotaExceeded } from './quotaExceeded';
@@ -409,10 +409,11 @@ class ApiClient {
         return { data: data as T, total: Number.isNaN(parsedTotal) ? null : parsedTotal };
     }
 
-    async post<T>(endpoint: string, data: any): Promise<T> {
+    async post<T>(endpoint: string, data: any, options?: { headers?: Record<string, string> }): Promise<T> {
         return this.request<T>(endpoint, {
             method: 'POST',
             body: JSON.stringify(data),
+            ...(options?.headers ? { headers: options.headers } : {}),
         });
     }
 
@@ -863,8 +864,12 @@ export const dealsApi = {
     /**
      * POST /deals - Create a new deal
      */
-    create: async (data: any): Promise<Deal> => {
-        const deal = await apiClient.post<any>('/deals', data);
+    create: async (data: any, options?: { idempotencyKey?: string }): Promise<Deal> => {
+        const deal = await apiClient.post<any>(
+            '/deals',
+            data,
+            options?.idempotencyKey ? { headers: { 'Idempotency-Key': options.idempotencyKey } } : undefined,
+        );
         return mapDealFromApi(deal);
     },
 
@@ -1237,6 +1242,10 @@ export const meetingsApi = {
     },
     remove: async (id: string): Promise<void> => {
         await apiClient.delete(`/meetings/${id}`);
+    },
+    /** Pulse ab92e893: Google Meet / Teams / Zoom and whether each is connected. */
+    providers: async (): Promise<MeetingProviderAvailability[]> => {
+        return apiClient.get('/meetings/providers');
     },
 };
 

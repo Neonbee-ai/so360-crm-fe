@@ -85,6 +85,7 @@ export const Link2 = createIcon('Link2');
 export const Unlink = createIcon('Unlink');
 export const Eye = createIcon('Eye');
 export const MapPin = createIcon('MapPin');
+export const Video = createIcon('Video');
 export const FileSignature = createIcon('FileSignature');
 export const Check = createIcon('Check');
 export const RefreshCw = createIcon('RefreshCw');

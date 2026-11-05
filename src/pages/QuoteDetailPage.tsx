@@ -595,7 +595,10 @@ const QuoteDetailPage = () => {
                             <Card title="Customer">
                                 <Button
                                     variant="secondary"
-                                    onClick={() => navigate(`/crm/customers/${customer.id}`)}
+                                    // id is null when crm-be could only name the party from the
+                                    // deal's company (no active customer lead to open).
+                                    disabled={!customer.id}
+                                    onClick={() => { if (customer.id) navigate(`/crm/customers/${customer.id}`); }}
                                     className="w-full !h-auto !justify-start !whitespace-normal !text-left !py-nb-2"
                                 >
                                     <span className="flex min-w-0 flex-col items-start">

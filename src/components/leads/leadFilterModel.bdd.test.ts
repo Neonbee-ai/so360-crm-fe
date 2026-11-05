@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   FILTERABLE_FIELDS,
+  ATTRIBUTION_FILTERABLE_FIELDS,
+  filterableFields,
   getField,
   operatorsForType,
   operatorTakesNoValue,
@@ -277,5 +279,30 @@ describe('edge cases & full-branch coverage', () => {
     root = updateRule(root, [0], { op: 'between' }); // value -> ['', '']
     root = updateRule(root, [0], { op: 'eq' }); // scalar op -> ''
     expect((root.rules[0] as FilterRule).value).toBe('');
+  });
+});
+
+describe('Given the RE §26 attribution fields', () => {
+  describe('When filterableFields() is called without the flag', () => {
+    it('then the base catalogue is returned unchanged', () => {
+      expect(filterableFields()).toBe(FILTERABLE_FIELDS);
+      expect(filterableFields().map((f) => f.key)).not.toContain('utm_source');
+    });
+  });
+  describe('When filterableFields(true) is called', () => {
+    it('then every attribution field is appended as a text field after the base ones', () => {
+      const keys = filterableFields(true).map((f) => f.key);
+      expect(keys.slice(0, FILTERABLE_FIELDS.length)).toEqual(FILTERABLE_FIELDS.map((f) => f.key));
+      for (const f of ATTRIBUTION_FILTERABLE_FIELDS) {
+        expect(keys).toContain(f.key);
+        expect(f.type).toBe('text');
+      }
+      expect(keys).toEqual(expect.arrayContaining(['utm_source', 'utm_campaign', 'ad_platform', 'crm_campaign_id']));
+    });
+  });
+  describe('When a saved filter references an attribution key', () => {
+    it('then getField resolves it', () => {
+      expect(getField('utm_medium')?.type).toBe('text');
+    });
   });
 });
