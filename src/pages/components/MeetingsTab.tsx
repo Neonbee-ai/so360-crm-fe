@@ -1,10 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Calendar, Plus, MapPin, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { Calendar, Plus, MapPin, CheckCircle2, XCircle, Clock, Video } from 'lucide-react';
 import { meetingsApi } from '../../services/crmService';
 import { Meeting } from '../../types/crm';
 import MeetingModal from './MeetingModal';
 import { PromptDialog } from '../../components/PromptDialog';
 import { useConfirm, Button, Badge, EmptyState, IconButton, Skeleton } from '@so360/design-system';
+import { useOnlineMeetingsEnabled } from './onlineMeetingsFlag';
+
+const PROVIDER_LABEL: Record<string, string> = {
+    google_meet: 'Google Meet',
+    microsoft_teams: 'Teams',
+    zoom: 'Zoom',
+};
 
 interface Props {
     leadId?: string;
@@ -32,6 +39,7 @@ const MeetingsTab: React.FC<Props> = ({ leadId, dealId }) => {
     const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);
     const [completingId, setCompletingId] = useState<string | null>(null);
     const [completeTarget, setCompleteTarget] = useState<Meeting | null>(null);
+    const onlineEnabled = useOnlineMeetingsEnabled();
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -103,11 +111,26 @@ const MeetingsTab: React.FC<Props> = ({ leadId, dealId }) => {
                                     <p className="text-xs text-fg-muted mt-1 flex items-center gap-1">
                                         <Clock size={11} /> {formatDateTime(m.scheduled_at)} · {m.duration_minutes} min
                                     </p>
-                                    {m.location && <p className="text-xs text-fg-muted mt-0.5 flex items-center gap-1"><MapPin size={11} /> {m.location}</p>}
+                                    {onlineEnabled && m.join_url && m.meeting_provider && PROVIDER_LABEL[m.meeting_provider] && (
+                                        <p className="text-xs text-fg-muted mt-0.5 flex items-center gap-1" data-testid={`meeting-provider-${m.id}`}>
+                                            <Video size={11} /> {PROVIDER_LABEL[m.meeting_provider]}
+                                        </p>
+                                    )}
+                                    {m.location && !(onlineEnabled && m.location === m.join_url) && <p className="text-xs text-fg-muted mt-0.5 flex items-center gap-1"><MapPin size={11} /> {m.location}</p>}
                                     {m.outcome && <p className="text-xs text-fg-subtle mt-1">Outcome: {m.outcome}</p>}
                                 </div>
                                 {m.status === 'upcoming' && (
                                     <div className="flex items-center gap-1 shrink-0">
+                                        {onlineEnabled && m.join_url && (
+                                            <Button
+                                                variant="primary"
+                                                size="sm"
+                                                data-testid={`meeting-join-${m.id}`}
+                                                onClick={() => window.open(m.join_url as string, '_blank', 'noopener,noreferrer')}
+                                            >
+                                                <Video size={12} /> Join
+                                            </Button>
+                                        )}
                                         <IconButton label="Mark completed" title="Mark completed" icon={<CheckCircle2 size={14} />} onClick={() => setCompleteTarget(m)} disabled={completingId === m.id} />
                                         <IconButton label="Cancel" title="Cancel" icon={<XCircle size={14} />} onClick={() => handleCancel(m)} />
                                     </div>

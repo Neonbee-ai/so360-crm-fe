@@ -1,4 +1,4 @@
-import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType, Lead, DealFilters, CRMSettings, InventoryItem, SalesRep, LeadProduct, DealProduct, LeadScoringRule, ScoreCategory, Stakeholder, StakeholderActivitySummary, Meeting, DealNamingConfig, DEFAULT_DEAL_NAMING_CONFIG } from '../types/crm';
+import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType, Lead, DealFilters, CRMSettings, InventoryItem, SalesRep, LeadProduct, DealProduct, LeadScoringRule, ScoreCategory, Stakeholder, StakeholderActivitySummary, Meeting, MeetingProviderAvailability, DealNamingConfig, DEFAULT_DEAL_NAMING_CONFIG } from '../types/crm';
 import { createRequestCache } from './requestCache';
 import { notifyQuotaExceeded } from './quotaExceeded';
 import { plainErrorText } from '../utils/apiErrorMessage';
@@ -1194,6 +1194,10 @@ export const meetingsApi = {
     },
     remove: async (id: string): Promise<void> => {
         await apiClient.delete(`/meetings/${id}`);
+    },
+    /** Pulse ab92e893: Google Meet / Teams / Zoom and whether each is connected. */
+    providers: async (): Promise<MeetingProviderAvailability[]> => {
+        return apiClient.get('/meetings/providers');
     },
 };
 

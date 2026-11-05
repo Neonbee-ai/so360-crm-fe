@@ -582,8 +582,24 @@ export interface Meeting {
     next_steps?: string;
     status: MeetingStatus;
     owner_person_id?: string;
+    /** Pulse ab92e893: provider that created the online meeting, and its join link. */
+    meeting_provider?: MeetingProvider | null;
+    join_url?: string | null;
+    external_event_id?: string | null;
     created_at: string;
     updated_at: string;
+}
+
+export type OnlineMeetingProvider = 'google_meet' | 'microsoft_teams' | 'zoom';
+export type MeetingProvider = OnlineMeetingProvider | 'manual';
+
+/** GET /meetings/providers row. */
+export interface MeetingProviderAvailability {
+    provider: OnlineMeetingProvider;
+    label: string;
+    available: boolean;
+    reason?: 'not_connected' | 'not_configured' | 'unavailable';
+    connect_piece?: string;
 }
 
 export interface StakeholderActivitySummary {
