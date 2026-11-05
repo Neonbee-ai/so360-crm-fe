@@ -190,3 +190,13 @@ describe('sections', () => {
     expect(groupTasksIntoSections([], counts)).toHaveLength(5);
   });
 });
+
+describe('Given the richer task types (Pulse 552552b8)', () => {
+  it('When the URL names follow-up, WhatsApp, demo and site-visit types / Then all four are kept as filters', () => {
+    const f = parseTaskListFilters(new URLSearchParams('type=FOLLOW_UP,whatsapp,DEMO,SITE_VISIT'));
+    expect(f.types).toEqual(['FOLLOW_UP', 'WHATSAPP', 'DEMO', 'SITE_VISIT']);
+  });
+  it('When the URL names an unknown type / Then it is dropped', () => {
+    expect(parseTaskListFilters(new URLSearchParams('type=FAX,DEMO')).types).toEqual(['DEMO']);
+  });
+});

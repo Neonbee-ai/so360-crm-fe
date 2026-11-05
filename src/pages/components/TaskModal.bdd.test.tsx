@@ -454,6 +454,16 @@ describe('TaskModal', () => {
       );
     });
 
+    it.each(['FOLLOW_UP', 'WHATSAPP', 'DEMO', 'SITE_VISIT'])('When the richer type %s is picked / Then the payload carries it', async (t) => {
+      render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
+      await waitFor(() => screen.getByPlaceholderText(/follow up/i));
+      fireEvent.change(selects()[0], { target: { value: t } });
+      fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Typed task' } });
+      fireEvent.change(dueInput(), { target: { value: futureDate } });
+      fireEvent.submit(document.querySelector('form')!);
+      await waitFor(() => expect(mockCreateTask).toHaveBeenCalledWith(expect.objectContaining({ type: t })));
+    });
+
     it('When REMINDER type with reminderMinutes set / Then payload includes reminder_offset_minutes', async () => {
       render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
       await waitFor(() => screen.getByPlaceholderText(/follow up/i));

@@ -312,6 +312,10 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                 { value: 'CALL', label: 'Call' },
                                 { value: 'EMAIL', label: 'Email' },
                                 { value: 'MEETING', label: 'Meeting' },
+                                { value: 'FOLLOW_UP', label: 'Follow-up' },
+                                { value: 'WHATSAPP', label: 'WhatsApp' },
+                                { value: 'DEMO', label: 'Demo' },
+                                { value: 'SITE_VISIT', label: 'Site visit' },
                                 { value: 'REMINDER', label: 'Reminder' },
                             ]}
                         />

@@ -84,6 +84,10 @@ export const TASK_TYPE_FILTER_OPTIONS = [
     { value: 'MEETING', label: 'Meeting' },
     { value: 'EMAIL', label: 'Email' },
     { value: 'TODO', label: 'To-do' },
+    { value: 'FOLLOW_UP', label: 'Follow-up' },
+    { value: 'WHATSAPP', label: 'WhatsApp' },
+    { value: 'DEMO', label: 'Demo' },
+    { value: 'SITE_VISIT', label: 'Site visit' },
     { value: 'REMINDER', label: 'Reminder' },
 ];
 

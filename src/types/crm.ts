@@ -145,7 +145,7 @@ export interface Note {
     replies?: Note[];
 }
 
-export type TaskType = 'EMAIL' | 'TODO' | 'REMINDER' | 'CALL' | 'MEETING';
+export type TaskType = 'EMAIL' | 'TODO' | 'REMINDER' | 'CALL' | 'MEETING' | 'FOLLOW_UP' | 'WHATSAPP' | 'DEMO' | 'SITE_VISIT';
 
 /**
  * Task priority. `tasks` is shared with the Projects module, which owns the
