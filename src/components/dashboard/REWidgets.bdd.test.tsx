@@ -210,6 +210,20 @@ describe('Given a shell that throws while rendering the widgets', () => {
         expect(container).toBeEmptyDOMElement();
         expect(mockGet).not.toHaveBeenCalled();
     });
+
+    it('When the bridge throws and the Shell reporter exists / Then the crash is reported but the UI stays silent', () => {
+        const report = vi.fn();
+        (window as any).__NEONBEE_REPORT_ERROR__ = report;
+        flags.throws = true;
+        try {
+            const { container } = render(<REWidgets />);
+            expect(container).toBeEmptyDOMElement();
+            expect(report).toHaveBeenCalledTimes(1);
+            expect((report.mock.calls[0][0] as Error).message).toBe('no shell bridge');
+        } finally {
+            delete (window as any).__NEONBEE_REPORT_ERROR__;
+        }
+    });
 });
 
 describe('Given the Top agents leaderboard card', () => {

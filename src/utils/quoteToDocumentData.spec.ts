@@ -473,3 +473,40 @@ describe('Given standing terms text', () => {
     expect(doc.terms_sections?.[0].heading).toBe('Warranty');
   });
 });
+
+// QT-2026-00069: a quote raised from a deal printed "Quotation For: Not specified".
+describe('Given a quote raised from a deal whose customer is a raw lead row', () => {
+  it('When the lead carries `email` (not `contact_email`) / Then the buyer email is printed', () => {
+    const doc = quoteToDocumentData(baseQuote(), {
+      currency: 'INR', seller: SELLER,
+      customer: { company_name: 'Dell', email: 's@dell.test', phone: '9' } as any,
+    });
+    expect(doc.buyer.name).toBe('Dell');
+    expect(doc.buyer.email).toBe('s@dell.test');
+    expect(doc.buyer.phone).toBe('9');
+  });
+
+  it('When the lead has no company / Then the contact name is the buyer', () => {
+    const doc = quoteToDocumentData(baseQuote(), {
+      currency: 'INR', seller: SELLER, customer: { contact_name: 'Shunmathi Kavin' } as any,
+    });
+    expect(doc.buyer.name).toBe('Shunmathi Kavin');
+  });
+
+  it('When the lead has a pin_code column / Then it closes the address', () => {
+    const doc = quoteToDocumentData(baseQuote(), {
+      currency: 'INR', seller: SELLER,
+      customer: { company_name: 'Dell', address: '1 Main St', city: 'Kochi', country: 'India', pin_code: '682001' } as any,
+    });
+    expect(doc.buyer.address).toBe('1 Main St, Kochi, India 682001');
+  });
+});
+
+describe('Given no customer and a deal carrying only its `company` column', () => {
+  it('When mapped / Then the deal company is the buyer instead of an empty name', () => {
+    const doc = quoteToDocumentData(baseQuote({ deal: { name: 'Dell deal', company: 'Dell' } as any }), {
+      currency: 'INR', seller: SELLER, customer: null,
+    });
+    expect(doc.buyer.name).toBe('Dell');
+  });
+});
