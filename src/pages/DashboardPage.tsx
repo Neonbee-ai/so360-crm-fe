@@ -308,7 +308,7 @@ const DashboardPage = () => {
                                 </div>
                             </div>
 
-                            <div className="h-48 flex items-end justify-between gap-2 px-4 relative min-w-0 overflow-x-clip">
+                            <div className="h-48 flex items-end justify-between gap-1 sm:gap-2 px-1 sm:px-4 relative min-w-0 overflow-x-clip">
                                 {/* Grid lines */}
                                 <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-40">
                                     <div className="w-full h-px bg-fg-muted/40 border-t border-dashed border-line" />
@@ -320,7 +320,7 @@ const DashboardPage = () => {
                                 {commerceKPIs.orderChartData.values.map((val: number, idx: number) => {
                                     const heightPct = Math.max((val / maxOrders) * 100, 4);
                                     return (
-                                        <div key={idx} className="flex-1 flex flex-col justify-end group relative h-full">
+                                        <div key={idx} className="flex-1 min-w-0 flex flex-col justify-end group relative h-full">
                                             <div
                                                 className="w-full bg-info/20 border-t-2 border-info rounded-t-sm hover:bg-info/40 transition-all relative group-hover:"
                                                 style={{ height: `${heightPct}%` }}
@@ -329,7 +329,7 @@ const DashboardPage = () => {
                                                     {val} orders
                                                 </div>
                                             </div>
-                                            <span className="text-xs font-bold text-fg-muted text-center mt-3 group-hover:text-info transition-colors">
+                                            <span className="text-xs font-bold text-fg-muted text-center truncate mt-3 group-hover:text-info transition-colors">
                                                 {commerceKPIs.orderChartData.labels[idx]}
                                             </span>
                                         </div>
@@ -352,11 +352,11 @@ const DashboardPage = () => {
             <>
             {/* Active Reminders Row */}
             {showTasks && (
-            <Card title="Active Reminders">
+            <Card title="Active Reminders" className="min-w-0 max-w-full overflow-hidden">
                 <div className="flex items-center justify-between mb-4">
                     <Link to="../tasks" className="text-xs font-semibold text-primary hover:text-primary transition-colors">View All Tasks</Link>
                 </div>
-                <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                <div className="flex gap-4 overflow-x-auto min-w-0 max-w-full pb-4 scrollbar-hide">
                     {pendingRest ? (
                                 <Skeleton variant="text" lines={2} />
                             ) : reminders.length > 0 ? reminders.map((task: any) => (
@@ -427,7 +427,7 @@ const DashboardPage = () => {
                         </div>
                     </div>
 
-                    <div className="h-64 flex items-end justify-between gap-2 px-4 relative min-w-0 overflow-x-clip">
+                    <div className="h-64 flex items-end justify-between gap-1 sm:gap-2 px-1 sm:px-4 relative min-w-0 overflow-x-clip">
                         {/* Grid lines */}
                         <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-20">
                             <div className="w-full h-px bg-line border-t border-dashed" />
@@ -440,7 +440,7 @@ const DashboardPage = () => {
                             const heightPercentage = Math.max((val / maxRevenue) * 100, 4);
 
                             return (
-                                <div key={idx} className="flex-1 flex flex-col justify-end group relative h-full">
+                                <div key={idx} className="flex-1 min-w-0 flex flex-col justify-end group relative h-full">
                                     <div
                                         className="w-full bg-primary/20 border-t-2 border-primary rounded-t-sm hover:bg-primary/40 transition-all relative group-hover:"
                                         style={{ height: `${heightPercentage}%` }}
@@ -449,7 +449,7 @@ const DashboardPage = () => {
                                             {formatCurrency(val)}
                                         </div>
                                     </div>
-                                    <span className="text-xs font-bold text-fg-muted text-center mt-3 group-hover:text-primary transition-colors">{revenueLabels[idx]}</span>
+                                    <span className="text-xs font-bold text-fg-muted text-center truncate mt-3 group-hover:text-primary transition-colors">{revenueLabels[idx]}</span>
                                 </div>
                             );
                         })}
