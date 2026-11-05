@@ -55,7 +55,10 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
     // Per-task override of the org default reminder (Sales-to-Service); blank = use org default.
     const flagBridge = useShellBridge();
     const remindersEnabled = flagBridge?.isFeatureEnabled?.('submodule:crm:task_reminders') ?? false;
-    const [reminderOffset, setReminderOffset] = useState(task?.reminder_offset_minutes?.toString() || '');
+    const [reminderOffset, setReminderOffset] = useState(
+        // A Reminder-type task's lead time lives in the dropdown above; switching
+        // the type away must clear it rather than carry it over as an override.
+        (task?.type === 'REMINDER' ? null : task?.reminder_offset_minutes)?.toString() || '');
     const [users, setUsers] = useState<User[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const showAssociatePicker = !leadId && !dealId && !isEditing;
