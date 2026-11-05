@@ -73,6 +73,7 @@ vi.mock('../services/crmService', () => ({
   meetingsApi: {
     getByLead: vi.fn().mockResolvedValue([]), getByDeal: vi.fn().mockResolvedValue([]),
     create: vi.fn(), update: vi.fn(), cancel: vi.fn(), complete: vi.fn(), remove: vi.fn(),
+    providers: vi.fn().mockResolvedValue([]),
   },
   inboxIntegrationApi: {
     getConversationsForLead: vi.fn().mockResolvedValue({ data: [], total: 0 }),
