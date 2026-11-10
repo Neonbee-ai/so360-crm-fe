@@ -78,7 +78,6 @@ const QuoteDetailPage = () => {
     const [error, setError] = useState<string | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const priceListsOn = useCrmFeatureFlag(S2S_FLAGS.PRICE_LISTS);
-    const layoutsOn = useCrmFeatureFlag(S2S_FLAGS.DOCUMENT_LAYOUTS);
     const [priceListId, setPriceListId] = useState('');
     const [showPreview, setShowPreview] = useState(false);
 
@@ -548,7 +547,7 @@ const QuoteDetailPage = () => {
     const overflowActions = [
         ...secondaryCandidates.slice(2).map(c => ({ label: c.label, onSelect: c.onSelect })),
         ...(canApproveQuote && canApprove ? [{ label: 'Reject', danger: true, onSelect: () => setShowRejectModal(true) }] : []),
-        ...(!isEditing && layoutsOn ? [{ label: 'Preview Quote', onSelect: () => setShowPreview(true) }] : []),
+        ...(!isEditing ? [{ label: 'Preview Quote', onSelect: () => setShowPreview(true) }] : []),
         ...(!isEditing ? [{ label: 'Print Quote', onSelect: handlePrint }] : []),
     ];
 
@@ -1054,9 +1053,7 @@ const QuoteDetailPage = () => {
                 </div>
             </div>
 
-            {layoutsOn && (
-                <QuotePreviewModal isOpen={showPreview} onClose={() => setShowPreview(false)} document={showPreview ? (buildDocData() as any) : {}} />
-            )}
+            <QuotePreviewModal isOpen={showPreview} onClose={() => setShowPreview(false)} document={showPreview ? (buildDocData() as any) : {}} />
 
             {/* Product Picker Modal */}
             <ProductPickerModal
