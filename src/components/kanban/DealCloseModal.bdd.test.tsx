@@ -43,7 +43,7 @@ describe('Given a deal dropped on a lost stage with configured reasons', () => {
     describe('When no reason is picked', () => {
         it('Then it asks for one and does not call onLose', async () => {
             const p = setup('lost');
-            await waitFor(() => expect(screen.getByLabelText(/lost reason/i)).toBeInTheDocument());
+            await waitFor(() => expect(screen.getByText('Price')).toBeInTheDocument());
             submit();
             expect(screen.getByRole('alert')).toHaveTextContent('Choose a lost reason');
             expect(p.onLose).not.toHaveBeenCalled();
