@@ -9,14 +9,19 @@ vi.mock('../services/coreS2sService', () => ({
   QUOTE_DOC_TYPE: 'sales_quote',
   contactFeed: { grouped: (...a: any[]) => grouped(...a) },
   priceLists: { list: (...a: any[]) => list(...a) },
-  documentLayouts: { render: (...a: any[]) => renderDoc(...a) },
 }));
+// Quote preview renders through the Shell's shared document renderer (Pulse 78e52b0d).
+let shellBridge: any = {};
+vi.mock('@so360/shell-context', () => ({ useShellBridge: () => shellBridge }));
 
 import { ContactFeedPanel } from './ContactFeedPanel';
 import { PriceListSelect } from './PriceListSelect';
 import { QuotePreviewModal } from './QuotePreviewModal';
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  shellBridge = { renderDocument: (...a: any[]) => renderDoc(...a) };
+});
 
 describe('Given the Contact 360 panel', () => {
   describe('When the customer has linked records', () => {
@@ -52,7 +57,7 @@ describe('Given the price list select', () => {
 });
 
 describe('Given the quote preview modal', () => {
-  describe('When Core renders HTML', () => {
+  describe('When the Shell renders HTML', () => {
     it('Then it is shown in a fully sandboxed iframe', async () => {
       renderDoc.mockResolvedValue('<p>Quote</p>');
       render(<QuotePreviewModal isOpen onClose={vi.fn()} document={{ number: 'Q1' }} />);
@@ -61,11 +66,26 @@ describe('Given the quote preview modal', () => {
       expect(renderDoc).toHaveBeenCalledWith('sales_quote', { number: 'Q1' });
     });
   });
-  describe('When rendering fails', () => {
+  describe('When rendering returns nothing', () => {
     it('Then the unavailable empty state is shown', async () => {
       renderDoc.mockResolvedValue(null);
       render(<QuotePreviewModal isOpen onClose={vi.fn()} document={{}} />);
       await waitFor(() => screen.getByText('Preview unavailable'));
+    });
+  });
+  describe('When rendering rejects (e.g. template fetch fails)', () => {
+    it('Then the unavailable empty state is shown', async () => {
+      renderDoc.mockRejectedValue(new Error('boom'));
+      render(<QuotePreviewModal isOpen onClose={vi.fn()} document={{}} />);
+      await waitFor(() => screen.getByText('Preview unavailable'));
+    });
+  });
+  describe('When the host Shell has no renderDocument', () => {
+    it('Then the unavailable empty state is shown and no other renderer is used', async () => {
+      shellBridge = {};
+      render(<QuotePreviewModal isOpen onClose={vi.fn()} document={{}} />);
+      await waitFor(() => screen.getByText('Preview unavailable'));
+      expect(renderDoc).not.toHaveBeenCalled();
     });
   });
   describe('When closed', () => {
