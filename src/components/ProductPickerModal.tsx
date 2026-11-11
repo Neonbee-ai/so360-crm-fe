@@ -154,7 +154,7 @@ export const ProductPickerModal = ({ isOpen, onClose, onSelect }: ProductPickerM
                                 return (
                                     <div key={item.id}>
                                         {/* Parent item row */}
-                                        <Button variant="secondary" size="sm" className="w-full group"
+                                        <Button variant="secondary" size="sm" className="w-full group !justify-start !text-left"
                                             onClick={() => item.has_variants ? toggleExpand(item.id) : selectItem(item)}
                                         >
                                             {/* Thumbnail */}
@@ -197,7 +197,7 @@ export const ProductPickerModal = ({ isOpen, onClose, onSelect }: ProductPickerM
                                         {item.has_variants && isExpanded && (
                                             <div className="ml-10 space-y-0.5 mb-1">
                                                 {(item.variants || []).map(variant => (
-                                                    <Button variant="secondary" size="sm" className="w-full group"
+                                                    <Button variant="secondary" size="sm" className="w-full group !justify-start !text-left"
                                                         key={variant.id}
                                                         onClick={() => selectVariant(item, variant)}
                                                     >
