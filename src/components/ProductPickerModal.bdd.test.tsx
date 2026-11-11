@@ -203,3 +203,17 @@ describe('Given ProductPickerModal', () => {
     });
   });
 });
+
+describe('Given ProductPickerModal result rows alignment', () => {
+  test('Given products and an expanded variant list / When rendered / Then every row is start-aligned with left text', async () => {
+    mockCrmService.searchInventoryItems.mockResolvedValue({ items: [ITEM_NO_VARIANTS, ITEM_WITH_VARIANTS] });
+    render(<ProductPickerModal {...defaultProps} />);
+    await act(async () => { await vi.runAllTimersAsync(); });
+    fireEvent.click(screen.getByText('T-Shirt').closest('button')!);
+    for (const label of ['Widget Pro', 'T-Shirt', 'TS-001-SR']) {
+      const row = screen.getByText(label).closest('button')!;
+      expect(row.className).toContain('!justify-start');
+      expect(row.className).toContain('!text-left');
+    }
+  });
+});
