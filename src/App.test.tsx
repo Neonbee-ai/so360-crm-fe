@@ -132,6 +132,17 @@ describe('Given a page gated on role permissions', () => {
     expect(await screen.findByText(/don't have access to this page/i)).toBeTruthy();
   });
 
+  it('When the page is withheld / Then the notice is the DS ResultState Comb root (no hand-built markup)', async () => {
+    shellState.hasPermission = () => false;
+    render(
+      <MemoryRouter initialEntries={['/dashboard']}>
+        <App />
+      </MemoryRouter>,
+    );
+    await screen.findByText(/don't have access to this page/i);
+    expect(document.querySelector('[data-comb-path="PermissionGuard.result"]')).not.toBeNull();
+  });
+
   it('When the user lacks the code / Then the plan-flag prompt is NOT shown instead', async () => {
     shellState.hasPermission = () => false;
     shellState.getFeatureState = () => 'locked';

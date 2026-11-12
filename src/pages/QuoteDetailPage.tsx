@@ -4,6 +4,7 @@ import { Save, Send, CheckCircle, XCircle, FileText, Plus, Trash2, Edit2, Packag
 import { canDownloadQuotePdf, downloadQuotePdf } from '../utils/quotePdfDownload';
 import { Modal } from '../components/common/Modal';
 import { crmService } from '../services/crmService';
+import { RecordNotFound } from '../components/common/RecordNotFound';
 import { toast, getErrorMessage, useConfirm, DetailPageTemplate, Button, Card, Badge, Alert, TextField, Textarea, Select, DataTable, IconButton, type DataTableColumn, type BadgeTone, Grid, GridItem, EmptyState } from '@so360/design-system';
 import { Quote, QuoteLine, QuoteStatus, ProductPickerSelection, Lead } from '../types/crm';
 import { INCOTERMS_2020, INCOTERM_LABELS } from '../utils/incoterms';
@@ -449,11 +450,7 @@ const QuoteDetailPage = () => {
     if (!quote) {
         return (
             <div>
-                <EmptyState
-                    icon={FileText}
-                    title="Quote not found"
-                    action={{ label: 'Back to quotes', onClick: () => navigate('/crm/quotes') }}
-                />
+                <RecordNotFound listPath="/crm/quotes" listLabel="Quotes" />
             </div>
         );
     }

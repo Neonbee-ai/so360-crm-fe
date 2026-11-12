@@ -169,7 +169,7 @@ describe('Given LeadDetailPage and a lead that genuinely does not exist', () => 
     render(<LeadDetailPage />);
 
     await waitFor(() => {
-      expect(screen.getByText('Lead not found.')).toBeTruthy();
+      expect(screen.getByText('Record not found')).toBeTruthy();
     });
     expect(screen.queryByText(/permission to view this lead/i)).toBeNull();
   });
@@ -186,7 +186,7 @@ describe('Given LeadDetailPage opened with a malformed or unknown id (API answer
     const { container } = render(<LeadDetailPage />);
 
     await waitFor(() => {
-      expect(screen.getByText('Lead not found.')).toBeTruthy();
+      expect(screen.getByText('Record not found')).toBeTruthy();
     });
     // The trail has its own back control; the way back asserted here is the not-found state's action.
     expect(within(screen.getByTestId('empty-state')).getByRole('button', { name: /back to leads/i })).toBeTruthy();

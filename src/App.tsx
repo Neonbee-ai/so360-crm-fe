@@ -1,7 +1,7 @@
 import React, { Suspense, lazy, useEffect } from 'react';
 import { Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
 import { useShellBridge } from '@so360/shell-context';
-import { CombScope, FeatureRoute, PortalProvider, Button, Skeleton } from '@so360/design-system';
+import { CombScope, FeatureRoute, PortalProvider, Button, Skeleton, ResultState } from '@so360/design-system';
 import { CrossLinkProvider } from '@so360/cross-link';
 import { crmService } from './services/crmService';
 import { salesTargetService } from './services/salesTargetService';
@@ -152,11 +152,19 @@ const PermissionGuard = ({ permission, children }: { permission: string | string
         : codes.some((c: string) => shell.hasPermission?.(c) ?? false);
     if (allowed) return <>{children}</>;
     return (
-        <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-            <h2 className="text-lg font-semibold text-fg">You don&apos;t have access to this page</h2>
-            <p className="mt-2 max-w-md text-sm text-fg-muted">
-                Your role doesn&apos;t include permission for this page. Ask an administrator if you need it.
-            </p>
+        <div
+            data-comb="result"
+            data-comb-id="permission_denied"
+            data-comb-state="error"
+            data-comb-path="PermissionGuard.result"
+            className="flex items-center justify-center p-nb-8"
+        >
+            <ResultState
+                status="warning"
+                name="permission_denied_state"
+                title="You don't have access to this page"
+                description="Your role doesn't include permission for this page. Ask an administrator if you need it."
+            />
         </div>
     );
 };
