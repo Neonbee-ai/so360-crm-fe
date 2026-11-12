@@ -47,6 +47,8 @@ const CustomersPage = () => {
     const [categoryFilter, setCategoryFilter] = useState('All');
     const [sortField, setSortField] = usePersistedState<SortField | null>('customers.sortField', 'created_at');
     const [sortDirection, setSortDirection] = usePersistedState<SortDirection>('customers.sortDirection', 'desc');
+    // Channel is no longer sortable (BE cannot sort it): drop a stale persisted value.
+    useEffect(() => { if (sortField === 'channel') setSortField('created_at'); }, []);
     const [currentPage, setCurrentPage] = usePersistedState('customers.page', 1);
     const [pageSize, setPageSize] = usePersistedState('customers.pageSize', 10);
 
@@ -74,6 +76,11 @@ const CustomersPage = () => {
         : {};
     const skip = (currentPage - 1) * pageSize;
     const take = isSandboxMode ? Math.max(0, Math.min(pageSize, sandboxEntryLimit - skip)) : pageSize;
+
+    // A persisted page can outlive its rows (deleted since, or past the sandbox limit): fall back to page 1.
+    useEffect(() => {
+        if (!isLoading && currentPage > 1 && customers.length === 0) setCurrentPage(1);
+    }, [isLoading, customers.length, currentPage]);
 
     const filterKey = `${debouncedSearch}|${channelFilter}|${categoryFilter}`;
     const prevFilterKey = useRef(filterKey);
@@ -165,7 +172,7 @@ const CustomersPage = () => {
                 return matchesSearch && matchesChannel && matchesCategory;
             });
         }
-        if (sortField && sortDirection && (allRows || sortField === 'channel')) {
+        if (sortField && sortDirection && allRows) {
             result = [...result].sort((a, b) => {
                 let aVal: any, bVal: any;
                 switch (sortField) {
