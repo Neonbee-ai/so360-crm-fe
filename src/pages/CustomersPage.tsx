@@ -288,7 +288,7 @@ const CustomersPage = () => {
             },
         ] as DataTableColumn<any>[]) : []),
         {
-            key: 'channel', header: 'Channel', sortable: true,
+            key: 'channel', header: 'Channel',
             render: (c: any) => <ChannelBadge channel={c.channel} />,
         },
         {
