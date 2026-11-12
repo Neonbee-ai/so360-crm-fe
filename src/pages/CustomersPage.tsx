@@ -75,7 +75,17 @@ const CustomersPage = () => {
     const skip = (currentPage - 1) * pageSize;
     const take = isSandboxMode ? Math.max(0, Math.min(pageSize, sandboxEntryLimit - skip)) : pageSize;
 
+    const filterKey = `${debouncedSearch}|${channelFilter}|${categoryFilter}`;
+    const prevFilterKey = useRef(filterKey);
     useEffect(() => {
+        if (prevFilterKey.current !== filterKey) {
+            prevFilterKey.current = filterKey;
+            if (currentPage !== 1) {
+                // Page change re-runs this effect and fetches page 1 once (no wasted request on the old skip).
+                setCurrentPage(1);
+                return;
+            }
+        }
         let cancelled = false;
         (async () => {
             setIsLoading(true);
@@ -191,10 +201,6 @@ const CustomersPage = () => {
         const start = (currentPage - 1) * pageSize;
         return sandboxLimitedCustomers.slice(start, start + pageSize);
     }, [sandboxLimitedCustomers, allRows, currentPage, pageSize]);
-
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [debouncedSearch, channelFilter, categoryFilter]);
 
     const ChannelBadge = ({ channel }: { channel: string }) => {
         const config = CHANNEL_CONFIG[channel] || CHANNEL_CONFIG.manual;
