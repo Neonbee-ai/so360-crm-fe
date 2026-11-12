@@ -11,6 +11,7 @@ import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import { useBusinessSettings, useShell } from '@so360/shell-context';
 import NeuraAiSummaryCard from './components/NeuraAiSummaryCard';
 import { useFormatters } from '@so360/formatters';
+import { RecordNotFound } from '../components/common/RecordNotFound';
 import { DetailPageTemplate, Card, Badge, Button, KpiCard, EmptyState, DataTable, TextField, NumberInput, Select } from '@so360/design-system';
 import { Modal } from '../components/common/Modal';
 import { PartnerDlCustomFields } from '../components/customFields/PartnerDlCustomFields';
@@ -255,9 +256,8 @@ const PartnerDetailPage = () => {
 
     if (!partner) {
         return (
-            <div className="py-12 text-center text-fg-muted">
-                <p>Partner not found.</p>
-                <div className="mt-4"><Button variant="secondary" onClick={() => navigate('/crm/partners')}>Back to Partners</Button></div>
+            <div>
+                <RecordNotFound listPath="/crm/partners" listLabel="Partners" />
             </div>
         );
     }

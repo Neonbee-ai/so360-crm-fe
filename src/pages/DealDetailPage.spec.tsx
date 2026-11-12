@@ -219,14 +219,14 @@ describe('Given DealDetailPage — side panel failures are non-fatal', () => {
     await waitFor(() => {
       expect(screen.queryAllByText('AQA-77 Deal').length).toBeGreaterThan(0);
     });
-    expect(screen.queryByText('Deal not found.')).toBeNull();
+    expect(screen.queryByText('Record not found')).toBeNull();
   });
 
   test('Given the deal itself cannot be loaded / When the page loads / Then the not-found state is shown', async () => {
     mockCrmService.getDealById.mockResolvedValue(undefined);
     render(<DealDetailPage />);
     await waitFor(() => {
-      expect(screen.queryByText('Deal not found.')).not.toBeNull();
+      expect(screen.queryByText('Record not found')).not.toBeNull();
     });
   });
 });
