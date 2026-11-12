@@ -238,6 +238,9 @@ const mapLeadFromApi = (apiLead: any): Lead => {
     };
 };
 
+// GETs abort after this long instead of hanging forever.
+const GET_TIMEOUT_MS = 30_000;
+
 // API Client Helper
 class ApiClient {
     private baseURL: string;
@@ -284,9 +287,28 @@ class ApiClient {
 
     private async request<T>(
         endpoint: string,
-        options: RequestInit = {}
+        options: RequestInit = {},
+        timeoutMs?: number
     ): Promise<T> {
         const url = `${this.baseURL}${endpoint}`;
+        // Optional timeout (GETs only): aborts the fetch, and also follows a caller-supplied signal.
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        let timedOut = false;
+        let detach: (() => void) | undefined;
+        if (timeoutMs) {
+            const controller = new AbortController();
+            const outer = options.signal;
+            if (outer) {
+                if (outer.aborted) controller.abort();
+                else {
+                    const onAbort = () => controller.abort();
+                    outer.addEventListener('abort', onAbort, { once: true });
+                    detach = () => outer.removeEventListener('abort', onAbort);
+                }
+            }
+            timer = setTimeout(() => { timedOut = true; controller.abort(); }, timeoutMs);
+            options = { ...options, signal: controller.signal };
+        }
         const headers: HeadersInit = {
             'Content-Type': 'application/json',
             'X-Tenant-Id': this.tenantId,
@@ -345,12 +367,23 @@ class ApiClient {
                 throw new Error(`Invalid JSON response from API: ${text.substring(0, 100)}...`);
             }
         } catch (error) {
-            console.error(`API request failed: ${endpoint}`, error);
+            if (timedOut) {
+                const timeoutError = new Error(`Request timed out: ${endpoint}`);
+                console.error(`API request failed: ${endpoint}`, timeoutError);
+                throw timeoutError;
+            }
+            // A caller-initiated abort (superseded request) is not a failure worth logging.
+            if (!(error instanceof DOMException && error.name === 'AbortError')) {
+                console.error(`API request failed: ${endpoint}`, error);
+            }
             throw error;
+        } finally {
+            if (timer) clearTimeout(timer);
+            detach?.();
         }
     }
 
-    async get<T>(endpoint: string, params?: Record<string, any>): Promise<T> {
+    async get<T>(endpoint: string, params?: Record<string, any>, opts?: { signal?: AbortSignal }): Promise<T> {
         const queryString = params
             ? '?' + new URLSearchParams(
                 Object.entries(params).reduce((acc, [key, value]) => {
@@ -363,7 +396,8 @@ class ApiClient {
             : '';
         return this.request<T>(`${endpoint}${queryString}`, {
             method: 'GET',
-        });
+            ...(opts?.signal ? { signal: opts.signal } : {}),
+        }, GET_TIMEOUT_MS);
     }
 
     /**
@@ -885,8 +919,8 @@ export const dealsApi = {
     /**
      * GET /deals/pipeline - Get deals grouped by stage for Kanban pipeline
      */
-    getPipeline: async (params?: DealFilters): Promise<PipelineResponse> => {
-        const data = await apiClient.get<any>('/deals/pipeline', params as any);
+    getPipeline: async (params?: DealFilters, signal?: AbortSignal): Promise<PipelineResponse> => {
+        const data = await apiClient.get<any>('/deals/pipeline', params as any, signal ? { signal } : undefined);
         // Handle both array-of-stages and object-with-stages-property formats
         const stagesArray = Array.isArray(data) ? data : (data.stages || []);
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { KanbanBoard } from '../components/kanban/KanbanBoard';
 import { crmService } from '../services/crmService';
@@ -64,7 +64,11 @@ const PipelinePage = () => {
         const timeoutId = setTimeout(() => {
             fetchData();
         }, 300);
-        return () => clearTimeout(timeoutId);
+        return () => {
+            clearTimeout(timeoutId);
+            // A newer filter/poll supersedes any request still in flight.
+            inflightRef.current?.abort();
+        };
     }, [filters, pollTick]);
 
     // Auto-refresh pipeline every 60 seconds, but skip the heavy refetch while
@@ -79,13 +83,19 @@ const PipelinePage = () => {
         return () => clearInterval(pollInterval);
     }, []);
 
+    const inflightRef = useRef<AbortController | null>(null);
+
     const fetchData = async () => {
+        inflightRef.current?.abort();
+        const controller = new AbortController();
+        inflightRef.current = controller;
         try {
             if (!isInitialLoading) {
                 setIsFiltering(true);
             }
 
-            const pipelineData = await crmService.getPipeline(filters);
+            const pipelineData = await crmService.getPipeline(filters, controller.signal);
+            if (controller.signal.aborted) return;
             const fetchedStages = pipelineData.stages || [];
 
             if (fetchedStages.length === 0) {
@@ -101,11 +111,16 @@ const PipelinePage = () => {
 
             setDeals(fetchedStages.flatMap(s => s.deals || []));
         } catch (error: any) {
+            if (controller.signal.aborted) return;
             console.error('Failed to fetch pipeline data', error);
             toast.error(error.message || 'Failed to load pipeline. Please check your connection or Organization settings.');
         } finally {
-            setIsInitialLoading(false);
-            setIsFiltering(false);
+            // An aborted request leaves loading state to the request that replaced it.
+            if (!controller.signal.aborted) {
+                if (inflightRef.current === controller) inflightRef.current = null;
+                setIsInitialLoading(false);
+                setIsFiltering(false);
+            }
         }
     };
 
