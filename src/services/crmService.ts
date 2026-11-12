@@ -240,6 +240,8 @@ const mapLeadFromApi = (apiLead: any): Lead => {
 
 // GETs abort after this long instead of hanging forever.
 const GET_TIMEOUT_MS = 30_000;
+// Reports / exports / analytics legitimately take longer: no client-side timeout for them.
+const SLOW_GET_PATH = /\/(reports?|export|analytics)(\/|\?|$)/;
 
 // API Client Helper
 class ApiClient {
@@ -397,7 +399,7 @@ class ApiClient {
         return this.request<T>(`${endpoint}${queryString}`, {
             method: 'GET',
             ...(opts?.signal ? { signal: opts.signal } : {}),
-        }, GET_TIMEOUT_MS);
+        }, SLOW_GET_PATH.test(endpoint) ? undefined : GET_TIMEOUT_MS);
     }
 
     /**
