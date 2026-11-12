@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
+import { toast } from '@so360/design-system';
 
 const mockGetPipeline = vi.fn();
 const mockUpdateDealStage = vi.fn();
@@ -445,5 +446,94 @@ describe('PipelinePage — export (RE §48)', () => {
       await user.click(screen.getByRole('menuitem', { name: 'PDF' }));
       await waitFor(() => expect(mockExportDeals).toHaveBeenCalledWith(expect.objectContaining({ owner_id: 'u1' }), 'pdf'));
     });
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// Pulse beaea97b — one transition per action, no re-win of a closed deal,
+// and the board reconciles to the saved deal after every attempt.
+// ─────────────────────────────────────────────────────────────────────────
+describe('PipelinePage — deal stage sync (Pulse beaea97b)', () => {
+  const wonDeal = { id: 'd9', name: 'Delta', value: 1, current_flow_state: 'new', status: 'won', owner_id: 'u1' };
+
+  it('Given a deal already won / When its card is dropped on Won / Then /win is not called and the board is re-read', async () => {
+    const warn = vi.spyOn(toast, 'warning');
+    render(<PipelinePage />);
+    await waitFor(() => expect(screen.getByTestId('kanban')).toBeInTheDocument());
+    const calls = mockGetPipeline.mock.calls.length;
+    kanbanProps.onStageChange(wonDeal, 'won');
+    await waitFor(() => expect(mockGetPipeline.mock.calls.length).toBeGreaterThan(calls));
+    expect(mockWin).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('close-modal')).not.toBeInTheDocument();
+    expect(warn).toHaveBeenCalledTimes(1);
+  });
+
+  it('Given a deal already won / When its card is dropped on an open stage / Then no request is sent and one error explains why', async () => {
+    const err = vi.spyOn(toast, 'error');
+    render(<PipelinePage />);
+    await waitFor(() => expect(screen.getByTestId('kanban')).toBeInTheDocument());
+    kanbanProps.onStageChange(wonDeal, 'qualified');
+    expect(mockUpdateDealStage).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('transition-modal')).not.toBeInTheDocument();
+    expect(err).toHaveBeenCalledTimes(1);
+  });
+
+  it('Given /win answers "Deal is already marked as won" / When Won is confirmed / Then the modal closes, one notice shows and the board is re-read', async () => {
+    mockWin.mockRejectedValue(new Error('Deal is already marked as won'));
+    const err = vi.spyOn(toast, 'error');
+    const warn = vi.spyOn(toast, 'warning');
+    const user = userEvent.setup();
+    render(<PipelinePage />);
+    await waitFor(() => expect(screen.getByTestId('kanban')).toBeInTheDocument());
+    const calls = mockGetPipeline.mock.calls.length;
+    kanbanProps.onStageChange({ id: 'd1', name: 'Acme Corp', current_flow_state: 'new', status: 'open' }, 'won');
+    await waitFor(() => expect(screen.getByTestId('close-modal')).toBeInTheDocument());
+    await user.click(screen.getByText('Confirm'));
+    await waitFor(() => expect(screen.queryByTestId('close-modal')).not.toBeInTheDocument());
+    expect(mockGetPipeline.mock.calls.length).toBeGreaterThan(calls);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(err).not.toHaveBeenCalled();
+  });
+
+  it('Given the Won modal is open / When Confirm is pressed twice quickly / Then /win is called once', async () => {
+    let release: () => void = () => undefined;
+    mockWin.mockImplementation(() => new Promise<void>((r) => { release = r; }));
+    render(<PipelinePage />);
+    await waitFor(() => expect(screen.getByTestId('kanban')).toBeInTheDocument());
+    kanbanProps.onStageChange({ id: 'd1', name: 'Acme Corp', current_flow_state: 'new', status: 'open' }, 'won');
+    await waitFor(() => expect(screen.getByTestId('close-modal')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('Confirm'));
+    fireEvent.click(screen.getByText('Confirm'));
+    release();
+    await waitFor(() => expect(mockWin).toHaveBeenCalledTimes(1));
+  });
+
+  it('Given a stage typed WON with a custom name / When a card is dropped on it / Then the close flow opens (type wins over name)', async () => {
+    mockGetPipeline.mockResolvedValue({
+      stages: [
+        { id: 'new', name: 'New', is_terminal: false, deals: [] },
+        { id: 'sx', name: 'Signed', stage_type: 'WON', is_terminal: true, deals: [] },
+      ],
+    });
+    render(<PipelinePage />);
+    await waitFor(() => expect(screen.getByTestId('kanban')).toBeInTheDocument());
+    kanbanProps.onStageChange({ id: 'd1', name: 'Acme Corp', current_flow_state: 'new', status: 'open' }, 'sx');
+    await waitFor(() => expect(screen.getByTestId('close-modal')).toBeInTheDocument());
+    expect(mockUpdateDealStage).not.toHaveBeenCalled();
+  });
+
+  it('Given an ordinary move fails / When it is confirmed / Then one error shows and the board is re-read to the saved stage', async () => {
+    mockUpdateDealStage.mockRejectedValue(new Error('Deal is won and can no longer be edited'));
+    const err = vi.spyOn(toast, 'error');
+    const user = userEvent.setup();
+    render(<PipelinePage />);
+    await waitFor(() => expect(screen.getByTestId('kanban')).toBeInTheDocument());
+    const calls = mockGetPipeline.mock.calls.length;
+    kanbanProps.onStageChange({ id: 'd1', name: 'Acme Corp', current_flow_state: 'new', status: 'open' }, 'qualified');
+    await waitFor(() => expect(screen.getByTestId('transition-modal')).toBeInTheDocument());
+    await user.click(screen.getByText('Confirm'));
+    await waitFor(() => expect(mockGetPipeline.mock.calls.length).toBeGreaterThan(calls));
+    expect(err).toHaveBeenCalledTimes(1);
+    expect(err).toHaveBeenCalledWith('Deal is won and can no longer be edited');
   });
 });
