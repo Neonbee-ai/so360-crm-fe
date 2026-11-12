@@ -28,6 +28,7 @@ import { ContactFeedPanel } from '../components/ContactFeedPanel';
 import { S2S_FLAGS } from '../services/coreS2sService';
 import MaintenanceTab from './components/MaintenanceTab';
 import { MAINTENANCE_TAB_FLAG, withMaintenanceTab } from '../services/maintenanceTabService';
+import { RecordNotFound } from '../components/common/RecordNotFound';
 import { toast, useConfirm, DetailPageTemplate, Button, IconButton, Tabs, TextField, Select, Checkbox, Badge, Card, ConfirmDialog, CountUp, EmptyState, FileUpload, Grid, GridItem, Skeleton } from '@so360/design-system';
 import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import { Trophy, Zap, Info, TrendingUp, RefreshCw, Check } from 'lucide-react';
@@ -458,10 +459,7 @@ const LeadDetailPage = () => {
             // Comb root (data-comb-path): a 400/404 (bad or missing id) must render a settled
             // not-found page, not leave readiness checks waiting on a spinner.
             <DetailPageTemplate title="Lead not found" trail={detailTrail}>
-                <EmptyState
-                    title="Lead not found."
-                    action={{ label: backLabel, onClick: () => navigate(backRoute) }}
-                />
+                <RecordNotFound listPath={backRoute} listLabel={isCustomerDetailRoute ? 'Customers' : 'Leads'} />
             </DetailPageTemplate>
         );
     }

@@ -927,7 +927,7 @@ describe('LeadDetailPage', () => {
       mockGetLeadById.mockResolvedValue(null);
       render(<LeadDetailPage />);
       await waitFor(() => {
-        expect(screen.getByText('Lead not found.')).toBeInTheDocument();
+        expect(screen.getByText('Record not found')).toBeInTheDocument();
       });
     });
 

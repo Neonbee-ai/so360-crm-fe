@@ -468,7 +468,7 @@ describe('DealDetailPage', () => {
       mockGetDealById.mockResolvedValue(null);
       render(<DealDetailPage />);
       await waitFor(() => {
-        expect(screen.getByText('Deal not found.')).toBeInTheDocument();
+        expect(screen.getByText('Record not found')).toBeInTheDocument();
       });
     });
 
@@ -492,7 +492,7 @@ describe('DealDetailPage', () => {
     it('When API returns null / Then the not-found state renders inside a Comb root so the page settles', async () => {
       mockGetDealById.mockResolvedValue(null);
       const { container } = render(<DealDetailPage />);
-      await waitFor(() => expect(screen.getByText('Deal not found.')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText('Record not found')).toBeInTheDocument());
       // Real DS floorplans carry data-comb-path; the vitest DS stub marks the same Comb detail root as data-template="detail".
       expect(container.querySelector('[data-comb-path], [data-template="detail"]')).not.toBeNull();
     });
