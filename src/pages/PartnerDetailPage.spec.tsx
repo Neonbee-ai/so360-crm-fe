@@ -296,7 +296,7 @@ describe('Given PartnerDetailPage — partner not found', () => {
     mockPartnersGetOne.mockRejectedValue(new Error('Not found'));
     render(<PartnerDetailPage />);
     await waitFor(() => {
-      expect(screen.getByText('Partner not found.')).toBeInTheDocument();
+      expect(screen.getByText('Record not found')).toBeInTheDocument();
     });
   });
 });

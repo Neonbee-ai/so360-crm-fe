@@ -123,7 +123,7 @@ describe('Given DealDetailPage', () => {
     mockGetDealById.mockResolvedValue(undefined);
     render(<DealDetailPage />);
     await waitFor(() => {
-      expect(screen.getByText('Deal not found.')).toBeInTheDocument();
+      expect(screen.getByText('Record not found')).toBeInTheDocument();
     });
   });
 

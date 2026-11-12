@@ -20,6 +20,7 @@ import CallsTab from './components/CallsTab';
 import DealPaymentPlanPanel from './components/DealPaymentPlanPanel';
 import DealCommissionPanel from './components/DealCommissionPanel';
 import { useCrmFeatureFlag, RE_FLAGS } from '../hooks/useCrmFeatureFlag';
+import { RecordNotFound } from '../components/common/RecordNotFound';
 import { EmailComposeButton } from '../components/emailCompose/EmailComposeButton';
 import { CrossLinkChip, toast, useConfirm, DetailPageTemplate, Button, IconButton, Card, EmptyState, Badge, Select, DatePicker, NumberInput, Textarea, Grid, GridItem, FileUpload } from '@so360/design-system';
 import { crmService, dealsApi, tasksApi, activitiesApi, TimelineEvent } from '../services/crmService';
@@ -661,7 +662,7 @@ const DealDetailPage = () => {
         return (
             // Comb root (data-comb-path) so readiness checks settle on a bad/missing id instead of spinning.
             <DetailPageTemplate title="Deal not found" trail={[{ label: 'Pipeline', to: '/crm/pipeline' }]}>
-                <EmptyState title="Deal not found." action={{ label: 'Back to Pipeline', onClick: () => navigate('/crm/pipeline') }} />
+                <RecordNotFound listPath="/crm/pipeline" listLabel="Pipeline" />
             </DetailPageTemplate>
         );
     }
