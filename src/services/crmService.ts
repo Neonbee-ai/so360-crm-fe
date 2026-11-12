@@ -1446,17 +1446,24 @@ export const settingsApi = {
     },
 
     sourceTypes: {
+        // Fetched by three lead components; coalesced + short TTL, cleared on edits.
         getAll: async () => {
-            return apiClient.get<any[]>('/settings/source-types');
+            return orgStaticCache.run(`source-types|${apiClient.getOrgId()}`, () => apiClient.get<any[]>('/settings/source-types'));
         },
         create: async (data: { label: string; value: string; sort_order?: number }) => {
-            return apiClient.post<any>('/settings/source-types', data);
+            const r = await apiClient.post<any>('/settings/source-types', data);
+            orgStaticCache.invalidate('source-types|');
+            return r;
         },
         update: async (id: string, data: { label?: string; is_active?: boolean; sort_order?: number }) => {
-            return apiClient.patch<any>(`/settings/source-types/${id}`, data);
+            const r = await apiClient.patch<any>(`/settings/source-types/${id}`, data);
+            orgStaticCache.invalidate('source-types|');
+            return r;
         },
         delete: async (id: string) => {
-            return apiClient.delete<any>(`/settings/source-types/${id}`);
+            const r = await apiClient.delete<any>(`/settings/source-types/${id}`);
+            orgStaticCache.invalidate('source-types|');
+            return r;
         },
     },
 
@@ -1514,13 +1521,17 @@ export const partnersApi = {
         return apiClient.get<any[]>('/partners', params);
     },
     create: async (data: any) => {
-        return apiClient.post<any>('/partners', data);
+        const r = await apiClient.post<any>('/partners', data);
+        orgStaticCache.invalidate('partners|');
+        return r;
     },
     getOne: async (id: string) => {
         return apiClient.get<any>(`/partners/${id}`);
     },
     update: async (id: string, data: any) => {
-        return apiClient.patch<any>(`/partners/${id}`, data);
+        const r = await apiClient.patch<any>(`/partners/${id}`, data);
+        orgStaticCache.invalidate('partners|');
+        return r;
     },
     /**
      * Core partner master row (custom_fields + custom_fields_version). A CRM
@@ -1973,7 +1984,8 @@ export const crmService = {
     },
 
     getPartners: async (): Promise<Lead[]> => {
-        return partnersApi.getAll({ take: 200 }) as any;
+        // Fetched by several lead components: coalesce, 10s TTL, cleared on partner create/update.
+        return orgStaticCache.run(`partners|${apiClient.getOrgId()}`, () => partnersApi.getAll({ take: 200 }) as Promise<any>, 10_000) as any;
     },
 
     // Deals
