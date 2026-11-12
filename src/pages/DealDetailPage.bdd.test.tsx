@@ -75,6 +75,12 @@ vi.mock('react-router-dom', () => ({
   Link: ({ children, to, ...props }: any) => <a href={to} {...props}>{children}</a>,
 }));
 
+const mockDealWin = vi.hoisted(() => vi.fn());
+const mockDealLose = vi.hoisted(() => vi.fn());
+vi.mock('../services/salesConfigService', async (importActual) => ({
+  ...(await importActual<typeof import('../services/salesConfigService')>()),
+  dealCloseService: { win: (...a: any[]) => mockDealWin(...a), lose: (...a: any[]) => mockDealLose(...a) },
+}));
 const mockShowSuccess = vi.hoisted(() => vi.fn());
 const mockShowError = vi.hoisted(() => vi.fn());
 vi.mock('@so360/design-system', async (importOriginal) => {
@@ -1266,5 +1272,87 @@ describe('DealDetailPage — deal stage selector', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Close history' }));
       await waitFor(() => expect(screen.queryByTestId('activity-history-drawer')).not.toBeInTheDocument());
     });
+  });
+});
+
+/**
+ * Pulse beaea97b — Deal Detail shows the saved stage (status + stage_id, same
+ * rule as the Pipeline board) and routes Won/Lost through the close flow once.
+ */
+describe('DealDetailPage — stage sync with the Pipeline (Pulse beaea97b)', () => {
+  beforeEach(() => {
+    mockDealWin.mockReset().mockResolvedValue({});
+    mockDealLose.mockReset().mockResolvedValue({});
+  });
+
+  it('Given an open deal / When Won is picked from the stage menu / Then the Close-as-Won modal opens instead of a plain stage move', async () => {
+    const user = userEvent.setup();
+    render(<DealDetailPage />);
+    await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+    await user.click(screen.getByTestId('deal-stage-trigger'));
+    await user.click(screen.getByTestId('deal-stage-option-won'));
+    await waitFor(() => expect(screen.getByText(/Close deal as Won/i)).toBeInTheDocument());
+    expect(mockUpdateDealStage).not.toHaveBeenCalled();
+  });
+
+  it('Given the Close-as-Won modal / When Mark as won is confirmed / Then /win is called once and the deal is re-read', async () => {
+    const user = userEvent.setup();
+    render(<DealDetailPage />);
+    await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+    const reads = mockGetDealById.mock.calls.length;
+    await user.click(screen.getByTestId('deal-stage-trigger'));
+    await user.click(screen.getByTestId('deal-stage-option-won'));
+    await user.click(await screen.findByRole('button', { name: /mark as won/i }));
+    await waitFor(() => expect(mockDealWin).toHaveBeenCalledTimes(1));
+    expect(mockDealWin).toHaveBeenCalledWith('deal-1', expect.any(Object));
+    await waitFor(() => expect(mockGetDealById.mock.calls.length).toBeGreaterThan(reads));
+  });
+
+  it('Given /win answers "already marked as won" / When Mark as won is confirmed / Then the modal closes with no error toast and the deal is re-read', async () => {
+    mockDealWin.mockRejectedValue(new Error('Deal is already marked as won'));
+    const user = userEvent.setup();
+    render(<DealDetailPage />);
+    await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+    await user.click(screen.getByTestId('deal-stage-trigger'));
+    await user.click(screen.getByTestId('deal-stage-option-won'));
+    await user.click(await screen.findByRole('button', { name: /mark as won/i }));
+    await waitFor(() => expect(screen.queryByText(/Close deal as Won/i)).not.toBeInTheDocument());
+    expect(mockShowError).not.toHaveBeenCalled();
+  });
+
+  it('Given a won deal whose stage_id drifted to New / When the page loads / Then the stage shows Won, as on the Pipeline', async () => {
+    mockGetDealById.mockResolvedValue(makeDeal({ status: 'won', stage_id: 'new', stage: 'Lead' }));
+    const user = userEvent.setup();
+    render(<DealDetailPage />);
+    await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+    expect(screen.getByTestId('deal-stage-trigger')).toHaveTextContent('Won');
+    await user.click(screen.getByTestId('deal-stage-trigger'));
+    expect(screen.getByTestId('deal-stage-option-won')).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('Given a won deal / When an open stage is picked / Then no request is sent and one error explains why', async () => {
+    mockGetDealById.mockResolvedValue(makeDeal({ status: 'won', stage_id: 'won' }));
+    const user = userEvent.setup();
+    render(<DealDetailPage />);
+    await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+    await user.click(screen.getByTestId('deal-stage-trigger'));
+    await user.click(screen.getByTestId('deal-stage-option-new'));
+    expect(mockUpdateDealStage).not.toHaveBeenCalled();
+    expect(mockDealWin).not.toHaveBeenCalled();
+    expect(mockShowError).toHaveBeenCalledTimes(1);
+  });
+
+  it('Given an ordinary move is refused / When it is confirmed / Then the API message is shown once and the deal is re-read', async () => {
+    mockUpdateDealStage.mockRejectedValueOnce(new Error('Deal is won and can no longer be edited'));
+    const user = userEvent.setup();
+    render(<DealDetailPage />);
+    await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+    const reads = mockGetDealById.mock.calls.length;
+    await user.click(screen.getByTestId('deal-stage-trigger'));
+    await user.click(screen.getByTestId('deal-stage-option-new'));
+    await user.click(await screen.findByRole('button', { name: /confirm transition/i }));
+    await waitFor(() => expect(mockShowError).toHaveBeenCalledWith('Deal is won and can no longer be edited'));
+    expect(mockShowError).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(mockGetDealById.mock.calls.length).toBeGreaterThan(reads));
   });
 });

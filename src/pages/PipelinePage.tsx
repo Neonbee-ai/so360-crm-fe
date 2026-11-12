@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { KanbanBoard } from '../components/kanban/KanbanBoard';
 import { crmService } from '../services/crmService';
@@ -7,7 +7,7 @@ import { Deal, FlowState } from '../types/crm';
 import { Loader2, Plus } from 'lucide-react';
 import { StageTransitionModal } from '../components/kanban/StageTransitionModal';
 import { DealCloseModal } from '../components/kanban/DealCloseModal';
-import { dealCloseService, stageKind, LoseDealBody, WinDealBody } from '../services/salesConfigService';
+import { dealCloseService, LoseDealBody, WinDealBody } from '../services/salesConfigService';
 import { toast, ListPageTemplate, Button, SearchInput, Skeleton } from '@so360/design-system';
 import CreateDealModal from '../pages/components/CreateDealModal';
 
@@ -18,6 +18,7 @@ import { useFillViewportHeight } from '../hooks/useFillViewportHeight';
 import { RE_FLAGS } from '../hooks/useCrmFeatureFlag';
 import ExportMenu, { useCanExport } from '../components/ExportMenu';
 import { exportService } from '../services/exportService';
+import { planStageMove, isAlreadyClosedError } from '../utils/dealStageSync';
 
 const PipelinePage = () => {
     const navigate = useNavigate();
@@ -58,6 +59,9 @@ const PipelinePage = () => {
     // Won / lost stages run the real win / lose flow instead of a bare stage move.
     const [closeModal, setCloseModal] = useState<{ deal: Deal; stage: FlowState; kind: 'won' | 'lost' } | null>(null);
     const [closing, setClosing] = useState(false);
+    // One user action = one transition request: Enter + click or a double click
+    // used to post /win twice and raise two identical error toasts.
+    const transitionInFlight = useRef(false);
 
     // Debounce filter changes for text inputs; also re-runs on pollTick for auto-refresh
     useEffect(() => {
@@ -97,6 +101,8 @@ const PipelinePage = () => {
                 name: s.name,
                 color: s.color || 'rgb(var(--nb-fg-muted))',
                 is_terminal: s.is_terminal ?? false,
+                // Stage type drives Won/Lost routing (stageKind); name is only the fallback.
+                type: ((s as any).stage_type ?? (s as any).type) || undefined,
             })));
 
             setDeals(fetchedStages.flatMap(s => s.deals || []));
@@ -113,9 +119,19 @@ const PipelinePage = () => {
         const stage = stages.find(s => s.id === newStageId);
         if (!stage) return;
 
-        const kind = stageKind(stage as { name?: string; type?: string });
-        if (kind !== 'open') {
-            setCloseModal({ deal, stage, kind });
+        const plan = planStageMove(deal, stage);
+        if (plan.action === 'reconcile') {
+            // Already in that outcome (stale card): re-read, never re-post /win or /lose.
+            toast.warning(plan.message);
+            fetchData();
+            return;
+        }
+        if (plan.action === 'blocked') {
+            toast.error(plan.message);
+            return;
+        }
+        if (plan.action === 'close') {
+            setCloseModal({ deal, stage, kind: plan.kind });
             return;
         }
 
@@ -129,7 +145,8 @@ const PipelinePage = () => {
 
     const confirmStageChange = async (reason: string) => {
         const { deal, newStage, newStageId } = transitionModal;
-        if (!deal || !newStageId) return;
+        if (!deal || !newStageId || transitionInFlight.current) return;
+        transitionInFlight.current = true;
 
         try {
             await crmService.updateDealStage(deal.id, newStageId, reason);
@@ -141,14 +158,19 @@ const PipelinePage = () => {
                 emitNotification({ event, userIds: deal.owner_id ? [deal.owner_id] : [], variables: { dealName: deal.name, stageName: newStage }, relatedResource: { type: 'deal', id: deal.id } }).catch(() => {});
             }
             setDeals(prev => prev.map(d => d.id === deal.id ? { ...d, current_flow_state: newStageId ?? undefined } : d));
-        } catch (error) {
-            toast.error('Failed to update stage');
+        } catch (error: any) {
+            toast.error(error?.message || 'Failed to update stage');
+        } finally {
+            transitionInFlight.current = false;
+            // Reconcile with the saved deal either way (column, counts, totals).
+            fetchData();
         }
     };
 
     const finishClose = async (call: () => Promise<unknown>) => {
-        if (!closeModal) return;
+        if (!closeModal || transitionInFlight.current) return;
         const { deal, stage, kind } = closeModal;
+        transitionInFlight.current = true;
         setClosing(true);
         try {
             await call();
@@ -158,8 +180,16 @@ const PipelinePage = () => {
             setCloseModal(null);
             fetchData();
         } catch (error: any) {
-            toast.error(error?.message || `Could not mark the deal as ${kind}`);
+            if (isAlreadyClosedError(error)) {
+                // The saved deal is already closed: show the saved state, one notice.
+                setCloseModal(null);
+                toast.warning(error.message);
+                fetchData();
+            } else {
+                toast.error(error?.message || `Could not mark the deal as ${kind}`);
+            }
         } finally {
+            transitionInFlight.current = false;
             setClosing(false);
         }
     };
