@@ -51,6 +51,7 @@ vi.mock('@so360/shell-context', () => ({
 }));
 
 vi.mock('react-router-dom', () => ({
+  useNavigationType: () => 'POP',
   useNavigate: () => vi.fn(),
   useLocation: () => ({ search: '', pathname: '/leads', state: null }),
   useParams: () => ({}),

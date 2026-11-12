@@ -11,6 +11,9 @@ import {
     ExternalLink, Briefcase, Receipt, Info, LayoutDashboard, Loader2, Zap, FileSignature, Check
 } from 'lucide-react';
 import { StageTransitionModal } from '../components/kanban/StageTransitionModal';
+import { DealCloseModal } from '../components/kanban/DealCloseModal';
+import { dealCloseService, LoseDealBody, WinDealBody } from '../services/salesConfigService';
+import { resolveDealStage, planStageMove, isAlreadyClosedError } from '../utils/dealStageSync';
 import SignRequestModal from '../components/sign/SignRequestModal';
 import DealProductsTab from './components/DealProductsTab';
 import CallsTab from './components/CallsTab';
@@ -18,6 +21,7 @@ import DealPaymentPlanPanel from './components/DealPaymentPlanPanel';
 import DealCommissionPanel from './components/DealCommissionPanel';
 import { useCrmFeatureFlag, RE_FLAGS } from '../hooks/useCrmFeatureFlag';
 import { RecordNotFound } from '../components/common/RecordNotFound';
+import { EmailComposeButton } from '../components/emailCompose/EmailComposeButton';
 import { CrossLinkChip, toast, useConfirm, DetailPageTemplate, Button, IconButton, Card, EmptyState, Badge, Select, DatePicker, NumberInput, Textarea, Grid, GridItem, FileUpload } from '@so360/design-system';
 import { crmService, dealsApi, tasksApi, activitiesApi, TimelineEvent } from '../services/crmService';
 import { useCRMFormatters } from '../utils/formatters';
@@ -104,6 +108,11 @@ const DealDetailPage = () => {
         newStage: string;
         newStageId: string | null;
     }>({ isOpen: false, newStage: '', newStageId: null });
+    // Won / Lost picked from the stage menu run the same close flow as the board.
+    const [closeStage, setCloseStage] = useState<{ stage: { id: string; name: string; type?: string }; kind: 'won' | 'lost' } | null>(null);
+    const [closingDeal, setClosingDeal] = useState(false);
+    // One user action = one transition request (no double submit / double toast).
+    const stageInFlight = useRef(false);
     const [isChangingOwner, setIsChangingOwner] = useState(false);
     const [isCreatingTask, setIsCreatingTask] = useState(false);
     const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -344,25 +353,73 @@ const DealDetailPage = () => {
     // Selecting a stage from the popover doesn't commit immediately — it opens the same
     // transition confirmation used by the Pipeline board, keeping both entry points on
     // one API path (crmService.updateDealStage -> target_state) and one UX.
+    // The saved deal's configured stage — the same rule the Pipeline board uses
+    // (status + stage_id), never the legacy `stage` text that the API doesn't return.
+    const currentStage = resolveDealStage(deal, dealStages);
+
     const handleSelectStage = (stageId: string) => {
         setIsChangingStage(false);
         if (!deal) return;
-        if (stageId === (deal.stage_id || deal.stage)) return;
+        if (stageId === (currentStage?.id ?? (deal.stage_id || deal.stage))) return;
         const stage = dealStages.find(s => s.id === stageId);
-        setStageTransition({ isOpen: true, newStage: stage?.name || stageId, newStageId: stageId });
+        if (!stage) return;
+        const plan = planStageMove(deal, stage);
+        if (plan.action === 'reconcile') {
+            toast.warning(plan.message);
+            fetchData();
+            return;
+        }
+        if (plan.action === 'blocked') {
+            toast.error(plan.message);
+            return;
+        }
+        if (plan.action === 'close') {
+            setCloseStage({ stage, kind: plan.kind });
+            return;
+        }
+        setStageTransition({ isOpen: true, newStage: stage.name, newStageId: stageId });
     };
 
     const confirmStageTransition = async (reason: string) => {
-        if (!deal || !stageTransition.newStageId) return;
+        if (!deal || !stageTransition.newStageId || stageInFlight.current) return;
         const { newStage, newStageId } = stageTransition;
+        stageInFlight.current = true;
         try {
             await crmService.updateDealStage(deal.id, newStageId, reason);
             setDeal(prev => prev ? { ...prev, stage: newStage as Deal['stage'], stage_id: newStageId, current_flow_state: newStageId } : null);
             toast.success('Deal stage updated');
             recordActivity({ eventType: 'deal.stage_changed', eventCategory: 'crm', description: `Deal "${deal.name}" moved to ${newStage}`, resourceType: 'deal', resourceId: deal.id }).catch(() => {});
+        } catch (error: any) {
+            toast.error(error?.message || 'Failed to update stage');
+        } finally {
+            stageInFlight.current = false;
+            // Re-read the saved deal either way so the label is the persisted stage.
             fetchData();
-        } catch (error) {
-            toast.error('Failed to update stage');
+        }
+    };
+
+    const finishCloseStage = async (call: () => Promise<unknown>) => {
+        if (!deal || !closeStage || stageInFlight.current) return;
+        const { stage, kind } = closeStage;
+        stageInFlight.current = true;
+        setClosingDeal(true);
+        try {
+            await call();
+            toast.success(`Deal marked as ${stage.name}`);
+            recordActivity({ eventType: kind === 'won' ? 'deal.won' : 'deal.lost', eventCategory: 'crm', description: `Deal "${deal.name}" moved to ${stage.name}`, resourceType: 'deal', resourceId: deal.id }).catch(() => {});
+            setCloseStage(null);
+            fetchData();
+        } catch (error: any) {
+            if (isAlreadyClosedError(error)) {
+                setCloseStage(null);
+                toast.warning(error.message);
+                fetchData();
+            } else {
+                toast.error(error?.message || `Could not mark the deal as ${kind}`);
+            }
+        } finally {
+            stageInFlight.current = false;
+            setClosingDeal(false);
         }
     };
 
@@ -641,7 +698,7 @@ const DealDetailPage = () => {
                                     className="group gap-1.5"
                                     data-testid="deal-stage-trigger"
                                 >
-                                    {deal.stage}
+                                    {currentStage?.name ?? deal.stage}
                                     {canEditDeal && <Edit2 size={12} className="text-info opacity-0 group-hover:opacity-100 transition-opacity" />}
                                 </Button>
 
@@ -652,7 +709,7 @@ const DealDetailPage = () => {
                                         className="absolute z-menu top-full left-0 mt-1 min-w-40 bg-surface border border-line rounded-nb shadow-overlay overflow-hidden"
                                     >
                                         {dealStages.map(s => {
-                                            const isCurrent = s.id === (deal.stage_id || deal.stage);
+                                            const isCurrent = s.id === (currentStage?.id ?? (deal.stage_id || deal.stage));
                                             return (
                                                 <Button
                                                     variant={isCurrent ? 'primary' : 'secondary'}
@@ -698,6 +755,7 @@ const DealDetailPage = () => {
                 </Button>
             ) : undefined}
             secondaryActions={[
+                <EmailComposeButton key="compose-email" entityType="deal" entityId={deal.id} />,
                 ...(FEATURES.DEAL_ESTIMATE_REQUEST ? [<Button key="estimate" variant="secondary" onClick={handleCreateEstimate}><FileText size={14} />Create Estimate</Button>] : []),
                 ...(FEATURES.DEAL_INVOICE_REQUEST ? [<Button key="invoice" variant="secondary" onClick={handleCreateInvoice}><Receipt size={14} />Create Invoice</Button>] : []),
             ]}
@@ -1009,7 +1067,7 @@ const DealDetailPage = () => {
                 <Card title="Deal lifecycle">
                     <DealLifecycleStepper
                         stages={dealStages}
-                        currentStageId={deal.stage_id}
+                        currentStageId={currentStage?.id ?? deal.stage_id}
                         currentState={deal.current_flow_state || deal.stage}
                     />
                 </Card>
@@ -1413,6 +1471,17 @@ const DealDetailPage = () => {
                 onConfirm={confirmStageTransition}
                 deal={deal}
                 newStage={stageTransition.newStage}
+            />
+
+            <DealCloseModal
+                isOpen={!!closeStage}
+                kind={closeStage?.kind ?? 'won'}
+                deal={deal}
+                stageName={closeStage?.stage.name ?? ''}
+                busy={closingDeal}
+                onClose={() => setCloseStage(null)}
+                onWin={(body: WinDealBody) => finishCloseStage(() => dealCloseService.win(deal.id, body))}
+                onLose={(body: LoseDealBody) => finishCloseStage(() => dealCloseService.lose(deal.id, body))}
             />
 
             {/* Delete Deal Confirmation Modal */}

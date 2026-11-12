@@ -128,7 +128,11 @@ const REWidgetsInner: React.FC = () => {
 class REWidgetsBoundary extends React.Component<{ children: React.ReactNode }, { failed: boolean }> {
     state = { failed: false };
     static getDerivedStateFromError() { return { failed: true }; }
-    componentDidCatch() { /* fail-silent: the widgets are optional */ }
+    // Fail-silent for the user (the widgets are optional), but still report to the Shell's error registry.
+    componentDidCatch(error: Error, info: React.ErrorInfo) {
+        (window as unknown as { __NEONBEE_REPORT_ERROR__?: (e: Error, s?: string | null) => void })
+            .__NEONBEE_REPORT_ERROR__?.(error, info?.componentStack ?? null);
+    }
     render() { return this.state.failed ? null : this.props.children; }
 }
 

@@ -73,6 +73,7 @@ vi.mock('../services/crmService', () => ({
   meetingsApi: {
     getByLead: vi.fn().mockResolvedValue([]), getByDeal: vi.fn().mockResolvedValue([]),
     create: vi.fn(), update: vi.fn(), cancel: vi.fn(), complete: vi.fn(), remove: vi.fn(),
+    providers: vi.fn().mockResolvedValue([]),
   },
   inboxIntegrationApi: {
     getConversationsForLead: vi.fn().mockResolvedValue({ data: [], total: 0 }),
@@ -919,6 +920,15 @@ describe('LeadDetailPage', () => {
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getAllByText('John Doe').length).toBeGreaterThan(0));
       expect(screen.queryByText('Loading lead workspace...')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Given the lead was mapped with a stale owner placeholder', () => {
+    it('When the users list loads / Then the owner card shows the real owner name and email', async () => {
+      mockGetLeadById.mockResolvedValue(makeLead({ owner: { id: 'u1', full_name: 'Unknown User', email: '', avatar_url: '' } }));
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getAllByText('owner@test.com').length).toBeGreaterThan(0));
+      expect(screen.queryByText('Unknown User')).not.toBeInTheDocument();
     });
   });
 

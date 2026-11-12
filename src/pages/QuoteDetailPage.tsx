@@ -79,7 +79,6 @@ const QuoteDetailPage = () => {
     const [error, setError] = useState<string | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const priceListsOn = useCrmFeatureFlag(S2S_FLAGS.PRICE_LISTS);
-    const layoutsOn = useCrmFeatureFlag(S2S_FLAGS.DOCUMENT_LAYOUTS);
     const [priceListId, setPriceListId] = useState('');
     const [showPreview, setShowPreview] = useState(false);
 
@@ -545,7 +544,7 @@ const QuoteDetailPage = () => {
     const overflowActions = [
         ...secondaryCandidates.slice(2).map(c => ({ label: c.label, onSelect: c.onSelect })),
         ...(canApproveQuote && canApprove ? [{ label: 'Reject', danger: true, onSelect: () => setShowRejectModal(true) }] : []),
-        ...(!isEditing && layoutsOn ? [{ label: 'Preview Quote', onSelect: () => setShowPreview(true) }] : []),
+        ...(!isEditing ? [{ label: 'Preview Quote', onSelect: () => setShowPreview(true) }] : []),
         ...(!isEditing ? [{ label: 'Print Quote', onSelect: handlePrint }] : []),
     ];
 
@@ -592,7 +591,10 @@ const QuoteDetailPage = () => {
                             <Card title="Customer">
                                 <Button
                                     variant="secondary"
-                                    onClick={() => navigate(`/crm/customers/${customer.id}`)}
+                                    // id is null when crm-be could only name the party from the
+                                    // deal's company (no active customer lead to open).
+                                    disabled={!customer.id}
+                                    onClick={() => { if (customer.id) navigate(`/crm/customers/${customer.id}`); }}
                                     className="w-full !h-auto !justify-start !whitespace-normal !text-left !py-nb-2"
                                 >
                                     <span className="flex min-w-0 flex-col items-start">
@@ -1048,9 +1050,7 @@ const QuoteDetailPage = () => {
                 </div>
             </div>
 
-            {layoutsOn && (
-                <QuotePreviewModal isOpen={showPreview} onClose={() => setShowPreview(false)} document={showPreview ? (buildDocData() as any) : {}} />
-            )}
+            <QuotePreviewModal isOpen={showPreview} onClose={() => setShowPreview(false)} document={showPreview ? (buildDocData() as any) : {}} />
 
             {/* Product Picker Modal */}
             <ProductPickerModal

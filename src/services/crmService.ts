@@ -1,4 +1,5 @@
-import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType, Lead, DealFilters, CRMSettings, InventoryItem, SalesRep, LeadProduct, DealProduct, LeadScoringRule, ScoreCategory, Stakeholder, StakeholderActivitySummary, Meeting, DealNamingConfig, DEFAULT_DEAL_NAMING_CONFIG } from '../types/crm';
+import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType, Lead, DealFilters, CRMSettings, InventoryItem, SalesRep, LeadProduct, DealProduct, LeadScoringRule, ScoreCategory, Stakeholder, StakeholderActivitySummary, Meeting, MeetingProviderAvailability, DealNamingConfig, DEFAULT_DEAL_NAMING_CONFIG, UpNextTask } from '../types/crm';
+import { DASHBOARD_REMINDER_FILTERS, DASHBOARD_REMINDER_LIMIT, DEFAULT_TASK_FILTERS, toTaskListApiParams } from '../utils/taskListFilters';
 import { createRequestCache } from './requestCache';
 import { notifyQuotaExceeded } from './quotaExceeded';
 import { plainErrorText } from '../utils/apiErrorMessage';
@@ -408,10 +409,11 @@ class ApiClient {
         return { data: data as T, total: Number.isNaN(parsedTotal) ? null : parsedTotal };
     }
 
-    async post<T>(endpoint: string, data: any): Promise<T> {
+    async post<T>(endpoint: string, data: any, options?: { headers?: Record<string, string> }): Promise<T> {
         return this.request<T>(endpoint, {
             method: 'POST',
             body: JSON.stringify(data),
+            ...(options?.headers ? { headers: options.headers } : {}),
         });
     }
 
@@ -862,8 +864,12 @@ export const dealsApi = {
     /**
      * POST /deals - Create a new deal
      */
-    create: async (data: any): Promise<Deal> => {
-        const deal = await apiClient.post<any>('/deals', data);
+    create: async (data: any, options?: { idempotencyKey?: string }): Promise<Deal> => {
+        const deal = await apiClient.post<any>(
+            '/deals',
+            data,
+            options?.idempotencyKey ? { headers: { 'Idempotency-Key': options.idempotencyKey } } : undefined,
+        );
         return mapDealFromApi(deal);
     },
 
@@ -946,6 +952,28 @@ export const dealsApi = {
 // ============================================================================
 // TASKS API
 // ============================================================================
+export interface TaskListResponse {
+    items: Task[];
+    total: number;
+    counts: {
+        overdue: number;
+        today: number;
+        next_7_days: number;
+        no_due_date: number;
+        done: number;
+        total: number;
+    };
+    page: number;
+    limit: number;
+    truncated: boolean;
+}
+
+export interface UpNextResponse {
+    items: UpNextTask[];
+    total: number;
+    days: number;
+}
+
 export const tasksApi = {
     /**
      * GET /tasks - Get all tasks with filtering for overdue or status
@@ -963,6 +991,26 @@ export const tasksApi = {
     }): Promise<Task[]> => {
         const tasks = await apiClient.get<any[]>('/tasks', params);
         return tasks.map(mapTaskFromApi);
+    },
+
+    /**
+     * GET /tasks/list - Smart-ordered, filtered, paginated tasks with the
+     * counter-strip counts. Visibility is enforced server-side (`scope` is a
+     * request, clamped to the caller's entitlement).
+     */
+    getList: async (params: Record<string, string>): Promise<TaskListResponse> => {
+        const res = await apiClient.get<TaskListResponse>('/tasks/list', params);
+        return { ...res, items: res.items.map(mapTaskFromApi) };
+    },
+
+    /**
+     * GET /tasks/up-next - open booked calls/meetings and reminders for today
+     * and the next 7 days, ordered by time; past-due items are included and
+     * flagged `overdue`. Same visibility rules as the list.
+     */
+    getUpNext: async (params: Record<string, string>): Promise<UpNextResponse> => {
+        const res = await apiClient.get<UpNextResponse>('/tasks/up-next', params);
+        return { ...res, items: res.items.map(t => ({ ...mapTaskFromApi(t), at: t.at, kind: t.kind, overdue: t.overdue, day_offset: t.day_offset })) };
     },
 
     /**
@@ -1194,6 +1242,10 @@ export const meetingsApi = {
     },
     remove: async (id: string): Promise<void> => {
         await apiClient.delete(`/meetings/${id}`);
+    },
+    /** Pulse ab92e893: Google Meet / Teams / Zoom and whether each is connected. */
+    providers: async (): Promise<MeetingProviderAvailability[]> => {
+        return apiClient.get('/meetings/providers');
     },
 };
 
@@ -1615,7 +1667,8 @@ export const callsApi = {
 // ============================================================================
 // Maintain backward compatibility with existing code
 /** Shapes the dashboard payload from the three reads (shared by the KPI-first callback). */
-function buildDashboardStats(periodStats: any, performanceStats: any, tasks: any[]) {
+/** reminderList: the server's reminder list (smart order); openTotal: open-task count from the same list endpoint. */
+function buildDashboardStats(periodStats: any, performanceStats: any, reminderList: { items: any[]; total: number }, openTotal: number) {
     // Compute team stats from real performance data
     const teamStats = (performanceStats || []).map((p: any) => ({
         user: {
@@ -1632,10 +1685,8 @@ function buildDashboardStats(periodStats: any, performanceStats: any, tasks: any
         conversionRate: p.metrics.conversionRate,
     })).sort((a: any, b: any) => b.dealCount - a.dealCount);
 
-    // Get reminders
-    const reminders = tasks.filter((t: any) =>
-        t.status === 'OPEN' && t.type === 'REMINDER'
-    ).sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
+    // Smart order from the server: overdue, then today, then upcoming.
+    const reminders = reminderList.items;
 
     return {
         financials: {
@@ -1647,8 +1698,8 @@ function buildDashboardStats(periodStats: any, performanceStats: any, tasks: any
         counts: {
             leads: periodStats.counts.totalLeads,
             deals: periodStats.counts.totalDeals,
-            tasks: tasks.filter(t => t.status === 'OPEN' || t.status === 'IN_PROGRESS').length,
-            reminders: reminders.length
+            tasks: openTotal,
+            reminders: reminderList.total
         },
         teamStats,
         monthlyRevenue: periodStats.chartData.values,
@@ -1765,18 +1816,23 @@ export const crmService = {
                 const onKpis = opts.onKpis;
                 dashboardRequest.then((periodStats) => {
                     try {
-                        onKpis({ ...buildDashboardStats(periodStats, [], []), pending: true });
+                        onKpis({ ...buildDashboardStats(periodStats, [], { items: [], total: 0 }, 0), pending: true });
                     } catch (err) {
                         console.error('Dashboard KPI callback failed', err);
                     }
                 }, () => undefined);
             }
-            const [periodStats, performanceStats, tasks] = await Promise.all([
+            // Reminders and the open-task count come from the same server list
+            // the Tasks page uses (GET /tasks/list), so the numbers match and the
+            // dashboard no longer downloads every task to filter it in the browser.
+            const tzOffsetMinutes = -new Date().getTimezoneOffset();
+            const [periodStats, performanceStats, reminderList, openList] = await Promise.all([
                 dashboardRequest,
                 apiClient.get<any>('/analytics/performance').catch(() => []),
-                crmService.getTasks(),
+                crmService.getTaskList(toTaskListApiParams(DASHBOARD_REMINDER_FILTERS, { page: 1, limit: DASHBOARD_REMINDER_LIMIT, tzOffsetMinutes })),
+                crmService.getTaskList(toTaskListApiParams({ ...DEFAULT_TASK_FILTERS, statuses: DASHBOARD_REMINDER_FILTERS.statuses }, { page: 1, limit: 1, tzOffsetMinutes })),
             ]);
-            return buildDashboardStats(periodStats, performanceStats, tasks);
+            return buildDashboardStats(periodStats, performanceStats, reminderList, openList.total);
         } catch (error) {
             console.error('Failed to get dashboard stats', error);
             return {
@@ -1974,6 +2030,14 @@ export const crmService = {
     // Tasks
     getTasks: async (scope?: 'own' | 'team' | 'all'): Promise<Task[]> => {
         return tasksApi.getAll(scope ? { scope } : undefined);
+    },
+
+    getTaskList: async (params: Record<string, string>): Promise<TaskListResponse> => {
+        return tasksApi.getList(params);
+    },
+
+    getUpNext: async (params: Record<string, string>): Promise<UpNextResponse> => {
+        return tasksApi.getUpNext(params);
     },
 
     async getTaskById(id: string): Promise<Task | undefined> {

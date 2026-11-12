@@ -73,9 +73,40 @@ export interface Lead {
     /** ICP best-match score (0-100). */
     score?: number | null;
     score_breakdown?: ScoreBreakdownItem[];
+    // RE §26 acquisition attribution (crm-be migration 080)
+    utm_source?: string | null;
+    utm_medium?: string | null;
+    utm_campaign?: string | null;
+    utm_term?: string | null;
+    utm_content?: string | null;
+    ad_platform?: string | null;
+    ad_campaign_id?: string | null;
+    ad_set_id?: string | null;
+    ad_set_name?: string | null;
+    ad_id?: string | null;
+    ad_name?: string | null;
+    landing_page?: string | null;
+    referrer?: string | null;
+    gclid?: string | null;
+    fbclid?: string | null;
+    crm_campaign_id?: string | null;
     /** Per-org rating (score band, or set by hand when rating_is_manual). */
     rating_category_id?: string | null;
     rating_is_manual?: boolean;
+    /** RE §20 — band stored by crm-be (null until first computed). */
+    temperature?: LeadTemperature | null;
+    temperature_score?: number | null;
+    temperature_factors?: LeadTemperatureFactors | null;
+}
+
+export type LeadTemperature = 'hot' | 'warm' | 'cold';
+
+export interface LeadTemperatureFactors {
+    budget_fit: number;
+    timeline: number;
+    engagement: number;
+    source_quality: number;
+    days_since_contact: number | null;
 }
 
 export type DealStage = 'Lead' | 'Qualified' | 'Proposal' | 'Negotiation' | 'Won' | 'Lost';
@@ -145,7 +176,7 @@ export interface Note {
     replies?: Note[];
 }
 
-export type TaskType = 'EMAIL' | 'TODO' | 'REMINDER' | 'CALL' | 'MEETING';
+export type TaskType = 'EMAIL' | 'TODO' | 'REMINDER' | 'CALL' | 'MEETING' | 'FOLLOW_UP' | 'WHATSAPP' | 'DEMO' | 'SITE_VISIT';
 
 /**
  * Task priority. `tasks` is shared with the Projects module, which owns the
@@ -188,6 +219,8 @@ export interface Task {
     reminder_minutes_before?: number;
     reminder_at?: string | null;
     reminder_offset_minutes?: number | null;
+    /** Section the smart-ordered list endpoint placed this task in (GET /tasks/list only). */
+    list_bucket?: 'overdue' | 'today' | 'upcoming' | 'no_due' | 'done';
     // Project sync — populated once the connect-project migration lands on the
     // backend. Absent/undefined on a task means "no project connection", which
     // is the current unaffected behavior — every consumer must treat it that way.
@@ -582,8 +615,24 @@ export interface Meeting {
     next_steps?: string;
     status: MeetingStatus;
     owner_person_id?: string;
+    /** Pulse ab92e893: provider that created the online meeting, and its join link. */
+    meeting_provider?: MeetingProvider | null;
+    join_url?: string | null;
+    external_event_id?: string | null;
     created_at: string;
     updated_at: string;
+}
+
+export type OnlineMeetingProvider = 'google_meet' | 'microsoft_teams' | 'zoom';
+export type MeetingProvider = OnlineMeetingProvider | 'manual';
+
+/** GET /meetings/providers row. */
+export interface MeetingProviderAvailability {
+    provider: OnlineMeetingProvider;
+    label: string;
+    available: boolean;
+    reason?: 'not_connected' | 'not_configured' | 'unavailable';
+    connect_piece?: string;
 }
 
 export interface StakeholderActivitySummary {
@@ -596,3 +645,14 @@ export interface StakeholderActivitySummary {
     meeting_history: any[];
 }
 
+
+/** An entry of the Up Next agenda (GET /tasks/up-next): a task plus where it sits on the agenda. */
+export interface UpNextTask extends Task {
+    /** The instant the agenda orders by: the due time of a booked call/meeting, the reminder time of a reminder. */
+    at: string;
+    kind: 'booked' | 'reminder';
+    /** Past due. Past-due items stay on the agenda, flagged. */
+    overdue: boolean;
+    /** Calendar days from today (negative: before today). */
+    day_offset: number;
+}

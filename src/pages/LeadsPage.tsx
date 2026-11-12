@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useNavigationType } from 'react-router-dom';
+import { shouldClearLeadSearch } from './leadSearchReset';
 import {
   Filter,
   Plus,
@@ -25,6 +26,7 @@ import { ImportHub } from '../components/import/ImportHub';
 import { useCrmFeatureFlag, RE_FLAGS } from '../hooks/useCrmFeatureFlag';
 import { LeadsDataGrid, GridContext } from '../components/leads/LeadsDataGrid';
 import { LeadDetailPanel } from '../components/leads/LeadDetailPanel';
+import { withResolvedOwner } from '../utils/resolveLeadOwner';
 import LeadFilterBuilder from '../components/leads/LeadFilterBuilder';
 import { countActiveRules, type FilterGroup } from '../components/leads/leadFilterModel';
 import { buildLeadsQuery, DEFAULT_FILTERS, UNASSIGNED_OWNER, type FilterState } from './leadsListQuery';
@@ -98,6 +100,8 @@ const LeadsPage = () => {
   const { recordActivity } = useActivity();
   const shell = useShellBridge();
   const canCreateLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.create') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:create') ?? true);
+  // RE §26 — UTM / ad attribution filters; off unless the flag is explicitly on.
+  const canFilterAttribution = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:utm_attribution') ?? false);
   const canUpdateLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.update') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:update') ?? true);
   // Destructive action — gate on the delete permission, fail closed, independent
   // of canUpdateLead. Mirrors LeadDetailPage.tsx's canDeleteLead; the backend
@@ -106,6 +110,8 @@ const LeadsPage = () => {
   const canDeleteLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.delete') ?? false);
   // Bulk import (A7) — flag-gated, and only for users holding leads.import
   // (admin-only by default; the backend enforces the same permission).
+  // RE §20 — Hot/Warm/Cold badge. Off unless the flag resolves true.
+  const showTemperature = useCrmFeatureFlag(RE_FLAGS.LEAD_TEMPERATURE);
   const bulkImportEnabled = useCrmFeatureFlag(RE_FLAGS.BULK_IMPORT);
   const canImportPermission = useCanExport('leads.import');
   const canImportLeads = canImportPermission && bulkImportEnabled;
@@ -155,6 +161,14 @@ const LeadsPage = () => {
   // Filters — persisted so opening a lead and coming back keeps the list the
   // user built rather than resetting to every-lead, page 1.
   const [filters, setFilters] = usePersistedState<FilterState>('leads.filters', DEFAULT_FILTERS);
+  // The search box, unlike the other filters, clears on a fresh visit (sidebar /
+  // link = PUSH). Back from a lead (POP) or a reload keeps it; ?q= wins.
+  const navigationType = useNavigationType();
+  const clearSearchOnEntry = useRef(shouldClearLeadSearch(navigationType, location.search)).current;
+  useEffect(() => {
+    if (clearSearchOnEntry) setFilters((prev) => (prev.search ? { ...prev, search: '' } : prev));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Saved views
   const [savedViews, setSavedViews] = useState<SavedFilterView[]>(loadSavedViews);
@@ -237,7 +251,7 @@ const LeadsPage = () => {
 
   // Server-side paging: filters, search, owner/creator/rating, date range and the advanced tree
   // are all resolved by GET /leads?meta=true; only the visible page crosses the wire.
-  const [debouncedSearch, setDebouncedSearch] = useState(filters.search);
+  const [debouncedSearch, setDebouncedSearch] = useState(clearSearchOnEntry ? '' : filters.search);
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(filters.search), 300);
     return () => clearTimeout(t);
@@ -300,7 +314,8 @@ const LeadsPage = () => {
   // Filtering/paging happen on the server; `leads` already is the filtered page.
   const sandboxTotal = isSandboxMode ? Math.min(total, sandboxEntryLimit) : total;
   const totalPages = Math.ceil(sandboxTotal / pageSize);
-  const paginatedLeads = leads;
+  // Owner identity comes from the users list so a lead mapped before users loaded never shows a stale placeholder.
+  const paginatedLeads = useMemo(() => leads.map((l) => withResolvedOwner(l, users)), [leads, users]);
 
   useEffect(() => { setCurrentPage(1); }, [filters]);
 
@@ -589,7 +604,8 @@ const LeadsPage = () => {
     formatDate: formatters.formatDate,
     onInlineEdit: handleInlineEdit,
     ratings: ratingEnabled ? ratings : undefined,
-  }), [users, leadStages, canUpdateLead, canDeleteLead, handleOwnerChange, handleStatusChange, navigate, formatters, handleInlineEdit, ratingEnabled, ratings]);
+    showTemperature,
+  }), [showTemperature, users, leadStages, canUpdateLead, canDeleteLead, handleOwnerChange, handleStatusChange, navigate, formatters, handleInlineEdit, ratingEnabled, ratings]);
 
   const bulkActions = useMemo(() => [
     {
@@ -655,7 +671,7 @@ const LeadsPage = () => {
         key: 'advanced', label: 'Advanced', type: 'custom',
         formatValue: () => `Advanced (${advancedFilter ? countActiveRules(advancedFilter) : 0})`,
         render: () => (
-          <LeadFilterBuilder value={advancedFilter} onApply={handleApplyAdvancedFilter} onClose={() => undefined} />
+          <LeadFilterBuilder value={advancedFilter} onApply={handleApplyAdvancedFilter} onClose={() => undefined} includeAttribution={canFilterAttribution} />
         ),
       },
     ],

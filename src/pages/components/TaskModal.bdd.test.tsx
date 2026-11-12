@@ -18,6 +18,8 @@ const mockGetProjectById = vi.fn();
 const mockConnectTaskToProject = vi.fn();
 const mockGetProjectTeamUserIds = vi.fn();
 const mockShowWarning = vi.hoisted(() => vi.fn());
+// Reminders flag (submodule:crm:task_reminders); tests flip it off.
+const mockFlags = vi.hoisted(() => ({ on: true }));
 
 vi.mock('../../services/crmService', () => ({
   crmService: {
@@ -46,7 +48,7 @@ vi.mock('@so360/shell-context', () => ({
   useShell: () => ({ user: mockCurrentUser }),
   useNotify: () => ({ emitNotification: (...a: any[]) => mockEmitNotification(...a) }),
   useActivity: () => ({ recordActivity: (...a: any[]) => mockRecordActivity(...a) }),
-  useShellBridge: () => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false }),
+  useShellBridge: () => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => mockFlags.on, isFeatureHidden: () => false }),
   useQuota: () => ({
     quotas: [], isLoading: false, error: null,
     isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {},
@@ -125,6 +127,7 @@ const MOCK_PROJECTS = [
 ];
 
 beforeEach(() => {
+  mockFlags.on = true;
   vi.clearAllMocks();
   mockCurrentUser = { id: 'u1', full_name: 'Test User', email: 'test@test.com' };
   mockGetUsers.mockResolvedValue(USERS);
@@ -248,7 +251,7 @@ describe('TaskModal', () => {
         ...BASE_TASK,
         type: 'REMINDER' as const,
         due_date: savedInstant,
-        reminder_minutes_before: 30,
+        reminder_offset_minutes: 30,
       };
       render(<TaskModal task={task as any} onClose={vi.fn()} onSuccess={vi.fn()} />);
       await waitFor(() => {
@@ -451,7 +454,17 @@ describe('TaskModal', () => {
       );
     });
 
-    it('When REMINDER type with reminderMinutes set / Then payload includes reminder_minutes_before', async () => {
+    it.each(['FOLLOW_UP', 'WHATSAPP', 'DEMO', 'SITE_VISIT'])('When the richer type %s is picked / Then the payload carries it', async (t) => {
+      render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
+      await waitFor(() => screen.getByPlaceholderText(/follow up/i));
+      fireEvent.change(selects()[0], { target: { value: t } });
+      fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Typed task' } });
+      fireEvent.change(dueInput(), { target: { value: futureDate } });
+      fireEvent.submit(document.querySelector('form')!);
+      await waitFor(() => expect(mockCreateTask).toHaveBeenCalledWith(expect.objectContaining({ type: t })));
+    });
+
+    it('When REMINDER type with reminderMinutes set / Then payload includes reminder_offset_minutes', async () => {
       render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
       await waitFor(() => screen.getByPlaceholderText(/follow up/i));
       fireEvent.change(selects()[0], { target: { value: 'REMINDER' } });
@@ -463,12 +476,12 @@ describe('TaskModal', () => {
       fireEvent.submit(document.querySelector('form')!);
       await waitFor(() =>
         expect(mockCreateTask).toHaveBeenCalledWith(
-          expect.objectContaining({ type: 'REMINDER', reminder_minutes_before: 30 })
+          expect.objectContaining({ type: 'REMINDER', reminder_offset_minutes: 30 })
         )
       );
     });
 
-    it('When REMINDER type with no reminderMinutes / Then payload excludes reminder_minutes_before', async () => {
+    it('When REMINDER type with no reminderMinutes / Then payload excludes reminder_offset_minutes', async () => {
       render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
       await waitFor(() => screen.getByPlaceholderText(/follow up/i));
       fireEvent.change(selects()[0], { target: { value: 'REMINDER' } });
@@ -479,7 +492,7 @@ describe('TaskModal', () => {
       fireEvent.submit(document.querySelector('form')!);
       await waitFor(() => {
         const payload = mockCreateTask.mock.calls[0][0];
-        expect(payload).not.toHaveProperty('reminder_minutes_before');
+        expect(payload).not.toHaveProperty('reminder_offset_minutes');
       });
     });
 
@@ -1388,5 +1401,78 @@ describe('Given the assignee field of the task form', () => {
 
     await waitFor(() => expect(mockUpdateTask).toHaveBeenCalled());
     expect(mockGetProjectTeamUserIds).not.toHaveBeenCalled();
+  });
+});
+
+// ── Removing a reminder must reach the server (Pulse 552552b8) ───────────────
+describe('Given an existing task that has a reminder lead time', () => {
+  const REMINDER_TASK = {
+    ...BASE_TASK,
+    type: 'REMINDER' as const,
+    due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    reminder_offset_minutes: 30,
+  };
+
+  it('When the reminder dropdown is set back to none and saved / Then reminder_offset_minutes: null is sent so the server clears it', async () => {
+    render(<TaskModal task={REMINDER_TASK as any} onClose={vi.fn()} onSuccess={vi.fn()} />);
+    await waitFor(() => screen.getByDisplayValue('Follow up call'));
+    // selects in REMINDER edit mode: [0]=type, [1]=reminderMinutes
+    fireEvent.change(selects()[1], { target: { value: '' } });
+    fireEvent.submit(document.querySelector('form')!);
+    await waitFor(() => expect(mockUpdateTask).toHaveBeenCalled());
+    expect(mockUpdateTask.mock.calls[0][1]).toHaveProperty('reminder_offset_minutes', null);
+  });
+
+  it('When the type is changed away from Reminder and saved / Then the reminder is cleared too', async () => {
+    render(<TaskModal task={REMINDER_TASK as any} onClose={vi.fn()} onSuccess={vi.fn()} />);
+    await waitFor(() => screen.getByDisplayValue('Follow up call'));
+    fireEvent.change(selects()[0], { target: { value: 'CALL' } });
+    fireEvent.submit(document.querySelector('form')!);
+    await waitFor(() => expect(mockUpdateTask).toHaveBeenCalled());
+    expect(mockUpdateTask.mock.calls[0][1]).toHaveProperty('reminder_offset_minutes', null);
+  });
+
+  it('When the reminder is kept / Then the lead time is sent unchanged', async () => {
+    render(<TaskModal task={REMINDER_TASK as any} onClose={vi.fn()} onSuccess={vi.fn()} />);
+    await waitFor(() => screen.getByDisplayValue('Follow up call'));
+    fireEvent.submit(document.querySelector('form')!);
+    await waitFor(() => expect(mockUpdateTask).toHaveBeenCalled());
+    expect(mockUpdateTask.mock.calls[0][1]).toHaveProperty('reminder_offset_minutes', 30);
+  });
+});
+
+describe('Given an existing task without a reminder', () => {
+  it('When it is saved / Then no reminder field is sent at all', async () => {
+    render(<TaskModal task={BASE_TASK as any} onClose={vi.fn()} onSuccess={vi.fn()} />);
+    await waitFor(() => screen.getByDisplayValue('Follow up call'));
+    fireEvent.submit(document.querySelector('form')!);
+    await waitFor(() => expect(mockUpdateTask).toHaveBeenCalled());
+    expect(mockUpdateTask.mock.calls[0][1]).not.toHaveProperty('reminder_offset_minutes');
+  });
+});
+
+describe('Given a non-Reminder task with a lead time and the reminders flag off', () => {
+  const OFFSET_TASK = { ...BASE_TASK, type: 'CALL' as const, reminder_offset_minutes: 15 };
+
+  it('When it is saved without touching the hidden field / Then the lead time is left alone (not cleared)', async () => {
+    mockFlags.on = false;
+    render(<TaskModal task={OFFSET_TASK as any} onClose={vi.fn()} onSuccess={vi.fn()} />);
+    await waitFor(() => screen.getByDisplayValue('Follow up call'));
+    fireEvent.submit(document.querySelector('form')!);
+    await waitFor(() => expect(mockUpdateTask).toHaveBeenCalled());
+    expect(mockUpdateTask.mock.calls[0][1]).not.toHaveProperty('reminder_offset_minutes');
+  });
+});
+
+describe('Given a non-Reminder task with a lead time and the reminders flag on', () => {
+  const OFFSET_TASK = { ...BASE_TASK, type: 'CALL' as const, reminder_offset_minutes: 15 };
+
+  it('When the override is emptied and saved / Then reminder_offset_minutes: null is sent', async () => {
+    render(<TaskModal task={OFFSET_TASK as any} onClose={vi.fn()} onSuccess={vi.fn()} />);
+    await waitFor(() => screen.getByDisplayValue('15'));
+    fireEvent.change(screen.getByDisplayValue('15'), { target: { value: '' } });
+    fireEvent.submit(document.querySelector('form')!);
+    await waitFor(() => expect(mockUpdateTask).toHaveBeenCalled());
+    expect(mockUpdateTask.mock.calls[0][1]).toHaveProperty('reminder_offset_minutes', null);
   });
 });

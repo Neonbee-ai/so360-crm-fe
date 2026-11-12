@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { eventBus } from '@so360/event-bus';
 import { publishLeadsChanged } from '../utils/leadEvents';
+import { resolveLeadOwner } from '../utils/resolveLeadOwner';
 import { useShell, useActivity, useShellBridge, useCurrentEntity } from '@so360/shell-context';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -14,6 +15,7 @@ import {
 import { crmService, activitiesApi, settingsApi } from '../services/crmService';
 import { PromptDialog } from '../components/PromptDialog';
 import { PartnerSearchDropdown } from '../components/common/PartnerSearchDropdown';
+import { EmailComposeButton } from '../components/emailCompose/EmailComposeButton';
 import { useCRMFormatters } from '../utils/formatters';
 import { isTaskLocked } from '../utils/taskUtils';
 import { validateEmailRequired } from '../utils/emailValidation';
@@ -60,6 +62,7 @@ import NoteReplyComposer from '../components/notes/NoteReplyComposer';
 import { ExecutiveSummaryPanel } from '../components/ExecutiveSummaryPanel';
 import { MergeLeadPanel } from '../components/leads/MergeLeadPanel';
 import { DuplicateLeadWarning } from '../components/leads/DuplicateLeadWarning';
+import { LeadAttributionCard } from '../components/leads/LeadAttributionCard';
 import { parseDuplicateLead, type DuplicateLeadInfo } from '../services/leadDedupService';
 
 type TabType = 'overview' | 'activity' | 'notes' | 'tasks' | 'documents' | 'products' | 'feedback' | 'calls' | 'audit' | 'stakeholders' | 'emails' | 'meetings' | 'maintenance';
@@ -167,6 +170,7 @@ const LeadDetailPage = () => {
     const { isModuleEnabled } = useShell();
     const { setCurrentEntity } = useCurrentEntity();
     const shell = useShellBridge();
+    const canSeeAttribution = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:utm_attribution') ?? false);
     const canCreateDeal = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('deals.create') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:deals:create') ?? true);
     const canPromoteLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.convert') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:promote') ?? true);
     const canQualifyLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.update') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:qualify') ?? true);
@@ -224,6 +228,7 @@ const LeadDetailPage = () => {
     const [isChangingStatus, setIsChangingStatus] = useState(false);
     const [isChangingStage, setIsChangingStage] = useState(false);
     const [allUsers, setAllUsers] = useState<User[]>([]);
+    const owner = useMemo(() => resolveLeadOwner(lead?.owner, allUsers), [lead?.owner, allUsers]);
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [isCreatingTask, setIsCreatingTask] = useState(false);
     const [isCreatingDeal, setIsCreatingDeal] = useState(false);
@@ -658,6 +663,7 @@ const LeadDetailPage = () => {
                     </Button>
                 ) : undefined}
                 secondaryActions={[
+                    <EmailComposeButton key="compose-email" entityType="lead" entityId={lead.id} />,
                     <QuickActionBar
                     key="log-activity"
                 onAddNote={() => {
@@ -758,18 +764,18 @@ const LeadDetailPage = () => {
                                         );
                                     })}
                                 </div>
-                            ) : lead.owner ? (
+                            ) : owner ? (
                                 <div className="flex items-center gap-nb-3">
                                     <div className="flex size-10 items-center justify-center overflow-hidden rounded-full bg-surface-raised text-sm font-medium text-fg">
-                                        {lead.owner.avatar_url ? (
-                                            <img src={lead.owner.avatar_url} alt={lead.owner.full_name} className="h-full w-full object-cover" />
+                                        {owner.avatar_url ? (
+                                            <img src={owner.avatar_url} alt={owner.full_name} className="h-full w-full object-cover" />
                                         ) : (
-                                            lead.owner.full_name?.charAt(0)
+                                            owner.full_name?.charAt(0)
                                         )}
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="truncate text-sm font-medium text-fg">{lead.owner.full_name}</p>
-                                        <p className="truncate text-xs text-fg-muted">{lead.owner.email}</p>
+                                        <p className="truncate text-sm font-medium text-fg">{owner.full_name}</p>
+                                        <p className="truncate text-xs text-fg-muted">{owner.email}</p>
                                     </div>
                                 </div>
                             ) : (
@@ -1033,6 +1039,9 @@ const LeadDetailPage = () => {
                         {!isCustomerDetailRoute && <IcpFitCard meta={lead.custom_fields} />}
 
                         {isCustomerDetailRoute && contactFeedEnabled && <ContactFeedPanel entityType="lead" entityId={lead.id} />}
+
+                        {/* RE §26 Source & attribution (flag-gated) */}
+                        {canSeeAttribution && <LeadAttributionCard lead={lead} />}
 
                         {/* Deals */}
                         <Card title={`Deals (${associatedDeals.length})`}>
