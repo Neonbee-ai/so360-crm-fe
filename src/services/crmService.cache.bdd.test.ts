@@ -107,14 +107,14 @@ describe('crmService org-static cache', () => {
 describe('crmService source-types cache', () => {
   it('Given three lead components ask at once / When getAll runs thrice / Then one request is made', async () => {
     fetchMock.mockImplementation(() => ok([{ id: 's1', label: 'Web', value: 'web' }]));
-    const { crmService: svc } = await import('./crmService');
+    const { settingsApi: svc } = await import('./crmService');
     await Promise.all([svc.sourceTypes.getAll(), svc.sourceTypes.getAll(), svc.sourceTypes.getAll()]);
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it('Given source types are cached / When one is created / Then the next read refetches', async () => {
     fetchMock.mockImplementation(() => ok([]));
-    const { crmService: svc } = await import('./crmService');
+    const { settingsApi: svc } = await import('./crmService');
     await svc.sourceTypes.getAll();
     await svc.sourceTypes.create({ label: 'X', value: 'x' });
     await svc.sourceTypes.getAll();
@@ -126,7 +126,7 @@ describe('crmService source-types cache', () => {
 describe('crmService GET timeout', () => {
   it('Given a GET is issued / When fetch is called / Then it carries an abort signal', async () => {
     fetchMock.mockImplementation(() => ok([]));
-    const { crmService: svc } = await import('./crmService');
+    const { settingsApi: svc } = await import('./crmService');
     await svc.sourceTypes.getAll();
     expect(fetchMock.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal);
   });
