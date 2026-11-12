@@ -250,6 +250,12 @@ export const FormPageTemplate = (p: any) =>
 export const EmptyState = ({ title, description, action }: any) =>
   React.createElement('div', { 'data-testid': 'empty-state' }, React.createElement('p', null, title), description ? React.createElement('p', null, description) : null,
     action ? (React.isValidElement(action) ? action : React.createElement('button', { onClick: (action as any).onClick }, (action as any).label)) : null);
+// Mirrors DS ResultState: role alert on error else status, Comb result root keyed by name ?? title.
+export const ResultState = ({ status, name, title, description, primaryAction, secondaryAction }: any) =>
+  React.createElement('div', { role: status === 'error' ? 'alert' : 'status', 'data-comb': 'result', 'data-comb-id': name ?? title, 'data-status': status },
+    React.createElement('h2', null, title),
+    description ? React.createElement('p', null, description) : null,
+    primaryAction || secondaryAction ? React.createElement('div', null, secondaryAction, primaryAction) : null);
 export const ConfirmDialog = ({ open, title, message, confirmLabel = 'Confirm', cancelLabel = 'Cancel', onConfirm, onCancel }: any) =>
   open ? React.createElement('div', { role: 'dialog' }, React.createElement('h2', null, title), React.createElement('p', null, message),
     React.createElement('button', { onClick: onCancel }, cancelLabel), React.createElement('button', { onClick: onConfirm }, confirmLabel)) : null;
