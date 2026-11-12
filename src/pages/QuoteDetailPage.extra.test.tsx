@@ -275,7 +275,7 @@ describe('Given QuoteDetailPage — error state', () => {
     mockGetQuoteById.mockRejectedValue(new Error('Network error'));
     render(<QuoteDetailPage />);
     await waitFor(() => {
-      expect(screen.getByText(/quote not found/i)).toBeInTheDocument();
+      expect(screen.getByText('Record not found')).toBeInTheDocument();
     });
   });
 });
