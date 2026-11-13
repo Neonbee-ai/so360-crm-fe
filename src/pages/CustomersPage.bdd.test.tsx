@@ -104,7 +104,13 @@ beforeEach(async () => {
   mockUseShellBridge.mockImplementation(defaultShellImpl);
   tableProps = {};
   mockSearch = '';
-  mockGetCustomers.mockResolvedValue(customers);
+  // Behave like the server: filter by q / channel / category.
+  mockGetCustomers.mockImplementation(async (p: any = {}) => customers.filter((c) => {
+    const q = (p.q || '').toLowerCase();
+    return (!q || [c.contact_name, c.email, c.phone, c.company_name].some((v) => (v || '').toLowerCase().includes(q)))
+      && (!p.channel || c.channel === p.channel)
+      && (!p.category || c.customer_category === p.category);
+  }));
   mockGetCustomerStats.mockResolvedValue(stats);
   mockGetPartners.mockResolvedValue(mockPartners);
 });
@@ -275,6 +281,42 @@ describe('CustomersPage', () => {
       await waitFor(() => {
         expect(screen.getByTestId('table')).toHaveTextContent('Network error');
       });
+    });
+  });
+
+  describe('Given server-side paging', () => {
+    const makeMany = (n: number) => Array.from({ length: n }, (_, i) => ({
+      id: `s${i}`, contact_name: `Customer ${i}`, email: `s${i}@test.com`,
+      channel: 'manual', customer_category: 'b2c', acquisition_source: 'manual_entry',
+      created_at: '2025-01-15T10:00:00Z', credit_limit: '0', tax_id: null, tax_id_verified: false,
+    }));
+
+    it('When the page loads / Then it requests skip 0 and take pageSize+1', async () => {
+      render(<CustomersPage />);
+      await waitFor(() => expect(mockGetCustomers).toHaveBeenCalled());
+      expect(mockGetCustomers.mock.calls[0][0]).toMatchObject({ skip: 0, take: 11 });
+    });
+
+    it('When the server returns pageSize+1 rows / Then only a page is shown and a next page exists', async () => {
+      mockGetCustomers.mockResolvedValue(makeMany(11));
+      render(<CustomersPage />);
+      await waitFor(() => expect(screen.getByText(/Page 1 of 2/)).toBeInTheDocument());
+      expect(tableProps.data.length).toBe(10);
+    });
+
+    it('When the server returns fewer than a page / Then there is a single page', async () => {
+      mockGetCustomers.mockResolvedValue(makeMany(4));
+      render(<CustomersPage />);
+      await waitFor(() => expect(tableProps.data?.length).toBe(4));
+      expect(screen.getByText(/Page 1 of 1/)).toBeInTheDocument();
+    });
+
+    it('When the server ignores paging and returns everything / Then it is paged locally without refetching', async () => {
+      mockGetCustomers.mockResolvedValue(makeMany(40));
+      render(<CustomersPage />);
+      await waitFor(() => expect(screen.getByText(/Page 1 of 4/)).toBeInTheDocument());
+      expect(tableProps.data.length).toBe(10);
+      expect(mockGetCustomers).toHaveBeenCalledTimes(1);
     });
   });
 

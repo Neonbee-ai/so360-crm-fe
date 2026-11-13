@@ -47,6 +47,8 @@ const CustomersPage = () => {
     const [categoryFilter, setCategoryFilter] = useState('All');
     const [sortField, setSortField] = usePersistedState<SortField | null>('customers.sortField', 'created_at');
     const [sortDirection, setSortDirection] = usePersistedState<SortDirection>('customers.sortDirection', 'desc');
+    // Channel is no longer sortable (BE cannot sort it): drop a stale persisted value.
+    useEffect(() => { if (sortField === 'channel') setSortField('created_at'); }, []);
     const [currentPage, setCurrentPage] = usePersistedState('customers.page', 1);
     const [pageSize, setPageSize] = usePersistedState('customers.pageSize', 10);
 
@@ -57,41 +59,85 @@ const CustomersPage = () => {
     // Only the customer list depends on the search params. Stats and partners are
     // org-static, so they are fetched once (see the mount effect below) instead of
     // re-firing on every filter/search change.
-    const fetchData = async () => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            const q = queryParams.get('q') || undefined;
-            const channel = queryParams.get('channel') || undefined;
-            const category = queryParams.get('category') || undefined;
-            const customerIds = (queryParams.get('customer_ids') || '')
-                .split(',')
-                .map((id) => id.trim())
-                .filter(Boolean);
+    // Server-side paging: ask for one extra row so "is there a next page" is known
+    // without a count endpoint. A backend that ignores skip/take returns everything;
+    // that is detected (more rows than a page + 1) and paged locally instead.
+    const [hasMore, setHasMore] = useState(false);
+    const [allRows, setAllRows] = useState(false);
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+    useEffect(() => {
+        const t = setTimeout(() => setDebouncedSearch(searchTerm.trim()), 300);
+        return () => clearTimeout(t);
+    }, [searchTerm]);
 
-            let customersData: any[] = [];
+    const customerIdsKey = queryParams.get('customer_ids') || '';
+    const serverSort = sortField && sortField !== 'channel' && sortDirection
+        ? { sort: sortField, order: sortDirection }
+        : {};
+    const skip = (currentPage - 1) * pageSize;
+    const take = isSandboxMode ? Math.max(0, Math.min(pageSize, sandboxEntryLimit - skip)) : pageSize;
 
-            customersData = await crmService.getCustomers({
-                ...(q ? { q } : {}),
-                ...(channel ? { channel } : {}),
-                ...(category ? { category } : {}),
-                ...(customerIds.length > 0 ? { customer_ids: customerIds } : {}),
-            });
+    // A persisted page can outlive its rows (deleted since, or past the sandbox limit): fall back to page 1.
+    useEffect(() => {
+        if (!isLoading && currentPage > 1 && customers.length === 0) setCurrentPage(1);
+    }, [isLoading, customers.length, currentPage]);
 
-            setCustomers(customersData || []);
-        } catch (err: any) {
-            console.error('Failed to fetch customers', err);
-            setError(err.message || 'Failed to load customers');
-        } finally {
-            setIsLoading(false);
+    const filterKey = `${debouncedSearch}|${channelFilter}|${categoryFilter}`;
+    const prevFilterKey = useRef(filterKey);
+    useEffect(() => {
+        if (prevFilterKey.current !== filterKey) {
+            prevFilterKey.current = filterKey;
+            if (currentPage !== 1) {
+                // Page change re-runs this effect and fetches page 1 once (no wasted request on the old skip).
+                setCurrentPage(1);
+                return;
+            }
         }
-    };
+        let cancelled = false;
+        (async () => {
+            setIsLoading(true);
+            setError(null);
+            try {
+                if (take === 0) {
+                    if (!cancelled) { setCustomers([]); setHasMore(false); setAllRows(false); }
+                    return;
+                }
+                const customerIds = customerIdsKey.split(',').map((id) => id.trim()).filter(Boolean);
+                const rows: any[] = (await crmService.getCustomers({
+                    ...(debouncedSearch ? { q: debouncedSearch } : {}),
+                    ...(channelFilter !== 'All' ? { channel: channelFilter } : {}),
+                    ...(categoryFilter !== 'All' ? { category: categoryFilter } : {}),
+                    ...(customerIds.length > 0 ? { customer_ids: customerIds } : {}),
+                    ...serverSort,
+                    skip,
+                    take: take + 1,
+                } as any)) || [];
+                if (cancelled) return;
+                if (rows.length > take + 1) {
+                    // Backend ignored paging: keep everything, slice on screen.
+                    setAllRows(true);
+                    setHasMore(false);
+                    setCustomers(rows);
+                } else {
+                    setAllRows(false);
+                    setHasMore(rows.length > take);
+                    setCustomers(rows.slice(0, take));
+                }
+            } catch (err: any) {
+                if (cancelled) return;
+                console.error('Failed to fetch customers', err);
+                setError(err.message || 'Failed to load customers');
+            } finally {
+                if (!cancelled) setIsLoading(false);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [debouncedSearch, channelFilter, categoryFilter, customerIdsKey, sortField, sortDirection, skip, take]);
 
     useEffect(() => {
         setSearchTerm(queryParams.get('q') || '');
         setChannelFilter(queryParams.get('channel') || 'All');
         setCategoryFilter(queryParams.get('category') || 'All');
-        fetchData();
     }, [location.search]);
 
     useEffect(() => {
@@ -107,20 +153,26 @@ const CustomersPage = () => {
         return () => { cancelled = true; };
     }, []);
 
+    // Rows arrive already filtered/sorted/paged by the server. Only 'channel' sort (not a
+    // server column) is applied within the loaded page; allRows (backend ignoring paging)
+    // is filtered/sorted/sliced locally as before.
     const filteredCustomers = useMemo(() => {
-        let result = customers.filter((c) => {
-            const matchesSearch =
-                !searchTerm ||
-                (c.contact_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                (c.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                (c.phone || '').includes(searchTerm) ||
-                (c.company_name || '').toLowerCase().includes(searchTerm.toLowerCase());
-            const matchesChannel = channelFilter === 'All' || c.channel === channelFilter;
-            const matchesCategory = categoryFilter === 'All' || c.customer_category === categoryFilter;
-            return matchesSearch && matchesChannel && matchesCategory;
-        });
-
-        if (sortField && sortDirection) {
+        let result = customers;
+        if (allRows) {
+            const term = searchTerm.toLowerCase();
+            result = customers.filter((c) => {
+                const matchesSearch =
+                    !term ||
+                    (c.contact_name || '').toLowerCase().includes(term) ||
+                    (c.email || '').toLowerCase().includes(term) ||
+                    (c.phone || '').includes(searchTerm) ||
+                    (c.company_name || '').toLowerCase().includes(term);
+                const matchesChannel = channelFilter === 'All' || c.channel === channelFilter;
+                const matchesCategory = categoryFilter === 'All' || c.customer_category === categoryFilter;
+                return matchesSearch && matchesChannel && matchesCategory;
+            });
+        }
+        if (sortField && sortDirection && allRows) {
             result = [...result].sort((a, b) => {
                 let aVal: any, bVal: any;
                 switch (sortField) {
@@ -136,24 +188,26 @@ const CustomersPage = () => {
                 return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
             });
         }
-
         return result;
-    }, [customers, searchTerm, channelFilter, categoryFilter, sortField, sortDirection]);
+    }, [customers, allRows, searchTerm, channelFilter, categoryFilter, sortField, sortDirection]);
 
     const sandboxLimitedCustomers = useMemo(
-        () => isSandboxMode ? filteredCustomers.slice(0, sandboxEntryLimit) : filteredCustomers,
-        [filteredCustomers, isSandboxMode, sandboxEntryLimit],
+        () => isSandboxMode && allRows ? filteredCustomers.slice(0, sandboxEntryLimit) : filteredCustomers,
+        [filteredCustomers, isSandboxMode, sandboxEntryLimit, allRows],
     );
 
-    const totalPages = Math.ceil(sandboxLimitedCustomers.length / pageSize);
+    const noFilters = !debouncedSearch && channelFilter === 'All' && categoryFilter === 'All' && !customerIdsKey;
+    const loadedTotal = allRows
+        ? sandboxLimitedCustomers.length
+        : hasMore
+            ? Math.max(skip + take + 1, noFilters && Number(stats?.total) ? Number(stats.total) : 0)
+            : skip + sandboxLimitedCustomers.length;
+    const totalPages = Math.max(1, Math.ceil(loadedTotal / pageSize));
     const paginatedCustomers = useMemo(() => {
+        if (!allRows) return sandboxLimitedCustomers;
         const start = (currentPage - 1) * pageSize;
         return sandboxLimitedCustomers.slice(start, start + pageSize);
-    }, [sandboxLimitedCustomers, currentPage, pageSize]);
-
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [searchTerm, channelFilter, categoryFilter]);
+    }, [sandboxLimitedCustomers, allRows, currentPage, pageSize]);
 
     const ChannelBadge = ({ channel }: { channel: string }) => {
         const config = CHANNEL_CONFIG[channel] || CHANNEL_CONFIG.manual;
@@ -241,7 +295,7 @@ const CustomersPage = () => {
             },
         ] as DataTableColumn<any>[]) : []),
         {
-            key: 'channel', header: 'Channel', sortable: true,
+            key: 'channel', header: 'Channel',
             render: (c: any) => <ChannelBadge channel={c.channel} />,
         },
         {
@@ -314,12 +368,12 @@ const CustomersPage = () => {
                 />
             }
             filterConfig={filterConfig}
-            pagination={sandboxLimitedCustomers.length > 0 ? (
+            pagination={(sandboxLimitedCustomers.length > 0 || currentPage > 1) ? (
                 <Pagination
                     className="w-full"
                     currentPage={currentPage}
                     totalPages={totalPages || 1}
-                    totalItems={sandboxLimitedCustomers.length}
+                    totalItems={loadedTotal}
                     pageSize={pageSize}
                     pageSizeOptions={[10, 25, 50, 100]}
                     onPageChange={setCurrentPage}
@@ -329,10 +383,10 @@ const CustomersPage = () => {
         >
             <div ref={listAnchorRef}>
             {/* Sandbox limit notice */}
-            {isSandboxMode && isLimited(filteredCustomers.length) && (
+            {isSandboxMode && isLimited(loadedTotal) && (
                 <div className="mb-4 px-4 py-2.5 bg-warning/10 border border-warning/30 rounded-lg text-warning text-sm flex items-center gap-2">
                     <span className="font-semibold">Sandbox mode:</span>
-                    showing {sandboxEntryLimit} of {filteredCustomers.length} customers — full list visible in production.
+                    showing {sandboxEntryLimit} of {loadedTotal} customers — full list visible in production.
                 </div>
             )}
 
