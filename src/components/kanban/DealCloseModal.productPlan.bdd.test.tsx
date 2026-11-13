@@ -57,19 +57,19 @@ describe('Given the deal product plan flag is on', () => {
         expect(p.onWin).toHaveBeenCalledWith({ final_value: 900 });
     });
 
-    it('When a project is requested and the default is kept / Then "Blank project" is sent as none', () => {
+    it('When a project is requested and the default is kept / Then the deal products are planned (phases)', () => {
         const p = setup();
         tickCreateProject();
-        expect((screen.getByLabelText('Project plan') as HTMLSelectElement).value).toBe('none');
-        submit();
-        expect(p.onWin).toHaveBeenCalledWith({ final_value: 900, create_project: true, plan_from_products: 'none' });
-    });
-
-    it('When "Plan from deal products" is chosen / Then plan_from_products is phases', () => {
-        const p = setup();
-        tickCreateProject();
-        fireEvent.change(screen.getByLabelText('Project plan'), { target: { value: 'phases' } });
+        expect((screen.getByLabelText('Project plan') as HTMLSelectElement).value).toBe('phases');
         submit();
         expect(p.onWin).toHaveBeenCalledWith({ final_value: 900, create_project: true, plan_from_products: 'phases' });
+    });
+
+    it('When "Blank project" is chosen / Then plan_from_products is none', () => {
+        const p = setup();
+        tickCreateProject();
+        fireEvent.change(screen.getByLabelText('Project plan'), { target: { value: 'none' } });
+        submit();
+        expect(p.onWin).toHaveBeenCalledWith({ final_value: 900, create_project: true, plan_from_products: 'none' });
     });
 });

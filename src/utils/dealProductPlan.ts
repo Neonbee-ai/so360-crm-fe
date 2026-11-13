@@ -8,8 +8,8 @@ export const DEAL_PRODUCT_PLAN_FLAG = 'submodule:projects:deal_product_plan';
 export type PlanFromProducts = 'phases' | 'none';
 
 export const PLAN_FROM_PRODUCTS_OPTIONS: ReadonlyArray<{ value: PlanFromProducts; label: string }> = [
-    { value: 'none', label: 'Blank project' },
     { value: 'phases', label: 'Plan from deal products' },
+    { value: 'none', label: 'Blank project' },
 ];
 
 interface FlagBridgeLike {
