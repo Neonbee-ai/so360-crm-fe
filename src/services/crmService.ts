@@ -238,6 +238,11 @@ const mapLeadFromApi = (apiLead: any): Lead => {
     };
 };
 
+// GETs abort after this long instead of hanging forever.
+const GET_TIMEOUT_MS = 30_000;
+// Reports / exports / analytics legitimately take longer: no client-side timeout for them.
+const SLOW_GET_PATH = /\/(reports?|export|analytics)(\/|\?|$)/;
+
 // API Client Helper
 class ApiClient {
     private baseURL: string;
@@ -284,9 +289,28 @@ class ApiClient {
 
     private async request<T>(
         endpoint: string,
-        options: RequestInit = {}
+        options: RequestInit = {},
+        timeoutMs?: number
     ): Promise<T> {
         const url = `${this.baseURL}${endpoint}`;
+        // Optional timeout (GETs only): aborts the fetch, and also follows a caller-supplied signal.
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        let timedOut = false;
+        let detach: (() => void) | undefined;
+        if (timeoutMs) {
+            const controller = new AbortController();
+            const outer = options.signal;
+            if (outer) {
+                if (outer.aborted) controller.abort();
+                else {
+                    const onAbort = () => controller.abort();
+                    outer.addEventListener('abort', onAbort, { once: true });
+                    detach = () => outer.removeEventListener('abort', onAbort);
+                }
+            }
+            timer = setTimeout(() => { timedOut = true; controller.abort(); }, timeoutMs);
+            options = { ...options, signal: controller.signal };
+        }
         const headers: HeadersInit = {
             'Content-Type': 'application/json',
             'X-Tenant-Id': this.tenantId,
@@ -345,12 +369,23 @@ class ApiClient {
                 throw new Error(`Invalid JSON response from API: ${text.substring(0, 100)}...`);
             }
         } catch (error) {
-            console.error(`API request failed: ${endpoint}`, error);
+            if (timedOut) {
+                const timeoutError = new Error(`Request timed out: ${endpoint}`);
+                console.error(`API request failed: ${endpoint}`, timeoutError);
+                throw timeoutError;
+            }
+            // A caller-initiated abort (superseded request) is not a failure worth logging.
+            if (!(error instanceof DOMException && error.name === 'AbortError')) {
+                console.error(`API request failed: ${endpoint}`, error);
+            }
             throw error;
+        } finally {
+            if (timer) clearTimeout(timer);
+            detach?.();
         }
     }
 
-    async get<T>(endpoint: string, params?: Record<string, any>): Promise<T> {
+    async get<T>(endpoint: string, params?: Record<string, any>, opts?: { signal?: AbortSignal }): Promise<T> {
         const queryString = params
             ? '?' + new URLSearchParams(
                 Object.entries(params).reduce((acc, [key, value]) => {
@@ -363,7 +398,8 @@ class ApiClient {
             : '';
         return this.request<T>(`${endpoint}${queryString}`, {
             method: 'GET',
-        });
+            ...(opts?.signal ? { signal: opts.signal } : {}),
+        }, SLOW_GET_PATH.test(endpoint) ? undefined : GET_TIMEOUT_MS);
     }
 
     /**
@@ -885,8 +921,8 @@ export const dealsApi = {
     /**
      * GET /deals/pipeline - Get deals grouped by stage for Kanban pipeline
      */
-    getPipeline: async (params?: DealFilters): Promise<PipelineResponse> => {
-        const data = await apiClient.get<any>('/deals/pipeline', params as any);
+    getPipeline: async (params?: DealFilters, signal?: AbortSignal): Promise<PipelineResponse> => {
+        const data = await apiClient.get<any>('/deals/pipeline', params as any, signal ? { signal } : undefined);
         // Handle both array-of-stages and object-with-stages-property formats
         const stagesArray = Array.isArray(data) ? data : (data.stages || []);
 
@@ -1412,17 +1448,24 @@ export const settingsApi = {
     },
 
     sourceTypes: {
+        // Fetched by three lead components; coalesced + short TTL, cleared on edits.
         getAll: async () => {
-            return apiClient.get<any[]>('/settings/source-types');
+            return orgStaticCache.run(`source-types|${apiClient.getOrgId()}`, () => apiClient.get<any[]>('/settings/source-types'));
         },
         create: async (data: { label: string; value: string; sort_order?: number }) => {
-            return apiClient.post<any>('/settings/source-types', data);
+            const r = await apiClient.post<any>('/settings/source-types', data);
+            orgStaticCache.invalidate('source-types|');
+            return r;
         },
         update: async (id: string, data: { label?: string; is_active?: boolean; sort_order?: number }) => {
-            return apiClient.patch<any>(`/settings/source-types/${id}`, data);
+            const r = await apiClient.patch<any>(`/settings/source-types/${id}`, data);
+            orgStaticCache.invalidate('source-types|');
+            return r;
         },
         delete: async (id: string) => {
-            return apiClient.delete<any>(`/settings/source-types/${id}`);
+            const r = await apiClient.delete<any>(`/settings/source-types/${id}`);
+            orgStaticCache.invalidate('source-types|');
+            return r;
         },
     },
 
@@ -1480,13 +1523,17 @@ export const partnersApi = {
         return apiClient.get<any[]>('/partners', params);
     },
     create: async (data: any) => {
-        return apiClient.post<any>('/partners', data);
+        const r = await apiClient.post<any>('/partners', data);
+        orgStaticCache.invalidate('partners|');
+        return r;
     },
     getOne: async (id: string) => {
         return apiClient.get<any>(`/partners/${id}`);
     },
     update: async (id: string, data: any) => {
-        return apiClient.patch<any>(`/partners/${id}`, data);
+        const r = await apiClient.patch<any>(`/partners/${id}`, data);
+        orgStaticCache.invalidate('partners|');
+        return r;
     },
     /**
      * Core partner master row (custom_fields + custom_fields_version). A CRM
@@ -1939,7 +1986,8 @@ export const crmService = {
     },
 
     getPartners: async (): Promise<Lead[]> => {
-        return partnersApi.getAll({ take: 200 }) as any;
+        // Fetched by several lead components: coalesce, 10s TTL, cleared on partner create/update.
+        return orgStaticCache.run(`partners|${apiClient.getOrgId()}`, () => partnersApi.getAll({ take: 200 }) as Promise<any>, 10_000) as any;
     },
 
     // Deals
