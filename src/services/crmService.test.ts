@@ -1445,6 +1445,21 @@ describe('Given crmService (legacy layer)', () => {
     expect(result.id).toBe('p-new');
   });
 
+  it('Given a chosen product plan / When createProjectFromDeal runs / Then plan_from_products is in the body', async () => {
+    mockFetchSuccess({ id: 'p-new' });
+    await crmService.createProjectFromDeal('d1', { plan_from_products: 'phases' });
+    const [url, opts] = fetchMock.mock.calls[fetchMock.mock.calls.length - 1];
+    expect(String(url)).toContain('/deals/d1/create-project');
+    expect(JSON.parse(opts.body)).toEqual({ plan_from_products: 'phases' });
+  });
+
+  it('Given no plan choice / When createProjectFromDeal runs / Then the body stays empty (today\'s behaviour)', async () => {
+    mockFetchSuccess({ id: 'p-new' });
+    await crmService.createProjectFromDeal('d1');
+    const [, opts] = fetchMock.mock.calls[fetchMock.mock.calls.length - 1];
+    expect(JSON.parse(opts.body)).toEqual({});
+  });
+
   it('When action / Then getProjects returns empty on error', async () => {
     mockFetchErrorJson(500, { message: 'fail' });
     const result = await crmService.getProjects();
