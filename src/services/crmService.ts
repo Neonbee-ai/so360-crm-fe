@@ -2029,15 +2029,17 @@ export const crmService = {
         await dealsApi.update(id, { target_state: stage });
     },
 
-    getPipeline: async (filters?: DealFilters): Promise<PipelineResponse> => {
+    getPipeline: async (filters?: DealFilters, signal?: AbortSignal): Promise<PipelineResponse> => {
         try {
             // Priority 1: Try the specialized pipeline endpoint
-            const pipelineData = await dealsApi.getPipeline(filters);
+            const pipelineData = await dealsApi.getPipeline(filters, signal);
             if (pipelineData.stages && pipelineData.stages.length > 0) {
                 return pipelineData;
             }
             throw new Error('Pipeline endpoint returned no stages');
         } catch (error) {
+            // A superseded request was cancelled: do not start the fallback fetches.
+            if (signal?.aborted) throw error;
             console.warn('Specialized /deals/pipeline failed, falling back to manual merge:', error);
 
             // Priority 2: Fallback to manual merge of stages and deals
