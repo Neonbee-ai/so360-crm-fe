@@ -14,7 +14,8 @@ describe('Given the deal product plan flag reader', () => {
     it('When the key is on / Then it is on', () => {
         expect(isDealProductPlanOn({ effectiveFlagsLoaded: true, effectiveFlags: { [DEAL_PRODUCT_PLAN_FLAG]: { enabled: true } } })).toBe(true);
     });
-    it('When the options are listed / Then "Blank project" comes first as the default', () => {
-        expect(PLAN_FROM_PRODUCTS_OPTIONS[0]).toEqual({ value: 'none', label: 'Blank project' });
+    it('When the options are listed / Then "Plan from deal products" comes first as the default', () => {
+        expect(PLAN_FROM_PRODUCTS_OPTIONS[0]).toEqual({ value: 'phases', label: 'Plan from deal products' });
+        expect(PLAN_FROM_PRODUCTS_OPTIONS[1]).toEqual({ value: 'none', label: 'Blank project' });
     });
 });

@@ -37,13 +37,13 @@ export const DealCloseModal = ({ isOpen, kind, deal, stageName, busy, onClose, o
     const [finalValue, setFinalValue] = useState<number | null>(null);
     const [createProject, setCreateProject] = useState(false);
     const productPlanOn = isDealProductPlanOn(useShellBridge() as any);
-    const [planFromProducts, setPlanFromProducts] = useState<PlanFromProducts>('none');
+    const [planFromProducts, setPlanFromProducts] = useState<PlanFromProducts>('phases');
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (!isOpen) return;
         setReasonId(''); setFreeText(''); setCompetitor(''); setFeedback('');
-        setWonReason(''); setFinalValue(deal?.value ?? null); setCreateProject(false); setPlanFromProducts('none'); setError(null);
+        setWonReason(''); setFinalValue(deal?.value ?? null); setCreateProject(false); setPlanFromProducts('phases'); setError(null);
     }, [isOpen, deal?.id]);
 
     useEffect(() => {
