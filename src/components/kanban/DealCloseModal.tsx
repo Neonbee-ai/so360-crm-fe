@@ -4,6 +4,8 @@ import { Modal } from '../common/Modal';
 import { Deal } from '../../types/crm';
 import { LoseDealBody, LossReason, WinDealBody, lossReasonsService } from '../../services/salesConfigService';
 import { useCrmFeatureFlag } from '../../hooks/useCrmFeatureFlag';
+import { useShellBridge } from '@so360/shell-context';
+import { isDealProductPlanOn, PLAN_FROM_PRODUCTS_OPTIONS, type PlanFromProducts } from '../../utils/dealProductPlan';
 
 export const LOSS_REASONS_FLAG = 'submodule:crm:loss_reasons';
 
@@ -34,12 +36,14 @@ export const DealCloseModal = ({ isOpen, kind, deal, stageName, busy, onClose, o
     const [wonReason, setWonReason] = useState('');
     const [finalValue, setFinalValue] = useState<number | null>(null);
     const [createProject, setCreateProject] = useState(false);
+    const productPlanOn = isDealProductPlanOn(useShellBridge() as any);
+    const [planFromProducts, setPlanFromProducts] = useState<PlanFromProducts>('none');
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (!isOpen) return;
         setReasonId(''); setFreeText(''); setCompetitor(''); setFeedback('');
-        setWonReason(''); setFinalValue(deal?.value ?? null); setCreateProject(false); setError(null);
+        setWonReason(''); setFinalValue(deal?.value ?? null); setCreateProject(false); setPlanFromProducts('none'); setError(null);
     }, [isOpen, deal?.id]);
 
     useEffect(() => {
@@ -63,6 +67,7 @@ export const DealCloseModal = ({ isOpen, kind, deal, stageName, busy, onClose, o
                 ...(wonReason.trim() && { won_reason: wonReason.trim() }),
                 ...(finalValue != null && { final_value: finalValue }),
                 ...(createProject && { create_project: true }),
+                ...(createProject && productPlanOn && { plan_from_products: planFromProducts }),
             });
             return;
         }
@@ -113,6 +118,15 @@ export const DealCloseModal = ({ isOpen, kind, deal, stageName, busy, onClose, o
                             checked={createProject}
                             onChange={(e) => setCreateProject(e.target.checked)}
                         />
+                        {createProject && productPlanOn && (
+                            <Select
+                                name="deal-plan-from-products"
+                                label="Project plan"
+                                value={planFromProducts}
+                                options={PLAN_FROM_PRODUCTS_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+                                onChange={(e) => setPlanFromProducts(e.target.value === 'phases' ? 'phases' : 'none')}
+                            />
+                        )}
                     </>
                 )}
 

@@ -2631,9 +2631,11 @@ export const crmService = {
         await apiClient.patch(`/deals/${dealId}/unlink-project`, {});
     },
 
-    async createProjectFromDeal(dealId: string): Promise<{ id: string }> {
+    async createProjectFromDeal(dealId: string, opts?: { plan_from_products?: 'phases' | 'none' }): Promise<{ id: string }> {
         console.log('Orchestrating project creation from deal:', dealId);
-        return apiClient.post<{ id: string }>(`/deals/${dealId}/create-project`, {});
+        // Pulse b1512967: forwarded only when the caller chose a plan (flag on).
+        const body = opts?.plan_from_products ? { plan_from_products: opts.plan_from_products } : {};
+        return apiClient.post<{ id: string }>(`/deals/${dealId}/create-project`, body);
     },
 
     async getProjects(): Promise<any[]> {

@@ -52,6 +52,8 @@ export interface WinDealBody {
     won_reason?: string;
     final_value?: number;
     create_project?: boolean;
+    /** Pulse b1512967: with create_project, plan one phase per deal product. */
+    plan_from_products?: 'phases' | 'none';
 }
 
 export interface LoseDealBody {
