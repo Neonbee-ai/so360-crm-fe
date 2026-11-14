@@ -63,8 +63,8 @@ export default function Customer360Page() {
   const storefront = p.storefront as any;
 
   const Panel_ = ({ title, icon: Icon, children }: { title: string; icon: any; children: React.ReactNode }) => (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4">
-      <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+    <div className="rounded-xl border border-line bg-surface p-4">
+      <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-fg-muted">
         <Icon className="h-3.5 w-3.5" /> {title}
       </div>
       {children}
@@ -72,18 +72,18 @@ export default function Customer360Page() {
   );
 
   const Unavailable = ({ reason }: { reason?: string }) => (
-    <p className="text-xs text-slate-500">{reason || 'Not available'}</p>
+    <p className="text-xs text-fg-subtle">{reason || 'Not available'}</p>
   );
 
   const Metric = ({ label, value }: { label: string; value: React.ReactNode }) => (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/50 px-4 py-3">
-      <p className="text-[11px] uppercase tracking-wider text-slate-500">{label}</p>
-      <p className="mt-1 text-xl font-bold text-slate-100">{value}</p>
+    <div className="rounded-xl border border-line bg-surface px-4 py-3">
+      <p className="text-[11px] uppercase tracking-wider text-fg-subtle">{label}</p>
+      <p className="mt-1 text-xl font-bold text-fg">{value}</p>
     </div>
   );
 
-  if (loading) return <div className="p-8 text-slate-400">Loading 360…</div>;
-  if (error) return <div className="p-8 text-rose-400">{error}</div>;
+  if (loading) return <div className="p-8 text-fg-muted">Loading 360…</div>;
+  if (error) return <div className="p-8 text-danger">{error}</div>;
   if (!data) return null;
 
   const { profile } = data;
@@ -93,15 +93,15 @@ export default function Customer360Page() {
       {/* Identity */}
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-100">{profile.name || profile.email || 'Customer'}</h1>
-          <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-slate-400">
+          <h1 className="text-2xl font-bold text-fg">{profile.name || profile.email || 'Customer'}</h1>
+          <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-fg-muted">
             {profile.email && <span className="flex items-center gap-1"><Mail className="h-3.5 w-3.5" />{profile.email}</span>}
             {profile.phone && <span className="flex items-center gap-1"><Phone className="h-3.5 w-3.5" />{profile.phone}</span>}
-            {profile.status && <span className="rounded-full border border-slate-700 px-2 py-0.5 text-xs uppercase">{profile.status}</span>}
+            {profile.status && <span className="rounded-full border border-line px-2 py-0.5 text-xs uppercase">{profile.status}</span>}
             {profile.source && <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{profile.source}</span>}
           </div>
         </div>
-        <Link to={`/crm/customers/${profile.id}`} className="flex items-center gap-1 text-sm text-blue-400 hover:underline">
+        <Link to={`/crm/customers/${profile.id}`} className="flex items-center gap-1 text-sm text-primary hover:underline">
           Open customer record <ArrowUpRight className="h-3.5 w-3.5" />
         </Link>
       </div>
@@ -123,13 +123,13 @@ export default function Customer360Page() {
               <ul className="space-y-2">
                 {p.deals.recent.map((d: any) => (
                   <li key={d.id} className="flex items-center justify-between text-sm">
-                    <Link to={`/crm/pipeline?deal=${d.id}`} className="text-slate-200 hover:underline">{d.title || 'Deal'}</Link>
-                    <span className="text-slate-400">{d.stage || ''} · {money(d.value)}</span>
+                    <Link to={`/crm/pipeline?deal=${d.id}`} className="text-fg hover:underline">{d.title || 'Deal'}</Link>
+                    <span className="text-fg-muted">{d.stage || ''} · {money(d.value)}</span>
                   </li>
                 ))}
               </ul>
             )}
-            <Link to={p.deals?.deep_link} className="mt-3 inline-flex items-center gap-1 text-xs text-blue-400 hover:underline">All deals <ArrowUpRight className="h-3 w-3" /></Link>
+            <Link to={p.deals?.deep_link} className="mt-3 inline-flex items-center gap-1 text-xs text-primary hover:underline">All deals <ArrowUpRight className="h-3 w-3" /></Link>
           </Panel_>
         )}
 
@@ -139,8 +139,8 @@ export default function Customer360Page() {
               <ul className="space-y-2">
                 {p.quotes.recent.map((q: any) => (
                   <li key={q.id} className="flex items-center justify-between text-sm">
-                    <Link to={p.quotes.deep_link} className="text-slate-200 hover:underline">{q.quote_number || q.id.slice(0, 8)}</Link>
-                    <span className="text-slate-400">{q.status} · {money(q.total)}</span>
+                    <Link to={p.quotes.deep_link} className="text-fg hover:underline">{q.quote_number || q.id.slice(0, 8)}</Link>
+                    <span className="text-fg-muted">{q.status} · {money(q.total)}</span>
                   </li>
                 ))}
               </ul>
@@ -157,8 +157,8 @@ export default function Customer360Page() {
                   <ul className="space-y-2">
                     {storefront.orders.recent.map((o: any) => (
                       <li key={o.id} className="flex items-center justify-between text-sm">
-                        <Link to={storefront.orders.deep_link} className="text-slate-200 hover:underline">{o.order_number || o.id.slice(0, 8)}</Link>
-                        <span className="text-slate-400">{o.status} · {money(o.total)}</span>
+                        <Link to={storefront.orders.deep_link} className="text-fg hover:underline">{o.order_number || o.id.slice(0, 8)}</Link>
+                        <span className="text-fg-muted">{o.status} · {money(o.total)}</span>
                       </li>
                     ))}
                   </ul>
@@ -169,10 +169,10 @@ export default function Customer360Page() {
             {can(storefront.carts?.permissions) && (
               <Panel_ title="Cart" icon={ShoppingCart}>
                 {storefront.carts?.available === false ? <Unavailable reason={storefront.carts.reason} /> : (
-                  <div className="space-y-1 text-sm text-slate-300">
+                  <div className="space-y-1 text-sm text-fg-muted">
                     <p>{storefront.carts?.open ?? 0} active · {storefront.carts?.abandoned ?? 0} abandoned</p>
-                    <p className="text-slate-400">Abandoned value {money(storefront.carts?.abandoned_value)}</p>
-                    <Link to={storefront.carts?.deep_link} className="inline-flex items-center gap-1 text-xs text-blue-400 hover:underline">Open orders <ArrowUpRight className="h-3 w-3" /></Link>
+                    <p className="text-fg-muted">Abandoned value {money(storefront.carts?.abandoned_value)}</p>
+                    <Link to={storefront.carts?.deep_link} className="inline-flex items-center gap-1 text-xs text-primary hover:underline">Open orders <ArrowUpRight className="h-3 w-3" /></Link>
                   </div>
                 )}
               </Panel_>
@@ -184,13 +184,13 @@ export default function Customer360Page() {
                   <ul className="space-y-1.5 text-sm">
                     {storefront.sessions.sessions.map((s: any) => (
                       <li key={s.session_id} className="flex items-center justify-between">
-                        <span className="text-slate-200">{s.landing_path || '/'}</span>
-                        <span className="text-slate-500">{s.pageviews} views · {String(s.started_at).slice(0, 16)}</span>
+                        <span className="text-fg">{s.landing_path || '/'}</span>
+                        <span className="text-fg-subtle">{s.pageviews} views · {String(s.started_at).slice(0, 16)}</span>
                       </li>
                     ))}
                   </ul>
                 )}
-                <Link to={storefront.sessions?.deep_link} className="mt-3 inline-flex items-center gap-1 text-xs text-blue-400 hover:underline">Open analytics <ArrowUpRight className="h-3 w-3" /></Link>
+                <Link to={storefront.sessions?.deep_link} className="mt-3 inline-flex items-center gap-1 text-xs text-primary hover:underline">Open analytics <ArrowUpRight className="h-3 w-3" /></Link>
               </Panel_>
             )}
           </>
