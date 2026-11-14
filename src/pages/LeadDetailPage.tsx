@@ -174,8 +174,6 @@ const LeadDetailPage = () => {
     const canSeeAttribution = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:utm_attribution') ?? false);
     const canCreateDeal = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('deals.create') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:deals:create') ?? true);
     const canPromoteLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.convert') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:promote') ?? true);
-    // 360 view is a read, so it follows leads.read (the API enforces the same).
-    const canView360 = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.read') ?? false);
     const canQualifyLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.update') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:qualify') ?? true);
     const canConvertLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.convert') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:convert') ?? true);
     // Destructive action — gate on the delete permission, fail closed. The backend
@@ -666,14 +664,6 @@ const LeadDetailPage = () => {
                     </Button>
                 ) : undefined}
                 secondaryActions={[
-                    ...(canView360 ? [
-                        <Button
-                            key="customer-360"
-                            variant="secondary"
-                            onClick={() => navigate(`/crm/customers/${lead.id}/360`)}
-                            title="One screen: activity, deals, quotes, orders, cart and sessions"
-                        >360 view</Button>,
-                    ] : []),
                     <EmailComposeButton key="compose-email" entityType="lead" entityId={lead.id} />,
                     <QuickActionBar
                     key="log-activity"
