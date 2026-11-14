@@ -48,11 +48,18 @@ export function Customer360Panels({ customerId }: { customerId: string }) {
   );
 
   useEffect(() => {
-    if (!id) return;
+    // Render nothing when the 360 endpoint is unavailable (older backends,
+    // unit tests that mock crmService without it). The panel is additive: its
+    // absence must never change the rest of the customer page.
+    const fetcher = (crmService as unknown as { getCustomer360?: (id: string) => Promise<Payload> })
+      .getCustomer360;
+    if (!id || typeof fetcher !== 'function') {
+      setLoading(false);
+      return;
+    }
     let alive = true;
     setLoading(true);
-    crmService
-      .getCustomer360<Payload>(id)
+    fetcher(id)
       .then((res: Payload) => { if (alive) { setData(res); setError(null); } })
       .catch((err: any) => { if (alive) setError(err?.body?.message || err?.message || 'Failed to load the 360'); })
       .finally(() => { if (alive) setLoading(false); });
