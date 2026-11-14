@@ -77,7 +77,7 @@ export default function Customer360Page() {
 
   const Metric = ({ label, value }: { label: string; value: React.ReactNode }) => (
     <div className="rounded-xl border border-line bg-surface px-4 py-3">
-      <p className="text-[11px] uppercase tracking-wider text-fg-subtle">{label}</p>
+      <p className="text-xs uppercase tracking-wider text-fg-subtle">{label}</p>
       <p className="mt-1 text-xl font-bold text-fg">{value}</p>
     </div>
   );
