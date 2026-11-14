@@ -171,6 +171,7 @@ const PermissionGuard = ({ permission, children }: { permission: string | string
 
 // Landing pages are eager: a lazy chunk adds a download round trip before the page's first API call.
 import DashboardPage from './pages/DashboardPage';
+import Customer360Page from './pages/Customer360Page';
 import LeadsPage from './pages/LeadsPage';
 import PipelinePage from './pages/PipelinePage';
 
@@ -257,6 +258,7 @@ const App = () => {
                     <Route path="partners/:id" element={<PermissionGuard permission={['companies.read', 'partners.manage']}><FlagGuard flagKey="submodule:crm:partners"><PartnerDetailPage /></FlagGuard></PermissionGuard>} />
                     <Route path="customers" element={<PermissionGuard permission={['companies.read', 'contacts.read']}><CustomersPage /></PermissionGuard>} />
                     <Route path="customers/:id" element={<PermissionGuard permission={['companies.read', 'contacts.read']}><LeadDetailPage /></PermissionGuard>} />
+                    <Route path="customers/:id/360" element={<PermissionGuard permission={['leads.read', 'companies.read', 'contacts.read']}><Customer360Page /></PermissionGuard>} />
                     <Route path="pipeline" element={<PermissionGuard permission='deals.read'><FlagGuard flagKey="submodule:crm:pipeline"><PipelinePage /></FlagGuard></PermissionGuard>} />
                     <Route path="deal/:id" element={<PermissionGuard permission='deals.read'><FlagGuard flagKey="submodule:crm:pipeline"><DealDetailPage /></FlagGuard></PermissionGuard>} />
                     {/* Plural aliases: /crm/deals and /crm/deals/:id are the REST-style URLs users and links expect */}
