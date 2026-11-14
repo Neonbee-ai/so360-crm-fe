@@ -1,46 +1,39 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import {
-  ArrowUpRight, Briefcase, CalendarClock, FileText, Heart, ListChecks,
-  Mail, MapPin, Phone, ShoppingBag, ShoppingCart, Timer, User,
-} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Button, Card, EmptyState } from '@so360/design-system';
 import { useShellBridge } from '@so360/shell-context';
 import { crmService } from '../../services/crmService';
 
 /**
- * Customer 360 — the UI half of the template.
+ * Customer 360 panels — rendered inside the customer Overview tab (and on
+ * /crm/customers/:id/360).
  *
- * Every panel is rendered from `GET /customers/:id/360`, which composes the
- * data by id from the module that owns it. Each panel:
- *   - shows a count / recent rows,
- *   - links to that module's own detail screen (deep link from the API),
- *   - only renders when the user holds the panel's permission, so the 360 can
- *     never become a permission bypass.
- * A panel the API marks unavailable shows a neutral "not available" state
- * instead of breaking the page.
+ * Deliberately carries **no identity header**: the record page already shows
+ * name, email, phone, status and source. Duplicating it put a second header in
+ * the middle of the page.
+ *
+ * Built from Comb v1.1 components (Card / Button / EmptyState) only — no
+ * hand-written panel chrome.
+ *
+ * Data comes from GET /customers/:id/360, which composes it by id from the
+ * module that owns each slice. A panel renders only when the user holds the
+ * permission the API declares for it.
  */
-
 type Panel = { available?: boolean; reason?: string; [k: string]: any };
-type Payload = {
-  profile: {
-    id: string; name?: string; email?: string; phone?: string; status?: string;
-    source?: string; created_at?: string;
-  };
-  panels: Record<string, Panel>;
-};
+type Payload = { panels: Record<string, Panel> };
 
-const money = (n: number) => new Intl.NumberFormat('en', { maximumFractionDigits: 0 }).format(n || 0);
+const currency = (n: number) =>
+  new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(n || 0);
 
 export function Customer360Panels({ customerId }: { customerId: string }) {
-  const id = customerId;
+  const navigate = useNavigate();
   const shell = useShellBridge();
   const [data, setData] = useState<Payload | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const can = useMemo(
     () => (perms?: string[]) => {
-      if (!perms || perms.length === 0) return true;
+      if (!perms?.length) return true;
       if (!shell) return false;
       return perms.some((p) => shell.hasPermission?.(p) ?? false);
     },
@@ -48,167 +41,137 @@ export function Customer360Panels({ customerId }: { customerId: string }) {
   );
 
   useEffect(() => {
-    // Render nothing when the 360 endpoint is unavailable (older backends,
-    // unit tests that mock crmService without it). The panel is additive: its
-    // absence must never change the rest of the customer page.
     const fetcher = (crmService as unknown as { getCustomer360?: (id: string) => Promise<Payload> })
       .getCustomer360;
-    if (!id || typeof fetcher !== 'function') {
+    if (!customerId || typeof fetcher !== 'function') {
       setLoading(false);
       return;
     }
     let alive = true;
     setLoading(true);
-    fetcher(id)
-      .then((res: Payload) => { if (alive) { setData(res); setError(null); } })
-      .catch((err: any) => { if (alive) setError(err?.body?.message || err?.message || 'Failed to load the 360'); })
+    fetcher(customerId)
+      .then((res) => { if (alive) setData(res); })
+      .catch(() => { if (alive) setData(null); })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
-  }, [id]);
+  }, [customerId]);
 
-  const p = data?.panels ?? {};
-  const storefront = p.storefront as any;
+  if (loading || !data) return null;
 
-  const Panel_ = ({ title, icon: Icon, children }: { title: string; icon: any; children: React.ReactNode }) => (
-    <div className="rounded-xl border border-line bg-surface p-4">
-      <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-fg-muted">
-        <Icon className="h-3.5 w-3.5" /> {title}
-      </div>
-      {children}
-    </div>
-  );
+  const p = data.panels ?? {};
+  const sf = p.storefront as any;
+  const rows = (list: any[] | undefined) => list ?? [];
 
-  const Unavailable = ({ reason }: { reason?: string }) => (
-    <p className="text-xs text-fg-subtle">{reason || 'Not available'}</p>
-  );
-
-  const Metric = ({ label, value }: { label: string; value: React.ReactNode }) => (
-    <div className="rounded-xl border border-line bg-surface px-4 py-3">
-      <p className="text-xs uppercase tracking-wider text-fg-subtle">{label}</p>
-      <p className="mt-1 text-xl font-bold text-fg">{value}</p>
-    </div>
-  );
-
-  if (loading) return <div className="p-8 text-fg-muted">Loading 360…</div>;
-  if (error) return <div className="p-8 text-danger">{error}</div>;
-  if (!data) return null;
-
-  const { profile } = data;
+  const metrics = [
+    { label: 'Deals', value: p.deals?.available === false ? '—' : (p.deals?.count ?? 0) },
+    { label: 'Quotes', value: p.quotes?.available === false ? '—' : (p.quotes?.count ?? 0) },
+    { label: 'Orders', value: sf?.orders?.count ?? '—' },
+    { label: 'Wishlist', value: sf?.wishlist?.count ?? '—' },
+    { label: 'Abandoned cart', value: sf?.carts ? currency(sf.carts.abandoned_value) : '—' },
+  ];
 
   return (
     <div className="flex flex-col gap-nb-3">
-      {/* Identity */}
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-fg">{profile.name || profile.email || 'Customer'}</h1>
-          <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-fg-muted">
-            {profile.email && <span className="flex items-center gap-1"><Mail className="h-3.5 w-3.5" />{profile.email}</span>}
-            {profile.phone && <span className="flex items-center gap-1"><Phone className="h-3.5 w-3.5" />{profile.phone}</span>}
-            {profile.status && <span className="rounded-full border border-line px-2 py-0.5 text-xs uppercase">{profile.status}</span>}
-            {profile.source && <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{profile.source}</span>}
-          </div>
+      <Card title="Commerce activity">
+        <div className="grid grid-cols-2 gap-nb-3 md:grid-cols-5">
+          {metrics.map((m) => (
+            <div key={m.label}>
+              <p className="text-xs text-fg-subtle">{m.label}</p>
+              <p className="text-lg font-semibold text-fg">{m.value}</p>
+            </div>
+          ))}
         </div>
-        <Link to={`/crm/customers/${profile.id}`} className="flex items-center gap-1 text-sm text-primary hover:underline">
-          Open customer record <ArrowUpRight className="h-3.5 w-3.5" />
-        </Link>
-      </div>
+      </Card>
 
-      {/* Headline metrics */}
-      <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        <Metric label="Deals" value={p.deals?.available === false ? '—' : p.deals?.count ?? 0} />
-        <Metric label="Quotes" value={p.quotes?.available === false ? '—' : p.quotes?.count ?? 0} />
-        <Metric label="Orders" value={storefront?.orders?.count ?? '—'} />
-        <Metric label="Wishlist" value={storefront?.wishlist?.count ?? '—'} />
-        <Metric label="Abandoned cart" value={storefront?.carts ? money(storefront.carts.abandoned_value) : '—'} />
-      </div>
+      {can(p.deals?.permissions) && p.deals?.available !== false && (
+        <Card title="Deals">
+          {rows(p.deals?.recent).length === 0 ? (
+            <EmptyState title="No deals yet" description="Deals raised for this customer will appear here." />
+          ) : (
+            <ul className="flex flex-col gap-nb-2">
+              {rows(p.deals?.recent).map((d: any) => (
+                <li key={d.id} className="flex items-center justify-between text-sm">
+                  <span className="text-fg">{d.title || 'Deal'}</span>
+                  <span className="text-fg-muted">{d.stage} · {currency(d.value)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <Button variant="ghost" onClick={() => navigate(p.deals.deep_link)}>All deals</Button>
+        </Card>
+      )}
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        {/* CRM panels */}
-        {p.deals?.available !== false && can(p.deals?.permissions) && (
-          <Panel_ title="Deals" icon={Briefcase}>
-            {(p.deals?.recent ?? []).length === 0 ? <Unavailable reason="No deals yet" /> : (
-              <ul className="space-y-2">
-                {p.deals.recent.map((d: any) => (
-                  <li key={d.id} className="flex items-center justify-between text-sm">
-                    <Link to={`/crm/pipeline?deal=${d.id}`} className="text-fg hover:underline">{d.title || 'Deal'}</Link>
-                    <span className="text-fg-muted">{d.stage || ''} · {money(d.value)}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <Link to={p.deals?.deep_link} className="mt-3 inline-flex items-center gap-1 text-xs text-primary hover:underline">All deals <ArrowUpRight className="h-3 w-3" /></Link>
-          </Panel_>
-        )}
+      {can(p.quotes?.permissions) && p.quotes?.available !== false && (
+        <Card title="Quotes">
+          {rows(p.quotes?.recent).length === 0 ? (
+            <EmptyState title="No quotes yet" description="Quotes sent to this customer will appear here." />
+          ) : (
+            <ul className="flex flex-col gap-nb-2">
+              {rows(p.quotes?.recent).map((q: any) => (
+                <li key={q.id} className="flex items-center justify-between text-sm">
+                  <span className="text-fg">{q.quote_number || 'Quote'}</span>
+                  <span className="text-fg-muted">{q.status} · {currency(q.total)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <Button variant="ghost" onClick={() => navigate(p.quotes.deep_link)}>All quotes</Button>
+        </Card>
+      )}
 
-        {p.quotes?.available !== false && can(p.quotes?.permissions) && (
-          <Panel_ title="Quotes" icon={FileText}>
-            {(p.quotes?.recent ?? []).length === 0 ? <Unavailable reason="No quotes yet" /> : (
-              <ul className="space-y-2">
-                {p.quotes.recent.map((q: any) => (
-                  <li key={q.id} className="flex items-center justify-between text-sm">
-                    <Link to={p.quotes.deep_link} className="text-fg hover:underline">{q.quote_number || q.id.slice(0, 8)}</Link>
-                    <span className="text-fg-muted">{q.status} · {money(q.total)}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Panel_>
-        )}
+      {sf?.available !== false && can(sf?.orders?.permissions) && (
+        <Card title="Storefront orders">
+          {rows(sf?.orders?.recent).length === 0 ? (
+            <EmptyState title="No orders yet" description="Storefront orders for this customer will appear here." />
+          ) : (
+            <ul className="flex flex-col gap-nb-2">
+              {rows(sf?.orders?.recent).map((o: any) => (
+                <li key={o.id} className="flex items-center justify-between text-sm">
+                  <span className="text-fg">{o.order_number || 'Order'}</span>
+                  <span className="text-fg-muted">{o.status} · {currency(o.total)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <Button variant="ghost" onClick={() => navigate(sf.orders.deep_link)}>All orders</Button>
+        </Card>
+      )}
 
-        {/* Storefront panels */}
-        {storefront && storefront.available !== false && (
-          <>
-            {can(storefront.orders?.permissions) && (
-              <Panel_ title="Orders" icon={ShoppingBag}>
-                {(storefront.orders?.recent ?? []).length === 0 ? <Unavailable reason="No orders yet" /> : (
-                  <ul className="space-y-2">
-                    {storefront.orders.recent.map((o: any) => (
-                      <li key={o.id} className="flex items-center justify-between text-sm">
-                        <Link to={storefront.orders.deep_link} className="text-fg hover:underline">{o.order_number || o.id.slice(0, 8)}</Link>
-                        <span className="text-fg-muted">{o.status} · {money(o.total)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </Panel_>
-            )}
+      {sf?.available !== false && can(sf?.carts?.permissions) && (
+        <Card title="Cart">
+          <p className="text-sm text-fg">
+            {sf.carts?.open ?? 0} active · {sf.carts?.abandoned ?? 0} abandoned
+          </p>
+          <p className="text-sm text-fg-muted">
+            Abandoned value {currency(sf.carts?.abandoned_value)}
+          </p>
+          <Button variant="ghost" onClick={() => navigate(sf.carts.deep_link)}>Open carts</Button>
+        </Card>
+      )}
 
-            {can(storefront.carts?.permissions) && (
-              <Panel_ title="Cart" icon={ShoppingCart}>
-                {storefront.carts?.available === false ? <Unavailable reason={storefront.carts.reason} /> : (
-                  <div className="space-y-1 text-sm text-fg-muted">
-                    <p>{storefront.carts?.open ?? 0} active · {storefront.carts?.abandoned ?? 0} abandoned</p>
-                    <p className="text-fg-muted">Abandoned value {money(storefront.carts?.abandoned_value)}</p>
-                    <Link to={storefront.carts?.deep_link} className="inline-flex items-center gap-1 text-xs text-primary hover:underline">Open orders <ArrowUpRight className="h-3 w-3" /></Link>
-                  </div>
-                )}
-              </Panel_>
-            )}
+      {sf?.available !== false && can(sf?.sessions?.permissions) && (
+        <Card title="Where they travelled">
+          {rows(sf?.sessions?.sessions).length === 0 ? (
+            <EmptyState title="No tracked sessions" description="Browsing sessions appear once the visitor is identified." />
+          ) : (
+            <ul className="flex flex-col gap-nb-2">
+              {rows(sf?.sessions?.sessions).map((s: any) => (
+                <li key={s.session_id} className="flex items-center justify-between text-sm">
+                  <span className="text-fg">{s.landing_path || '/'}</span>
+                  <span className="text-fg-muted">{s.pageviews} views</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <Button variant="ghost" onClick={() => navigate(sf.sessions.deep_link)}>Open analytics</Button>
+        </Card>
+      )}
 
-            {can(storefront.sessions?.permissions) && (
-              <Panel_ title="Sessions — where they travelled" icon={Timer}>
-                {(storefront.sessions?.sessions ?? []).length === 0 ? <Unavailable reason="No tracked sessions" /> : (
-                  <ul className="space-y-1.5 text-sm">
-                    {storefront.sessions.sessions.map((s: any) => (
-                      <li key={s.session_id} className="flex items-center justify-between">
-                        <span className="text-fg">{s.landing_path || '/'}</span>
-                        <span className="text-fg-subtle">{s.pageviews} views · {String(s.started_at).slice(0, 16)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <Link to={storefront.sessions?.deep_link} className="mt-3 inline-flex items-center gap-1 text-xs text-primary hover:underline">Open analytics <ArrowUpRight className="h-3 w-3" /></Link>
-              </Panel_>
-            )}
-          </>
-        )}
-
-        {(!storefront || storefront.available === false) && (
-          <Panel_ title="Storefront" icon={User}>
-            <Unavailable reason={storefront?.reason || 'No storefront account linked to this customer'} />
-          </Panel_>
-        )}
-      </div>
+      {sf?.available === false && (
+        <Card title="Storefront">
+          <EmptyState title="No storefront account" description={sf?.reason || 'This customer has no storefront link.'} />
+        </Card>
+      )}
     </div>
   );
 }
