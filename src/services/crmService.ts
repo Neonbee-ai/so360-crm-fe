@@ -1756,6 +1756,12 @@ function buildDashboardStats(periodStats: any, performanceStats: any, reminderLi
 }
 
 export const crmService = {
+    // Customer 360 — one call that composes the customer from every module
+    // that owns a slice of it (crm-be composes; ids only, no copies).
+    getCustomer360: async <T = any>(customerId: string): Promise<T> => {
+        return apiClient.get<T>(`/customers/${customerId}/360`);
+    },
+
     getDailystoreStores: async (): Promise<Array<{ id: string; name: string; store_code?: string; status?: string }>> => {
         return dailystoreClient.get<Array<{ id: string; name: string; store_code?: string; status?: string }>>('/v1/dailystore/stores');
     },
