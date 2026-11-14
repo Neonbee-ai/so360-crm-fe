@@ -60,6 +60,7 @@ import LeadRatingHistory from '../components/leads/LeadRatingHistory';
 import NoteContent from '../components/notes/NoteContent';
 import NoteReplyComposer from '../components/notes/NoteReplyComposer';
 import { ExecutiveSummaryPanel } from '../components/ExecutiveSummaryPanel';
+import { Customer360Panels } from '../components/customer/Customer360Panels';
 import { MergeLeadPanel } from '../components/leads/MergeLeadPanel';
 import { DuplicateLeadWarning } from '../components/leads/DuplicateLeadWarning';
 import { LeadAttributionCard } from '../components/leads/LeadAttributionCard';
@@ -1135,6 +1136,10 @@ const LeadDetailPage = () => {
                 deals={associatedDeals}
                 tasks={associatedTasks}
             />
+            {/* Customer 360 — same panels as /customers/:id/360, composed by id
+                from the modules that own each slice (orders, cart, sessions).
+                Renders nothing for a lead with no storefront link. */}
+            <Customer360Panels customerId={lead.id} />
                     {/* Lead Information Tabs Card */}
                     <Card padding="none" className="overflow-hidden">
                         <Tabs
