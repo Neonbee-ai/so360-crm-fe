@@ -63,8 +63,6 @@ export function Customer360Panels({ customerId }: { customerId: string }) {
   const rows = (list: any[] | undefined) => list ?? [];
 
   const metrics = [
-    { label: 'Deals', value: p.deals?.available === false ? '—' : (p.deals?.count ?? 0) },
-    { label: 'Quotes', value: p.quotes?.available === false ? '—' : (p.quotes?.count ?? 0) },
     { label: 'Orders', value: sf?.orders?.count ?? '—' },
     { label: 'Wishlist', value: sf?.wishlist?.count ?? '—' },
     { label: 'Abandoned cart', value: sf?.carts ? currency(sf.carts.abandoned_value) : '—' },
@@ -73,7 +71,7 @@ export function Customer360Panels({ customerId }: { customerId: string }) {
   return (
     <div className="flex flex-col gap-nb-3">
       <Card title="Commerce activity">
-        <div className="grid grid-cols-2 gap-nb-3 md:grid-cols-5">
+        <div className="grid grid-cols-2 gap-nb-3 md:grid-cols-4">
           {metrics.map((m) => (
             <div key={m.label}>
               <p className="text-xs text-fg-subtle">{m.label}</p>
@@ -82,42 +80,6 @@ export function Customer360Panels({ customerId }: { customerId: string }) {
           ))}
         </div>
       </Card>
-
-      {can(p.deals?.permissions) && p.deals?.available !== false && (
-        <Card title="Deals">
-          {rows(p.deals?.recent).length === 0 ? (
-            <EmptyState title="No deals yet" description="Deals raised for this customer will appear here." />
-          ) : (
-            <ul className="flex flex-col gap-nb-2">
-              {rows(p.deals?.recent).map((d: any) => (
-                <li key={d.id} className="flex items-center justify-between text-sm">
-                  <span className="text-fg">{d.title || 'Deal'}</span>
-                  <span className="text-fg-muted">{d.stage} · {currency(d.value)}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-          <Button variant="ghost" onClick={() => navigate(p.deals.deep_link)}>All deals</Button>
-        </Card>
-      )}
-
-      {can(p.quotes?.permissions) && p.quotes?.available !== false && (
-        <Card title="Quotes">
-          {rows(p.quotes?.recent).length === 0 ? (
-            <EmptyState title="No quotes yet" description="Quotes sent to this customer will appear here." />
-          ) : (
-            <ul className="flex flex-col gap-nb-2">
-              {rows(p.quotes?.recent).map((q: any) => (
-                <li key={q.id} className="flex items-center justify-between text-sm">
-                  <span className="text-fg">{q.quote_number || 'Quote'}</span>
-                  <span className="text-fg-muted">{q.status} · {currency(q.total)}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-          <Button variant="ghost" onClick={() => navigate(p.quotes.deep_link)}>All quotes</Button>
-        </Card>
-      )}
 
       {sf?.available !== false && can(sf?.orders?.permissions) && (
         <Card title="Storefront orders">
@@ -134,6 +96,17 @@ export function Customer360Panels({ customerId }: { customerId: string }) {
             </ul>
           )}
           <Button variant="ghost" onClick={() => navigate(sf.orders.deep_link)}>All orders</Button>
+        </Card>
+      )}
+
+      {sf?.available !== false && can(sf?.wishlist?.permissions) && (
+        <Card title="Wishlist">
+          <p className="text-sm text-fg">
+            {sf?.wishlist?.available === false
+              ? 'Wishlist unavailable'
+              : `${sf?.wishlist?.count ?? 0} ${sf?.wishlist?.count === 1 ? 'product' : 'products'} saved`}
+          </p>
+          <Button variant="ghost" onClick={() => navigate(sf.wishlist.deep_link)}>Open wishlist</Button>
         </Card>
       )}
 

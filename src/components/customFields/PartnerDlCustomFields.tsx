@@ -36,6 +36,7 @@ export function PartnerDlCustomFields({ corePartnerId }: { corePartnerId?: strin
 
     return (
         <DlCustomFieldsPanel
+            title="Partner custom fields"
             entity="partner"
             recordId={corePartnerId}
             values={row.custom_fields}

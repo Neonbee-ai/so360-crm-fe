@@ -1136,10 +1136,6 @@ const LeadDetailPage = () => {
                 deals={associatedDeals}
                 tasks={associatedTasks}
             />
-            {/* Customer 360 — same panels as /customers/:id/360, composed by id
-                from the modules that own each slice (orders, cart, sessions).
-                Renders nothing for a lead with no storefront link. */}
-            <Customer360Panels customerId={lead.id} />
                     {/* Lead Information Tabs Card */}
                     <Card padding="none" className="overflow-hidden">
                         <Tabs
@@ -1467,6 +1463,9 @@ const LeadDetailPage = () => {
                             <PartnerDlCustomFields corePartnerId={lead.core_partner_id} />
                         </div>
                     )}
+                    {/* Customer 360 last: storefront behaviour is secondary to the
+                        customer's own details, so it must not push them down. */}
+                    <Customer360Panels customerId={lead.id} />
                     </div>
                 )}
 
