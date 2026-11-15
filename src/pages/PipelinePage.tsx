@@ -246,10 +246,9 @@ const PipelinePage = () => {
             search={
                 <div className="flex items-center gap-2">
                 {scopedLeadId && (
-                    <span className="flex items-center gap-1 rounded-nb border border-line bg-surface px-2 py-1 text-xs text-fg-muted">
-                        Scoped to this customer
-                        <button type="button" onClick={clearScopedLead} className="text-fg-subtle hover:text-fg" aria-label="Clear customer scope">×</button>
-                    </span>
+                    <Button variant="ghost" size="sm" onClick={clearScopedLead} title="Clear the customer scope">
+                        Scoped to this customer ×
+                    </Button>
                 )}
                 <SearchInput
                     placeholder="Search deals by company..."
