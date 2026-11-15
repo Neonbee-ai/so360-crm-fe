@@ -145,8 +145,12 @@ const LegacyTasksPage = () => {
         }
     };
 
+    // A Customer 360 deep-links here with ?lead=<id>; honour it so the list is
+    // scoped to that customer instead of every task the user can see.
+    const scopedLeadId = new URLSearchParams(window.location.search).get('lead') || '';
     const sortedAndFilteredTasks = useMemo(() => {
         let result = tasks.filter(task => {
+            if (scopedLeadId && task.lead_id !== scopedLeadId && (task.deal as any)?.lead_id !== scopedLeadId) return false;
             const lc = searchTerm.toLowerCase();
             const matchesSearch = task.title.toLowerCase().includes(lc) ||
                 task.description?.toLowerCase().includes(lc) ||
@@ -190,7 +194,7 @@ const LegacyTasksPage = () => {
         }
 
         return result;
-    }, [tasks, searchTerm, filter, sortField, sortDirection]);
+    }, [scopedLeadId, tasks, searchTerm, filter, sortField, sortDirection]);
 
     // Sandbox limit + pagination
     const sandboxLimitedTasks = useMemo(
