@@ -1756,6 +1756,11 @@ function buildDashboardStats(periodStats: any, performanceStats: any, reminderLi
 }
 
 export const crmService = {
+    // Partner 360 — deals and commissions, composed by crm-be (ids only).
+    getPartner360: async <T = any>(partnerId: string): Promise<T> => {
+        return apiClient.get<T>(`/partners/${partnerId}/360`);
+    },
+
     // Customer 360 — one call that composes the customer from every module
     // that owns a slice of it (crm-be composes; ids only, no copies).
     getCustomer360: async <T = any>(customerId: string): Promise<T> => {
