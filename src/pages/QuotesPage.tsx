@@ -254,9 +254,20 @@ const QuotesPage = () => {
     }, [dealsMap]);
 
     // Filtering & Sorting
+    // A Customer 360 deep-links here with ?lead=<id>; without honouring it the
+    // page listed every quote in the org. Quotes point at the customer through
+    // customer_id (and the deal's lead), so both are matched.
+    const scopedLeadId = new URLSearchParams(window.location.search).get('lead') || '';
     const filteredQuotes = useMemo(() => {
         const lowerSearch = searchTerm.trim().toLowerCase();
         const filtered = quotes.filter(quote => {
+            if (scopedLeadId) {
+                const matchesScope =
+                    (quote as any).customer_id === scopedLeadId ||
+                    (quote as any).lead_id === scopedLeadId ||
+                    (resolveDeal(quote) as any)?.lead_id === scopedLeadId;
+                if (!matchesScope) return false;
+            }
             const customer = resolveCustomer(quote);
             const deal = resolveDeal(quote);
 
@@ -325,7 +336,7 @@ const QuotesPage = () => {
             if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
             return 0;
         });
-    }, [quotes, searchTerm, statusFilter, dealFilter, validityFilter, sortField, sortDirection, resolveCustomer, resolveDeal]);
+    }, [quotes, searchTerm, statusFilter, dealFilter, validityFilter, sortField, sortDirection, resolveCustomer, resolveDeal, scopedLeadId]);
 
     // Sandbox & Pagination
     const effectiveQuotes = useMemo(() => {
