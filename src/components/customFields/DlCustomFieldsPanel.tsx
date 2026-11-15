@@ -12,6 +12,10 @@ export const datasetCodeFor = (entity: DlEntity) => (entity === 'partner' ? 'cor
 
 export interface DlCustomFieldsPanelProps {
     entity: DlEntity;
+    /** Card heading. Defaults to "Custom fields"; pass a distinct label when a
+     *  page shows two field sets (e.g. the record and its partner master) so
+     *  they do not read as duplicates. */
+    title?: string;
     /** Omitted in create mode (no record yet). */
     recordId?: string;
     /** Values keyed by field_key (the record's `custom_fields` column). */
@@ -35,7 +39,8 @@ export const VALIDATION_UNAVAILABLE_MSG = 'Custom field validation is unavailabl
  * `crm.lead` / `crm.deal`. 409 -> the design-system panel shows its conflict
  * banner and `reload` refetches; 503 -> "validation unavailable, try again".
  */
-export function DlCustomFieldsPanel({ entity, recordId, values, version, save, reload, canEdit = true, mode, onValuesChange }: DlCustomFieldsPanelProps) {
+export function DlCustomFieldsPanel({ entity, recordId, values, version, save, reload, canEdit = true, mode, onValuesChange, title }: DlCustomFieldsPanelProps) {
+
     const { fields, isLoading, error } = useDatasetSchema(datasetCodeFor(entity));
     const dlFields = useMemo(() => (fields as any[]).filter((f) => !f.is_system), [fields]);
     const record = useMemo(
@@ -54,7 +59,7 @@ export function DlCustomFieldsPanel({ entity, recordId, values, version, save, r
 
     return (
         <CustomFieldsPanel
-            title="Custom fields"
+            title={title ?? "Custom fields"}
             fields={dlFields}
             record={record}
             valuesKey="custom_fields"
