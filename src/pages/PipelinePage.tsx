@@ -36,6 +36,23 @@ const PipelinePage = () => {
     const [isFiltering, setIsFiltering] = useState(false);
     // Filters survive a trip to a deal's detail page and back.
     const [filters, setFilters] = usePersistedState<Filters>('pipeline.filters', {});
+    // A 360 deep-links here with ?lead=<id>. The API already supports
+    // filters.lead_id, so scope the board instead of showing every deal — and
+    // show it as a chip the user can clear. Read from location.search (the page
+    // has no data-router dependency) so existing specs keep mounting it.
+    const scopedLeadId = new URLSearchParams(window.location.search).get('lead') || '';
+    const clearScopedLead = () => {
+        const next = new URLSearchParams(window.location.search);
+        next.delete('lead');
+        navigate(`${window.location.pathname}${next.toString() ? `?${next}` : ''}`, { replace: true });
+        setFilters((f: Filters) => ({ ...f, lead_id: undefined }));
+    };
+    useEffect(() => {
+        if (!scopedLeadId) return;
+        setFilters((f: Filters) => (f.lead_id === scopedLeadId ? f : { ...f, lead_id: scopedLeadId }));
+        // Only when the incoming scope changes — never on every render.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [scopedLeadId]);
     const dealFilterConfig = useDealFilterConfig(filters, setFilters);
     // Company moves out of the drawer into the toolbar search box (same `company_name` filter).
     const filterConfig = {
@@ -227,11 +244,19 @@ const PipelinePage = () => {
                 <ExportMenu key="export" label="Export deals" onExport={(format) => exportService.deals(filters, format)} />,
             ] : undefined}
             search={
+                <div className="flex items-center gap-2">
+                {scopedLeadId && (
+                    <span className="flex items-center gap-1 rounded-nb border border-line bg-surface px-2 py-1 text-xs text-fg-muted">
+                        Scoped to this customer
+                        <button type="button" onClick={clearScopedLead} className="text-fg-subtle hover:text-fg" aria-label="Clear customer scope">×</button>
+                    </span>
+                )}
                 <SearchInput
                     placeholder="Search deals by company..."
                     value={filters.company_name ?? ''}
                     onChange={(v: string) => setFilters({ ...filters, company_name: v || undefined })}
                 />
+                </div>
             }
             filterConfig={filterConfig}
             toolbarEnd={isFiltering ? (
