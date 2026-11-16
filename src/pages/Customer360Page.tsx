@@ -1,6 +1,7 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { Customer360Panels } from '../components/customer/Customer360Panels';
+import { PanelBoundary } from '../components/common/PanelBoundary';
 
 /**
  * Standalone 360 route — kept as a deep link / bookmarkable view.
@@ -12,7 +13,9 @@ export default function Customer360Page() {
   if (!id) return null;
   return (
     <div className="mx-auto max-w-6xl p-6">
-      <Customer360Panels customerId={id} />
+      <PanelBoundary name="customer-360">
+        <Customer360Panels customerId={id} />
+      </PanelBoundary>
     </div>
   );
 }
