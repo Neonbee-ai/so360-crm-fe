@@ -5,6 +5,7 @@ import { notifyQuotaExceeded } from './quotaExceeded';
 import { plainErrorText } from '../utils/apiErrorMessage';
 import { isUuid } from '../utils/fieldPresentation';
 import { planAllows, PLAN_FLAGS } from './planGate';
+import type { ProjectTemplateOption } from '../utils/dealProductPlan';
 
 // Lead/Deal detail pages and the dashboard each fetch CRM settings (8 parallel
 // requests) and the user list on mount. Both are org-static within a session,
@@ -2642,11 +2643,23 @@ export const crmService = {
         await apiClient.patch(`/deals/${dealId}/unlink-project`, {});
     },
 
-    async createProjectFromDeal(dealId: string, opts?: { plan_from_products?: 'phases' | 'none' }): Promise<{ id: string }> {
+    async createProjectFromDeal(dealId: string, opts?: { plan_from_products?: 'tasks' | 'phases' | 'none'; template_id?: string }): Promise<{ id: string }> {
         console.log('Orchestrating project creation from deal:', dealId);
-        // Pulse b1512967: forwarded only when the caller chose a plan (flag on).
-        const body = opts?.plan_from_products ? { plan_from_products: opts.plan_from_products } : {};
+        // Pulse b1512967 / 202244cb: forwarded only when the caller chose them.
+        const body = {
+            ...(opts?.plan_from_products && { plan_from_products: opts.plan_from_products }),
+            ...(opts?.template_id && { template_id: opts.template_id }),
+        };
         return apiClient.post<{ id: string }>(`/deals/${dealId}/create-project`, body);
+    },
+
+    /**
+     * Projects' template list (projects-be GET /project-templates), the same
+     * list New Project's picker shows. Pulse 202244cb.
+     */
+    async getProjectTemplates(): Promise<ProjectTemplateOption[]> {
+        const result = await projectsClient.get<any>('/project-templates');
+        return Array.isArray(result) ? result : Array.isArray(result?.data) ? result.data : [];
     },
 
     async getProjects(): Promise<any[]> {
