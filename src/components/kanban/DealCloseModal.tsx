@@ -5,7 +5,18 @@ import { Deal } from '../../types/crm';
 import { LoseDealBody, LossReason, WinDealBody, lossReasonsService } from '../../services/salesConfigService';
 import { useCrmFeatureFlag } from '../../hooks/useCrmFeatureFlag';
 import { useShellBridge } from '@so360/shell-context';
-import { isDealProductPlanOn, PLAN_FROM_PRODUCTS_OPTIONS, type PlanFromProducts } from '../../utils/dealProductPlan';
+import {
+    BLANK_TEMPLATE,
+    DEFAULT_PLAN_FROM_PRODUCTS,
+    isDealProductPlanOn,
+    isProjectTemplatesOn,
+    PLAN_FROM_PRODUCTS_OPTIONS,
+    templateSelectOptions,
+    toPlanFromProducts,
+    type PlanFromProducts,
+    type ProjectTemplateOption,
+} from '../../utils/dealProductPlan';
+import { crmService } from '../../services/crmService';
 
 export const LOSS_REASONS_FLAG = 'submodule:crm:loss_reasons';
 
@@ -36,15 +47,33 @@ export const DealCloseModal = ({ isOpen, kind, deal, stageName, busy, onClose, o
     const [wonReason, setWonReason] = useState('');
     const [finalValue, setFinalValue] = useState<number | null>(null);
     const [createProject, setCreateProject] = useState(false);
-    const productPlanOn = isDealProductPlanOn(useShellBridge() as any);
-    const [planFromProducts, setPlanFromProducts] = useState<PlanFromProducts>('phases');
+    const shell = useShellBridge() as any;
+    const productPlanOn = isDealProductPlanOn(shell);
+    const templatesOn = isProjectTemplatesOn(shell);
+    const [planFromProducts, setPlanFromProducts] = useState<PlanFromProducts>(DEFAULT_PLAN_FROM_PRODUCTS);
+    const [templates, setTemplates] = useState<ProjectTemplateOption[]>([]);
+    const [templatesFailed, setTemplatesFailed] = useState(false);
+    const [templateId, setTemplateId] = useState(BLANK_TEMPLATE);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (!isOpen) return;
         setReasonId(''); setFreeText(''); setCompetitor(''); setFeedback('');
-        setWonReason(''); setFinalValue(deal?.value ?? null); setCreateProject(false); setPlanFromProducts('phases'); setError(null);
+        setWonReason(''); setFinalValue(deal?.value ?? null); setCreateProject(false); setPlanFromProducts(DEFAULT_PLAN_FROM_PRODUCTS); setTemplateId(BLANK_TEMPLATE); setError(null);
     }, [isOpen, deal?.id]);
+
+    // Pulse 202244cb: the same template list New Project offers, loaded only
+    // when a project is actually requested. A failed load keeps the form usable.
+    const wantTemplates = isOpen && kind === 'won' && createProject && templatesOn;
+    useEffect(() => {
+        if (!wantTemplates) return;
+        let cancelled = false;
+        setTemplatesFailed(false);
+        crmService.getProjectTemplates()
+            .then((rows) => { if (!cancelled) setTemplates(rows); })
+            .catch(() => { if (!cancelled) { setTemplates([]); setTemplatesFailed(true); } });
+        return () => { cancelled = true; };
+    }, [wantTemplates]);
 
     useEffect(() => {
         if (!isOpen || kind !== 'lost' || !reasonsEnabled) { setReasons([]); return; }
@@ -68,6 +97,7 @@ export const DealCloseModal = ({ isOpen, kind, deal, stageName, busy, onClose, o
                 ...(finalValue != null && { final_value: finalValue }),
                 ...(createProject && { create_project: true }),
                 ...(createProject && productPlanOn && { plan_from_products: planFromProducts }),
+                ...(createProject && templatesOn && templateId && { template_id: templateId }),
             });
             return;
         }
@@ -124,7 +154,17 @@ export const DealCloseModal = ({ isOpen, kind, deal, stageName, busy, onClose, o
                                 label="Project plan"
                                 value={planFromProducts}
                                 options={PLAN_FROM_PRODUCTS_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-                                onChange={(e) => setPlanFromProducts(e.target.value === 'phases' ? 'phases' : 'none')}
+                                onChange={(e) => setPlanFromProducts(toPlanFromProducts(e.target.value))}
+                            />
+                        )}
+                        {createProject && templatesOn && (
+                            <Select
+                                name="deal-project-template"
+                                label="Project template"
+                                value={templateId}
+                                options={templateSelectOptions(templates)}
+                                onChange={(e) => setTemplateId(e.target.value)}
+                                {...(templatesFailed && { hint: 'Templates could not be loaded; the project starts without one.' })}
                             />
                         )}
                     </>

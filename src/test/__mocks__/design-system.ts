@@ -25,11 +25,11 @@ export const Textarea = ({ label, hint, error, required, name, id, size: _s, 'da
   return React.createElement(FieldWrap, { id: fid, label, hint, error },
     React.createElement('textarea', { ...rest, id: fid, name, required, 'data-testid': testId, 'aria-invalid': error ? true : undefined }));
 };
-export const Select = ({ value, onChange, options = [], placeholder, label, hint: _h, error, size: _sz, required, name, className: _c, ...rest }: any) => {
+export const Select = ({ value, onChange, options = [], placeholder, label, hint, error, size: _sz, required, name, className: _c, ...rest }: any) => {
   const el = React.createElement('select', { id: rest.id ?? (label ? `f-${name}` : undefined), name, required, disabled: rest.disabled, title: rest.title, multiple: rest.multiple, value: value ?? '', onChange: (e: any) => { onChange?.(e); rest.onValueChange?.(e.target.value); }, 'aria-label': rest['aria-label'] ?? (label ? undefined : placeholder), 'data-testid': rest['data-testid'] },
     placeholder ? React.createElement('option', { key: '__ph', value: '', disabled: true }, placeholder) : null,
     options.map((o: any) => React.createElement('option', { key: String(o.value), value: o.value, disabled: o.disabled }, o.label)));
-  return label || error ? React.createElement('div', null, label ? React.createElement('label', { htmlFor: el?.props?.id ?? `f-${name}` }, label) : null, el, error ? React.createElement('p', { role: 'alert' }, error) : null) : el;
+  return label || error || hint ? React.createElement('div', null, label ? React.createElement('label', { htmlFor: el?.props?.id ?? `f-${name}` }, label) : null, el, hint ? React.createElement('p', null, hint) : null, error ? React.createElement('p', { role: 'alert' }, error) : null) : el;
 };
 export const Modal = ({ open, onClose, title, description, footer, children, dismissible = true, 'data-testid': testId }: any) => {
   React.useEffect(() => {
