@@ -1460,6 +1460,31 @@ describe('Given crmService (legacy layer)', () => {
     expect(JSON.parse(opts.body)).toEqual({});
   });
 
+  it('Given the tasks plan and a template (Pulse 202244cb) / When createProjectFromDeal runs / Then both are in the body', async () => {
+    mockFetchSuccess({ id: 'p-new' });
+    await crmService.createProjectFromDeal('d1', { plan_from_products: 'tasks', template_id: 'tpl-1' });
+    const [, opts] = fetchMock.mock.calls[fetchMock.mock.calls.length - 1];
+    expect(JSON.parse(opts.body)).toEqual({ plan_from_products: 'tasks', template_id: 'tpl-1' });
+  });
+
+  it('Given Projects returns a template array / When getProjectTemplates runs / Then the rows come back from /project-templates', async () => {
+    mockFetchSuccess([{ id: 't1', name: 'Furniture' }]);
+    const rows = await crmService.getProjectTemplates();
+    const [url] = fetchMock.mock.calls[fetchMock.mock.calls.length - 1];
+    expect(String(url)).toContain('/project-templates');
+    expect(rows).toEqual([{ id: 't1', name: 'Furniture' }]);
+  });
+
+  it('Given Projects wraps templates in { data } / When getProjectTemplates runs / Then the rows are unwrapped', async () => {
+    mockFetchSuccess({ data: [{ id: 't2', name: 'Fit-out' }] });
+    expect(await crmService.getProjectTemplates()).toEqual([{ id: 't2', name: 'Fit-out' }]);
+  });
+
+  it('Given Projects returns an unexpected shape / When getProjectTemplates runs / Then it is an empty list', async () => {
+    mockFetchSuccess({ nope: true });
+    expect(await crmService.getProjectTemplates()).toEqual([]);
+  });
+
   it('When action / Then getProjects returns empty on error', async () => {
     mockFetchErrorJson(500, { message: 'fail' });
     const result = await crmService.getProjects();

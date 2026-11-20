@@ -58,7 +58,7 @@ describe('CustomerDetailsPanel', () => {
 
     it('When rendered / Then shows the acquisition source label', () => {
       render(<CustomerDetailsPanel lead={baseLead} onUpdate={vi.fn()} showToast={vi.fn()} />);
-      expect(screen.getByText('Storefront Registration')).toBeInTheDocument();
+      expect(screen.getByText('Ecommerce Registration')).toBeInTheDocument();
     });
   });
 

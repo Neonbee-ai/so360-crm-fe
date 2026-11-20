@@ -52,8 +52,10 @@ export interface WinDealBody {
     won_reason?: string;
     final_value?: number;
     create_project?: boolean;
-    /** Pulse b1512967: with create_project, plan one phase per deal product. */
-    plan_from_products?: 'phases' | 'none';
+    /** With create_project: what the deal lines become ('tasks' = one board task each). */
+    plan_from_products?: 'tasks' | 'phases' | 'none';
+    /** With create_project: project template to start from (Pulse 202244cb). */
+    template_id?: string;
 }
 
 export interface LoseDealBody {

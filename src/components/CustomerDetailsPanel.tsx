@@ -118,7 +118,7 @@ interface CustomerDetailsPanelProps {
 }
 
 const ACQUISITION_SOURCE_LABELS: Record<string, string> = {
-    storefront_registration: 'Storefront Registration',
+    storefront_registration: 'Ecommerce Registration',
     guest_checkout: 'Guest Checkout',
     pos_inline: 'POS Inline',
     manual_entry: 'Manual Entry',

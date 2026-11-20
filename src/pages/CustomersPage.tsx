@@ -11,14 +11,14 @@ type SortField = 'contact_name' | 'email' | 'channel' | 'created_at';
 type SortDirection = 'asc' | 'desc' | null;
 
 const CHANNEL_CONFIG: Record<string, { label: string; tone: BadgeTone; icon: any }> = {
-    storefront_web: { label: 'Web', tone: 'primary' as BadgeTone, icon: Globe },
-    storefront_mobile: { label: 'Mobile', tone: 'primary' as BadgeTone, icon: Smartphone },
+    storefront_web: { label: 'Ecommerce', tone: 'primary' as BadgeTone, icon: Globe },
+    storefront_mobile: { label: 'Ecommerce (Mobile)', tone: 'primary' as BadgeTone, icon: Smartphone },
     pos: { label: 'POS', tone: 'warning' as BadgeTone, icon: ShoppingCart },
     manual: { label: 'Manual', tone: 'neutral' as BadgeTone, icon: UserPlus },
 };
 
 const ACQUISITION_SOURCE_CONFIG: Record<string, { label: string; tone: BadgeTone }> = {
-    storefront_registration: { label: 'Registration', tone: 'primary' as BadgeTone },
+    storefront_registration: { label: 'Ecommerce Registration', tone: 'primary' as BadgeTone },
     guest_checkout: { label: 'Guest Checkout', tone: 'info' as BadgeTone },
     pos_inline: { label: 'POS', tone: 'warning' as BadgeTone },
     manual_entry: { label: 'Manual', tone: 'neutral' as BadgeTone },
@@ -329,8 +329,8 @@ const CustomersPage = () => {
     const filterConfig: ListFilterConfig = {
         fields: [
             { key: 'channel', label: 'Channel', type: 'select', quick: true, options: [
-                { value: 'storefront_web', label: 'Web', count: stats.storefront_web || 0 },
-                { value: 'storefront_mobile', label: 'Mobile', count: stats.storefront_mobile || 0 },
+                { value: 'storefront_web', label: 'Ecommerce', count: stats.storefront_web || 0 },
+                { value: 'storefront_mobile', label: 'Ecommerce (Mobile)', count: stats.storefront_mobile || 0 },
                 { value: 'pos', label: 'POS', count: stats.pos || 0 },
                 { value: 'manual', label: 'Manual', count: stats.manual || 0 },
             ] },
