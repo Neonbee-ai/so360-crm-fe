@@ -36,7 +36,7 @@ describe('Given CustomerDetailsPanel', () => {
 
   it('When action / Then renders acquisition source label', () => {
     render(<CustomerDetailsPanel {...defaultProps} />);
-    expect(screen.getByText('Storefront Registration')).toBeInTheDocument();
+    expect(screen.getByText('Ecommerce Registration')).toBeInTheDocument();
   });
 
   it('When action / Then renders B2C category when not b2b', () => {

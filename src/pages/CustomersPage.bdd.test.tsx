@@ -368,7 +368,7 @@ describe('CustomersPage', () => {
       expect(container.textContent).toContain('555-0001');
     });
 
-    it('When Channel column renders web customer / Then shows Web badge', async () => {
+    it('When Channel column renders web customer / Then shows Ecommerce badge (Pulse ea6b9e0c)', async () => {
       render(<CustomersPage />);
       await waitFor(() => expect(screen.getByTestId('customer-row-c1')).toBeInTheDocument());
       const cols = tableProps.columns;
@@ -378,7 +378,19 @@ describe('CustomersPage', () => {
       if (channelCol) {
         const cell = channelCol.accessor(customers[0]);
         const { container } = render(cell);
-        expect(container.textContent).toContain('Web');
+        expect(container.textContent).toContain('Ecommerce');
+      }
+    });
+
+    it('When Channel column renders a mobile storefront customer / Then shows Ecommerce (Mobile) badge (Pulse ea6b9e0c)', async () => {
+      render(<CustomersPage />);
+      await waitFor(() => expect(screen.getByTestId('customer-row-c1')).toBeInTheDocument());
+      const channelCol = tableProps.columns.find((c: any) => {
+        try { return c.header?.props?.label === 'Channel'; } catch { return false; }
+      });
+      if (channelCol) {
+        const { container } = render(channelCol.accessor({ ...customers[0], channel: 'storefront_mobile' }));
+        expect(container.textContent).toContain('Ecommerce (Mobile)');
       }
     });
 
@@ -390,7 +402,7 @@ describe('CustomersPage', () => {
       expect(sourceCol).toBeDefined();
       const cell = sourceCol.accessor(customers[0]);
       const { container } = render(cell);
-      expect(container.textContent).toContain('Registration');
+      expect(container.textContent).toContain('Ecommerce Registration');
     });
   });
 
