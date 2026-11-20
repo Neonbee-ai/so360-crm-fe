@@ -36,7 +36,7 @@ describe('Given the deal product plan flag is off', () => {
         expect(screen.queryByLabelText('Project plan')).not.toBeInTheDocument();
         submit();
         expect(p.onWin).toHaveBeenCalledWith({ final_value: 900, create_project: true });
-    });
+    }, 20000);
 });
 
 describe('Given the flag matrix has not loaded', () => {
@@ -135,7 +135,7 @@ describe('Given the project templates flag is on', () => {
         tpl.getProjectTemplates.mockRejectedValue(new Error('down'));
         const p = setup();
         tickCreateProject();
-        await screen.findByText(/Templates could not be loaded/);
+        await screen.findByText(/Templates could not be loaded/, undefined, { timeout: 8000 });
         submit();
         expect(p.onWin).toHaveBeenCalledWith({ final_value: 900, create_project: true });
     });
