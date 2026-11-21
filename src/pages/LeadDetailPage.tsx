@@ -61,6 +61,7 @@ import NoteContent from '../components/notes/NoteContent';
 import NoteReplyComposer from '../components/notes/NoteReplyComposer';
 import { ExecutiveSummaryPanel } from '../components/ExecutiveSummaryPanel';
 import { Customer360Panels } from '../components/customer/Customer360Panels';
+import { PanelBoundary } from '../components/common/PanelBoundary';
 import { MergeLeadPanel } from '../components/leads/MergeLeadPanel';
 import { DuplicateLeadWarning } from '../components/leads/DuplicateLeadWarning';
 import { LeadAttributionCard } from '../components/leads/LeadAttributionCard';
@@ -596,10 +597,10 @@ const LeadDetailPage = () => {
     const statusNode = isChangingStatus ? (
                                     <Select
                                         name="lead-status"
-                                        value={leadStages.find(s => s.name === lead.status)?.id || (lead as any).backend_status || ''}
+                                        value={(leadStages ?? []).find(s => s.name === lead.status)?.id || (lead as any).backend_status || ''}
                                         onChange={async (e) => {
                                             const stageId = e.target.value;
-                                            const stage = leadStages.find(s => s.id === stageId);
+                                            const stage = (leadStages ?? []).find(s => s.id === stageId);
                                             const displayName = stage?.name || stageId;
                                             // Field-diff history (old/new status, actor, timestamp) is now
                                             // captured server-side by the leads audit trigger (Task 7) —
@@ -1343,7 +1344,7 @@ const LeadDetailPage = () => {
                                                     />
                                                 ) : (
                                                     <span className="text-sm font-medium">
-                                                        {sourceTypes.find(o => o.value === lead.source)?.label ?? lead.source}
+                                                        {(sourceTypes ?? []).find(o => o.value === lead.source)?.label ?? lead.source}
                                                     </span>
                                                 )}
                                             </div>
@@ -1365,7 +1366,7 @@ const LeadDetailPage = () => {
                                                     />
                                                 ) : (
                                                     <span className="text-sm font-medium">
-                                                        {partners.find(p => p.id === lead.referred_by)?.company_name || '—'}
+                                                        {(partners ?? []).find(p => p.id === lead.referred_by)?.company_name || '—'}
                                                     </span>
                                                 )}
                                             </div>
@@ -1465,7 +1466,10 @@ const LeadDetailPage = () => {
                     )}
                     {/* Customer 360 last: storefront behaviour is secondary to the
                         customer's own details, so it must not push them down. */}
-                    <Customer360Panels customerId={lead.id} />
+                    {/* Wrapped: a panel failure must not blank the record. */}
+                    <PanelBoundary name="customer-360">
+                        <Customer360Panels customerId={lead.id} />
+                    </PanelBoundary>
                     </div>
                 )}
 
