@@ -8,6 +8,7 @@ import { partnersApi, settingsApi, crmService } from '../services/crmService';
 import { validatePhone } from '../utils/phoneValidation';
 import { toast, Grid, GridItem, Skeleton, type BadgeTone } from '@so360/design-system';
 import { Partner360Panels } from '../components/partner/Partner360Panels';
+import { PanelBoundary } from '../components/common/PanelBoundary';
 import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import { useBusinessSettings, useShell } from '@so360/shell-context';
 import NeuraAiSummaryCard from './components/NeuraAiSummaryCard';
@@ -585,7 +586,10 @@ const PartnerDetailPage = () => {
                     )}
                     {dlCustomFields && !isEditing && <PartnerDlCustomFields corePartnerId={partner?.core_partner_id} />}
                     {/* 360 last, so the partner's own details keep the top of the tab. */}
-                    <Partner360Panels partnerId={id} />
+                    {/* Wrapped: a panel failure must not blank the record. */}
+                    <PanelBoundary name="partner-360">
+                        <Partner360Panels partnerId={id} />
+                    </PanelBoundary>
                 </div>
             )}
 
