@@ -14,6 +14,7 @@ import { canReadQuota } from '../utils/quotaAccess';
 import { useFormatters } from '@so360/formatters';
 import { QuotaGate, CrossLinkChip, SegmentedControl, toast, ListPageTemplate, Button, Pagination, DataTable, SearchInput, Menu, Alert, EmptyState, TextField, Textarea, Link, StatusBadge, type BadgeTone, type DataTableColumn, type FilterValues, type ListFilterConfig, Badge } from '@so360/design-system';
 import { quotesToCsv, downloadCsv } from '../components/quotes/quotesCsv';
+import QuoteExportDialog from '../components/quotes/QuoteExportDialog';
 import { quoteToDocumentData } from '../utils/quoteToDocumentData';
 import ExportMenu from '../components/ExportMenu';
 import { CrmScope } from '../utils/crmScope';
@@ -105,6 +106,7 @@ const QuotesPage = () => {
 
     const { recordActivity } = useActivity();
     const shell = useShellBridge();
+    const canFilteredExport = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:quotes:export_filtered') ?? true);
     const canCreateQuote = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('quotes.create') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:quotes:create') ?? true);
     const quotaChecks = useMemo(() => [{ module_code: 'crm', quota_key: 'max_quotes' }], []);
     const { getQuota } = useQuota({ checks: quotaChecks, orgId: shell?.currentOrg?.id || '', enabled: canReadQuota(shell) });
@@ -141,6 +143,7 @@ const QuotesPage = () => {
 
     // Modals and action tracking
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
     const [selectedDealId, setSelectedDealId] = useState<string>('');
     // Settings → Documents → Numbering: when Sales Quote auto-numbering is off the user types the number.
     const [quoteAutoNumbering, setQuoteAutoNumbering] = useState(true);
@@ -479,6 +482,17 @@ const QuotesPage = () => {
         const csv = quotesToCsv(rowsToExport, deals);
         downloadCsv(`quotes-export-${rowsToExport.length}.csv`, csv);
         toast.success(`Exported ${rowsToExport.length} quotes to CSV.`);
+    };
+
+    // Rows chosen in the export dialog (all, or filtered by date/status/customer/number/creator).
+    const handleExportRows = (rows: Quote[]) => {
+        if (rows.length === 0) {
+            toast.error('No quotes match, so nothing was exported.');
+            return;
+        }
+        downloadCsv(`quotes-export-${rows.length}.csv`, quotesToCsv(rows, deals));
+        toast.success(`Exported ${rows.length} quotes to CSV.`);
+        setIsExportDialogOpen(false);
     };
 
     const formatCurrency = (value: number) => formatters.formatCurrency(value);
@@ -867,7 +881,10 @@ const QuotesPage = () => {
                     label="Export quotes"
                     formats={['csv']}
                     onExport={async () => {
-                        handleExportSelected();
+                        // A ticked selection keeps its one-click export; otherwise
+                        // offer export-all / export-filtered (Pulse 222d6d31).
+                        if (selectedQuoteIds.length > 0 || !canFilteredExport) { handleExportSelected(); return; }
+                        setIsExportDialogOpen(true);
                     }}
                 />,
             ]}
@@ -983,6 +1000,15 @@ const QuotesPage = () => {
 
             {/* Portal Row Action Menu (⋮) */}
             {/* Create Quote Modal */}
+            {isExportDialogOpen && (
+                <QuoteExportDialog
+                    quotes={quotes}
+                    customerName={(q) => resolveCustomer(q)?.name ?? ''}
+                    onClose={() => setIsExportDialogOpen(false)}
+                    onExport={handleExportRows}
+                />
+            )}
+
             {isCreateModalOpen && (
                 <Modal
                     isOpen
