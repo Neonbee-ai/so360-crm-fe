@@ -657,6 +657,8 @@ const DashboardPage = () => {
                     sections={layoutRows(dashLayout.layout)}
                     onToggleVisible={dashLayout.toggle}
                     onMove={dashLayout.move}
+                    onUndo={dashLayout.undo}
+                    canUndo={dashLayout.canUndo}
                     onReset={() => { void dashLayout.reset(); }}
                     onClose={() => setShowCustomize(false)}
                 />
