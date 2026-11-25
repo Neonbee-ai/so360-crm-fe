@@ -292,7 +292,7 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                                 <Grid gap="md">
                                     {customFieldDefs.map(field => (
                                       <GridItem key={field.id} span={{ md: 4, lg: 6 }}>
-                                        field.field_type === 'SELECT' ? (
+                                        {field.field_type === 'SELECT' ? (
                                             <Select name={`custom_${field.id}`} label={field.label} required={!!field.is_required}
                                                 value={form.custom_fields[field.id] || ''}
                                                 onChange={e => setForm(f => ({ ...f, custom_fields: { ...f.custom_fields, [field.id]: e.target.value } }))}
@@ -302,7 +302,7 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                                                 type={field.field_type === 'NUMBER' ? 'number' : field.field_type === 'DATE' ? 'date' : 'text'}
                                                 value={form.custom_fields[field.id] || ''}
                                                 onChange={e => setForm(f => ({ ...f, custom_fields: { ...f.custom_fields, [field.id]: e.target.value } }))} />
-                                        )
+                                        )}
                                       </GridItem>
                                     ))}
                                 </Grid>

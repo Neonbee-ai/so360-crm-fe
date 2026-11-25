@@ -96,6 +96,18 @@ describe('validateFirstName / validateLastName', () => {
             expect(validateFirstName('%^&)_5454hiugi')).toBe(INVALID_FIRST_NAME_MESSAGE);
         });
 
+        it('When last name is a single letter s / Then it is accepted (Pulse 9e57fa7b)', () => {
+            expect(validateLastName('s')).toBeNull();
+        });
+
+        it('When last name is a single hyphen / Then it is rejected', () => {
+            expect(validateLastName('-')).toBe(INVALID_LAST_NAME_MESSAGE);
+        });
+
+        it('When first name is a single letter / Then it is still rejected', () => {
+            expect(validateFirstName('s')).toBe(INVALID_FIRST_NAME_MESSAGE);
+        });
+
         it('When last name is 49878)&)*_knhj / Then it is rejected', () => {
             expect(validateLastName('49878)&)*_knhj')).toBe(INVALID_LAST_NAME_MESSAGE);
         });
