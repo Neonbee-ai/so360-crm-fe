@@ -98,13 +98,14 @@ describe('Given PipelinePage', () => {
     render(<PipelinePage />);
     await waitFor(() => screen.getByRole('button', { name: /new deal/i }));
     fireEvent.click(screen.getByRole('button', { name: /new deal/i }));
-    expect(screen.getByTestId('create-deal-modal')).toBeInTheDocument();
+    expect(await screen.findByTestId('create-deal-modal')).toBeInTheDocument();
   });
 
   it('When modal is closed / Then CreateDealModal is removed', async () => {
     render(<PipelinePage />);
     await waitFor(() => screen.getByRole('button', { name: /new deal/i }));
     fireEvent.click(screen.getByRole('button', { name: /new deal/i }));
+    await screen.findByTestId('create-deal-modal');
     fireEvent.click(screen.getByRole('button', { name: /close/i }));
     expect(screen.queryByTestId('create-deal-modal')).not.toBeInTheDocument();
   });

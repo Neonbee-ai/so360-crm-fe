@@ -119,7 +119,7 @@ describe('Feature: Dashboard Customize button (Comb Button)', () => {
             render(<DashboardPage />);
             await ready();
             fireEvent.click(customizeBtn());
-            expect(screen.getByRole('dialog', { name: 'Customize Dashboard' })).toBeInTheDocument();
+            expect(await screen.findByRole('dialog', { name: 'Customize Dashboard' })).toBeInTheDocument();
         });
         it('When focused and Enter pressed Then the dialog opens', async () => {
             flags.on.add(FLAG);
