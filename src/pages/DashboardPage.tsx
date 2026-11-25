@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { Suspense, lazy, useState, useEffect, useCallback } from 'react';
 import { crmService } from '../services/crmService';
 import {
     DollarSign, TrendingUp, Users, CheckCircle2,
@@ -9,7 +9,6 @@ import { Link } from 'react-router-dom';
 import { CrossLinkChip, DashboardPageTemplate, KpiCard, Card, SegmentedControl, Grid, GridItem, Button, EmptyState, Progress, Skeleton, Badge } from '@so360/design-system';
 import { useBusinessSettings, useShell } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
-import REWidgets from '../components/dashboard/REWidgets';
 import { DASHBOARD_REMINDER_FILTERS, serializeTaskListFilters, taskReminderAt } from '../utils/taskListFilters';
 import { onLeadsChanged } from '../utils/leadEvents';
 import { parseStoredTimestamp, dueDateCalendarDay, hasTimeComponent } from '../utils/datetime';
@@ -21,7 +20,9 @@ import {
     layoutRows,
     visibleWidgets,
 } from '../utils/dashboardLayout';
-import LeadLayoutSettingsPanel from './components/LeadLayoutSettingsPanel';
+// Off the initial federated entry: both render only behind a flag / the Customize toggle.
+const REWidgets = lazy(() => import('../components/dashboard/REWidgets'));
+const LeadLayoutSettingsPanel = lazy(() => import('./components/LeadLayoutSettingsPanel'));
 
 /**
  * Derive a reminder's schedule state from its due instant.
@@ -346,7 +347,7 @@ const DashboardPage = () => {
         re_widgets: (
             <>
             {/* Real-estate widgets — renders nothing unless submodule:crm:re_widgets is on */}
-            <REWidgets />
+            <Suspense fallback={null}><REWidgets /></Suspense>
             </>
         ),
         reminders: (
@@ -651,6 +652,7 @@ const DashboardPage = () => {
             }
         >
             {customizeEnabled && showCustomize && (
+                <Suspense fallback={null}>
                 <LeadLayoutSettingsPanel
                     title="Customize Dashboard"
                     labels={DASHBOARD_WIDGET_LABELS}
@@ -660,6 +662,7 @@ const DashboardPage = () => {
                     onReset={() => { void dashLayout.reset(); }}
                     onClose={() => setShowCustomize(false)}
                 />
+                </Suspense>
             )}
         </DashboardPageTemplate>
     );

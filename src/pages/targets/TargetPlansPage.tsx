@@ -9,6 +9,7 @@ import {
   loadDirectoryPeople,
   personIdOf,
   formatValue,
+  usePeopleDirectory,
 } from './targetUi';
 import {
   classifyTaskTypes,
@@ -61,6 +62,26 @@ export default function TargetPlansPage() {
   const [ownerType, setOwnerType] = useState<'rep' | 'team' | 'org'>('rep');
   const [ownerId, setOwnerId] = useState('');
   const [role, setRole] = useState('');
+  // Role is filled from the owner's People Connect profile (job title), never a
+  // local mapping. `roleHint` tells the user where it came from, or that the
+  // profile has none and they must type one.
+  const { byId: directoryById, loading: directoryLoading } = usePeopleDirectory();
+  const [roleHint, setRoleHint] = useState('');
+  const handleOwnerChange = (id: string) => {
+    setOwnerId(id);
+    if (!id) { setRole(''); setRoleHint(''); return; }
+    const jobTitle = directoryById.get(id)?.job_title?.trim();
+    if (jobTitle) {
+      setRole(jobTitle);
+      setRoleHint('Filled from the owner\'s profile. You can adjust it for this plan.');
+    } else {
+      // Never carry the previous owner's role across, and never guess one.
+      setRole('');
+      setRoleHint(directoryLoading
+        ? 'Loading the owner\'s profile…'
+        : 'This person has no job title on their profile. Enter a role for this plan.');
+    }
+  };
   const [period, setPeriod] = useState<Period>('month');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -515,7 +536,7 @@ export default function TargetPlansPage() {
                   those two invited a meaningless selection. */}
               {ownerType === 'rep' ? (
                 <Field label="Owner" grow>
-                  <PeopleSelector clearable loadOptions={loadDirectoryPeople} value={ownerId} onChange={(id) => setOwnerId(personIdOf(id))} />
+                  <PeopleSelector clearable loadOptions={loadDirectoryPeople} value={ownerId} onChange={(id) => handleOwnerChange(personIdOf(id))} />
                 </Field>
               ) : (
                 <Field label="Owner" grow>
@@ -529,7 +550,7 @@ export default function TargetPlansPage() {
             </div>
 
             <div className="flex flex-wrap gap-4">
-              <TextField name="plan_role" label="Role" value={role} onChange={(e: any) => setRole(e.target.value)} />
+              <TextField name="plan_role" label="Role" value={role} hint={roleHint || undefined} onChange={(e: any) => { setRole(e.target.value); setRoleHint(''); }} />
               <Select
                 name="plan_period"
                 label="Period"

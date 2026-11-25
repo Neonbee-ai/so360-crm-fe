@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { Suspense, lazy, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { eventBus } from '@so360/event-bus';
 import { publishLeadsChanged } from '../utils/leadEvents';
 import { resolveLeadOwner } from '../utils/resolveLeadOwner';
@@ -55,7 +55,13 @@ import MeetingModal from './components/MeetingModal';
 import { useEntityTimeline } from './components/timeline/useEntityTimeline';
 import TimelineEventCard from './components/timeline/TimelineEventCard';
 import TimelineSummaryBanner from './components/timeline/TimelineSummaryBanner';
-import NoteEditor from '../components/notes/NoteEditor';
+// tiptap/prosemirror stay out of this page chunk: loaded when a note editor first mounts.
+const NoteEditorLazy = lazy(() => import('../components/notes/NoteEditor'));
+const NoteEditor = (props: React.ComponentProps<typeof NoteEditorLazy>) => (
+    <Suspense fallback={<div className="py-nb-2"><Skeleton variant="rect" /></div>}>
+        <NoteEditorLazy {...props} />
+    </Suspense>
+);
 import LeadRatingHistory from '../components/leads/LeadRatingHistory';
 import NoteContent from '../components/notes/NoteContent';
 import NoteReplyComposer from '../components/notes/NoteReplyComposer';

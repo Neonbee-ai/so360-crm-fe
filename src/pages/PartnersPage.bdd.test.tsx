@@ -666,4 +666,23 @@ describe('PartnersPage', () => {
             );
         });
     });
+
+    describe('Given PARTNER custom fields (Pulse 2b686636)', () => {
+        it('When the modal opens / Then each field renders one labelled control and no raw JSX text', async () => {
+            mockCustomFieldsGetAll.mockResolvedValue([
+                { id: 'f1', label: 'Architect Grading', field_type: 'SELECT', options: ['A', 'B'] },
+                { id: 'f2', label: 'Number of Purchase', field_type: 'NUMBER' },
+            ]);
+            const user = userEvent.setup();
+            render(<PartnersPage />);
+            await user.click(screen.getByRole('button', { name: /add partner/i }));
+
+            // 'Architect Grading' is also a built-in partner field, so assert on the custom control by its id (one label each).
+            await waitFor(() => expect(document.getElementById('f-custom_f1')).not.toBeNull());
+            expect(document.querySelectorAll('label[for="f-custom_f1"]')).toHaveLength(1);
+            expect(document.querySelectorAll('label[for="f-custom_f2"]')).toHaveLength(1);
+            expect(screen.getAllByText('Number of Purchase')).toHaveLength(1);
+            expect(document.body.textContent).not.toMatch(/field_type|\) : \(/);
+        });
+    });
 });

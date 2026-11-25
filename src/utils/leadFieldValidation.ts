@@ -18,6 +18,8 @@
 import { validatePostalCode } from './postalCodeRules';
 
 export const NAME_MIN = 2;
+/** A one-letter surname ("S", "Y") is legitimate. */
+export const LAST_NAME_MIN = 1;
 export const NAME_MAX = 60;
 export const COMPANY_MIN = 2;
 export const COMPANY_MAX = 120;
@@ -79,7 +81,7 @@ export function validateFirstNameRequired(value: string): string | null {
 
 export function validateLastName(value: string): string | null {
     if (!value.trim()) return null;
-    return check(value, NAME_ALLOWED, NAME_MIN, NAME_MAX, INVALID_LAST_NAME_MESSAGE);
+    return check(value, NAME_ALLOWED, LAST_NAME_MIN, NAME_MAX, INVALID_LAST_NAME_MESSAGE);
 }
 
 export function validateCompanyName(value: string): string | null {
