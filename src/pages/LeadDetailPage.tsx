@@ -465,7 +465,7 @@ const LeadDetailPage = () => {
         return (
             // Comb root (data-comb-path): a 400/404 (bad or missing id) must render a settled
             // not-found page, not leave readiness checks waiting on a spinner.
-            <DetailPageTemplate title="Lead not found" trail={detailTrail}>
+            <DetailPageTemplate title={isCustomerDetailRoute ? 'Customer not found' : 'Lead not found'} trail={detailTrail}>
                 <RecordNotFound listPath={backRoute} listLabel={isCustomerDetailRoute ? 'Customers' : 'Leads'} />
             </DetailPageTemplate>
         );
