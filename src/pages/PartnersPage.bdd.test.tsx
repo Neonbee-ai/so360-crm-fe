@@ -677,7 +677,10 @@ describe('PartnersPage', () => {
             render(<PartnersPage />);
             await user.click(screen.getByRole('button', { name: /add partner/i }));
 
-            await waitFor(() => expect(screen.getAllByText('Architect Grading')).toHaveLength(1));
+            // 'Architect Grading' is also a built-in partner field, so assert on the custom control by its id (one label each).
+            await waitFor(() => expect(document.getElementById('f-custom_f1')).not.toBeNull());
+            expect(document.querySelectorAll('label[for="f-custom_f1"]')).toHaveLength(1);
+            expect(document.querySelectorAll('label[for="f-custom_f2"]')).toHaveLength(1);
             expect(screen.getAllByText('Number of Purchase')).toHaveLength(1);
             expect(document.body.textContent).not.toMatch(/field_type|\) : \(/);
         });
