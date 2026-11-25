@@ -98,7 +98,7 @@ describe('Given the CRM dashboard', () => {
             render(<DashboardPage />);
             await ready();
             fireEvent.click(screen.getByRole('button', { name: 'Customize dashboard' }));
-            const panel = screen.getByRole('dialog', { name: 'Customize Dashboard' });
+            const panel = await screen.findByRole('dialog', { name: 'Customize Dashboard' });
             fireEvent.click(within(panel).getByRole('button', { name: 'Hide Active reminders' }));
             expect(screen.queryByText('Active Reminders')).toBeNull();
             expect(within(panel).getByRole('button', { name: 'Show Active reminders' })).toHaveAttribute('aria-pressed', 'false');

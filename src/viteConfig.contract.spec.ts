@@ -66,6 +66,22 @@ describe('Production build configuration (MFE perf contract)', () => {
     });
   });
 
+  describe('Given the manual chunk rules', () => {
+    it('Given the federation importShared runtime, When chunks are assigned, Then it gets its own chunk (never hoisted into a vendor chunk)', () => {
+      const manualChunks = config.build?.rollupOptions?.output?.manualChunks;
+      // Otherwise Rollup hoists importShared into a vendor manual chunk and the
+      // exposed ./App statically imports that whole chunk on every CRM open.
+      expect(manualChunks('\0virtual:__federation_fn_import')).toBe('__federation_fn_import');
+      expect(manualChunks('__federation_fn_import')).toBe('__federation_fn_import');
+    });
+
+    it('Given ordinary app and node_modules files, When chunks are assigned, Then Rollup default chunking applies', () => {
+      const manualChunks = config.build?.rollupOptions?.output?.manualChunks;
+      expect(manualChunks('/repo/src/pages/LeadsPage.tsx')).toBeUndefined();
+      expect(manualChunks('/repo/node_modules/react/index.js')).toBeUndefined();
+    });
+  });
+
   describe('Given the module federation shared dependency list', () => {
     it('Then the federation plugin declares a shared map', () => {
       expect(captured.federation).toBeDefined();

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { Suspense, lazy, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { KanbanBoard } from '../components/kanban/KanbanBoard';
 import { crmService } from '../services/crmService';
@@ -9,7 +9,8 @@ import { StageTransitionModal } from '../components/kanban/StageTransitionModal'
 import { DealCloseModal } from '../components/kanban/DealCloseModal';
 import { dealCloseService, LoseDealBody, WinDealBody } from '../services/salesConfigService';
 import { toast, ListPageTemplate, Button, SearchInput, Skeleton } from '@so360/design-system';
-import CreateDealModal from '../pages/components/CreateDealModal';
+// Off the initial federated entry: mounts only after "New deal" is pressed.
+const CreateDealModal = lazy(() => import('../pages/components/CreateDealModal'));
 
 import { useDealFilterConfig } from '../pages/components/DealFilters';
 import { DealFilters as Filters } from '../types/crm';
@@ -306,10 +307,12 @@ const PipelinePage = () => {
             />
 
             {isCreateDealOpen && (
-                <CreateDealModal
-                    onClose={() => setIsCreateDealOpen(false)}
-                    onSuccess={() => { setIsCreateDealOpen(false); fetchData(); }}
-                />
+                <Suspense fallback={null}>
+                    <CreateDealModal
+                        onClose={() => setIsCreateDealOpen(false)}
+                        onSuccess={() => { setIsCreateDealOpen(false); fetchData(); }}
+                    />
+                </Suspense>
             )}
         </ListPageTemplate>
     );

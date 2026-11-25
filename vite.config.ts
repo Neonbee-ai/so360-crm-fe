@@ -69,6 +69,18 @@ export default defineConfig(({ mode, command }) => {
         minify: 'esbuild',
         cssCodeSplit: false,
         emptyOutDir: false,
+        rollupOptions: {
+            output: {
+                // The federation runtime (importShared / __federation_fn_import) MUST keep its
+                // own chunk. Any vendor manual chunk that imports React through it would
+                // otherwise absorb it, and the exposed ./App would statically import that
+                // whole vendor chunk on every CRM open (Insight: 139 KB -> 9.5 KB br).
+                manualChunks(id: string) {
+                    if (id.includes('__federation_fn_import')) return '__federation_fn_import';
+                    return undefined;
+                },
+            },
+        },
     },
     server: {
         port: 3004,

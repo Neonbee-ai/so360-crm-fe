@@ -119,7 +119,7 @@ describe('Feature: Dashboard Customize button (Comb Button)', () => {
             render(<DashboardPage />);
             await ready();
             fireEvent.click(customizeBtn());
-            expect(screen.getByRole('dialog', { name: 'Customize Dashboard' })).toBeInTheDocument();
+            expect(await screen.findByRole('dialog', { name: 'Customize Dashboard' })).toBeInTheDocument();
         });
         it('When focused and Enter pressed Then the dialog opens', async () => {
             flags.on.add(FLAG);
@@ -160,7 +160,7 @@ describe('Feature: Dashboard Customize button (Comb Button)', () => {
     });
 
     describe('Scenario: tab order', () => {
-        it('Then the Customize button is reachable by Tab', async () => {
+        it('When Tab is pressed then the Customize button is reachable', async () => {
             flags.on.add(FLAG);
             const user = userEvent.setup();
             render(<DashboardPage />);

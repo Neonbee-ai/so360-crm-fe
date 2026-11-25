@@ -124,3 +124,35 @@ describe('TargetPlansPage — create form owner requirement', () => {
     expect(screen.getByRole('button', { name: /Save plan/i })).toBeEnabled();
   });
 });
+
+describe('TargetPlansPage — owner role auto-populate (Pulse a2adc1d7)', () => {
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    const { __resetPeopleDirectoryForTests } = await import('./targetUi');
+    __resetPeopleDirectoryForTests();
+    mockTargetPlanService.listPlans.mockResolvedValue([]);
+    mockTargetPlanService.listChannels.mockResolvedValue([]);
+    mockSalesTargetService.listTaskTypes.mockResolvedValue(ONE_TASK_TYPE);
+    mockSalesTargetService.getMetricCatalog.mockResolvedValue(null);
+  });
+
+  it('Given an owner with a job title / When selected / Then Role is filled from the profile', async () => {
+    mockCrmService.getSalesReps.mockResolvedValue([{ id: 'per1', full_name: 'Ada Lovelace', job_title: 'Account Executive' }]);
+    render(<TargetPlansPage />);
+    fireEvent.click(await screen.findByRole('button', { name: 'New plan' }));
+    fireEvent.click(screen.getByText('Select person...'));
+    fireEvent.click(await screen.findByText('Ada Lovelace'));
+
+    expect(await screen.findByDisplayValue('Account Executive')).toBeInTheDocument();
+  });
+
+  it('Given an owner without a job title / When selected / Then Role is empty and the user is told to enter one', async () => {
+    mockCrmService.getSalesReps.mockResolvedValue([{ id: 'per2', full_name: 'Grace Hopper' }]);
+    render(<TargetPlansPage />);
+    fireEvent.click(await screen.findByRole('button', { name: 'New plan' }));
+    fireEvent.click(screen.getByText('Select person...'));
+    fireEvent.click(await screen.findByText('Grace Hopper'));
+
+    expect(await screen.findByText(/no job title on their profile/i)).toBeInTheDocument();
+  });
+});
