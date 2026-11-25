@@ -160,7 +160,7 @@ describe('Feature: Dashboard Customize button (Comb Button)', () => {
     });
 
     describe('Scenario: tab order', () => {
-        it('Then the Customize button is reachable by Tab', async () => {
+        it('When Tab is pressed then the Customize button is reachable', async () => {
             flags.on.add(FLAG);
             const user = userEvent.setup();
             render(<DashboardPage />);
