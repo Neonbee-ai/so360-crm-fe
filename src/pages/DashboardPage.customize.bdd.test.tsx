@@ -103,11 +103,11 @@ describe('Given the CRM dashboard', () => {
             expect(screen.queryByText('Active Reminders')).toBeNull();
             expect(within(panel).getByRole('button', { name: 'Show Active reminders' })).toHaveAttribute('aria-pressed', 'false');
             // The icon follows the state: eye-off for a hidden widget, eye for visible ones (Pulse 946bd3a5).
-            expect(within(panel).getByRole('button', { name: 'Show Active reminders' }).querySelector('svg.lucide-eye-off')).not.toBeNull();
-            expect(within(panel).getByRole('button', { name: 'Hide KPI cards' }).querySelector('svg.lucide-eye')).not.toBeNull();
+            expect(within(panel).getByRole('button', { name: 'Show Active reminders' }).querySelector('[data-testid="icon-EyeOff"]')).not.toBeNull();
+            expect(within(panel).getByRole('button', { name: 'Hide KPI cards' }).querySelector('[data-testid="icon-Eye"]')).not.toBeNull();
             // Undo restores the widget and its icon.
             fireEvent.click(within(panel).getByRole('button', { name: 'Undo' }));
-            expect(within(panel).getByRole('button', { name: 'Hide Active reminders' }).querySelector('svg.lucide-eye')).not.toBeNull();
+            expect(within(panel).getByRole('button', { name: 'Hide Active reminders' }).querySelector('[data-testid="icon-Eye"]')).not.toBeNull();
             await waitFor(() => expect(grid.save).toHaveBeenCalledWith(
                 expect.objectContaining({ hidden: ['reminders'] }),
                 'crm_dashboard_layout',
