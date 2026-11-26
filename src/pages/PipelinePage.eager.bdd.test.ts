@@ -5,10 +5,11 @@ const read = (f: string) => readFileSync(join(__dirname, f), 'utf8');
 
 describe('CRM pipeline first paint', () => {
   describe('Given the route table', () => {
-    it('When App is read Then PipelinePage is imported eagerly, not React.lazy', () => {
+    it('When App is read Then PipelinePage is React.lazy and its chunk is preloaded at module eval (no extra RTT)', () => {
       const app = read('../App.tsx');
-      expect(app).toMatch(/import PipelinePage from '\.\/pages\/PipelinePage'/);
-      expect(app).not.toMatch(/PipelinePage = lazy/);
+      expect(app).not.toMatch(/import PipelinePage from/);
+      expect(app).toMatch(/PipelinePage = lazy\(loadPipelinePage\)/);
+      expect(app).toMatch(/pattern: [^\n]*pipeline[^\n]*load: loadPipelinePage/);
     });
   });
   describe('Given the pipeline page source', () => {

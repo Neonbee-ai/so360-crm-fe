@@ -400,7 +400,7 @@ const DashboardPage = () => {
                             <div className="flex items-center gap-2 mt-auto pt-3 border-t border-line">
                                 <div className="w-5 h-5 rounded-full bg-fg-muted/30 flex items-center justify-center text-xs font-semibold border border-line">
                                     {task.assigned_to?.avatar_url ? (
-                                        <img src={task.assigned_to.avatar_url} className="w-full h-full rounded-full" />
+                                        <img loading="lazy" width={32} height={32} src={task.assigned_to.avatar_url} className="w-full h-full rounded-full" />
                                     ) : task.assigned_to?.full_name?.charAt(0)}
                                 </div>
                                 <span className="text-xs font-bold text-fg-subtle truncate">{task.assigned_to?.full_name}</span>
@@ -495,7 +495,7 @@ const DashboardPage = () => {
 
                                 <div className="w-10 h-10 shrink-0 rounded-full bg-fg-muted/30 flex items-center justify-center overflow-hidden border border-line">
                                     {stat.user.avatar_url ? (
-                                        <img src={stat.user.avatar_url} alt={stat.user.full_name} className="w-full h-full object-cover" />
+                                        <img loading="lazy" width={32} height={32} src={stat.user.avatar_url} alt={stat.user.full_name} className="w-full h-full object-cover" />
                                     ) : (
                                         <span className="text-xs font-bold text-fg-subtle">{stat.user.full_name?.charAt(0)}</span>
                                     )}
@@ -539,7 +539,7 @@ const DashboardPage = () => {
                             <div className="border-t border-line pt-4 hover:border-line transition-all shadow-sm">
                                 <div className="flex items-center gap-3 mb-6">
                                     <div className="w-8 h-8 shrink-0 rounded-full bg-fg-muted/30 flex items-center justify-center overflow-hidden">
-                                        {stat.user.avatar_url ? <img src={stat.user.avatar_url} /> : stat.user.full_name.charAt(0)}
+                                        {stat.user.avatar_url ? <img loading="lazy" width={32} height={32} src={stat.user.avatar_url} /> : stat.user.full_name.charAt(0)}
                                     </div>
                                     <div className="flex flex-col min-w-0 break-words">
                                         <span className="text-xs font-bold text-fg">{stat.user.full_name}</span>

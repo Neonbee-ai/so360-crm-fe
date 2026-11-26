@@ -340,7 +340,7 @@ const COL_DEFS: ColDef[] = [
       return (
         <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-2">
           {lead.owner?.avatar_url ? (
-            <img
+            <img loading="lazy" width={24} height={24}
               src={lead.owner.avatar_url}
               alt={ownerName}
               className="w-6 h-6 rounded-full object-cover shrink-0"

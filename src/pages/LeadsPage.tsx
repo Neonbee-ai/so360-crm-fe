@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { Suspense, lazy, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useLocation, useNavigate, useNavigationType } from 'react-router-dom';
 import { shouldClearLeadSearch } from './leadSearchReset';
 import {
@@ -21,13 +21,9 @@ import {
 import { crmService } from '../services/crmService';
 import { ratingService, type RatingCategory } from '../services/salesConfigService';
 import { Lead, User } from '../types/crm';
-import { CreateLeadModal } from '../components/leads/CreateLeadModal';
-import { ImportHub } from '../components/import/ImportHub';
 import { useCrmFeatureFlag, RE_FLAGS } from '../hooks/useCrmFeatureFlag';
 import { LeadsDataGrid, GridContext } from '../components/leads/LeadsDataGrid';
-import { LeadDetailPanel } from '../components/leads/LeadDetailPanel';
 import { withResolvedOwner } from '../utils/resolveLeadOwner';
-import LeadFilterBuilder from '../components/leads/LeadFilterBuilder';
 import { countActiveRules, type FilterGroup } from '../components/leads/leadFilterModel';
 import { buildLeadsQuery, DEFAULT_FILTERS, UNASSIGNED_OWNER, type FilterState } from './leadsListQuery';
 import { leadsToCsv, downloadCsv } from '../components/leads/leadsCsv';
@@ -36,11 +32,18 @@ import { canReadQuota } from '../utils/quotaAccess';
 import { useCRMFormatters } from '../utils/formatters';
 import { describeApiError } from '../utils/apiErrorMessage';
 import { publishLeadsChanged } from '../utils/leadEvents';
-import ExportMenu, { useCanExport } from '../components/ExportMenu';
+import { useCanExport } from '../hooks/useCanExport';
 import { exportService } from '../services/exportService';
 import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
-import { QuotaGate, toast, ListPageTemplate, Button, SearchInput, EmptyState, Pagination, ConfirmDialog, TextField, SegmentedControl, Modal, IconButton } from '@so360/design-system';
+import { QuotaGate, Skeleton, toast, ListPageTemplate, Button, SearchInput, EmptyState, Pagination, ConfirmDialog, TextField, SegmentedControl, Modal, IconButton } from '@so360/design-system';
 import type { FilterValues, ListFilterConfig } from '@so360/design-system';
+
+// Heavy, on-demand UI: each chunk is fetched only when the user opens it.
+const CreateLeadModal = lazy(() => import('../components/leads/CreateLeadModal').then((m) => ({ default: m.CreateLeadModal })));
+const ImportHub = lazy(() => import('../components/import/ImportHub').then((m) => ({ default: m.ImportHub })));
+const LeadDetailPanel = lazy(() => import('../components/leads/LeadDetailPanel').then((m) => ({ default: m.LeadDetailPanel })));
+const LeadFilterBuilder = lazy(() => import('../components/leads/LeadFilterBuilder'));
+const ExportMenu = lazy(() => import('../components/ExportMenu'));
 
 // ─── Saved views (lightweight local version) ──────────────────────────────────
 
@@ -671,7 +674,9 @@ const LeadsPage = () => {
         key: 'advanced', label: 'Advanced', type: 'custom',
         formatValue: () => `Advanced (${advancedFilter ? countActiveRules(advancedFilter) : 0})`,
         render: () => (
-          <LeadFilterBuilder value={advancedFilter} onApply={handleApplyAdvancedFilter} onClose={() => undefined} includeAttribution={canFilterAttribution} />
+          <Suspense fallback={<Skeleton variant="rect" />}>
+            <LeadFilterBuilder value={advancedFilter} onApply={handleApplyAdvancedFilter} onClose={() => undefined} includeAttribution={canFilterAttribution} />
+          </Suspense>
         ),
       },
     ],
@@ -732,7 +737,7 @@ const LeadsPage = () => {
           ) : undefined
         }
         headerSecondaryActions={[
-          ...(canExportLeads ? [<ExportMenu key="export" label="Export leads" onExport={(format) => exportService.leads({ status: filters.status }, format)} />] : []),
+          ...(canExportLeads ? [<Suspense key="export" fallback={<Skeleton variant="rect" />}><ExportMenu label="Export leads" onExport={(format) => exportService.leads({ status: filters.status }, format)} /></Suspense>] : []),
         ]}
         overflowActions={[
           { label: activeViewId ? `Saved views (${savedViews.find((v) => v.id === activeViewId)?.name ?? 'Views'})` : 'Saved views', icon: <Bookmark size={16} aria-hidden="true" />, onSelect: () => setOpenDropdown('views') },
@@ -887,18 +892,24 @@ const LeadsPage = () => {
         </div>
       </Modal>
 
-      <CreateLeadModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSuccess={reloadLeads}
-        existingLeads={leads.map((l) => l.company_name)}
-      />
-      {canImportLeads && (
-        <ImportHub
-          isOpen={isImportOpen}
-          onClose={() => setIsImportOpen(false)}
-          onImported={reloadLeads}
-        />
+      {isModalOpen && (
+        <Suspense fallback={null}>
+          <CreateLeadModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            onSuccess={reloadLeads}
+            existingLeads={leads.map((l) => l.company_name)}
+          />
+        </Suspense>
+      )}
+      {canImportLeads && isImportOpen && (
+        <Suspense fallback={null}>
+          <ImportHub
+            isOpen={isImportOpen}
+            onClose={() => setIsImportOpen(false)}
+            onImported={reloadLeads}
+          />
+        </Suspense>
       )}
 
       <ConfirmDialog
@@ -911,14 +922,18 @@ const LeadsPage = () => {
         onCancel={() => setShowDeleteConfirm(null)}
       />
 
-      <LeadDetailPanel
-        lead={detailLead}
-        onClose={() => setDetailLead(null)}
-        onNavigate={(lead) => navigate(`${lead.id}`)}
-        onNavigateDeal={(deal) => navigate(`../deal/${deal.id}`)}
-        onNavigateTask={(task) => navigate(`../tasks/${task.id}`)}
-        onDelete={(lead) => setShowDeleteConfirm(lead.id)}
-      />
+      {detailLead && (
+        <Suspense fallback={null}>
+          <LeadDetailPanel
+            lead={detailLead}
+            onClose={() => setDetailLead(null)}
+            onNavigate={(lead) => navigate(`${lead.id}`)}
+            onNavigateDeal={(deal) => navigate(`../deal/${deal.id}`)}
+            onNavigateTask={(task) => navigate(`../tasks/${task.id}`)}
+            onDelete={(lead) => setShowDeleteConfirm(lead.id)}
+          />
+        </Suspense>
+      )}
     </div>
   );
 };
