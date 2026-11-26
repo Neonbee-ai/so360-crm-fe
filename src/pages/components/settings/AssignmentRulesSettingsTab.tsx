@@ -396,7 +396,7 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                 {editor}
 
                 {loading ? (
-                    <div className="p-nb-4"><Skeleton variant="text" lines={3} /></div>
+                    <div className="p-nb-4"><Skeleton.List count={3} /></div>
                 ) : loadError ? (
                     <p role="alert" className="p-6 text-sm font-bold text-danger">{loadError}</p>
                 ) : rules.length === 0 ? (

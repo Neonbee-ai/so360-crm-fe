@@ -229,7 +229,8 @@ describe('Feature: TargetPlans "+ Lead Stage Metric" Comb Button and stage dot t
       fireEvent.click(await addBtn());
       await screen.findByText('Add Lead Stage Metric');
       fireEvent.click(screen.getByRole('button', { name: 'New' }));
-      await waitFor(() => expect(screen.getByRole('button', { name: 'New' })).toBeDisabled());
+      await waitFor(() => expect(screen.getByRole('button', { name: /^New\s+Saving/ })).toBeDisabled());
+      expect(screen.getByText('Saving…')).toBeInTheDocument();
       release({ id: 'tt9' });
     });
   });

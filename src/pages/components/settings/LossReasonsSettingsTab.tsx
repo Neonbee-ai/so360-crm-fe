@@ -67,7 +67,7 @@ const LossReasonsSettingsTab: React.FC<Props> = ({ canWrite }) => {
                         <Button type="button" variant="primary" onClick={add} disabled={busy}><Plus size={14} /> Add</Button>
                     </div>
                 )}
-                {loading ? <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4"><Skeleton variant="rect" /><Skeleton variant="text" lines={3} /><span className="sr-only">Loading...</span></div> : rows.length === 0 ? (
+                {loading ? <div role="status" aria-busy="true" className="w-full"><span className="sr-only">Loading...</span><Skeleton.List count={4} /></div> : rows.length === 0 ? (
                     <p className="text-sm text-fg-muted" data-testid="loss-reasons-empty">No reasons yet. Until you add some, deals ask for a free-text reason.</p>
                 ) : (
                     <ul className="divide-y divide-line">

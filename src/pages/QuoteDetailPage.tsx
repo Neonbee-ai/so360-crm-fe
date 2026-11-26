@@ -438,12 +438,7 @@ const QuoteDetailPage = () => {
 
     if (isLoading) {
         return (
-            <div>
-                <div className="animate-pulse space-y-4">
-                    <div className="h-8 bg-surface-raised rounded w-64" />
-                    <div className="h-96 bg-surface-raised rounded" />
-                </div>
-            </div>
+            <DetailPageTemplate trail={[{ label: 'Quotes', to: '/crm/quotes' }]} title="Quote" loading />
         );
     }
 

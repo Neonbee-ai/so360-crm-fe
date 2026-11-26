@@ -9,7 +9,8 @@ const { Trail } = await vi.importActual<any>('./__mocks__/design-system');
 export const toast = { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() };
 
 export const Spinner = () => <span aria-label="Loading" />;
-export const Skeleton = (_p: Record<string, unknown>) => <div data-testid="skeleton" />;
+const SkeletonBone = (_p: Record<string, unknown>) => <div data-testid="skeleton" />;
+export const Skeleton = Object.assign(SkeletonBone, { Page: SkeletonBone, List: SkeletonBone, Table: SkeletonBone, Form: SkeletonBone, Fields: SkeletonBone, Detail: SkeletonBone, Cards: SkeletonBone, Kpis: SkeletonBone });
 
 /** Row menu rendered flat (items always present) so specs can click actions without opening a popover. */
 export const Menu = ({ trigger, items = [] }: any) => (
@@ -26,7 +27,7 @@ export const ListPageTemplate = (p: any) => (
       {p.description ? <p>{p.description}</p> : null}
       {p.primaryAction}
     </header>
-    {p.isEmpty ? p.empty : p.children}
+    {p.loading ? <><span role="status" data-testid="page-loading-status" className="sr-only">Loading…</span><div data-slot="loading" aria-busy="true" /></> : p.isEmpty ? p.empty : p.children}
   </div>
 );
 
@@ -36,7 +37,7 @@ export const FormPageTemplate = (p: any) => (
       <Trail {...p} />
       <h1>{p.title}</h1>
     </header>
-    {p.children}
+    {p.loading ? <><span role="status" data-testid="page-loading-status" className="sr-only">Loading…</span><div data-slot="loading" aria-busy="true" /></> : p.children}
     <footer data-slot="footer">{p.secondaryAction}{p.primaryAction}</footer>
   </div>
 );

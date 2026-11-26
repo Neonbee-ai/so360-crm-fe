@@ -3,7 +3,7 @@ import { crmService } from '../services/crmService';
 import {
     DollarSign, TrendingUp, Users, CheckCircle2,
     BarChart3, ArrowUpRight, ArrowDownRight, Briefcase,
-    Calendar, Bell, Loader2, ShoppingBag, Package, LayoutDashboard
+    Calendar, Bell, ShoppingBag, Package, LayoutDashboard
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { CrossLinkChip, DashboardPageTemplate, KpiCard, Card, SegmentedControl, Grid, GridItem, Button, EmptyState, Progress, Skeleton, Badge } from '@so360/design-system';
@@ -139,11 +139,7 @@ const DashboardPage = () => {
 
     if (isLoading) {
         return (
-            <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4">
-                <Skeleton variant="rect" />
-                <Skeleton variant="text" lines={3} />
-                <span className="sr-only">Loading insights...</span>
-            </div>
+            <DashboardPageTemplate module="crm" entity="dashboard" title="Executive Overview" loading />
         );
     }
 
@@ -255,7 +251,6 @@ const DashboardPage = () => {
                             Commerce Performance
                         </h2>
                         <Badge tone="primary" size="sm">DailyStore</Badge>
-                        {isCommerceLoading && <Loader2 size={12} className="animate-spin text-fg-muted ml-auto" />}
                     </div>
 
                     <Grid gap="md">
@@ -362,7 +357,7 @@ const DashboardPage = () => {
                 </div>
                 <div className="flex gap-4 overflow-x-auto min-w-0 max-w-full pb-4 scrollbar-hide">
                     {pendingRest ? (
-                                <Skeleton variant="text" lines={2} />
+                                <Skeleton.List count={2} />
                             ) : reminders.length > 0 ? reminders.map((task: any) => (
                         <div key={task.id} className="flex-shrink-0 w-72 max-w-full flex flex-col gap-2">
                         <Link
@@ -472,7 +467,7 @@ const DashboardPage = () => {
                     <p className="text-xs text-fg-muted font-bold mb-4">Revenue leaders</p>
 
                     <div className="divide-y divide-line overflow-y-auto pr-2 custom-scrollbar flex-1">
-                        {pendingRest && <Skeleton variant="text" lines={3} />}
+                        {pendingRest && <Skeleton.List count={3} />}
                         {!pendingRest && teamStats.length === 0 && (
                             <div className="flex flex-col items-center">
                                 <EmptyState

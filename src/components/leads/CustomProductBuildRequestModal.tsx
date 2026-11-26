@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Modal } from '../common/Modal';
-import { Button, TextField, Select, NumberInput, Textarea, Grid, GridItem } from '@so360/design-system';
+import { Button, TextField, Select, NumberInput, Textarea, Grid, GridItem, Skeleton } from '@so360/design-system';
 import { crmService } from '../../services/crmService';
 import { Loader2, AlertCircle, Sparkles } from 'lucide-react';
 import { buildCategoryTree, flattenCategoryTree, indentLabel } from '../../utils/categoryTree';
@@ -174,9 +174,9 @@ export const CustomProductBuildRequestModal: React.FC<CustomProductBuildRequestM
                         options={filteredCategories.map(cat => ({ value: cat.id, label: indentLabel(cat.name, cat.depth) }))}
                     />
                     {loadingCategories && (
-                        <span className="text-xs text-fg-subtle flex items-center gap-1 mt-1">
-                            <Loader2 className="w-3 h-3 animate-spin" /> Loading categories...
-                        </span>
+                        <div className="mt-1">
+                            <Skeleton variant="text" className="w-32" />
+                        </div>
                     )}
                     {categories.length === 0 && !loadingCategories && (
                         <p className="text-xs text-warning/90 mt-1">

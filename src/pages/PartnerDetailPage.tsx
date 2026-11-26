@@ -248,11 +248,7 @@ const PartnerDetailPage = () => {
 
     if (isLoading) {
         return (
-            <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4">
-                <Skeleton variant="rect" />
-                <Skeleton variant="text" lines={3} />
-                <span className="sr-only">Loading partner...</span>
-            </div>
+            <DetailPageTemplate trail={[{ label: 'Partners', to: '/crm/partners' }]} title="Partner" loading />
         );
     }
 
@@ -629,7 +625,7 @@ const PartnerDetailPage = () => {
                             </Card>
                         </>
                     ) : (
-                        <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4"><Skeleton variant="rect" /><Skeleton variant="text" lines={3} /><span className="sr-only">Loading deals...</span></div>
+                        <div role="status" aria-busy="true" className="w-full"><span className="sr-only">Loading deals...</span><Skeleton.Fields count={6} /></div>
                     )}
                 </div>
             )}
@@ -695,7 +691,7 @@ const PartnerDetailPage = () => {
                             </Card>
                         </>
                     ) : (
-                        <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4"><Skeleton variant="rect" /><Skeleton variant="text" lines={3} /><span className="sr-only">Loading royalties...</span></div>
+                        <div role="status" aria-busy="true" className="w-full"><span className="sr-only">Loading royalties...</span><Skeleton.Fields count={6} /></div>
                     )}
                 </div>
             )}

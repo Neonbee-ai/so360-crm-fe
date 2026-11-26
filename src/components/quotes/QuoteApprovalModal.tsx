@@ -261,7 +261,7 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
               <div className="bg-bg border border-line rounded-lg shadow-overlay max-h-52 overflow-y-auto z-menu mt-1 divide-y divide-line">
                 {isLoading ? (
                   <div role="status" aria-busy="true" className="p-4">
-                    <Skeleton variant="text" lines={2} />
+                    <Skeleton.List count={2} />
                     <span className="sr-only">Loading people directory...</span>
                   </div>
                 ) : filteredCandidates.length === 0 ? (

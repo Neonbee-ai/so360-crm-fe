@@ -4,7 +4,7 @@ import { KanbanBoard } from '../components/kanban/KanbanBoard';
 import { crmService } from '../services/crmService';
 import { usePersistedState } from '../hooks/useListViewState';
 import { Deal, FlowState } from '../types/crm';
-import { Loader2, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { dealCloseService, LoseDealBody, WinDealBody } from '../services/salesConfigService';
 import { toast, ListPageTemplate, Button, SearchInput, Skeleton } from '@so360/design-system';
 // Off the initial federated entry: mounts only after "New deal" is pressed.
@@ -262,8 +262,7 @@ const PipelinePage = () => {
             filterConfig={filterConfig}
             toolbarEnd={isFiltering ? (
                 <div className="flex items-center gap-2 text-info h-nb-control-md px-3">
-                    <Loader2 className="animate-spin" size={14} />
-                    <span className="text-xs">Refining results...</span>
+                    <span className="text-xs" role="status">Refining results...</span>
                 </div>
             ) : undefined}
         >
@@ -273,11 +272,10 @@ const PipelinePage = () => {
                 className={`transition-opacity duration-300 ${isFiltering ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}
             >
                 {isInitialLoading ? (
-                    <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4" data-testid="pipeline-loading">
-                <Skeleton variant="rect" />
-                <Skeleton variant="text" lines={3} />
-                <span className="sr-only">Loading pipeline...</span>
-            </div>
+                    <div role="status" aria-busy="true" className="w-full" data-testid="pipeline-loading">
+                        <span className="sr-only">Loading pipeline...</span>
+                        <Skeleton.Cards count={4} announce={false} />
+                    </div>
                 ) : (
                 <KanbanBoard
                     deals={deals}

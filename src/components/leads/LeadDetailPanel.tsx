@@ -526,7 +526,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                 <div className="px-5 py-4">
                   <Card title="Activity">
                   {timeline.loading ? (
-                    <div className="py-nb-4"><Skeleton variant="text" lines={3} /></div>
+                    <div className="py-nb-4"><Skeleton.List count={3} /></div>
                   ) : timeline.error ? (
                     /* A failed load must never masquerade as "no activity". */
                     <EmptyState icon={Activity} title="Couldn't load activity." action={{ label: 'Retry', onClick: () => timeline.refetch() }} />
@@ -589,7 +589,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                 <div className="px-5 py-4">
                   <Card title="Deals">
                   {dealsLoading || deals === null ? (
-                    <div className="py-nb-4"><Skeleton variant="text" lines={3} /></div>
+                    <div className="py-nb-4"><Skeleton.List count={3} /></div>
                   ) : deals.length === 0 ? (
                     <EmptyState icon={Briefcase} title="No deals linked to this lead" />
                   ) : (
@@ -627,7 +627,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                 <div className="px-5 py-4">
                   <Card title="Tasks">
                   {tasksLoading || tasks === null ? (
-                    <div className="py-nb-4"><Skeleton variant="text" lines={3} /></div>
+                    <div className="py-nb-4"><Skeleton.List count={3} /></div>
                   ) : tasks.length === 0 ? (
                     <EmptyState icon={CheckSquare} title="No tasks for this lead" />
                   ) : (
@@ -766,7 +766,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                 <div className="px-5 py-4">
                   <Card title="Audit trail">
                   {activitiesLoading || activities === null ? (
-                    <div className="py-nb-4"><Skeleton variant="text" lines={3} /></div>
+                    <div className="py-nb-4"><Skeleton.List count={3} /></div>
                   ) : auditActivities.length === 0 ? (
                     <EmptyState icon={ShieldCheck} title="No audit events recorded" />
                   ) : (

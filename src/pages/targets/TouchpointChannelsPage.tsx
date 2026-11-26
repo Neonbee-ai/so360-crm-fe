@@ -204,7 +204,7 @@ export default function TouchpointChannelsPage() {
       ]}
       primaryAction={(
         <Button variant="primary" onClick={openAdd}>
-          <Plus size={16} aria-hidden="true" /> Add channel
+          <Plus size={16} aria-hidden="true" /> New channel
         </Button>
       )}
       search={<SearchInput value={search} onChange={setSearch} placeholder="Search channels…" />}

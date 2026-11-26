@@ -93,7 +93,7 @@ const ActivityHistoryDrawer: React.FC<Props> = ({ isOpen, onClose, entityType, e
                 isOpen={isOpen}
                 onClose={onClose}
                 title="Activity History"
-                subtitle={timeline.events.length > 0 ? `${timeline.events.length} loaded` : 'Loading…'}
+                subtitle={timeline.events.length > 0 ? `${timeline.events.length} loaded` : undefined}
                 size="md"
                 data-testid="activity-history-drawer"
             >
@@ -121,7 +121,7 @@ const ActivityHistoryDrawer: React.FC<Props> = ({ isOpen, onClose, entityType, e
                 {/* Timeline */}
                 <div>
                     {timeline.loading ? (
-                        <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4"><Skeleton variant="rect" /><Skeleton variant="text" lines={3} /><span className="sr-only">Loading history…</span></div>
+                        <div role="status" aria-busy="true" className="w-full"><span className="sr-only">Loading history…</span><Skeleton.List count={5} /></div>
                     ) : timeline.events.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-16 text-fg-muted px-6 text-center">
                             <Search size={32} className="mb-3 text-fg" />

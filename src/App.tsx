@@ -63,11 +63,7 @@ const CrmShellInitializer = ({ children }: { children: React.ReactNode }) => {
 
     if (!isSynced) {
         return (
-            <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4">
-                <Skeleton variant="rect" />
-                <Skeleton variant="text" lines={3} />
-                <span className="sr-only">Connecting to shell context...</span>
-            </div>
+            <div role="status" aria-busy="true" className="w-full"><span className="sr-only">Connecting to shell context...</span><Skeleton.Page template="list" /></div>
         );
     }
 
@@ -241,7 +237,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             <PortalProvider container={crmPortalRoot()}>
                 <div className="min-h-full bg-bg text-fg">
                     <main className="w-full">
-                        <Suspense fallback={<div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4"><Skeleton variant="rect" /><Skeleton variant="text" lines={3} /><span className="sr-only">Loading module...</span></div>}>
+                        <Suspense fallback={<div role="status" aria-busy="true" className="w-full"><span className="sr-only">Loading module...</span><Skeleton.Page template="list" /></div>}>
                             {children}
                         </Suspense>
                     </main>

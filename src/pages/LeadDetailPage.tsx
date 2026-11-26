@@ -58,7 +58,7 @@ import TimelineSummaryBanner from './components/timeline/TimelineSummaryBanner';
 // tiptap/prosemirror stay out of this page chunk: loaded when a note editor first mounts.
 const NoteEditorLazy = lazy(() => import('../components/notes/NoteEditor'));
 const NoteEditor = (props: React.ComponentProps<typeof NoteEditorLazy>) => (
-    <Suspense fallback={<div className="py-nb-2"><Skeleton variant="rect" /></div>}>
+    <Suspense fallback={<Skeleton.Page template="detail" />}>
         <NoteEditorLazy {...props} />
     </Suspense>
 );
@@ -450,7 +450,7 @@ const LeadDetailPage = () => {
 
     if (isLoading) {
         return (
-            <DetailPageTemplate title="Loading lead workspace..." loading trail={detailTrail} />
+            <DetailPageTemplate title="Lead" loading trail={detailTrail} />
         );
     }
 
@@ -754,7 +754,8 @@ const LeadDetailPage = () => {
                                                         toast.error('Failed to update owner.');
                                                     }
                                                 }}
-                                                className={`!h-auto w-full !justify-start gap-nb-3 py-nb-2 text-left !text-fg ${selected ? '!bg-primary/10' : ''}`}
+                                                selected={selected}
+                                                className="!h-auto w-full !justify-start gap-nb-3 py-nb-2 text-left"
                                             >
                                                 <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-high text-xs font-medium uppercase text-fg">
                                                     {user.avatar_url ? (
@@ -1536,7 +1537,7 @@ const LeadDetailPage = () => {
                                     {/* Timeline */}
                                     <div className="space-y-3 relative">
                                         {entityTimeline.loading ? (
-                                            <div className="py-nb-4"><Skeleton variant="text" lines={3} /></div>
+                                            <div className="py-nb-4"><Skeleton.List count={3} /></div>
                                         ) : timelineEvents.length === 0 ? (
                                             <EmptyState title="No activities logged yet" description="Activities appear here automatically when users interact with this record." />
                                         ) : (

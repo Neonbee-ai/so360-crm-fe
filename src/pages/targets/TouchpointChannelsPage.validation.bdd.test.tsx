@@ -27,7 +27,7 @@ describe('Feature: add-channel form validates inline', () => {
   const openForm = async () => {
     render(<TouchpointChannelsPage />);
     await waitFor(() => expect(svc.listChannels).toHaveBeenCalled());
-    fireEvent.click((await screen.findAllByText('Add channel'))[0]);
+    fireEvent.click((await screen.findAllByText('New channel'))[0]);
     await screen.findByLabelText('Label');
   };
 

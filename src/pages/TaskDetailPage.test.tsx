@@ -67,7 +67,7 @@ describe('Given TaskDetailPage', () => {
   it('When action / Then shows loading state', () => {
     mockGetTaskById.mockReturnValue(new Promise(() => {}));
     render(<TaskDetailPage />);
-    expect(screen.getByText(/loading task/i)).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent(/loading/i);
   });
 
   it('When action / Then shows task not found', async () => {

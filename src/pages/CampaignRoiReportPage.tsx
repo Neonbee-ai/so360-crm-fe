@@ -10,7 +10,7 @@ import {
 } from '../services/crmCampaignService';
 import { useCRMFormatters } from '../utils/formatters';
 import { describeApiError } from '../utils/apiErrorMessage';
-import { Button, DataTable, Select } from '@so360/design-system';
+import { Button, DataTable, Select, Skeleton } from '@so360/design-system';
 import type { DataTableColumn } from '@so360/design-system';
 
 /** Ratio → "12.5%"; null (nothing spent / no leads) → "—". */
@@ -74,7 +74,7 @@ const CampaignRoiReportPage: React.FC = () => {
 
     let body: React.ReactNode = null;
     if (loading) {
-        body = <div role="status" className="p-nb-6 text-sm text-fg-subtle">Loading campaign ROI…</div>;
+        body = <div role="status" aria-busy="true"><span className="sr-only">Loading campaign ROI…</span><Skeleton.Table count={5} columns={6} announce={false} /></div>;
     } else if (forbidden) {
         body = (
             <div data-testid="campaign-roi-forbidden" className="p-10 text-center bg-surface border border-line rounded-nb-lg text-sm text-fg-subtle">

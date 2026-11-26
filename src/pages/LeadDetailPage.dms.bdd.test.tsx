@@ -152,7 +152,7 @@ const defaultServiceMocks = (docs: any[]) => {
 
 async function renderAndOpenDocumentsTab() {
     render(<LeadDetailPage />);
-    await waitFor(() => expect(screen.queryByText(/Loading lead workspace/i)).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByTestId('page-loading-status')).not.toBeInTheDocument());
     const docsTab = screen.getByRole('tab', { name: /Documents/i });
     await act(async () => { fireEvent.click(docsTab); });
 }

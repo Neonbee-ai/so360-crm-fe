@@ -201,10 +201,10 @@ describe('PartnersPage', () => {
 
     // ── Add Partner modal — layout viewport safety (the core fix) ─────────────
     describe('Given the Add Partner modal', () => {
-        it('When Add Partner button clicked / Then modal form becomes visible', async () => {
+        it('When New Partner button clicked / Then modal form becomes visible', async () => {
             const user = userEvent.setup();
             render(<PartnersPage />);
-            await user.click(screen.getByRole('button', { name: /add partner/i }));
+            await user.click(screen.getByRole('button', { name: /new partner/i }));
             // The modal is open when the form with id exists in the DOM
             expect(document.querySelector('form#create-partner-form')).not.toBeNull();
         });
@@ -212,7 +212,7 @@ describe('PartnersPage', () => {
         it('When modal opens / Then the title is rendered by the common Modal', async () => {
             const user = userEvent.setup();
             render(<PartnersPage />);
-            await user.click(screen.getByRole('button', { name: /add partner/i }));
+            await user.click(screen.getByRole('button', { name: /new partner/i }));
 
             expect(screen.getByRole('heading', { name: 'Add Partner' })).toBeInTheDocument();
         });
@@ -220,7 +220,7 @@ describe('PartnersPage', () => {
         it('When modal opens / Then the form is rendered inside the dialog body', async () => {
             const user = userEvent.setup();
             render(<PartnersPage />);
-            await user.click(screen.getByRole('button', { name: /add partner/i }));
+            await user.click(screen.getByRole('button', { name: /new partner/i }));
 
             const form = document.querySelector('form#create-partner-form');
             expect(form).not.toBeNull();
@@ -230,7 +230,7 @@ describe('PartnersPage', () => {
         it('When modal opens / Then footer buttons are rendered outside the scrollable form', async () => {
             const user = userEvent.setup();
             render(<PartnersPage />);
-            await user.click(screen.getByRole('button', { name: /add partner/i }));
+            await user.click(screen.getByRole('button', { name: /new partner/i }));
 
             // Cancel and Create Partner buttons must exist and be accessible
             expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
@@ -245,7 +245,7 @@ describe('PartnersPage', () => {
         it('When X button clicked / Then modal closes', async () => {
             const user = userEvent.setup();
             render(<PartnersPage />);
-            await user.click(screen.getByRole('button', { name: /add partner/i }));
+            await user.click(screen.getByRole('button', { name: /new partner/i }));
             expect(document.querySelector('form#create-partner-form')).not.toBeNull();
 
             await user.click(screen.getByRole('button', { name: 'Close' }));
@@ -257,7 +257,7 @@ describe('PartnersPage', () => {
         it('When Cancel clicked / Then modal closes', async () => {
             const user = userEvent.setup();
             render(<PartnersPage />);
-            await user.click(screen.getByRole('button', { name: /add partner/i }));
+            await user.click(screen.getByRole('button', { name: /new partner/i }));
             expect(document.querySelector('form#create-partner-form')).not.toBeNull();
             await user.click(screen.getByRole('button', { name: /cancel/i }));
             await waitFor(() => {
@@ -271,7 +271,7 @@ describe('PartnersPage', () => {
         it('When submitted with empty names and type / Then shows validation error', async () => {
             const user = userEvent.setup();
             render(<PartnersPage />);
-            await user.click(screen.getByRole('button', { name: /add partner/i }));
+            await user.click(screen.getByRole('button', { name: /new partner/i }));
 
             // Use fireEvent.submit to bypass native HTML5 constraint validation
             // and reach our custom handleSubmit logic with empty fields
@@ -287,7 +287,7 @@ describe('PartnersPage', () => {
         it('When first name and last name filled but partner type missing / Then shows validation error', async () => {
             const user = userEvent.setup();
             render(<PartnersPage />);
-            await user.click(screen.getByRole('button', { name: /add partner/i }));
+            await user.click(screen.getByRole('button', { name: /new partner/i }));
             await user.type(screen.getByPlaceholderText('Dhanooj'), 'Test');
             await user.type(screen.getByPlaceholderText('B S'), 'Partner');
 
@@ -304,7 +304,7 @@ describe('PartnersPage', () => {
             mockValidatePhone.mockReturnValue('Invalid phone number');
             const user = userEvent.setup();
             render(<PartnersPage />);
-            await user.click(screen.getByRole('button', { name: /add partner/i }));
+            await user.click(screen.getByRole('button', { name: /new partner/i }));
 
             const phoneInput = screen.getByPlaceholderText('+91 98765 43210');
             await user.type(phoneInput, 'badphone');
@@ -319,7 +319,7 @@ describe('PartnersPage', () => {
             mockValidatePhone.mockReturnValue('Invalid phone number');
             const user = userEvent.setup();
             render(<PartnersPage />);
-            await user.click(screen.getByRole('button', { name: /add partner/i }));
+            await user.click(screen.getByRole('button', { name: /new partner/i }));
             await user.type(screen.getByPlaceholderText('Dhanooj'), 'Test');
             await user.type(screen.getByPlaceholderText('B S'), 'Partner');
             await waitFor(() => expect(screen.getByDisplayValue('Select type...')).toBeInTheDocument());
@@ -343,8 +343,8 @@ describe('PartnersPage', () => {
         it('When valid form submitted / Then calls create API with first_name and last_name and closes modal', async () => {
             const user = userEvent.setup();
             render(<PartnersPage />);
-            // Click the page-level "Add Partner" button (the one with an SVG icon)
-            const addBtn = screen.getByRole('button', { name: /add partner/i });
+            // Click the page-level "New Partner" button (the one with an SVG icon)
+            const addBtn = screen.getByRole('button', { name: /new partner/i });
             await user.click(addBtn);
 
             await user.type(screen.getByPlaceholderText('Dhanooj'), 'Gamma');
@@ -368,7 +368,7 @@ describe('PartnersPage', () => {
         it('When company name filled / Then it is included in the API call', async () => {
             const user = userEvent.setup();
             render(<PartnersPage />);
-            await user.click(screen.getByRole('button', { name: /add partner/i }));
+            await user.click(screen.getByRole('button', { name: /new partner/i }));
 
             await user.type(screen.getByPlaceholderText('Dhanooj'), 'Dhanooj');
             await user.type(screen.getByPlaceholderText('B S'), 'B S');
@@ -393,7 +393,7 @@ describe('PartnersPage', () => {
         it('When optional fields are filled / Then they are included in the API call', async () => {
             const user = userEvent.setup();
             render(<PartnersPage />);
-            await user.click(screen.getByRole('button', { name: /add partner/i }));
+            await user.click(screen.getByRole('button', { name: /new partner/i }));
 
             await user.type(screen.getByPlaceholderText('Dhanooj'), 'Delta');
             await user.type(screen.getByPlaceholderText('B S'), 'Org');
@@ -426,7 +426,7 @@ describe('PartnersPage', () => {
             mockPartnersCreate.mockRejectedValue(new Error('Duplicate email'));
             const user = userEvent.setup();
             render(<PartnersPage />);
-            await user.click(screen.getByRole('button', { name: /add partner/i }));
+            await user.click(screen.getByRole('button', { name: /new partner/i }));
 
             await user.type(screen.getByPlaceholderText('Dhanooj'), 'Error');
             await user.type(screen.getByPlaceholderText('B S'), 'Partner');
@@ -563,7 +563,7 @@ describe('PartnersPage', () => {
     describe('Given the Add Partner form uses the shared field rules', () => {
         const openModal = async (user: ReturnType<typeof userEvent.setup>) => {
             render(<PartnersPage />);
-            await user.click(screen.getByRole('button', { name: /add partner/i }));
+            await user.click(screen.getByRole('button', { name: /new partner/i }));
         };
 
         it.each([
@@ -675,7 +675,7 @@ describe('PartnersPage', () => {
             ]);
             const user = userEvent.setup();
             render(<PartnersPage />);
-            await user.click(screen.getByRole('button', { name: /add partner/i }));
+            await user.click(screen.getByRole('button', { name: /new partner/i }));
 
             // 'Architect Grading' is also a built-in partner field, so assert on the custom control by its id (one label each).
             await waitFor(() => expect(document.getElementById('f-custom_f1')).not.toBeNull());

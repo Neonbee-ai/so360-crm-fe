@@ -96,7 +96,7 @@ export default function AllocateTeamPlanPanel({
       {notice && <div className="mb-2 text-sm text-success">{notice}</div>}
 
       {!plan ? (
-        <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4"><Skeleton variant="rect" /><Skeleton variant="text" lines={3} /><span className="sr-only">Loading plan…</span></div>
+        <div role="status" aria-busy="true" className="w-full"><span className="sr-only">Loading plan…</span><Skeleton.Table count={5} columns={4} /></div>
       ) : !lines.length ? (
         <div className="text-sm text-warning">
           This plan has no target lines, so there is nothing to allocate.

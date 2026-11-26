@@ -59,8 +59,8 @@ beforeEach(() => {
 
 const openScoring = async () => {
     render(<SettingsPage />);
-    await waitFor(() => screen.getByText('CRM Settings'));
-    fireEvent.click(screen.getByRole('tab', { name: /lead scoring/i }));
+    // The title row renders during the loading skeleton too, so wait for the tabs themselves.
+    fireEvent.click(await screen.findByRole('tab', { name: /lead scoring/i }));
 };
 
 describe('Given CRM Settings → Lead Scoring', () => {

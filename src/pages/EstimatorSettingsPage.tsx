@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useShellBridge, useOrganization } from '@so360/shell-context';
-import { Button, Card, FormPageTemplate, NumberInput, Select, Spinner, Switch, TextField, toast } from '@so360/design-system';
+import { Button, Card, FormPageTemplate, NumberInput, Select, Switch, TextField, toast } from '@so360/design-system';
 import { useCrmFeatureFlag } from '../hooks/useCrmFeatureFlag';
 import {
     ESTIMATOR_FLAG, ESTIMATOR_INDUSTRY_KEYS, estimatorService,
@@ -25,7 +25,7 @@ const EstimatorSettingsPage: React.FC = () => {
     }, [enabled, orgIndustry]);
 
     if (!enabled) return null;
-    if (!s) return <FormPageTemplate title="Proposal estimator" trail={TRAIL}><Spinner /></FormPageTemplate>;
+    if (!s) return <FormPageTemplate title="Proposal estimator" trail={TRAIL} loading />;
 
     const patchProduct = (i: number, p: Partial<FinanceProduct>) =>
         setS({ ...s, finance_products: s.finance_products.map((x, k) => (k === i ? { ...x, ...p } : x)) });
