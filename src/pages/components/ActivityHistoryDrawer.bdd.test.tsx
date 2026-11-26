@@ -208,7 +208,7 @@ describe('ActivityHistoryDrawer', () => {
             await waitFor(() => screen.getByText('Outbound call logged'));
 
             const el = await openTypes();
-            expect(Array.from(el.options).map((o) => o.value)).toEqual(['call', 'whatsapp', 'email', 'meeting', 'task', 'note', 'document', 'booking']);
+            expect(Array.from(el.options).map((o) => o.value)).toEqual(['call', 'whatsapp', 'email', 'meeting', 'task', 'note', 'document', 'booking', 'enquiry']);
             expect(timelineApi.getTimeline).toHaveBeenLastCalledWith('lead', 'lead-1', expect.objectContaining({ types: undefined }));
         });
 

@@ -8,6 +8,8 @@
 //      its own copy of the package — a duplicated @so360/shell-context is
 //      what broke the context singleton and forced the window-bridge fallback.
 import { describe, it, expect, beforeAll, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 const captured = vi.hoisted(() => ({
   federation: undefined as { shared?: Record<string, { singleton?: boolean }> } | undefined,
@@ -42,7 +44,6 @@ const REQUIRED_SHARED_SINGLETONS = [
   '@so360/design-system',
   '@so360/event-bus',
   '@so360/cross-link',
-  'framer-motion',
   '@so360/formatters',
 ];
 
@@ -97,6 +98,25 @@ describe('Production build configuration (MFE perf contract)', () => {
       const shared = captured.federation?.shared ?? {};
       expect(shared[dep], `${dep} must be in the federation shared list`).toBeDefined();
       expect(shared[dep]?.singleton, `${dep} must be a singleton`).toBe(true);
+    });
+
+    it('Then framer-motion is not shared (no source imports it; the host owns the design-system copy)', () => {
+      const shared = captured.federation?.shared ?? {};
+      expect(shared['framer-motion'], 'framer-motion must stay out of the shared list').toBeUndefined();
+    });
+  });
+
+  describe('Given the initial-load performance budget', () => {
+    const budget = JSON.parse(readFileSync(resolve(__dirname, '../perf-budget.json'), 'utf8'));
+
+    it('Then the budget caps the initial ./App closure at 70 KB brotli and 25 files', () => {
+      expect(budget.initialAppClosure.maxBrotliKB).toBeLessThanOrEqual(70);
+      expect(budget.initialAppClosure.maxFiles).toBeLessThanOrEqual(25);
+    });
+
+    it('Then package.json no longer depends on framer-motion', () => {
+      const pkg = JSON.parse(readFileSync(resolve(__dirname, '../package.json'), 'utf8'));
+      expect(pkg.dependencies?.['framer-motion']).toBeUndefined();
     });
   });
 });

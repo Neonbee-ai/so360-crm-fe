@@ -309,7 +309,7 @@ describe('Given QuotesPage — create quote modal', () => {
     fireEvent.click(screen.getByRole('button', { name: /Acme Deal/i }));
     fireEvent.click(screen.getByText(/^Create Quote$/));
     await waitFor(() => {
-      expect(mockCreateQuote).toHaveBeenCalledWith(expect.objectContaining({ deal_id: 'd1' }));
+      expect(mockCreateQuote).toHaveBeenCalledWith(expect.objectContaining({ deal_id: 'd1' }), { idempotencyKey: expect.any(String) });
     });
   });
 

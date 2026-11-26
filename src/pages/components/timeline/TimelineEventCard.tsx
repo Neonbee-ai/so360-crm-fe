@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import {
     Phone, Users, AtSign, FileText, CheckCircle2, File, Briefcase,
-    TrendingUp, Info, Edit2, Trash2, Bookmark, MessageCircle, MessageSquare, Home,
+    TrendingUp, Info, Edit2, Trash2, Bookmark, MessageCircle, MessageSquare, Home, ShoppingBag,
 } from 'lucide-react';
 import { EntityTimelineEvent } from '../../../services/crmService';
 import { useCRMFormatters } from '../../../utils/formatters';
@@ -29,9 +29,11 @@ function getEventIcon(event: EntityTimelineEvent) {
         case 'email': return <AtSign size={13} className="text-success" />;
         case 'whatsapp': return <MessageCircle size={13} className="text-success" />;
         case 'message': return <MessageSquare size={13} className="text-primary" />;
+        case 'enquiry': return <ShoppingBag size={13} className="text-primary" />;
         case 'booking': return <Home size={13} className="text-danger" />;
         case 'activity':
             if (event.group_key.includes('MEETING')) return <Users size={13} className="text-info" />;
+            if (event.group_key.includes('ENQUIRY')) return <ShoppingBag size={13} className="text-primary" />;
             if (event.group_key.includes('EMAIL')) return <AtSign size={13} className="text-success" />;
             return <FileText size={13} className="text-warning" />;
         default: return <Info size={13} className="text-fg-subtle" />;
@@ -51,6 +53,34 @@ export function inboxThreadHref(event: EntityTimelineEvent): string | null {
         : null;
 }
 
+/** Only http(s) URLs become links; anything else (javascript:, data:) stays text. */
+export function safeHttpUrl(u?: string): string | null {
+    if (!u) return null;
+    try {
+        const parsed = new URL(u);
+        return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? parsed.toString() : null;
+    } catch {
+        return null;
+    }
+}
+
+const EnquiryProduct: React.FC<{ meta?: Record<string, string> }> = ({ meta }) => {
+    const name = meta?.product_name;
+    if (!name) return null;
+    const href = safeHttpUrl(meta?.page_url);
+    const detail = [meta?.variant_name, meta?.sku ? `SKU ${meta.sku}` : ''].filter(Boolean).join(' · ');
+    return (
+        <p className="mt-1 text-xs text-fg" data-testid="enquiry-product">
+            {href ? (
+                <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline" data-testid="enquiry-product-link">{name}</a>
+            ) : (
+                <span className="font-medium">{name}</span>
+            )}
+            {detail && <span className="text-fg-muted"> · {detail}</span>}
+        </p>
+    );
+};
+
 const TimelineEventCard: React.FC<Props> = ({ event, isPinned, onTogglePin, onEdit, onDelete }) => {
     const formatters = useCRMFormatters();
     const link = relatedLink(event);
@@ -67,8 +97,9 @@ const TimelineEventCard: React.FC<Props> = ({ event, isPinned, onTogglePin, onEd
                 <span className="text-xs text-fg-muted font-mono shrink-0">{formatters.formatDateTime(event.created_at)}</span>
             </div>
             {event.description && (
-                <p className="text-xs text-fg-subtle leading-relaxed">{event.description}</p>
+                <p className="text-xs text-fg-subtle leading-relaxed whitespace-pre-line">{event.description}</p>
             )}
+            {event.type === 'enquiry' && <EnquiryProduct meta={event.metadata} />}
             <div className="mt-2 flex items-center justify-between">
                 {event.actor_name && (
                     <span className="text-xs text-fg-muted font-medium">{event.actor_name}</span>

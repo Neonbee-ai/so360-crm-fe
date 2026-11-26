@@ -30,6 +30,7 @@ export const TYPE_FILTERS: { key: string; label: string }[] = [
     { key: 'note', label: 'Notes' },
     { key: 'document', label: 'Documents' },
     { key: 'booking', label: 'Bookings' },
+    { key: 'enquiry', label: 'Enquiries' },
 ];
 
 /**

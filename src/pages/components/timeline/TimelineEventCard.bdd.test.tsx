@@ -75,3 +75,36 @@ describe('TimelineEventCard — Inbox threads by reference', () => {
         expect(screen.queryByTestId('timeline-inbox-link')).toBeNull();
     });
 });
+
+describe('TimelineEventCard — ENQUIRY', () => {
+    const enquiry = (metadata?: Record<string, string>) =>
+        baseEvent({ icon: 'enquiry', type: 'enquiry', title: 'Enquiry', group_key: 'activity:ENQUIRY', related_type: 'activity', related_id: 'a1', metadata });
+
+    it('Given an enquiry with full metadata, Then it shows the ShoppingBag icon, the product linked to page_url, and variant + SKU', () => {
+        renderCard(enquiry({ product_name: 'Oak Desk', variant_name: 'Walnut', sku: 'D-1', page_url: 'https://shop.example.com/p/oak' }));
+        expect(screen.getByTestId('icon-ShoppingBag')).toBeInTheDocument();
+        expect(screen.getByText('Enquiry')).toBeInTheDocument();
+        const link = screen.getByTestId('enquiry-product-link');
+        expect(link).toHaveTextContent('Oak Desk');
+        expect(link).toHaveAttribute('href', 'https://shop.example.com/p/oak');
+        expect(screen.getByTestId('enquiry-product')).toHaveTextContent('Walnut · SKU D-1');
+    });
+
+    it('Given a non-http(s) page_url, Then the product name is plain text, not a link', () => {
+        renderCard(enquiry({ product_name: 'Oak Desk', page_url: 'javascript:alert(1)' }));
+        expect(screen.getByTestId('enquiry-product')).toHaveTextContent('Oak Desk');
+        expect(screen.queryByTestId('enquiry-product-link')).toBeNull();
+    });
+
+    it('Given an enquiry without metadata, Then it renders title and description with no product line', () => {
+        renderCard(enquiry(undefined));
+        expect(screen.getByText('Enquiry')).toBeInTheDocument();
+        expect(screen.getByText('Event description')).toBeInTheDocument();
+        expect(screen.queryByTestId('enquiry-product')).toBeNull();
+    });
+
+    it('Given metadata without a product name, Then no product line is shown', () => {
+        renderCard(enquiry({ sku: 'D-1', source: 'storefront_product' }));
+        expect(screen.queryByTestId('enquiry-product')).toBeNull();
+    });
+});

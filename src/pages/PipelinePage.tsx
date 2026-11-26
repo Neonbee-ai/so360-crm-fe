@@ -5,19 +5,20 @@ import { crmService } from '../services/crmService';
 import { usePersistedState } from '../hooks/useListViewState';
 import { Deal, FlowState } from '../types/crm';
 import { Loader2, Plus } from 'lucide-react';
-import { StageTransitionModal } from '../components/kanban/StageTransitionModal';
-import { DealCloseModal } from '../components/kanban/DealCloseModal';
 import { dealCloseService, LoseDealBody, WinDealBody } from '../services/salesConfigService';
 import { toast, ListPageTemplate, Button, SearchInput, Skeleton } from '@so360/design-system';
 // Off the initial federated entry: mounts only after "New deal" is pressed.
 const CreateDealModal = lazy(() => import('../pages/components/CreateDealModal'));
+const StageTransitionModal = lazy(() => import('../components/kanban/StageTransitionModal').then((m) => ({ default: m.StageTransitionModal })));
+const DealCloseModal = lazy(() => import('../components/kanban/DealCloseModal').then((m) => ({ default: m.DealCloseModal })));
+const ExportMenu = lazy(() => import('../components/ExportMenu'));
 
 import { useDealFilterConfig } from '../pages/components/DealFilters';
 import { DealFilters as Filters } from '../types/crm';
 import { useNotify, useActivity, useShellBridge } from '@so360/shell-context';
 import { useFillViewportHeight } from '../hooks/useFillViewportHeight';
 import { RE_FLAGS } from '../hooks/useCrmFeatureFlag';
-import ExportMenu, { useCanExport } from '../components/ExportMenu';
+import { useCanExport } from '../hooks/useCanExport';
 import { exportService } from '../services/exportService';
 import { planStageMove, isAlreadyClosedError } from '../utils/dealStageSync';
 
@@ -242,7 +243,7 @@ const PipelinePage = () => {
                 </Button>
             ) : undefined}
             headerSecondaryActions={canExportDeals ? [
-                <ExportMenu key="export" label="Export deals" onExport={(format) => exportService.deals(filters, format)} />,
+                <Suspense key="export" fallback={<Skeleton variant="rect" />}><ExportMenu label="Export deals" onExport={(format) => exportService.deals(filters, format)} /></Suspense>,
             ] : undefined}
             search={
                 <div className="flex items-center gap-2">
@@ -287,24 +288,32 @@ const PipelinePage = () => {
                 )}
             </div>
 
-            <StageTransitionModal
-                isOpen={transitionModal.isOpen}
-                onClose={() => setTransitionModal(prev => ({ ...prev, isOpen: false }))}
-                onConfirm={confirmStageChange}
-                deal={transitionModal.deal}
-                newStage={transitionModal.newStage}
-            />
+            {transitionModal.isOpen && (
+                <Suspense fallback={null}>
+                    <StageTransitionModal
+                        isOpen={transitionModal.isOpen}
+                        onClose={() => setTransitionModal(prev => ({ ...prev, isOpen: false }))}
+                        onConfirm={confirmStageChange}
+                        deal={transitionModal.deal}
+                        newStage={transitionModal.newStage}
+                    />
+                </Suspense>
+            )}
 
-            <DealCloseModal
-                isOpen={!!closeModal}
-                kind={closeModal?.kind ?? 'won'}
-                deal={closeModal?.deal ?? null}
-                stageName={closeModal?.stage.name ?? ''}
-                busy={closing}
-                onClose={() => setCloseModal(null)}
-                onWin={confirmWin}
-                onLose={confirmLose}
-            />
+            {closeModal && (
+                <Suspense fallback={null}>
+                    <DealCloseModal
+                        isOpen={!!closeModal}
+                        kind={closeModal.kind}
+                        deal={closeModal.deal ?? null}
+                        stageName={closeModal.stage.name ?? ''}
+                        busy={closing}
+                        onClose={() => setCloseModal(null)}
+                        onWin={confirmWin}
+                        onLose={confirmLose}
+                    />
+                </Suspense>
+            )}
 
             {isCreateDealOpen && (
                 <Suspense fallback={null}>

@@ -81,11 +81,11 @@ const LeadTemperatureSettingsCard: React.FC<Props> = ({ canWrite }) => {
             className="bg-surface border border-line rounded-2xl p-6 space-y-5"
         >
             <div>
-                <h3 className="font-black text-fg uppercase tracking-widest text-xs flex items-center gap-2">
+                <h3 className="font-black text-fg text-xs flex items-center gap-2">
                     {Thermometer ? <Thermometer size={14} className="text-danger" /> : null}
                     Lead Temperature
                 </h3>
-                <p className="text-xs text-fg-subtle font-bold mt-1 uppercase tracking-tight">
+                <p className="text-xs text-fg-subtle font-bold mt-1">
                     Hot / Warm / Cold from budget fit, timeline, engagement and source
                 </p>
             </div>
