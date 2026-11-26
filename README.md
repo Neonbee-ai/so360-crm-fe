@@ -27,7 +27,7 @@ React MFE for the CRM module. Provides the full B2B sales UI — pipeline kanban
 
 ## Shared Singletons (via federation)
 - `react`, `react-dom`, `react-router-dom`
-- `framer-motion`, `lucide-react`
+- `lucide-react`
 - `@so360/shell-context`, `@so360/design-system`, `@so360/event-bus`, `@so360/formatters`
 
 ## Pages & Routes

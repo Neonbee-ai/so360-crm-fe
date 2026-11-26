@@ -795,7 +795,7 @@ const DealDetailPage = () => {
                                     ) : (
                                         <div className="flex items-center gap-2">
                                             <div className="w-6 h-6 rounded-full bg-surface-raised flex items-center justify-center text-xs font-medium overflow-hidden border border-line">
-                                                {deal.owner.avatar_url ? <img src={deal.owner.avatar_url} alt={deal.owner.full_name} /> : deal.owner.full_name.charAt(0)}
+                                                {deal.owner.avatar_url ? <img loading="lazy" width={32} height={32} src={deal.owner.avatar_url} alt={deal.owner.full_name} /> : deal.owner.full_name.charAt(0)}
                                             </div>
                                             <span className="text-sm font-bold text-fg">{deal.owner.full_name}</span>
                                         </div>
@@ -808,7 +808,7 @@ const DealDetailPage = () => {
                                             <div className="flex items-center gap-2 flex-wrap">
                                                 <div className="w-6 h-6 rounded-full bg-surface-raised flex items-center justify-center text-xs font-medium overflow-hidden border border-line">
                                                     {deal.owner_person.avatar_url
-                                                        ? <img src={deal.owner_person.avatar_url} alt={deal.owner_person.full_name} />
+                                                        ? <img loading="lazy" width={32} height={32} src={deal.owner_person.avatar_url} alt={deal.owner_person.full_name} />
                                                         : (deal.owner_person.full_name || '?').charAt(0)}
                                                 </div>
                                                 <span className="text-sm font-bold text-fg">{deal.owner_person.full_name}</span>
@@ -1130,7 +1130,7 @@ const DealDetailPage = () => {
                                                     {ev.author && (
                                                         <div className="mt-4 flex items-center gap-2">
                                                             <div className="w-5 h-5 rounded-full bg-surface-raised flex items-center justify-center text-xs font-semibold overflow-hidden border border-line">
-                                                                {ev.author.avatar_url ? <img src={ev.author.avatar_url} /> : ev.author.full_name?.charAt(0)}
+                                                                {ev.author.avatar_url ? <img loading="lazy" width={32} height={32} src={ev.author.avatar_url} /> : ev.author.full_name?.charAt(0)}
                                                             </div>
                                                             <span className="text-xs font-bold text-fg-muted">{ev.author.full_name}</span>
                                                         </div>

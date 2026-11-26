@@ -78,7 +78,7 @@ describe('Feature: useDashboardLayout', () => {
     });
 
     describe('When the user hides and reorders widgets', () => {
-        it('then one debounced save carries the final order and hidden list', async () => {
+        it('When widgets are toggled and moved then one debounced save carries the final order and hidden list', async () => {
             const { result } = renderHook(() => useDashboardLayout(true));
             await flush();
             act(() => { result.current.toggle('revenue'); });
@@ -92,7 +92,7 @@ describe('Feature: useDashboardLayout', () => {
             );
         });
 
-        it('then a no-op move does not schedule a save', async () => {
+        it('When a move changes nothing then a no-op move does not schedule a save', async () => {
             const { result } = renderHook(() => useDashboardLayout(true));
             await flush();
             act(() => { result.current.move('kpis', 'up'); });
@@ -100,7 +100,7 @@ describe('Feature: useDashboardLayout', () => {
             expect(grid.save).not.toHaveBeenCalled();
         });
 
-        it('then a late hydration does not override the user change', async () => {
+        it('When hydration resolves late then a late hydration does not override the user change', async () => {
             let resolve: (v: unknown) => void = () => {};
             grid.get.mockReturnValue(new Promise((r) => { resolve = r; }));
             const { result } = renderHook(() => useDashboardLayout(true));
@@ -121,7 +121,7 @@ describe('Feature: useDashboardLayout', () => {
     });
 
     describe('When the user resets the layout', () => {
-        it('then the default is restored, the stored preference is cleared and no pending save fires', async () => {
+        it('When reset is called then the default is restored, the stored preference is cleared and no pending save fires', async () => {
             const { result } = renderHook(() => useDashboardLayout(true));
             await flush();
             act(() => { result.current.toggle('kpis'); });
@@ -132,13 +132,58 @@ describe('Feature: useDashboardLayout', () => {
             expect(grid.save).not.toHaveBeenCalled();
         });
 
-        it('then a failing reset still restores the default locally', async () => {
+        it('When the backend reset fails then a failing reset still restores the default locally', async () => {
             grid.reset.mockRejectedValue(new Error('offline'));
             const { result } = renderHook(() => useDashboardLayout(true));
             await flush();
             act(() => { result.current.toggle('kpis'); });
             await act(async () => { await result.current.reset(); });
             expect(result.current.layout).toEqual(DEFAULT_LAYOUT);
+        });
+    });
+
+    describe('Given the user changed visibility and order (Pulse 946bd3a5)', () => {
+        it('when they undo / then each change is reverted in turn, restoring visibility and position', async () => {
+            const { result } = renderHook(() => useDashboardLayout(true));
+            await flush();
+            expect(result.current.canUndo).toBe(false);
+            act(() => { result.current.toggle('kpis'); });
+            act(() => { result.current.move('revenue', 'up'); });
+            expect(result.current.canUndo).toBe(true);
+            const moved = result.current.layout.order.join();
+            expect(moved).not.toBe(DEFAULT_LAYOUT.order.join());
+
+            act(() => { result.current.undo(); });
+            expect(result.current.layout.order).toEqual(DEFAULT_LAYOUT.order);
+            expect(result.current.layout.hidden).toEqual(['kpis']);
+
+            act(() => { result.current.undo(); });
+            expect(result.current.layout.hidden).toEqual([]);
+            expect(result.current.canUndo).toBe(false);
+        });
+
+        it('when they undo / then the restored layout is saved, not just shown', async () => {
+            const { result } = renderHook(() => useDashboardLayout(true));
+            await flush();
+            act(() => { result.current.toggle('kpis'); });
+            act(() => { result.current.undo(); });
+            await act(async () => { await vi.advanceTimersByTimeAsync(DASHBOARD_LAYOUT_SAVE_DELAY_MS + 10); });
+            expect(grid.save).toHaveBeenLastCalledWith({ order: DEFAULT_LAYOUT.order, hidden: [] }, DASHBOARD_LAYOUT_ENTITY);
+        });
+
+        it('when there is nothing to undo / then undo is a no-op', async () => {
+            const { result } = renderHook(() => useDashboardLayout(true));
+            await flush();
+            act(() => { result.current.undo(); });
+            expect(result.current.layout).toEqual(DEFAULT_LAYOUT);
+        });
+
+        it('when they reorder a hidden widget / then it stays hidden', async () => {
+            const { result } = renderHook(() => useDashboardLayout(true));
+            await flush();
+            act(() => { result.current.toggle('revenue'); });
+            act(() => { result.current.move('revenue', 'up'); });
+            expect(result.current.layout.hidden).toEqual(['revenue']);
         });
     });
 });

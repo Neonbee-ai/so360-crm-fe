@@ -160,7 +160,7 @@ export const ProductPickerModal = ({ isOpen, onClose, onSelect }: ProductPickerM
                                             {/* Thumbnail */}
                                             <div className="w-10 h-10 rounded-md overflow-hidden bg-line flex-shrink-0 flex items-center justify-center">
                                                 {item.image_url ? (
-                                                    <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+                                                    <img loading="lazy" width={32} height={32} src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
                                                 ) : (
                                                     <Package className="w-5 h-5 text-fg-muted" />
                                                 )}
@@ -204,7 +204,7 @@ export const ProductPickerModal = ({ isOpen, onClose, onSelect }: ProductPickerM
                                                         {/* Variant thumbnail */}
                                                         <div className="w-8 h-8 rounded overflow-hidden bg-surface-high flex-shrink-0 flex items-center justify-center">
                                                             {variant.image_url ? (
-                                                                <img src={variant.image_url} alt={variant.name} className="w-full h-full object-cover" />
+                                                                <img loading="lazy" width={32} height={32} src={variant.image_url} alt={variant.name} className="w-full h-full object-cover" />
                                                             ) : (
                                                                 <Package className="w-4 h-4 text-fg-muted" />
                                                             )}

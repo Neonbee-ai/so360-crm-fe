@@ -18,6 +18,7 @@ import {
   Briefcase,
   Megaphone,
   ShieldCheck,
+  ShoppingBag,
 } from 'lucide-react';
 import { Badge, Card, EmptyState, Tabs, Button, Drawer, Select, Skeleton, type BadgeTone } from '@so360/design-system';
 import { Lead, Activity as ActivityType, Deal, Task, TASK_PRIORITY_STYLES, User as CrmUser, SourceTypeOption, CustomFieldDefinition } from '../../types/crm';
@@ -94,6 +95,7 @@ const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
   MEETING: <Calendar size={14} className="text-primary" />,
   EMAIL: <Mail size={14} className="text-warning" />,
   NOTE: <FileText size={14} className="text-fg-subtle" />,
+  ENQUIRY: <ShoppingBag size={14} className="text-primary" />,
   STATUS_CHANGE: <TrendingUp size={14} className="text-primary" />,
   OWNER_CHANGE: <User size={14} className="text-info" />,
   PROFILE_UPDATE: <Star size={14} className="text-warning" />,

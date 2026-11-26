@@ -355,7 +355,7 @@ describe('LeadsPage', () => {
       const user = userEvent.setup();
       render(<LeadsPage />);
       await user.click(screen.getByText('New Lead'));
-      expect(screen.getByTestId('create-lead-modal')).toBeInTheDocument();
+      expect(await screen.findByTestId('create-lead-modal')).toBeInTheDocument();
     });
   });
 
@@ -557,7 +557,7 @@ describe('LeadsPage — bulk actions', () => {
 });
 
 describe('LeadsPage — saved views (backend)', () => {
-  it('hydrates saved views from the backend on mount', async () => {
+  it('When exercised then hydrates saved views from the backend on mount', async () => {
     mockViewsList.mockResolvedValueOnce([
       { id: 'srv-9', name: 'Server View', config: { filters: {} }, is_default: false },
     ]);
@@ -581,7 +581,7 @@ describe('LeadsPage — saved views (backend)', () => {
     );
   });
 
-  it('deletes a view on the backend', async () => {
+  it('When exercised then deletes a view on the backend', async () => {
     mockViewsList.mockResolvedValueOnce([
       { id: 'srv-9', name: 'Doomed View', config: { filters: {} } },
     ]);
@@ -598,7 +598,7 @@ describe('LeadsPage — saved views (backend)', () => {
   });
 
   describe('Advanced (server-side) filtering', () => {
-    it('applies a nested filter tree via the paged endpoint and swaps the list', async () => {
+    it('When exercised then applies a nested filter tree via the paged endpoint and swaps the list', async () => {
       const user = userEvent.setup();
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
@@ -638,19 +638,19 @@ describe('LeadsPage — saved views (backend)', () => {
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
     };
 
-    it('exposes owner/status/source/export/delete bulk actions', async () => {
+    it('When exercised then exposes owner/status/source/export/delete bulk actions', async () => {
       await readyGrid();
       const labels = capturedGridProps.bulkActions.map((a: any) => a.label);
       expect(labels).toEqual(expect.arrayContaining(['Assign', 'Status', 'Source', 'Export', 'Delete']));
     });
 
-    it('offers only non-archived sources as options', async () => {
+    it('When exercised then offers only non-archived sources as options', async () => {
       await readyGrid();
       const values = bulkAction('Source').options.map((o: any) => o.value);
       expect(values).toEqual(['Website', 'Referral']);
     });
 
-    it('bulk status change calls the paged bulk-update with a status patch', async () => {
+    it('When exercised then bulk status change calls the paged bulk-update with a status patch', async () => {
       await readyGrid();
       bulkAction('Status').onSelect(['l1', 'l3'], 'Qualified');
       await waitFor(() =>
@@ -658,7 +658,7 @@ describe('LeadsPage — saved views (backend)', () => {
       );
     });
 
-    it('bulk source change calls bulk-update with a source patch', async () => {
+    it('When exercised then bulk source change calls bulk-update with a source patch', async () => {
       await readyGrid();
       bulkAction('Source').onSelect(['l1'], 'Website');
       await waitFor(() =>
@@ -666,7 +666,7 @@ describe('LeadsPage — saved views (backend)', () => {
       );
     });
 
-    it('bulk assign calls bulk-update with owner_id', async () => {
+    it('When exercised then bulk assign calls bulk-update with owner_id', async () => {
       await readyGrid();
       bulkAction('Assign').onSelect(['l1'], 'u2');
       await waitFor(() =>
@@ -674,7 +674,7 @@ describe('LeadsPage — saved views (backend)', () => {
       );
     });
 
-    it('export downloads a CSV of the selected rows', async () => {
+    it('When exercised then export downloads a CSV of the selected rows', async () => {
       await readyGrid();
       const createUrl = vi.fn(() => 'blob:mock');
       const revokeUrl = vi.fn();
@@ -698,7 +698,7 @@ describe('LeadsPage — saved views (backend)', () => {
       await waitFor(() => expect(screen.getByText('Alpha')).toBeInTheDocument());
     };
 
-    it('renames a view via the backend update', async () => {
+    it('When exercised then renames a view via the backend update', async () => {
       withView();
       await openViews();
       fireEvent.click(screen.getByLabelText('Rename view')); // pencil
@@ -709,7 +709,7 @@ describe('LeadsPage — saved views (backend)', () => {
       expect(screen.getByText('Beta')).toBeInTheDocument();
     });
 
-    it('duplicates a view and appends the server copy', async () => {
+    it('When exercised then duplicates a view and appends the server copy', async () => {
       withView();
       await openViews();
       fireEvent.click(screen.getByLabelText('Duplicate view'));
@@ -717,21 +717,21 @@ describe('LeadsPage — saved views (backend)', () => {
       await waitFor(() => expect(screen.getByText('Server View (copy)')).toBeInTheDocument());
     });
 
-    it('sets a view as the default', async () => {
+    it('When exercised then sets a view as the default', async () => {
       withView();
       await openViews();
       fireEvent.click(screen.getByLabelText('Set as default'));
       await waitFor(() => expect(mockViewsSetDefault).toHaveBeenCalledWith('srv-1'));
     });
 
-    it('shares a view with the team', async () => {
+    it('When exercised then shares a view with the team', async () => {
       withView();
       await openViews();
       fireEvent.click(screen.getByLabelText('Share view'));
       await waitFor(() => expect(mockViewsUpdate).toHaveBeenCalledWith('srv-1', { is_shared: true }));
     });
 
-    it('marks the default view once it is hydrated from the backend', async () => {
+    it('When exercised then marks the default view once it is hydrated from the backend', async () => {
       withView({ is_default: true });
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
@@ -743,7 +743,7 @@ describe('LeadsPage — saved views (backend)', () => {
   });
 
   describe('Inline cell editing wiring', () => {
-    it('persists an inline edit via updateLead and reflects it optimistically', async () => {
+    it('When exercised then persists an inline edit via updateLead and reflects it optimistically', async () => {
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
       const lead = capturedGridProps.leads.find((l: any) => l.id === 'l1');

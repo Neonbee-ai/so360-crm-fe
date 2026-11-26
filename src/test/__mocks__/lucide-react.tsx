@@ -127,3 +127,5 @@ export const GitMerge = createIcon('GitMerge');
 export const ArrowUp = createIcon('ArrowUp');
 export const ArrowDown = createIcon('ArrowDown');
 export const Minus = createIcon('Minus');
+export const Undo2 = createIcon('Undo2');
+export const EyeOff = createIcon('EyeOff');

@@ -26,7 +26,16 @@ export const DASHBOARD_LAYOUT_SAVE_DELAY_MS = 600;
  * - Every store call fails open: the dashboard never breaks on a prefs error.
  */
 export function useDashboardLayout(enabled: boolean) {
-    const [layout, setLayout] = useState<DashboardLayout>(DEFAULT_LAYOUT);
+    const [layout, setLayoutState] = useState<DashboardLayout>(DEFAULT_LAYOUT);
+    // Always-current layout + undo history. Kept in refs so history is pushed once per change
+    // (never from inside a state updater, which StrictMode runs twice).
+    const layoutRef = useRef<DashboardLayout>(DEFAULT_LAYOUT);
+    const history = useRef<DashboardLayout[]>([]);
+    const [canUndo, setCanUndo] = useState(false);
+    const setLayout = useCallback((next: DashboardLayout) => {
+        layoutRef.current = next;
+        setLayoutState(next);
+    }, []);
     const touched = useRef(false);
     const pending = useRef<DashboardLayout | null>(null);
     const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -61,18 +70,22 @@ export function useDashboardLayout(enabled: boolean) {
 
     useEffect(() => () => { void flush(); }, [flush]);
 
+    const scheduleSave = useCallback((prefs: DashboardLayout) => {
+        pending.current = prefs;
+        if (timer.current) clearTimeout(timer.current);
+        timer.current = setTimeout(() => { void flush(); }, DASHBOARD_LAYOUT_SAVE_DELAY_MS);
+    }, [flush]);
+
     const apply = useCallback((next: (prev: DashboardLayout) => DashboardLayout) => {
         touched.current = true;
-        setLayout((prev) => {
-            const updated = next(prev);
-            if (updated !== prev) {
-                pending.current = updated;
-                if (timer.current) clearTimeout(timer.current);
-                timer.current = setTimeout(() => { void flush(); }, DASHBOARD_LAYOUT_SAVE_DELAY_MS);
-            }
-            return updated;
-        });
-    }, [flush]);
+        const prev = layoutRef.current;
+        const updated = next(prev);
+        if (updated === prev) return;
+        history.current.push(prev);
+        setCanUndo(true);
+        setLayout(updated);
+        scheduleSave(updated);
+    }, [scheduleSave, setLayout]);
 
     const move = useCallback((key: string, direction: 'up' | 'down') => {
         apply((prev) => moveWidget(prev, key, direction));
@@ -82,18 +95,32 @@ export function useDashboardLayout(enabled: boolean) {
         apply((prev) => toggleWidget(prev, key));
     }, [apply]);
 
+    /** Restores the layout (order AND visibility) from before the last change. */
+    const undo = useCallback(() => {
+        const prev = history.current.pop();
+        setCanUndo(history.current.length > 0);
+        if (!prev) return;
+        touched.current = true;
+        setLayout(prev);
+        scheduleSave(prev);
+    }, [scheduleSave, setLayout]);
+
     const reset = useCallback(async () => {
         touched.current = true;
         if (timer.current) clearTimeout(timer.current);
         timer.current = null;
         pending.current = null;
+        if (layoutRef.current !== DEFAULT_LAYOUT) {
+            history.current.push(layoutRef.current);
+            setCanUndo(true);
+        }
         setLayout(DEFAULT_LAYOUT);
         try {
             await crmService.gridColumns.reset(DASHBOARD_LAYOUT_ENTITY);
         } catch {
             /* offline — the local reset still applies */
         }
-    }, []);
+    }, [setLayout]);
 
-    return { layout: enabled ? layout : DEFAULT_LAYOUT, move, toggle, reset };
+    return { layout: enabled ? layout : DEFAULT_LAYOUT, move, toggle, undo, canUndo, reset };
 }

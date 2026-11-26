@@ -149,7 +149,7 @@ export const EmailComposeModal: React.FC<EmailComposeModalProps> = ({ entityType
                                 <AlertCircle size={12} /> No value for: {preview.missing_fields.join(', ')}
                             </p>
                         )}
-                        <iframe title="Email preview" sandbox="" srcDoc={preview.body_html} className="w-full h-64 bg-white rounded-lg" />
+                        <iframe title="Email preview" sandbox="" srcDoc={preview.body_html} className="w-full h-64 rounded-lg" style={{ backgroundColor: 'Canvas', colorScheme: 'light' /* email HTML is authored for a white canvas */ }} />
                     </div>
                 )}
             </div>

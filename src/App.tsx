@@ -169,24 +169,32 @@ const PermissionGuard = ({ permission, children }: { permission: string | string
     );
 };
 
-// Landing pages are eager: a lazy chunk adds a download round trip before the page's first API call.
-import DashboardPage from './pages/DashboardPage';
-import Customer360Page from './pages/Customer360Page';
-import LeadsPage from './pages/LeadsPage';
-import PipelinePage from './pages/PipelinePage';
-
-// Lazy load the remaining pages for performance
+// Landing pages are lazy too, but their chunk download starts at module eval
+// (preloadRouteChunk below), so a deep link pays no extra round trip.
+const loadDashboardPage = () => import('./pages/DashboardPage');
+const loadCustomer360Page = () => import('./pages/Customer360Page');
+const loadLeadsPage = () => import('./pages/LeadsPage');
+const loadPipelinePage = () => import('./pages/PipelinePage');
 const loadLeadDetailPage = () => import('./pages/LeadDetailPage');
 const loadDealDetailPage = () => import('./pages/DealDetailPage');
+const DashboardPage = lazy(loadDashboardPage);
+const Customer360Page = lazy(loadCustomer360Page);
+const LeadsPage = lazy(loadLeadsPage);
+const PipelinePage = lazy(loadPipelinePage);
 const LeadDetailPage = lazy(loadLeadDetailPage);
 const DealDetailPage = lazy(loadDealDetailPage);
 
-// Deep links to a detail page download its chunk while the Shell context syncs.
+// Deep links download their page chunk while the Shell context syncs.
+export const ROUTE_PRELOADS = [
+    { pattern: /\/(dashboard|crm)\/?$/, load: loadDashboardPage },
+    { pattern: /\/customers\/[^/]+\/360\/?$/, load: loadCustomer360Page },
+    { pattern: /\/leads\/?$/, load: loadLeadsPage },
+    { pattern: /\/pipeline\/?$/, load: loadPipelinePage },
+    { pattern: /\/leads\/[^/]+\/?$/, load: loadLeadDetailPage },
+    { pattern: /\/deals?\/[^/]+\/?$/, load: loadDealDetailPage },
+];
 if (typeof window !== 'undefined') {
-    preloadRouteChunk(window.location.pathname, [
-        { pattern: /\/leads\/[^/]+\/?$/, load: loadLeadDetailPage },
-        { pattern: /\/deals?\/[^/]+\/?$/, load: loadDealDetailPage },
-    ]);
+    preloadRouteChunk(window.location.pathname, ROUTE_PRELOADS);
 }
 const TasksPage = lazy(() => import('./pages/TasksPage'));
 const TaskDetailPage = lazy(() => import('./pages/TaskDetailPage'));
