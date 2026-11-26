@@ -78,7 +78,7 @@ describe('Feature: useDashboardLayout', () => {
     });
 
     describe('When the user hides and reorders widgets', () => {
-        it('then one debounced save carries the final order and hidden list', async () => {
+        it('When widgets are toggled and moved then one debounced save carries the final order and hidden list', async () => {
             const { result } = renderHook(() => useDashboardLayout(true));
             await flush();
             act(() => { result.current.toggle('revenue'); });
@@ -92,7 +92,7 @@ describe('Feature: useDashboardLayout', () => {
             );
         });
 
-        it('then a no-op move does not schedule a save', async () => {
+        it('When a move changes nothing then a no-op move does not schedule a save', async () => {
             const { result } = renderHook(() => useDashboardLayout(true));
             await flush();
             act(() => { result.current.move('kpis', 'up'); });
@@ -100,7 +100,7 @@ describe('Feature: useDashboardLayout', () => {
             expect(grid.save).not.toHaveBeenCalled();
         });
 
-        it('then a late hydration does not override the user change', async () => {
+        it('When hydration resolves late then a late hydration does not override the user change', async () => {
             let resolve: (v: unknown) => void = () => {};
             grid.get.mockReturnValue(new Promise((r) => { resolve = r; }));
             const { result } = renderHook(() => useDashboardLayout(true));
@@ -121,7 +121,7 @@ describe('Feature: useDashboardLayout', () => {
     });
 
     describe('When the user resets the layout', () => {
-        it('then the default is restored, the stored preference is cleared and no pending save fires', async () => {
+        it('When reset is called then the default is restored, the stored preference is cleared and no pending save fires', async () => {
             const { result } = renderHook(() => useDashboardLayout(true));
             await flush();
             act(() => { result.current.toggle('kpis'); });
@@ -132,7 +132,7 @@ describe('Feature: useDashboardLayout', () => {
             expect(grid.save).not.toHaveBeenCalled();
         });
 
-        it('then a failing reset still restores the default locally', async () => {
+        it('When the backend reset fails then a failing reset still restores the default locally', async () => {
             grid.reset.mockRejectedValue(new Error('offline'));
             const { result } = renderHook(() => useDashboardLayout(true));
             await flush();
