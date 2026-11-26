@@ -1,0 +1,8 @@
+{
+  "initialAppClosure": {
+    "entry": "./App",
+    "maxBrotliKB": 70,
+    "maxFiles": 25,
+    "note": "Static import closure of the exposed ./App chunk in dist/assets (remoteEntry.js excluded). Pages and heavy modals must stay React.lazy."
+  }
+}

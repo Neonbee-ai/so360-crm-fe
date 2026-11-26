@@ -138,7 +138,7 @@ describe('Given the Leads page header', () => {
       flags.on.add('action:crm:bulk_import');
       render(<LeadsPage />);
       await openImport();
-      expect(screen.getByTestId('import-wizard')).toBeInTheDocument();
+      expect(await screen.findByTestId('import-wizard')).toBeInTheDocument();
     });
   });
 

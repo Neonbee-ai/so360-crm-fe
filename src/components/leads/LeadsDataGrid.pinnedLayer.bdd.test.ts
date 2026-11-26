@@ -9,13 +9,16 @@ const src = readFileSync(resolve(__dirname, 'LeadsDataGrid.tsx'), 'utf8');
 
 describe('LeadsDataGrid pinned columns (BDD)', () => {
   it('Given the select column, When a row renders, Then its sticky cell is layered above scrolling cells', () => {
-    expect(src).toMatch(/shrink-0 sticky z-10 \$\{cellPy\}/);
+    expect(src).toMatch(/shrink-0 sticky z-toolbar \$\{cellPy\}/);
   });
   it('Given a pinned data column, When a row renders, Then its sticky cell is layered above scrolling cells', () => {
-    expect(src).toMatch(/\? `sticky z-10 \$\{isSelected/);
+    expect(src).toMatch(/\? `sticky z-toolbar \$\{isSelected/);
   });
   it('Given the header, When pinned cells render, Then they stay above the body layer', () => {
     expect(src).toMatch(/sticky bg-surface z-toolbar/);
     expect(src).toMatch(/'sticky z-toolbar bg-surface'/);
+  });
+  it('Given the header row, When body pinned cells share z-toolbar, Then the header row sits on the higher z-chrome layer', () => {
+    expect(src).toMatch(/flex sticky top-0 z-chrome bg-surface/);
   });
 });

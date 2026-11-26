@@ -355,7 +355,7 @@ describe('LeadsPage', () => {
       const user = userEvent.setup();
       render(<LeadsPage />);
       await user.click(screen.getByText('New Lead'));
-      expect(screen.getByTestId('create-lead-modal')).toBeInTheDocument();
+      expect(await screen.findByTestId('create-lead-modal')).toBeInTheDocument();
     });
   });
 

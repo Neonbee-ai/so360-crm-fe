@@ -249,7 +249,7 @@ const TaskDetailPage = () => {
                     <Card title="Assignee">
                         <div className="flex items-center gap-nb-3">
                             <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-line bg-surface-raised text-fg">
-                                {task.assigned_to.avatar_url ? <img src={task.assigned_to.avatar_url} alt={task.assigned_to.full_name} /> : task.assigned_to.full_name.charAt(0)}
+                                {task.assigned_to.avatar_url ? <img loading="lazy" width={32} height={32} src={task.assigned_to.avatar_url} alt={task.assigned_to.full_name} /> : task.assigned_to.full_name.charAt(0)}
                             </div>
                             <div className="min-w-0">
                                 <p className="truncate text-sm font-medium text-fg">{task.assigned_to.full_name}</p>
@@ -447,7 +447,7 @@ const TaskDetailPage = () => {
                                                 <div className="flex items-center gap-2">
                                                     <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
                                                         {note.author?.avatar_url ? (
-                                                            <img src={note.author.avatar_url} alt={note.author?.full_name || 'User'} className="w-full h-full object-cover" />
+                                                            <img loading="lazy" width={32} height={32} src={note.author.avatar_url} alt={note.author?.full_name || 'User'} className="w-full h-full object-cover" />
                                                         ) : (
                                                             <span className="text-xs font-bold text-primary">
                                                                 {note.author?.full_name?.[0] || 'U'}

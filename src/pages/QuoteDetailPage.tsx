@@ -761,7 +761,7 @@ const QuoteDetailPage = () => {
                                                 className="w-full !h-auto !justify-start !whitespace-normal !text-left !py-nb-2"
                                             >
                                                 {line.item_image_url ? (
-                                                    <img src={line.item_image_url} alt="" className="w-6 h-6 rounded object-cover flex-shrink-0" />
+                                                    <img loading="lazy" width={24} height={24} src={line.item_image_url} alt="" className="w-6 h-6 rounded object-cover flex-shrink-0" />
                                                 ) : (
                                                     <Package className="w-4 h-4 text-fg-muted flex-shrink-0" />
                                                 )}
@@ -790,7 +790,7 @@ const QuoteDetailPage = () => {
                                     ) : (
                                         <div className="flex items-start gap-2">
                                             {line.item_image_url && (
-                                                <img src={line.item_image_url} alt="" className="w-8 h-8 rounded object-cover flex-shrink-0 mt-0.5" />
+                                                <img loading="lazy" width={32} height={32} src={line.item_image_url} alt="" className="w-8 h-8 rounded object-cover flex-shrink-0 mt-0.5" />
                                             )}
                                             <div className="min-w-0 max-w-md" data-testid="quote-line-description">
                                                 <span className="text-fg block whitespace-normal [overflow-wrap:anywhere]">{line.description}</span>

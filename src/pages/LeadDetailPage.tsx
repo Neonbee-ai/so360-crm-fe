@@ -758,7 +758,7 @@ const LeadDetailPage = () => {
                                             >
                                                 <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-high text-xs font-medium uppercase text-fg">
                                                     {user.avatar_url ? (
-                                                        <img src={user.avatar_url} alt={user.full_name} className="h-full w-full object-cover" />
+                                                        <img loading="lazy" width={32} height={32} src={user.avatar_url} alt={user.full_name} className="h-full w-full object-cover" />
                                                     ) : (
                                                         user.full_name?.charAt(0)
                                                     )}
@@ -776,7 +776,7 @@ const LeadDetailPage = () => {
                                 <div className="flex items-center gap-nb-3">
                                     <div className="flex size-10 items-center justify-center overflow-hidden rounded-full bg-surface-raised text-sm font-medium text-fg">
                                         {owner.avatar_url ? (
-                                            <img src={owner.avatar_url} alt={owner.full_name} className="h-full w-full object-cover" />
+                                            <img loading="lazy" width={32} height={32} src={owner.avatar_url} alt={owner.full_name} className="h-full w-full object-cover" />
                                         ) : (
                                             owner.full_name?.charAt(0)
                                         )}
@@ -1855,7 +1855,7 @@ const LeadDetailPage = () => {
                                                             {task.assigned_to && (
                                                                 <span className="flex items-center gap-1 text-fg-subtle">
                                                                     <div className="w-4 h-4 rounded-full bg-surface-raised flex items-center justify-center overflow-hidden border border-line">
-                                                                        {task.assigned_to.avatar_url ? <img src={task.assigned_to.avatar_url} alt={task.assigned_to.full_name} className="w-full h-full object-cover" /> : task.assigned_to.full_name?.charAt(0)}
+                                                                        {task.assigned_to.avatar_url ? <img loading="lazy" width={32} height={32} src={task.assigned_to.avatar_url} alt={task.assigned_to.full_name} className="w-full h-full object-cover" /> : task.assigned_to.full_name?.charAt(0)}
                                                                     </div>
                                                                     {task.assigned_to.full_name}
                                                                 </span>
