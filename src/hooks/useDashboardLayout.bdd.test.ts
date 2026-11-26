@@ -141,4 +141,49 @@ describe('Feature: useDashboardLayout', () => {
             expect(result.current.layout).toEqual(DEFAULT_LAYOUT);
         });
     });
+
+    describe('Given the user changed visibility and order (Pulse 946bd3a5)', () => {
+        it('when they undo / then each change is reverted in turn, restoring visibility and position', async () => {
+            const { result } = renderHook(() => useDashboardLayout(true));
+            await flush();
+            expect(result.current.canUndo).toBe(false);
+            act(() => { result.current.toggle('kpis'); });
+            act(() => { result.current.move('revenue', 'up'); });
+            expect(result.current.canUndo).toBe(true);
+            const moved = result.current.layout.order.join();
+            expect(moved).not.toBe(DEFAULT_LAYOUT.order.join());
+
+            act(() => { result.current.undo(); });
+            expect(result.current.layout.order).toEqual(DEFAULT_LAYOUT.order);
+            expect(result.current.layout.hidden).toEqual(['kpis']);
+
+            act(() => { result.current.undo(); });
+            expect(result.current.layout.hidden).toEqual([]);
+            expect(result.current.canUndo).toBe(false);
+        });
+
+        it('when they undo / then the restored layout is saved, not just shown', async () => {
+            const { result } = renderHook(() => useDashboardLayout(true));
+            await flush();
+            act(() => { result.current.toggle('kpis'); });
+            act(() => { result.current.undo(); });
+            await act(async () => { await vi.advanceTimersByTimeAsync(DASHBOARD_LAYOUT_SAVE_DELAY_MS + 10); });
+            expect(grid.save).toHaveBeenLastCalledWith({ order: DEFAULT_LAYOUT.order, hidden: [] }, DASHBOARD_LAYOUT_ENTITY);
+        });
+
+        it('when there is nothing to undo / then undo is a no-op', async () => {
+            const { result } = renderHook(() => useDashboardLayout(true));
+            await flush();
+            act(() => { result.current.undo(); });
+            expect(result.current.layout).toEqual(DEFAULT_LAYOUT);
+        });
+
+        it('when they reorder a hidden widget / then it stays hidden', async () => {
+            const { result } = renderHook(() => useDashboardLayout(true));
+            await flush();
+            act(() => { result.current.toggle('revenue'); });
+            act(() => { result.current.move('revenue', 'up'); });
+            expect(result.current.layout.hidden).toEqual(['revenue']);
+        });
+    });
 });

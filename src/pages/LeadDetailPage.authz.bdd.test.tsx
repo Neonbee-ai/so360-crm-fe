@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, waitFor, within } from '@testing-library/react';
-import { vi, describe, test, expect, beforeEach } from 'vitest';
+import { vi, describe, test, expect, beforeEach, afterEach } from 'vitest';
 import LeadDetailPage from './LeadDetailPage';
 
 /**
@@ -64,7 +64,7 @@ vi.mock('../services/crmService', () => ({
 vi.mock('react-router-dom', () => ({
   useParams: () => ({ id: 'lead-1' }),
   useNavigate: () => vi.fn(),
-  useLocation: () => ({ search: '', pathname: '/', state: null }),
+  useLocation: () => ({ search: '', pathname: (globalThis as any).__testPathname ?? '/', state: null }),
   Link: ({ children }: any) => children,
   NavLink: ({ children }: any) => children,
 }));
@@ -172,6 +172,22 @@ describe('Given LeadDetailPage and a lead that genuinely does not exist', () => 
       expect(screen.getByText('Record not found')).toBeTruthy();
     });
     expect(screen.queryByText(/permission to view this lead/i)).toBeNull();
+  });
+});
+
+describe('Given the Customers detail route and a record that does not exist (Pulse 937cd127)', () => {
+  afterEach(() => { delete (globalThis as any).__testPathname; });
+
+  test('When the customer record resolves to nothing / Then the heading says Customer, never Lead', async () => {
+    (globalThis as any).__testPathname = '/crm/customers/abc';
+    mockCrmService.getLeadById.mockResolvedValueOnce(undefined);
+
+    render(<LeadDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Customer not found')).toBeTruthy();
+    });
+    expect(screen.queryByText('Lead not found')).toBeNull();
   });
 });
 
