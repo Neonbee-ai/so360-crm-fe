@@ -105,11 +105,15 @@ describe('Given the CRM dashboard', () => {
             // The icon follows the state: eye-off for a hidden widget, eye for visible ones (Pulse 946bd3a5).
             expect(within(panel).getByRole('button', { name: 'Show Active reminders' }).querySelector('[data-testid="icon-EyeOff"]')).not.toBeNull();
             expect(within(panel).getByRole('button', { name: 'Hide KPI cards' }).querySelector('[data-testid="icon-Eye"]')).not.toBeNull();
-            // Undo restores the widget and its icon.
-            fireEvent.click(within(panel).getByRole('button', { name: 'Undo' }));
-            expect(within(panel).getByRole('button', { name: 'Hide Active reminders' }).querySelector('[data-testid="icon-Eye"]')).not.toBeNull();
             await waitFor(() => expect(grid.save).toHaveBeenCalledWith(
                 expect.objectContaining({ hidden: ['reminders'] }),
+                'crm_dashboard_layout',
+            ), { timeout: 2000 });
+            // Undo restores the widget and its icon, and the restored layout is saved too.
+            fireEvent.click(within(panel).getByRole('button', { name: 'Undo' }));
+            expect(within(panel).getByRole('button', { name: 'Hide Active reminders' }).querySelector('[data-testid="icon-Eye"]')).not.toBeNull();
+            await waitFor(() => expect(grid.save).toHaveBeenLastCalledWith(
+                expect.objectContaining({ hidden: [] }),
                 'crm_dashboard_layout',
             ), { timeout: 2000 });
         });
