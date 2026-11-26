@@ -446,11 +446,14 @@ class ApiClient {
         return { data: data as T, total: Number.isNaN(parsedTotal) ? null : parsedTotal };
     }
 
-    async post<T>(endpoint: string, data: any, options?: { headers?: Record<string, string> }): Promise<T> {
+    async post<T>(endpoint: string, data: any, optionsOrHeaders?: { headers?: Record<string, string> } | Record<string, string>): Promise<T> {
+        const extra = optionsOrHeaders && typeof (optionsOrHeaders as any).headers === 'object'
+            ? (optionsOrHeaders as { headers: Record<string, string> }).headers
+            : (optionsOrHeaders as Record<string, string> | undefined);
         return this.request<T>(endpoint, {
             method: 'POST',
             body: JSON.stringify(data),
-            ...(options?.headers ? { headers: options.headers } : {}),
+            ...(extra ? { headers: extra } : {}),
         });
     }
 
@@ -2802,8 +2805,18 @@ export const crmService = {
          * an array — even an empty one — is taken as the caller's own line set.
          */
         lines?: { item_id?: string; description: string; quantity: number; unit_price: number; discount_percent?: number; tax_rate?: number }[];
-    }): Promise<any> {
-        return apiClient.post<any>('/quotes', data);
+    }, options: {
+        /**
+         * Sent as Idempotency-Key: crm-be returns the quote already created for
+         * this key instead of a duplicate (Pulse 3f510e56). One key per form session.
+         */
+        idempotencyKey?: string;
+    } = {}): Promise<any> {
+        return apiClient.post<any>(
+            '/quotes',
+            data,
+            options.idempotencyKey ? { 'Idempotency-Key': options.idempotencyKey } : undefined,
+        );
     },
 
     async updateQuote(quoteId: string, data: {
