@@ -154,7 +154,7 @@ export interface Deal {
     fulfillment_status?: 'pending' | 'in_transit' | 'out_for_delivery' | 'delivered' | 'failed' | null;
 }
 
-export type ActivityType = 'CALL' | 'MEETING' | 'EMAIL' | 'NOTE' | 'STATUS_CHANGE' | 'STAGE_CHANGE' | 'OWNER_CHANGE' | 'PROFILE_UPDATE' | 'TASK';
+export type ActivityType = 'CALL' | 'MEETING' | 'EMAIL' | 'NOTE' | 'ENQUIRY' | 'STATUS_CHANGE' | 'STAGE_CHANGE' | 'OWNER_CHANGE' | 'PROFILE_UPDATE' | 'TASK';
 
 export interface Activity {
     id: string;

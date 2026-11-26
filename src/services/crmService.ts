@@ -1188,6 +1188,8 @@ export interface EntityTimelineEvent {
     group_key: string;
     /** G8 Client 360: normalized interaction type (call, whatsapp, email, meeting, task, note, document, booking, …). */
     type?: string;
+    /** ENQUIRY events: product / page context (product_name, sku, variant_name, page_url, source, ...). */
+    metadata?: Record<string, string>;
 }
 
 export interface EntityTimelineSummary {
