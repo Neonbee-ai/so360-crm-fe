@@ -1256,7 +1256,7 @@ export function LeadsDataGrid({
               <div
                 key="select"
                 role="gridcell"
-                className={`flex items-center justify-center shrink-0 sticky z-10 ${cellPy} ${
+                className={`flex items-center justify-center shrink-0 sticky z-toolbar ${cellPy} ${
                   isSelected ? 'bg-primary-container' : isHovered ? 'bg-surface-high' : 'bg-bg'
                 }`}
                 style={{ width: col.width, left: colLeftOffsets['select'] }}
@@ -1302,7 +1302,7 @@ export function LeadsDataGrid({
                 canEditCell ? 'cursor-text' : ''
               } ${
                 isSticky
-                  ? `sticky z-10 ${isSelected ? 'bg-primary-container' : isHovered ? 'bg-surface-high' : 'bg-bg'}`
+                  ? `sticky z-toolbar ${isSelected ? 'bg-primary-container' : isHovered ? 'bg-surface-high' : 'bg-bg'}`
                   : ''
               }`}
               style={{
@@ -1494,7 +1494,7 @@ export function LeadsDataGrid({
           <div
             role="row"
             data-testid="leads-grid-header-row"
-            className="flex sticky top-0 z-toolbar bg-surface border-b border-line"
+            className="flex sticky top-0 z-chrome bg-surface border-b border-line"
             style={{ minWidth: `${totalWidth}px` }}
           >
             {orderedCols.map((col) => {
