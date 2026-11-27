@@ -196,11 +196,11 @@ describe('SmartTasksList — actions and scope', () => {
         await waitFor(() => expect(svc.deleteTask).toHaveBeenCalledWith('t1'));
     });
 
-    it('Given no create permission / When it renders / Then neither Create Task nor row delete is offered', async () => {
+    it('Given no create permission / When it renders / Then neither New Task nor row delete is offered', async () => {
         bridge.perms = new Set();
         renderAt();
         await screen.findByText('Task t1');
-        expect(screen.queryByText('Create Task')).not.toBeInTheDocument();
+        expect(screen.queryByText('New Task')).not.toBeInTheDocument();
         expect(screen.queryByTestId('tasks-table-actions-t1')).not.toBeInTheDocument();
     });
 

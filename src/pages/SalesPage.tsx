@@ -149,11 +149,7 @@ const SalesPage: React.FC = () => {
             {rangeInvalid ? (
                 <div role="alert" className="text-sm text-danger">{rangeError}</div>
             ) : loading ? (
-                <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4">
-                <Skeleton variant="rect" />
-                <Skeleton variant="text" lines={3} />
-                <span className="sr-only">Loading sales…</span>
-            </div>
+                <div role="status" aria-busy="true" className="w-full"><span className="sr-only">Loading sales…</span><Skeleton.Table count={6} columns={6} announce={false} /></div>
             ) : error ? (
                 <div role="alert" className="p-6 bg-danger/10 border border-danger/30 rounded-nb-lg flex items-center justify-between gap-3">
                     <span className="text-sm font-bold text-danger">{error}</span>

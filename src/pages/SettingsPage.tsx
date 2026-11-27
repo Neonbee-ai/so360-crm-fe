@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { crmService, settingsApi } from '../services/crmService';
 import { CRMSettings, SourceTypeOption, LeadScoringRule, ScoreCategory } from '../types/crm';
 import { Save, AlertCircle, Edit2, Archive, Plus, Trash2, Loader2, Zap, Trophy, ShieldCheck, ToggleLeft, ToggleRight, X, Check, RefreshCw } from 'lucide-react';
-import { Banner, toast, SettingsPageTemplate, Button, IconButton, TextField, Select, Card, ColorPicker, Grid, GridItem, Skeleton, Badge } from '@so360/design-system';
+import { Banner, toast, SettingsPageTemplate, Button, IconButton, TextField, Select, Card, ColorPicker, Grid, GridItem, Badge } from '@so360/design-system';
 import { StageStatusSelect } from '../components/common/StageStatusSelect';
 import { useShellBridge } from '@so360/shell-context';
 import DealNamingSettingsTab from './components/settings/DealNamingSettingsTab';
@@ -511,11 +511,7 @@ const SettingsPage = ({ onOpenIcps, onOpenDataSettings, onOpenEstimator, onOpenF
 
     if (isLoading || !settings) {
         return (
-            <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4">
-                <Skeleton variant="rect" />
-                <Skeleton variant="text" lines={3} />
-                <span className="sr-only">Loading settings...</span>
-            </div>
+            <SettingsPageTemplate trail={[]} title="CRM Settings" description="Configure your workspace and custom data points" loading />
         );
     }
 

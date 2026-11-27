@@ -53,7 +53,7 @@ describe('Given DashboardPage', () => {
   it('When action / Then shows loading state initially', () => {
     mockGetDashboardStats.mockReturnValue(new Promise(() => {})); // never resolves
     render(<DashboardPage />);
-    expect(screen.getByText('Loading insights...')).toBeInTheDocument();
+    expect(screen.getByTestId('page-loading-status')).toHaveTextContent('Loading…');
   });
 
   it('When action / Then renders executive overview after data loads', async () => {

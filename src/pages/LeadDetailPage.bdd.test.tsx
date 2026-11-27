@@ -909,7 +909,7 @@ describe('LeadDetailPage', () => {
     it('When data is pending / Then shows loading text', () => {
       mockGetLeadById.mockReturnValue(new Promise(() => {}));
       render(<LeadDetailPage />);
-      expect(screen.getByText('Loading lead workspace...')).toBeInTheDocument();
+      expect(screen.getByTestId('page-loading-status')).toHaveTextContent('Loading…');
     });
   });
 
@@ -919,7 +919,7 @@ describe('LeadDetailPage', () => {
       mockGetUsers.mockReturnValue(new Promise(() => {}));
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getAllByText('John Doe').length).toBeGreaterThan(0));
-      expect(screen.queryByText('Loading lead workspace...')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('page-loading-status')).not.toBeInTheDocument();
     });
   });
 

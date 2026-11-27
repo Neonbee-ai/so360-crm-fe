@@ -465,7 +465,7 @@ describe('DealDetailPage', () => {
     it('When data is not yet resolved / Then shows loading state', () => {
       mockGetDealById.mockReturnValue(new Promise(() => {}));
       render(<DealDetailPage />);
-      expect(screen.getByTestId('deal-detail-skeleton')).toBeInTheDocument();
+      expect(document.querySelector('[data-slot="loading"]')).toBeInTheDocument();
     });
   });
 
@@ -1225,11 +1225,10 @@ describe('DealDetailPage — deal stage selector', () => {
       render(<DealDetailPage />);
 
       // Structural regions are reserved up front, matching the loaded layout's shape.
-      expect(screen.getByTestId('deal-detail-skeleton')).toBeInTheDocument();
-      expect(screen.getByTestId('deal-detail-skeleton-header')).toBeInTheDocument();
-      expect(screen.getByTestId('deal-detail-skeleton-lifecycle')).toBeInTheDocument();
-      expect(screen.getByTestId('deal-detail-skeleton-grid')).toBeInTheDocument();
-      expect(screen.getByTestId('deal-detail-skeleton-tabs')).toBeInTheDocument();
+      expect(screen.getByTestId('page-loading-status')).toHaveTextContent('Loading…');
+      expect(document.querySelector('[data-slot="loading"]')).toBeInTheDocument();
+      expect(document.querySelector('[data-slot="tabs-loading"]')).toBeInTheDocument();
+      expect(document.querySelector('[data-slot="side-panel-loading"]')).toBeInTheDocument();
 
       // Resolve so the effect cleans up without an unhandled rejection / act warning.
       resolveDeal!(makeDeal());

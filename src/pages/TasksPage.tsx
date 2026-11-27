@@ -371,7 +371,7 @@ const LegacyTasksPage = () => {
             description="Personal execution discipline and daily tasks"
             primaryAction={canCreateTask ? (
                 <Button onClick={() => setShowCreateModal(true)}><Plus size={16} />
-                    Create Task
+                    New Task
                 </Button>
             ) : undefined}
             search={

@@ -95,7 +95,7 @@ const MeetingsTab: React.FC<Props> = ({ leadId, dealId }) => {
             </div>
 
             {loading ? (
-                <div className="py-nb-4"><Skeleton variant="text" lines={3} /></div>
+                <div className="py-nb-4"><Skeleton.List count={3} /></div>
             ) : meetings.length === 0 ? (
                 <EmptyState icon={Calendar} title="No meetings scheduled yet" />
             ) : (

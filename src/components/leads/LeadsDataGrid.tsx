@@ -34,7 +34,7 @@ import {
   TrendingUp,
   Layers,
 } from 'lucide-react';
-import { Badge, Button, IconButton, Menu, Select, TextField, type BadgeTone } from '@so360/design-system';
+import { Badge, Button, IconButton, Menu, Select, TextField, type BadgeTone, Skeleton } from '@so360/design-system';
 import { useCrmFeatureFlag } from '../../hooks/useCrmFeatureFlag';
 import { ICP_FLAG } from './IcpFitCard';
 import { fitBand, FIT_BAND_LABELS, leadIcpScore, type FitBand } from '../../utils/icpFit';
@@ -1334,20 +1334,11 @@ export function LeadsDataGrid({
     );
   };
 
-  if (isLoading) {
+  // Skeleton on the first load only; a refresh (page / sort / filter change) keeps the rows on screen.
+  if (isLoading && leads.length === 0) {
     return (
-      <div className="rounded-xl border border-line bg-surface overflow-hidden">
-        <div className="flex items-center gap-4 px-4 py-3 border-b border-line bg-surface-sunken">
-          <div className="h-4 w-24 bg-line rounded animate-pulse" />
-          <div className="h-4 w-32 bg-line rounded animate-pulse" />
-        </div>
-        {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="flex gap-4 px-4 py-3 border-b border-line">
-            <div className="h-4 w-48 bg-surface-raised rounded animate-pulse" />
-            <div className="h-4 w-36 bg-surface-raised rounded animate-pulse" />
-            <div className="h-4 w-28 bg-surface-raised rounded animate-pulse" />
-          </div>
-        ))}
+      <div data-testid="leads-grid-loading">
+        <Skeleton.Table count={8} columns={3} />
       </div>
     );
   }
@@ -1475,7 +1466,8 @@ export function LeadsDataGrid({
       ) : (
       <div
         ref={containerRef}
-        className="w-full min-w-0 rounded-nb-lg border border-line overflow-x-auto overflow-y-auto bg-bg"
+        className={`w-full min-w-0 rounded-nb-lg border border-line overflow-x-auto overflow-y-auto bg-bg transition-opacity${isLoading ? ' opacity-70' : ''}`}
+        aria-busy={isLoading || undefined}
         style={{ maxHeight: 'calc(100vh - 210px)' }}
         onContextMenu={(e) => e.preventDefault()}
         onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}

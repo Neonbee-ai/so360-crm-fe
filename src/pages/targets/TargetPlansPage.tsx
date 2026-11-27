@@ -20,7 +20,7 @@ import {
 import AllocateTeamPlanPanel from './AllocateTeamPlanPanel';
 import EditPlanPanel from './EditPlanPanel';
 import { canCreatePlan, canEditPlan, canAllocatePlan } from './targetPlanPermissions';
-import { PeopleSelector, ListPageTemplate, SearchInput, Grid, GridItem, Button, IconButton, DataTable, TextField, Select, NumberInput, DatePicker, Checkbox, Badge, EmptyState as DsEmptyState, Card , Modal, Drawer } from '@so360/design-system';
+import { PeopleSelector, ListPageTemplate, SearchInput, Grid, GridItem, Button, IconButton, DataTable, TextField, Select, NumberInput, DatePicker, Checkbox, Badge, EmptyState as DsEmptyState, Card, Modal, Drawer, Skeleton } from '@so360/design-system';
 import type { DataTableColumn } from '@so360/design-system';
 
 type Period = 'week' | 'month' | 'quarter' | 'year';
@@ -661,7 +661,7 @@ export default function TargetPlansPage() {
         </Drawer>
       )}
 
-      {loading ? null : !plans.length ? (
+      {loading ? <Skeleton.Table count={5} columns={5} /> : !plans.length ? (
         <EmptyState message="No target plans yet." />
       ) : (
         <Card title="Plans">
@@ -791,7 +791,7 @@ export default function TargetPlansPage() {
                         {stage.name}
                       </span>
                       {leadStageSavingId === stage.stage_id && (
-                        <Loader2 size={12} className="animate-spin text-fg-subtle" />
+                        <span className="text-xs text-fg-subtle" role="status">Saving…</span>
                       )}
                     </Button>
                   ))}

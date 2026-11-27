@@ -122,7 +122,7 @@ export default function EditPlanPanel({
       {notice && <div className="mb-2 text-sm text-success">{notice}</div>}
 
       {!plan ? (
-        <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4"><Skeleton variant="rect" /><Skeleton variant="text" lines={3} /><span className="sr-only">Loading plan…</span></div>
+        <div role="status" aria-busy="true" className="w-full"><span className="sr-only">Loading plan…</span><Skeleton.Fields count={6} /></div>
       ) : (
         <div className="space-y-4">
           <div className="flex flex-wrap items-end gap-3">

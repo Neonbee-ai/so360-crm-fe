@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Target } from 'lucide-react';
-import { Badge, Button, DeleteConfirmDialog, DataTable, EmptyState, ListPageTemplate, toast, type DataTableColumn, Skeleton } from '@so360/design-system';
+import { Badge, Button, DeleteConfirmDialog, DataTable, EmptyState, ListPageTemplate, toast, type DataTableColumn } from '@so360/design-system';
 import { useShellBridge } from '@so360/shell-context';
 import { icpService, type Icp } from '../services/icpService';
 
@@ -102,13 +102,7 @@ const IcpListPage: React.FC = () => {
 
     const newBtn = <Button onClick={() => navigate(`${BASE}/new`)}>New ICP</Button>;
 
-    const body = loading ? (
-        <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4" data-testid="icp-loading">
-            <Skeleton variant="rect" />
-            <Skeleton variant="text" lines={3} />
-            <span className="sr-only" data-testid="spinner">Loading…</span>
-        </div>
-    ) : error ? (
+    const body = error ? (
         <EmptyState title="Could not load profiles" description={error} action={{ label: 'Retry', onClick: () => void load() }} />
     ) : (
         <DataTable<Icp>
@@ -125,6 +119,8 @@ const IcpListPage: React.FC = () => {
     return (
         <>
             <ListPageTemplate
+                loading={loading && icps.length === 0}
+                loadingColumns={4}
                 trail={[{ label: 'Settings', to: '/crm/settings' }]}
                 title="Ideal customer profiles"
                 description={!loading ? `${icps.length} profile${icps.length === 1 ? '' : 's'}` : undefined}

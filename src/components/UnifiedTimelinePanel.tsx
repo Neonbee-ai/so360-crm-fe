@@ -313,7 +313,7 @@ const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
 
     if (isLoading) {
         return (
-            <div className="py-nb-4"><Skeleton variant="text" lines={4} /></div>
+            <div className="py-nb-4"><Skeleton.List count={4} /></div>
         );
     }
 

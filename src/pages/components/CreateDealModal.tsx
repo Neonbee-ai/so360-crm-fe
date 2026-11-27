@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Loader2, Briefcase, Search } from 'lucide-react';
 import { crmService, dealsApi } from '../../services/crmService';
 import { Deal, DealStage, User, SalesRep } from '../../types/crm';
-import { toast, Button, TextField, Select, NumberInput, DatePicker, Checkbox, Grid, GridItem } from '@so360/design-system';
+import { toast, Button, TextField, Select, NumberInput, DatePicker, Checkbox, Grid, GridItem, Skeleton } from '@so360/design-system';
 import { Modal } from '../../components/common/Modal';
 import { useActivity } from '@so360/shell-context';
 import { useCRMCurrencySymbol } from '../../utils/formatters';
@@ -468,10 +468,9 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                 {/* Never fail silently: an empty registry and a failed
                                     fetch look identical in a bare native select. */}
                                 {salesRepsLoading ? (
-                                    <p className="text-xs font-bold text-fg-muted flex items-center gap-1.5">
-                                        <Loader2 size={10} className="animate-spin" />
-                                        Loading employees...
-                                    </p>
+                                    <div>
+                                        <Skeleton variant="text" className="w-32" />
+                                    </div>
                                 ) : salesRepsError ? (
                                     <p className="text-xs font-bold text-danger">
                                         Could not load employees from People Connect.{' '}

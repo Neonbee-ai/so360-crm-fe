@@ -277,9 +277,9 @@ describe('QuotesPage', () => {
       // the option button for the selected deal carries the highlight class
       const optionBtns = screen.getAllByRole('button', { name: /acme deal/i });
       const optionBtn = optionBtns.find(b => b.closest('li'));
-      expect(optionBtn).toHaveClass('bg-primary/20');
+      expect(optionBtn).toHaveAttribute('data-selected', 'true');
       const nameSpan = optionBtn?.querySelector('span');
-      expect(nameSpan).toHaveClass('text-primary');
+      expect(nameSpan).toHaveClass('text-selected-fg');
     });
 
     it('When trigger clicked while dropdown is open / Then closes the dropdown (toggle)', async () => {

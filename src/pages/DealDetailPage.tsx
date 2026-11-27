@@ -620,41 +620,7 @@ const DealDetailPage = () => {
 
     if (isLoading) {
         return (
-            <div data-testid="deal-detail-skeleton">
-                <div className="animate-pulse space-y-8">
-                    {/* Header region: reserves the deal-name/stage row + button group row */}
-                    <div data-testid="deal-detail-skeleton-header">
-                        <div className="flex justify-between items-start mb-4">
-                            <div className="h-4 bg-surface-raised rounded w-24" />
-                        </div>
-                        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                            <div className="space-y-2">
-                                <div className="h-8 bg-surface-raised rounded w-64" />
-                                <div className="h-4 bg-surface-raised rounded w-40" />
-                            </div>
-                            <div className="flex flex-wrap gap-3">
-                                <div className="size-10 bg-surface-raised rounded-nb-lg" />
-                                <div className="h-10 w-36 bg-surface-raised rounded-nb-lg" />
-                                <div className="h-10 w-36 bg-surface-raised rounded-nb-lg" />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Lifecycle stepper region */}
-                    <div data-testid="deal-detail-skeleton-lifecycle" className="bg-surface border border-line rounded-nb-lg p-6 h-28" />
-
-                    {/* Two-column grid region */}
-                    <Grid data-testid="deal-detail-skeleton-grid" gap="md">
-                        <GridItem span={{ lg: 8 }}><div className="space-y-nb-3">
-                            <div className="bg-surface border border-line rounded-nb-lg h-40" />
-                            <div data-testid="deal-detail-skeleton-tabs" className="bg-surface border border-line rounded-nb-lg h-96" />
-                        </div></GridItem>
-                        <GridItem span={{ lg: 4 }}><div className="space-y-nb-3">
-                            <div className="bg-surface border border-line rounded-nb-lg h-64" />
-                        </div></GridItem>
-                    </Grid>
-                </div>
-            </div>
+            <DetailPageTemplate trail={[{ label: 'Pipeline', to: '/crm/pipeline' }]} title="Deal" loading loadingTabs={5} loadingAside />
         );
     }
 

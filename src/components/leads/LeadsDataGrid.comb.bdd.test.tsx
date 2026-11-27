@@ -281,7 +281,7 @@ describe('Feature LeadsDataGrid sort headers are Comb ghost Buttons', () => {
 
     it('Given isLoading When rendered Then skeletons show and no sort headers', () => {
       renderGrid([], { isLoading: true });
-      expect(document.querySelectorAll('.animate-pulse').length).toBeGreaterThan(0);
+      expect(screen.queryAllByTestId('skeleton-table').length).toBeGreaterThan(0);
       expect(screen.queryByTestId('sort-company_name')).toBeNull();
     });
 

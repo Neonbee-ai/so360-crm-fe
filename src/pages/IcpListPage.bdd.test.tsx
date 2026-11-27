@@ -151,7 +151,7 @@ describe('Given the list is loading', () => {
     it('Then a spinner is shown and no table or description count', () => {
       svc.list.mockReturnValue(new Promise(() => undefined));
       render(<IcpListPage />);
-      expect(screen.getByTestId('icp-loading')).toBeTruthy();
+      expect(screen.getByTestId('page-loading-status')).toBeTruthy();
       expect(screen.queryByTestId('icp-table')).toBeNull();
       expect(screen.queryByText(/^\d+ profiles?$/)).toBeNull();
     });

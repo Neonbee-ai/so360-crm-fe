@@ -9,7 +9,7 @@
 import { Check, Mail, Phone } from 'lucide-react';
 import type { Lead } from '../../types/crm';
 import LeadTemperatureBadge from './LeadTemperatureBadge';
-import { Badge, IconButton } from '@so360/design-system';
+import { Badge, IconButton, ROW_CHECKED } from '@so360/design-system';
 
 interface LeadCardListProps {
   leads: Lead[];
@@ -61,7 +61,7 @@ export default function LeadCardList({
             data-testid={`lead-card-${lead.id}`}
             onClick={() => onRowClick(lead)}
             className={`rounded-xl border p-3.5 transition-colors ${
-              isSelected ? 'border-primary/50 bg-primary/10' : 'border-line bg-surface-sunken active:bg-surface-high'
+              isSelected ? `border-selected ${ROW_CHECKED}` : 'border-line bg-surface-sunken active:bg-surface-high'
             }`}
           >
             <div className="flex items-start gap-3">

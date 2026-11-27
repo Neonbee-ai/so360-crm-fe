@@ -90,11 +90,7 @@ export default function CustomerFeedbackTab({ leadId }: Props) {
 
     if (isLoading) {
         return (
-            <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4">
-                <Skeleton variant="rect" />
-                <Skeleton variant="text" lines={3} />
-                <span className="sr-only">Loading feedback...</span>
-            </div>
+            <div role="status" aria-busy="true" className="w-full"><span className="sr-only">Loading feedback...</span><Skeleton.List count={4} /></div>
         );
     }
 

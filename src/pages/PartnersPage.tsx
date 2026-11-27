@@ -476,7 +476,7 @@ const PartnersPage = () => {
             primaryAction={
                 <Button onClick={() => setShowCreateModal(true)}>
                     <Plus size={16} />
-                    Add Partner
+                    New Partner
                 </Button>
             }
             search={

@@ -132,7 +132,7 @@ const NeuraAiSummaryCard: React.FC<Props> = ({ leadId, leadLabel, isInboxEnabled
         >
             {isLoading && !summary ? (
                 <div role="status" aria-busy="true" className="space-y-nb-2 text-fg-muted py-4">
-                    <Skeleton variant="text" lines={3} />
+                    <Skeleton.List count={3} />
                     <span className="text-xs">Neura AI is reviewing this {isDeal ? 'deal' : isPartner ? 'partner' : 'lead'}…</span>
                 </div>
             ) : error && !summary ? (

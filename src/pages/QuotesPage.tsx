@@ -1115,10 +1115,11 @@ const QuotesPage = () => {
                                                                 <Button
                                                                     type="button"
                                                                     variant="secondary"
-                                                                    className={`w-full !flex-col !items-start !justify-start border-0 ${selectedDealId === deal.id ? 'bg-primary/20' : ''}`}
+                                                                    selected={selectedDealId === deal.id}
+                                                                    className="w-full !flex-col !items-start !justify-start border-0"
                                                                     onClick={() => { setSelectedDealId(deal.id); setDealDropdownOpen(false); }}
                                                                 >
-                                                                    <span className={`text-sm font-medium truncate w-full ${selectedDealId === deal.id ? 'text-primary' : 'text-fg'}`}>{deal.name}</span>
+                                                                    <span className={`text-sm font-medium truncate w-full ${selectedDealId === deal.id ? 'text-selected-fg' : 'text-fg'}`}>{deal.name}</span>
                                                                     {deal.company_name && <span className="text-xs text-fg-subtle truncate w-full mt-0.5">{deal.company_name}</span>}
                                                                 </Button>
                                                             </li>

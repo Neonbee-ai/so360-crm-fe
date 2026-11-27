@@ -87,7 +87,7 @@ describe('Given SettingsPage', () => {
   it('When action / Then shows loading spinner initially', () => {
     mockGetSettings.mockReturnValue(new Promise(() => {}));
     render(<SettingsPage />);
-    expect(screen.getByText(/loading settings/i)).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent(/loading/i);
   });
 
   it('When action / Then renders settings page with pipeline tab by default', async () => {

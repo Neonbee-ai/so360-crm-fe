@@ -99,7 +99,7 @@ const StakeholdersTab: React.FC<Props> = ({ leadId, deals, onSwitchToNotes, onSw
             </div>
 
             {loading ? (
-                <div className="py-nb-4"><Skeleton variant="text" lines={3} /></div>
+                <div className="py-nb-4"><Skeleton.List count={3} /></div>
             ) : stakeholders.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10 text-fg-muted">
                     <Users size={24} className="mb-2" />

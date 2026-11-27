@@ -148,7 +148,7 @@ describe('CreateDealModal', () => {
 
       render(<CreateDealModal {...defaultProps} />);
 
-      expect(await screen.findByText('Loading employees...')).toBeInTheDocument();
+      expect((await screen.findAllByText('Loading…')).length).toBeGreaterThan(0);
       // The false alarm this whole field was reported for: an in-flight fetch
       // must never read as an empty People Registry.
       expect(screen.queryByText(/No active employees found/)).not.toBeInTheDocument();
@@ -156,7 +156,7 @@ describe('CreateDealModal', () => {
       release([{ id: 'p1', full_name: 'Alan Rep', job_title: 'Growth Manager', department_name: null, status: 'active' }]);
 
       await waitFor(() => {
-        expect(screen.queryByText('Loading employees...')).not.toBeInTheDocument();
+        expect(screen.queryByText('Loading…')).not.toBeInTheDocument();
       });
       expect(screen.getByText('Alan Rep — Growth Manager')).toBeInTheDocument();
     });
@@ -169,7 +169,7 @@ describe('CreateDealModal', () => {
       await waitFor(() => {
         expect(screen.getByText(/No active employees found in People Connect/)).toBeInTheDocument();
       });
-      expect(screen.queryByText('Loading employees...')).not.toBeInTheDocument();
+      expect(screen.queryByText('Loading…')).not.toBeInTheDocument();
     });
 
     it('When Retry is pressed after a failure / Then it reloads and recovers to the populated list', async () => {

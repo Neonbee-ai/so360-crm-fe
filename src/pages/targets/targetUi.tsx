@@ -199,7 +199,7 @@ export function ErrorState({
 export function LoadingState() {
   return (
     <div data-testid="targets-loading">
-      <Skeleton variant="text" lines={5} />
+      <Skeleton.Dashboard />
     </div>
   );
 }

@@ -97,7 +97,7 @@ beforeEach(() => {
 
 const openModal = async (user: ReturnType<typeof userEvent.setup>) => {
     render(<PartnersPage />);
-    await user.click(screen.getByRole('button', { name: /add partner/i }));
+    await user.click(screen.getByRole('button', { name: /new partner/i }));
     return screen.getByRole('group', { name: 'Area Served' });
 };
 const fillRequired = async (user: ReturnType<typeof userEvent.setup>) => {
@@ -228,7 +228,7 @@ describe('Feature: Partners Area Served ChipGroup (Comb)', () => {
             const group = await openModal(user);
             await user.click(within(group).getByRole('checkbox', { name: 'North India' }));
             await user.click(screen.getByRole('button', { name: /cancel/i }));
-            await user.click(screen.getByRole('button', { name: /add partner/i }));
+            await user.click(screen.getByRole('button', { name: /new partner/i }));
             within(screen.getByRole('group', { name: 'Area Served' })).getAllByRole('checkbox').forEach(c => expect(c).toHaveAttribute('aria-checked', 'false'));
         });
     });

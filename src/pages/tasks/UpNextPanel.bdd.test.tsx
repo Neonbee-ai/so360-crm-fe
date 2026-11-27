@@ -26,7 +26,7 @@ describe('upNextGroupLabel', () => {
 describe('UpNextPanel', () => {
     it('Given loading / When rendered / Then a skeleton shows', () => {
         render(<UpNextPanel {...props([], { loading: true })} />);
-        expect(screen.getByTestId('skeleton')).toBeInTheDocument();
+        expect(screen.getByTestId('skeleton-list')).toBeInTheDocument();
     });
 
     it('Given nothing booked / When rendered / Then the empty state shows', () => {

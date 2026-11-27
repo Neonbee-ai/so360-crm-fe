@@ -484,7 +484,7 @@ describe('Given the edit form load and save states', () => {
       params.id = 'i1';
       svc.list.mockReturnValue(new Promise(() => undefined));
       render(<IcpFormPage />);
-      expect(screen.getByTestId('spinner')).toBeTruthy();
+      expect(screen.getByTestId('page-loading-status')).toBeTruthy();
       expect(screen.queryByTestId('icp-save')).toBeNull();
     });
   });

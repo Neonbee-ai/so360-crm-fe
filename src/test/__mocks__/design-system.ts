@@ -2,8 +2,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 // Mirrors the real Button: leading/trailing icons render around the label.
-export const Button = ({ children, onClick, type, disabled, leftIcon, rightIcon, leadingIcon, trailingIcon, variant, size, loading, fullWidth: _f, ...rest }: any) =>
-  React.createElement('button', { onClick, type, disabled, 'data-comb': 'button', 'data-variant': variant, 'data-size': size, 'data-loading': loading ? 'true' : undefined, ...rest },
+export const Button = ({ children, onClick, type, disabled, leftIcon, rightIcon, leadingIcon, trailingIcon, variant, size, loading, selected, fullWidth: _f, ...rest }: any) =>
+  React.createElement('button', { onClick, type, disabled, 'data-comb': 'button', 'data-variant': variant, 'data-size': size, 'data-loading': loading ? 'true' : undefined, ...(selected ? { 'data-selected': 'true', 'aria-current': 'true' } : null), ...rest },
     leadingIcon ?? leftIcon ?? null, children, trailingIcon ?? rightIcon ?? null);
 export const Input = (props: any) => props;
 // ---- Form primitives: render native elements carrying label, testid, value/onChange ----
@@ -215,36 +215,40 @@ export const Trail = ({ trail, onBack, backLabel }: any) => {
 // Comb page templates — slots render in template order with data-slot markers so specs can assert layout contract.
 const slot = (name: string, node: any) => (node ? React.createElement('div', { 'data-slot': name }, node) : null);
 export const ListPageTemplate = (p: any) =>
-  React.createElement('div', { 'data-template': 'list', 'data-comb-path': 'ListPage' },
+  React.createElement('div', { 'data-template': 'list', 'data-comb-path': 'ListPage', 'aria-busy': p.loading || undefined }, mirrorStatus(p.loading),
+    mirrorNotice(p.notice),
     React.createElement('header', { 'data-slot': 'header' },
-      React.createElement(Trail, p), React.createElement('h1', null, p.title), p.count != null ? React.createElement('span', { 'data-slot': 'count' }, p.count) : null,
+      React.createElement(Trail, p), React.createElement('h1', null, p.title), quotaSlot(p.quota), p.count != null ? React.createElement('span', { 'data-slot': 'count' }, p.count) : null,
       slot('primary', p.primaryAction), slot('secondary', p.headerSecondaryActions), slot('overflow', Array.isArray(p.overflowActions) ? p.overflowActions.map((a: any) => React.createElement('button', { key: a.label, onClick: a.onSelect }, a.label)) : p.overflowActions)),
-    slot('kpis', p.kpis),
+    React.createElement(KpiRegion, { kpis: p.kpis, collapsible: p.kpisCollapsible }),
     React.createElement('div', { 'data-slot': 'toolbar' }, p.views ? React.createElement('div', { 'data-slot': 'views' }, p.views) : null, p.search, p.filterConfig ? React.createElement(ListFilters, p.filterConfig) : null, p.filters, p.toolbar, p.toolbarEnd),
-    p.loading ? React.createElement('div', { 'data-slot': 'skeleton' }) : null,
-    !p.loading && p.isEmpty ? React.createElement('div', { 'data-slot': 'empty' }, p.empty) : null,
+    p.loading ? Skeleton.Table({ announce: false, 'data-slot': 'loading', count: p.loadingRows, itemTestId: 'list-skeleton-row' }) : null,
+    !p.loading && (p.isEmpty ?? p.empty !== undefined) ? React.createElement('div', { 'data-slot': 'empty' }, p.empty) : null,
     !p.loading && p.isFilteredEmpty ? React.createElement('div', { 'data-slot': 'filtered-empty' }, React.createElement('button', { onClick: p.onClearFilters }, 'Clear filters')) : null,
-    !p.isEmpty ? p.children : null,
+    !p.loading && !(p.isEmpty ?? p.empty !== undefined) ? p.children : null,
     slot('pagination', p.pagination));
 export const DetailPageTemplate = (p: any) =>
-  React.createElement('div', { 'data-template': 'detail', 'data-comb-path': 'DetailPage' },
+  React.createElement('div', { 'data-template': 'detail', 'data-comb-path': 'DetailPage', 'aria-busy': p.loading || undefined }, mirrorStatus(p.loading),
+    mirrorNotice(p.notice),
     React.createElement('header', { 'data-slot': 'header' },
       React.createElement(Trail, p),
-      React.createElement('h1', null, p.title), slot('status', p.status), slot('meta', p.meta),
+      React.createElement('h1', null, p.title), quotaSlot(p.quota), slot('status', p.status), slot('meta', p.meta),
       slot('secondary', p.secondaryActions && React.createElement(React.Fragment, null, ...p.secondaryActions)),
       slot('primary', p.primaryAction),
       slot('overflow', p.overflowActions && p.overflowActions.map((a: any) =>
         React.createElement('button', { key: a.label, onClick: a.onSelect, 'data-danger': String(!!a.danger) }, a.label)))),
     p.tabs ? React.createElement('div', { 'data-slot': 'tabs', role: 'tablist' }, p.tabs.map((t: any) =>
       React.createElement('button', { key: t.id, role: 'tab', 'aria-selected': t.id === p.activeTab, onClick: () => p.onTabChange?.(t.id) }, t.label))) : null,
-    p.loading ? React.createElement('div', { 'data-slot': 'skeleton' }) : null,
-    React.createElement('main', { 'data-slot': 'main' }, p.children),
-    slot('rail', p.sidePanel));
+    p.loading && !(p.tabs && p.tabs.length) && p.loadingTabs > 0 ? Skeleton.Tabs({ announce: false, 'data-slot': 'tabs-loading' }) : null,
+    p.loading ? Skeleton.Detail({ announce: false, 'data-slot': 'loading', itemTestId: 'detail-skeleton-block' }) : React.createElement('main', { 'data-slot': 'main' }, p.children),
+    slot('rail', p.sidePanel),
+    p.loading && !p.sidePanel && p.loadingAside ? Skeleton.Aside({ announce: false, 'data-slot': 'side-panel-loading' }) : null);
 export const FormPageTemplate = (p: any) =>
-  React.createElement('div', { 'data-template': 'form', 'data-comb-path': 'FormPage' },
+  React.createElement('div', { 'data-template': 'form', 'data-comb-path': 'FormPage', 'aria-busy': p.loading || undefined }, mirrorStatus(p.loading),
+    mirrorNotice(p.notice),
     React.createElement('header', { 'data-slot': 'header' }, React.createElement(Trail, p), React.createElement('h1', null, p.title)),
-    (p.sections ?? []).map((sec: any) => React.createElement('section', { key: sec.id, 'data-slot': 'section' }, React.createElement('h2', null, sec.title), sec.content)),
-    p.children,
+    p.loading ? Skeleton.Form({ announce: false, 'data-slot': 'loading' }) : (p.sections ?? []).map((sec: any) => React.createElement('section', { key: sec.id, 'data-slot': 'section' }, React.createElement('h2', null, sec.title), sec.content)),
+    p.loading ? null : p.children,
     React.createElement('footer', { 'data-slot': 'footer' }, p.destructiveAction,
       p.onCancel ? React.createElement('button', { type: 'button', onClick: p.onCancel }, p.cancelLabel ?? 'Cancel') : null, p.secondaryAction, p.primaryAction));
 export const EmptyState = ({ title, description, action }: any) =>
@@ -264,21 +268,76 @@ export const Tabs = ({ items = [], value, onChange, end }: any) =>
     items.map((t: any) =>
       React.createElement('button', { key: t.id, role: 'tab', 'aria-selected': t.id === value, onClick: () => onChange?.(t.id) }, t.icon, t.label)),
     end ? React.createElement('div', { 'data-slot': 'tabs-end' }, end) : null);
-export const Skeleton = () => React.createElement('div', { 'data-testid': 'skeleton' });
+// ---- Mirrors of packages/design-system: Skeleton presets, PageNotice, QuotaChip, PageContainer loading status ----
+const mkEl = React.createElement;
+const skAnnounce = (p: any) => (p.announce === false ? null : mkEl('span', { className: 'sr-only' }, 'Loading…'));
+const skItems = (n: number, id: string) => Array.from({ length: n }, (_, i) => mkEl('div', { key: i, 'data-testid': id, 'aria-hidden': 'true' }));
+const skPreset = (name: string, item: string | null, dflt: number) => (props: any = {}) =>
+  mkEl('div', {
+    'data-testid': props['data-testid'] ?? `skeleton-${name}`, 'data-slot': props['data-slot'], 'data-comb-path': props['data-comb-path'],
+    role: props.announce === false ? undefined : 'status', 'aria-busy': 'true', className: props.className,
+  }, skAnnounce(props), item ? skItems(Math.max(1, Math.floor(props.count ?? dflt)), props.itemTestId ?? item) : null);
+const SkeletonBase = ({ variant = 'text', lines = 1, announce = true, ...rest }: any = {}) =>
+  mkEl('div', { 'data-testid': rest['data-testid'] ?? `skeleton-${variant}`, 'aria-busy': 'true' }, announce ? mkEl('span', { className: 'sr-only' }, 'Loading…') : null,
+    Array.from({ length: variant === 'text' ? Math.max(1, lines) : 1 }, (_, i) => mkEl('div', { key: i, 'data-testid': 'skeleton-item', 'aria-hidden': 'true' })));
+export const Skeleton = Object.assign(SkeletonBase, {
+  Table: skPreset('table', 'skeleton-row', 6), Cards: skPreset('cards', 'skeleton-card', 3), Form: skPreset('form', 'skeleton-field', 6),
+  Fields: skPreset('fields', 'skeleton-field', 4), Detail: skPreset('detail', 'skeleton-block', 3), Kpis: skPreset('kpis', 'skeleton-kpi', 4),
+  Settings: skPreset('settings', 'skeleton-settings-card', 2), List: skPreset('list', 'skeleton-list-item', 8), Dashboard: skPreset('dashboard', null, 0),
+  Canvas: skPreset('canvas', null, 0), Header: skPreset('header', null, 0), Toolbar: skPreset('toolbar', null, 0),
+  Tabs: skPreset('tabs', null, 0), Aside: skPreset('aside', null, 0), Page: skPreset('page', null, 0),
+});
+/** PageNotice: a node or array; falsy entries dropped; several stack. */
+const mirrorNotice = (notice: any) => {
+  if (!notice) return null;
+  const items = React.Children.toArray(notice).filter((c: any) => c !== '');
+  if (items.length === 0) return null;
+  if (items.length === 1) return mkEl('div', { 'data-slot': 'notice' }, items[0]);
+  return mkEl('div', { 'data-slot': 'notice', 'data-stacked': 'true' }, items.map((c: any, i: number) => mkEl('div', { key: i, 'data-slot': 'notice-item' }, c)));
+};
+const quotaNum = (v: number) => (v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M` : v >= 1_000 ? `${(v / 1_000).toFixed(1)}K` : String(Number.isInteger(v) ? v : Math.round(v * 100) / 100));
+/** QuotaChip: `quota` object -> chip with a role=meter; any other node renders as-is. */
+const mirrorQuota = (q: any) => {
+  if (!q) return null;
+  if (React.isValidElement(q) || typeof q !== 'object' || !('label' in q) || !('used' in q)) return q;
+  const { label, used, limit, isUnlimited = false, warnAt = 0.8, onUpgrade, onBuyMore, showBuyMore = false, upgradeLabel = 'Upgrade' } = q as any;
+  const ratio = limit > 0 ? used / limit : used > 0 ? 1 : 0;
+  const upgrade = onUpgrade ?? onBuyMore;
+  const name = isUnlimited ? `${label}: ${used} used, unlimited` : `${label}: ${used} of ${limit} used`;
+  return mkEl('span', { 'data-slot': 'quota', 'data-testid': (q as any)['data-testid'] ?? 'quota-chip', 'data-unlimited': isUnlimited ? 'true' : 'false', 'data-tone': isUnlimited ? 'unlimited' : ratio >= 1 ? 'danger' : ratio >= warnAt ? 'warning' : 'normal' },
+    mkEl('span', null, label), mkEl('span', null, isUnlimited ? `${quotaNum(used)} / ∞` : `${quotaNum(used)} / ${quotaNum(limit)}`),
+    isUnlimited ? mkEl('span', { className: 'sr-only' }, name) : mkEl('span', { role: 'meter', 'aria-label': name, 'aria-valuemin': 0, 'aria-valuemax': Math.max(limit, 1), 'aria-valuenow': Math.min(used, Math.max(limit, 1)) }),
+    upgrade && !isUnlimited && (showBuyMore || ratio >= warnAt) ? mkEl('button', { type: 'button', 'data-slot': 'quota-upgrade', onClick: upgrade }, upgradeLabel) : null);
+};
+/** PageContainer: aria-busy + the ONE sr-only "Loading…" status while a template is loading. */
+const mirrorStatus = (loading: any) => (loading ? mkEl('span', { role: 'status', 'data-testid': 'page-loading-status', className: 'sr-only' }, 'Loading…') : null);
+/** List KPI strip: `kpisCollapsible` starts closed unless `defaultOpen`; the "KPIs" toggle opens it. */
+const KpiRegion = ({ kpis, collapsible }: any) => {
+  const cfg = collapsible ? (typeof collapsible === 'object' ? collapsible : {}) : null;
+  const [open, setOpen] = React.useState(!!cfg?.defaultOpen);
+  if (!kpis) return null;
+  if (!cfg) return React.createElement('div', { 'data-slot': 'kpis' }, kpis);
+  return React.createElement(React.Fragment, null,
+    React.createElement('button', { type: 'button', 'data-slot': 'kpi-toggle', 'aria-expanded': open, onClick: () => setOpen((o: boolean) => !o) }, cfg.label ?? 'KPIs'),
+    React.createElement('div', { 'data-slot': 'kpis', 'data-state': open ? 'open' : 'closed', hidden: !open }, kpis));
+};
+const quotaSlot = mirrorQuota;
 export const DashboardPageTemplate = (p: any) =>
-  React.createElement('div', { 'data-template': 'dashboard', 'data-comb-path': 'DashboardPage' },
+  React.createElement('div', { 'data-template': 'dashboard', 'data-comb-path': 'DashboardPage', 'aria-busy': p.loading || undefined }, mirrorStatus(p.loading),
+    mirrorNotice(p.notice),
     React.createElement('header', { 'data-slot': 'header' },
-      React.createElement(Trail, p), React.createElement('h1', null, p.title), p.description ? React.createElement('p', null, p.description) : null,
+      React.createElement(Trail, p), React.createElement('h1', null, p.title), quotaSlot(p.quota), p.description ? React.createElement('p', null, p.description) : null,
       slot('meta', p.meta), slot('secondary-actions', p.secondaryActions), slot('primary-action', p.primaryAction)),
     slot('filters', p.filters), slot('toolbar-end', p.toolbarEnd),
-    slot('kpis', p.kpis), slot('primary', p.primary), slot('secondary', p.secondary), slot('bottom', p.bottom), p.children);
+    p.loading ? Skeleton.Dashboard({ announce: false, 'data-slot': 'loading' }) : [slot('kpis', p.kpis), slot('primary', p.primary), slot('secondary', p.secondary), slot('bottom', p.bottom), p.children]);
 export const SettingsPageTemplate = (p: any) =>
-  React.createElement('div', { 'data-template': 'settings', 'data-comb-path': 'SettingsPage' },
-    React.createElement('header', { 'data-slot': 'header' }, React.createElement(Trail, p), React.createElement('h1', null, p.title),
+  React.createElement('div', { 'data-template': 'settings', 'data-comb-path': 'SettingsPage', 'aria-busy': p.loading || undefined }, mirrorStatus(p.loading),
+    mirrorNotice(p.notice),
+    React.createElement('header', { 'data-slot': 'header' }, React.createElement(Trail, p), React.createElement('h1', null, p.title), quotaSlot(p.quota),
       p.description ? React.createElement('p', null, p.description) : null, slot('primary-action', p.primaryAction)),
     React.createElement('nav', { 'data-slot': 'sections', role: 'tablist' }, (p.sections ?? []).map((s: any) =>
       React.createElement('button', { key: s.id, role: 'tab', 'aria-selected': s.id === p.activeSection, onClick: () => p.onSectionChange?.(s.id) }, s.label))),
-    React.createElement('main', { 'data-slot': 'main' }, p.children));
+    p.loading && !p.keepChildrenWhileLoading ? Skeleton.Settings({ announce: false, 'data-slot': 'loading' }) : React.createElement('main', { 'data-slot': 'main' }, p.children));
 export const SettingsCard = (p: any) =>
   React.createElement('section', null, p.title ? React.createElement('h2', null, p.title) : null, p.children);
 const slugifyId = (v: string) => v.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
@@ -446,3 +505,19 @@ export const Stepper = ({ steps = [], current, className }: any) =>
   React.createElement('ol', { className, 'data-testid': 'stepper' },
     steps.map((s: any, i: number) =>
       React.createElement('li', { key: i, 'aria-current': i === current ? 'step' : undefined }, s.label)));
+
+/** Selectable item/row class helpers: values copied from packages/design-system/src/utils/selectableItem.ts. */
+export const ITEM_BASE = 'relative transition-colors duration-nb-short3';
+export const ITEM_HOVER = 'hover:bg-fg/state-hover';
+export const ITEM_FOCUS = 'focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-1 focus-visible:ring-offset-surface';
+export const ITEM_SELECTED = 'bg-selected text-selected-fg font-semibold shadow-nb-selected-bar rtl:shadow-nb-selected-bar-rtl hover:bg-selected-hover';
+export const ITEM_SELECTED_ATTR = 'data-[selected=true]:bg-selected data-[selected=true]:text-selected-fg data-[selected=true]:font-semibold data-[selected=true]:shadow-nb-selected-bar rtl:data-[selected=true]:shadow-nb-selected-bar-rtl data-[selected=true]:hover:bg-selected-hover data-[selected=true]:hover:text-selected-fg data-[selected=true]:active:bg-selected-hover';
+export const ROW_HOVER = 'hover:bg-surface-hover';
+export const ROW_CHECKED = 'bg-selected hover:bg-selected-hover';
+export const ROW_SELECTED = 'bg-selected text-selected-fg font-semibold hover:bg-selected-hover [&>td:first-child]:shadow-nb-selected-bar rtl:[&>td:first-child]:shadow-nb-selected-bar-rtl';
+export const ITEM_ACTIVE = 'bg-fg/state-hover';
+export const ITEM_DISABLED = 'opacity-50 cursor-not-allowed';
+export const selectableItemClass = (opts: { selected?: boolean; disabled?: boolean; focus?: boolean } = {}): string => {
+  const { selected = false, disabled = false, focus = true } = opts;
+  return [ITEM_BASE, focus ? ITEM_FOCUS : '', disabled ? ITEM_DISABLED : selected ? ITEM_SELECTED : ITEM_HOVER, disabled && selected ? ITEM_SELECTED : ''].filter(Boolean).join(' ');
+};

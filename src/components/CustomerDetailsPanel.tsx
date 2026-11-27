@@ -510,7 +510,7 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                 </div>
 
                 {isLoadingProfile ? (
-                    <div role="status" aria-busy="true"><Skeleton variant="text" lines={3} /><span className="sr-only">Loading profile…</span></div>
+                    <div role="status" aria-busy="true"><span className="sr-only">Loading profile…</span><Skeleton.Fields count={4} /></div>
                 ) : !isEditingProfile ? (
                     /* ── View mode ── */
                     <div className="space-y-2">
@@ -654,7 +654,7 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                 </span>
 
                 {isLoadingInvoices ? (
-                    <div role="status" aria-busy="true"><Skeleton variant="text" lines={2} /><span className="sr-only">Loading invoices…</span></div>
+                    <div role="status" aria-busy="true"><span className="sr-only">Loading invoices…</span><Skeleton.List count={2} /></div>
                 ) : invoiceCount === 0 ? (
                     <div className="text-xs text-fg-muted">No invoices for this customer yet.</div>
                 ) : (
