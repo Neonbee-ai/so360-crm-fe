@@ -26,7 +26,7 @@ const StakeholderActivitySummary: React.FC<Props> = ({ stakeholderId }) => {
     }, [stakeholderId]);
 
     if (loading) {
-        return <div className="py-nb-3"><Skeleton variant="text" lines={2} /></div>;
+        return <div className="py-nb-3"><Skeleton.List count={2} /></div>;
     }
 
     if (!summary) return null;

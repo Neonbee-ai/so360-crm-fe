@@ -236,12 +236,13 @@ const SmartTasksList: React.FC = () => {
             title="Tasks & Follow-ups"
             description="Overdue first, then today, then what is coming up"
             count={counts.total}
-            primaryAction={canCreateTask ? <Button onClick={() => setShowCreate(true)}><Plus size={16} />Create Task</Button> : undefined}
+            primaryAction={canCreateTask ? <Button onClick={() => setShowCreate(true)}><Plus size={16} />New Task</Button> : undefined}
             headerSecondaryActions={[
                 <Button key="save-view" variant="secondary" data-testid="tasks-save-view" disabled={hasNoFilters(filters) || activeView !== ''} onClick={() => setSaveOpen(true)}>
                     Save view
                 </Button>,
             ]}
+            kpisCollapsible
             kpis={
                 <KpiGrid name="task-counters">
                     {TASK_COUNTER_TILES.map(tile => (

@@ -200,7 +200,7 @@ describe('Given DashboardPage — error handling', () => {
     // getDashboardStats never resolves — stays in loading state
     mockGetDashboardStats.mockReturnValue(new Promise(() => {}));
     render(<DashboardPage />);
-    expect(screen.getByText('Loading insights...')).toBeInTheDocument();
+    expect(screen.getByTestId('page-loading-status')).toHaveTextContent('Loading…');
   });
 
   it('When the stats read fails / Then a retry notice renders instead of crashing', async () => {

@@ -302,11 +302,7 @@ export default function CallsTab({ leadId, dealId }: Props) {
 
     if (isLoading) {
         return (
-            <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4">
-                <Skeleton variant="rect" />
-                <Skeleton variant="text" lines={3} />
-                <span className="sr-only">Loading calls...</span>
-            </div>
+            <div role="status" aria-busy="true" className="w-full"><span className="sr-only">Loading calls...</span><Skeleton.Table count={5} columns={5} /></div>
         );
     }
 

@@ -35,7 +35,7 @@ import { publishLeadsChanged } from '../utils/leadEvents';
 import { useCanExport } from '../hooks/useCanExport';
 import { exportService } from '../services/exportService';
 import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
-import { QuotaGate, Skeleton, toast, ListPageTemplate, Button, SearchInput, EmptyState, Pagination, ConfirmDialog, TextField, SegmentedControl, Modal, IconButton } from '@so360/design-system';
+import { QuotaGate, Skeleton, toast, ListPageTemplate, Button, SearchInput, EmptyState, Pagination, ConfirmDialog, TextField, SegmentedControl, Modal, IconButton, Banner } from '@so360/design-system';
 import type { FilterValues, ListFilterConfig } from '@so360/design-system';
 
 // Heavy, on-demand UI: each chunk is fetched only when the user opens it.
@@ -768,6 +768,15 @@ const LeadsPage = () => {
           <div ref={setGridControlsSlot} className="flex shrink-0 items-center" data-slot="grid-controls" />
         }
         loading={false}
+        notice={[
+          error && !isLoading && <Banner key="error" variant="danger">{error}</Banner>,
+          isSandboxMode && isLimited(total) && (
+            <Banner key="sandbox" variant="warning">
+              <span className="font-semibold">Sandbox:</span>{' '}
+              <span>Showing {sandboxEntryLimit} of {total} leads. Switch to Production to view all records.</span>
+            </Banner>
+          ),
+        ]}
         isEmpty={isTrulyEmpty}
         empty={
           canCreateLead ? (
@@ -796,21 +805,6 @@ const LeadsPage = () => {
           ) : undefined
         }
       >
-        {/* Sandbox notice */}
-        {isSandboxMode && isLimited(total) && (
-          <div className="mb-3 flex items-center gap-2 rounded-nb border border-warning/25 bg-warning/10 px-4 py-2 text-sm text-warning">
-            <span className="font-semibold">Sandbox:</span>
-            <span>Showing {sandboxEntryLimit} of {total} leads. Switch to Production to view all records.</span>
-          </div>
-        )}
-
-        {/* Error state */}
-        {error && !isLoading && (
-          <div className="mb-4 flex items-center gap-2 rounded-nb border border-danger/25 bg-danger/10 px-4 py-3 text-sm text-danger">
-            {error}
-          </div>
-        )}
-
         {/* Data grid */}
         <LeadsDataGrid
           leads={paginatedLeads}
@@ -854,7 +848,8 @@ const LeadsPage = () => {
                 <>
                   <Button
                     variant="secondary"
-                    className={`min-w-0 flex-1 !justify-start ${activeViewId === view.id ? 'text-primary' : ''}`}
+                    selected={activeViewId === view.id}
+                    className="min-w-0 flex-1 !justify-start"
                     onClick={() => { handleApplyView(view); setOpenDropdown(null); }}
                   >
                     {view.is_default && <Star size={12} className="shrink-0 fill-warning text-warning" aria-hidden="true" />}

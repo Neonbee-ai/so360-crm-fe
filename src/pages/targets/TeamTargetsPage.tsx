@@ -197,7 +197,7 @@ export default function TeamTargetsPage() {
           }
         >
           {!detail ? (
-            <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4"><Skeleton variant="rect" /><Skeleton variant="text" lines={3} /><span className="sr-only">Loading…</span></div>
+            <div role="status" aria-busy="true" className="w-full"><span className="sr-only">Loading…</span><Skeleton.Table count={5} columns={5} /></div>
           ) : (
             <div className="space-y-3">
               {detail.metrics

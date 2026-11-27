@@ -100,7 +100,7 @@ describe('TaskDetailPage', () => {
     it('When rendered / Then shows loading spinner', () => {
       mockGetTaskById.mockReturnValue(new Promise(() => {}));
       render(<TaskDetailPage />);
-      expect(screen.getByText('Loading task details...')).toBeInTheDocument();
+      expect(screen.getByTestId('page-loading-status')).toHaveTextContent('Loading…');
     });
   });
 

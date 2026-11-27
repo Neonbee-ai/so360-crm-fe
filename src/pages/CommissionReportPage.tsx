@@ -97,11 +97,7 @@ const CommissionReportPage: React.FC = () => {
     if (rangeInvalid) {
         body = <div role="alert" className="text-xs text-danger">{rangeError}</div>;
     } else if (loading) {
-        body = <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4">
-                <Skeleton variant="rect" />
-                <Skeleton variant="text" lines={3} />
-                <span className="sr-only">Loading commission report…</span>
-            </div>;
+        body = <div role="status" aria-busy="true" className="w-full"><span className="sr-only">Loading commission report…</span><Skeleton.Dashboard announce={false} /></div>;
     } else if (forbidden) {
         body = (
             <div data-testid="commission-report-forbidden" className="p-10 text-center bg-surface border border-line rounded-nb-lg text-sm text-fg-subtle">

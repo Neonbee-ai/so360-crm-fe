@@ -100,7 +100,7 @@ describe('UnifiedTimelinePanel', () => {
                 expect(items[0].getAttribute('data-testid')).toContain('activity-act-1');
             });
 
-            it('Then each item displays with its type-specific icon and color', () => {
+            it('When rendered, then each item displays with its type-specific icon and color', () => {
                 const { container } = render(
                     <Wrapper>
                         <UnifiedTimelinePanel
@@ -167,7 +167,7 @@ describe('UnifiedTimelinePanel', () => {
                 );
 
                 // Then - show a loading skeleton
-                const skeleton = container.querySelector('[data-testid="skeleton"]');
+                const skeleton = container.querySelector('[data-testid="skeleton-list"]');
                 expect(skeleton).toBeInTheDocument();
             });
         });
@@ -196,7 +196,7 @@ describe('UnifiedTimelinePanel', () => {
                 expect(screen.getByText('Sort:')).toBeInTheDocument();
             });
 
-            it('Then only activities are displayed', () => {
+            it('When rendered, then only activities are displayed', () => {
                 // This verifies the filtering logic works with multiple activities
                 const activities = [mockActivity, { ...mockActivity, id: 'act-2' }];
 
@@ -216,7 +216,7 @@ describe('UnifiedTimelinePanel', () => {
         });
 
         describe('Scenario: Filter shows item count', () => {
-            it('Then displays count of filtered items vs total items', () => {
+            it('When rendered, then displays count of filtered items vs total items', () => {
                 render(
                     <Wrapper>
                         <UnifiedTimelinePanel
@@ -268,7 +268,7 @@ describe('UnifiedTimelinePanel', () => {
         });
 
         describe('Scenario: Sort oldest first', () => {
-            it('Then items ordered from oldest to newest', () => {
+            it('When rendered, then items ordered from oldest to newest', () => {
                 const olderActivity = {
                     ...mockActivity,
                     id: 'act-old',
@@ -296,7 +296,7 @@ describe('UnifiedTimelinePanel', () => {
 
     describe('Feature: Item-Type Rendering', () => {
         describe('Scenario: Activity item rendering', () => {
-            it('Then displays activity type and notes', () => {
+            it('When rendered, then displays activity type and notes', () => {
                 const { container } = render(
                     <Wrapper>
                         <UnifiedTimelinePanel
@@ -335,7 +335,7 @@ describe('UnifiedTimelinePanel', () => {
         });
 
         describe('Scenario: Note item rendering', () => {
-            it('Then displays note content and author', () => {
+            it('When rendered, then displays note content and author', () => {
                 const { container } = render(
                     <Wrapper>
                         <UnifiedTimelinePanel
@@ -417,7 +417,7 @@ describe('UnifiedTimelinePanel', () => {
         });
 
         describe('Scenario: Document item rendering', () => {
-            it('Then displays document name, size, and date', () => {
+            it('When rendered, then displays document name, size, and date', () => {
                 const { container } = render(
                     <Wrapper>
                         <UnifiedTimelinePanel
@@ -639,7 +639,7 @@ describe('UnifiedTimelinePanel', () => {
 
     describe('Feature: Type-Specific Rendering', () => {
         describe('Scenario: Multiple items of same type', () => {
-            it('Then all items are rendered with consistent styling', () => {
+            it('When rendered, then all items are rendered with consistent styling', () => {
                 const activities = [
                     mockActivity,
                     { ...mockActivity, id: 'act-2', created_at: yesterday },
@@ -663,7 +663,7 @@ describe('UnifiedTimelinePanel', () => {
         });
 
         describe('Scenario: Task with all optional fields', () => {
-            it('Then displays title, description, status, and due date', () => {
+            it('When rendered, then displays title, description, status, and due date', () => {
                 const fullTask: Task = {
                     ...mockTask,
                     title: 'Complete proposal',
@@ -718,7 +718,7 @@ describe('UnifiedTimelinePanel', () => {
         });
 
         describe('Scenario: Complete empty feed', () => {
-            it('Then shows "No timeline items yet" message', () => {
+            it('When rendered, then shows "No timeline items yet" message', () => {
                 render(
                     <Wrapper>
                         <UnifiedTimelinePanel
@@ -739,7 +739,7 @@ describe('UnifiedTimelinePanel', () => {
 
     describe('Feature: Accessibility', () => {
         describe('Scenario: Item identification and navigation', () => {
-            it('Then each timeline item has unique testId for automated testing', () => {
+            it('When rendered, then each timeline item has unique testId for automated testing', () => {
                 const { container } = render(
                     <Wrapper>
                         <UnifiedTimelinePanel
@@ -759,7 +759,7 @@ describe('UnifiedTimelinePanel', () => {
         });
 
         describe('Scenario: Button labels and titles', () => {
-            it('Then action buttons have descriptive titles', () => {
+            it('When rendered, then action buttons have descriptive titles', () => {
                 const { container } = render(
                     <Wrapper>
                         <UnifiedTimelinePanel

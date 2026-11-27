@@ -162,7 +162,7 @@ function AddProductModal({ onClose, onAdd, existingItemIds, unitBooking = false 
                             />
                         )}
                         {loading && (
-                            <div className="py-nb-4"><Skeleton variant="text" lines={3} /></div>
+                            <div className="py-nb-4"><Skeleton.List count={3} /></div>
                         )}
                         {!loading && error && (
                             <div className="flex flex-col items-center gap-3 py-8 text-center">
@@ -376,7 +376,7 @@ export default function LeadProductsTab({ leadId, onStatsChange }: Props) {
 
             {/* Product list */}
             {loading ? (
-                <div className="py-nb-4"><Skeleton variant="rect" /></div>
+                <div className="py-nb-4"><Skeleton.List count={2} /></div>
             ) : loadError ? (
                 <div role="alert" className="flex flex-col items-center gap-3 py-8 text-center">
                     <AlertCircle size={24} className="text-danger" />

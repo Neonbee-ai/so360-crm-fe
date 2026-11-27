@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useId, useMemo } from 'react';
-import { Search, X, ChevronDown, Loader2 } from 'lucide-react';
-import { TextField, Button, IconButton } from '@so360/design-system';
+import { Search, X, ChevronDown } from 'lucide-react';
+import { TextField, Button, IconButton, Skeleton } from '@so360/design-system';
 import { crmService } from '../../services/crmService';
 
 // Projects that can no longer take work. Hidden from the picker, but a task
@@ -332,8 +332,8 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
                             </Button>
                         ))}
                         {isLoading && (
-                            <div className="px-3 py-3 flex items-center justify-center gap-2 text-sm text-fg-muted" data-testid="project-select-loading">
-                                <Loader2 size={14} className="animate-spin" /> Loading projects…
+                            <div className="px-3 py-2" data-testid="project-select-loading">
+                                <Skeleton.List count={3} />
                             </div>
                         )}
                         {error && (

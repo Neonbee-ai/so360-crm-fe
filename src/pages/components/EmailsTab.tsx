@@ -43,7 +43,7 @@ const EmailsTab: React.FC<Props> = ({ leadId }) => {
     }, [leadId]);
 
     if (loading) {
-        return <div className="py-nb-4"><Skeleton variant="text" lines={3} /></div>;
+        return <div className="py-nb-4"><Skeleton.List count={3} /></div>;
     }
 
     if (error) {

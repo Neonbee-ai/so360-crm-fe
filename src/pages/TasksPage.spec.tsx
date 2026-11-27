@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { vi, describe, test, expect, beforeEach } from 'vitest';
 import TasksPage from './TasksPage';
 
@@ -93,19 +93,19 @@ describe('Given TasksPage — CRM Task Management', () => {
     });
   });
 
-  test('Given create task button / When feature flag enabled / Then button is visible in header', async () => {
+  test('Given new task button / When feature flag enabled / Then button is visible in header', async () => {
     render(<TasksPage />);
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /create task/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /new task/i })).toBeInTheDocument();
     });
   });
 
-  test('Given create task button / When clicked / Then opens task creation modal', async () => {
+  test('Given new task button / When clicked / Then opens task creation modal', async () => {
     render(<TasksPage />);
-    await waitFor(() => screen.getByRole('button', { name: /create task/i }));
-    fireEvent.click(screen.getByRole('button', { name: /create task/i }));
+    await waitFor(() => screen.getByRole('button', { name: /new task/i }));
+    fireEvent.click(screen.getByRole('button', { name: /new task/i }));
     await waitFor(() => {
-      expect(screen.getByText('New Task')).toBeInTheDocument();
+      expect(within(screen.getByRole('dialog')).getByText('New Task')).toBeInTheDocument();
     });
   });
 
@@ -119,16 +119,16 @@ describe('Given TasksPage — CRM Task Management', () => {
     };
     mockCrmService.getUsers.mockResolvedValue([{ id: 'u1', full_name: 'Test User', email: '', avatar_url: null }]);
     render(<TasksPage />);
-    await waitFor(() => screen.getByRole('button', { name: /create task/i }));
-    fireEvent.click(screen.getByRole('button', { name: /create task/i }));
-    await waitFor(() => screen.getByText('New Task'));
+    await waitFor(() => screen.getByRole('button', { name: /new task/i }));
+    fireEvent.click(screen.getByRole('button', { name: /new task/i }));
+    await waitFor(() => within(screen.getByRole('dialog')).getByText('New Task'));
 
     // Simulate modal onSuccess by checking that the modal closed (via onClose callback wiring)
     // and the task list would be updated — we verify the modal opened correctly
-    expect(screen.getByText('New Task')).toBeInTheDocument();
+    expect(within(screen.getByRole('dialog')).getByText('New Task')).toBeInTheDocument();
   });
 
-  test('Given create task button / When feature flag disabled / Then button is hidden', async () => {
+  test('Given new task button / When feature flag disabled / Then button is hidden', async () => {
     // Override shell bridge to disable the create flag
     vi.doMock('@so360/shell-context', () => ({
       useShellBridge: () => ({
@@ -160,7 +160,7 @@ describe('Given TasksPage — CRM Task Management', () => {
     await waitFor(() => {
       // With the original mock (returns true), button is present — this test confirms
       // the component reads the flag and conditionally renders.
-      expect(screen.queryByRole('button', { name: /create task/i })).toBeTruthy();
+      expect(screen.queryByRole('button', { name: /new task/i })).toBeTruthy();
     });
   });
 

@@ -90,8 +90,16 @@ describe('Given the LeadsDataGrid — rendering', () => {
         onRowClick={vi.fn()}
       />,
     );
-    const skeletons = document.querySelectorAll('.animate-pulse');
+    const skeletons = screen.queryAllByTestId('skeleton-table');
     expect(skeletons.length).toBeGreaterThan(0);
+  });
+
+  it('Given rows are already on screen / When a refresh sets isLoading / Then the rows stay and no skeleton replaces them', () => {
+    render(
+      <LeadsDataGrid leads={[makeLead()]} isLoading context={buildContext()} onRowClick={vi.fn()} />,
+    );
+    expect(screen.getByText('Acme Corp')).toBeDefined();
+    expect(screen.queryByTestId('leads-grid-loading')).toBeNull();
   });
 
   it('renders company name for each lead', () => {

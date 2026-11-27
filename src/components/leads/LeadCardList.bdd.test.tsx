@@ -73,7 +73,7 @@ describe('Given the LeadCardList', () => {
     setup([makeLead()], ['l1']);
     const card = screen.getByTestId('lead-card-l1');
     // Selected card carries the accent border/background class.
-    expect(card.className).toContain('border-primary/50');
+    expect(card.className).toContain('border-selected');
   });
 
   it('shows an empty state when there are no leads', () => {

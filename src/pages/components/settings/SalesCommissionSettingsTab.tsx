@@ -67,7 +67,7 @@ const SalesCommissionSettingsTab: React.FC<Props> = ({ canWrite }) => {
 
     if (loading) {
         return (
-            <div role="status" aria-busy="true" className="w-full space-y-nb-3 p-nb-4"><Skeleton variant="rect" /><Skeleton variant="text" lines={3} /><span className="sr-only">Loading sales settings…</span></div>
+            <div role="status" aria-busy="true" className="w-full"><span className="sr-only">Loading sales settings…</span><Skeleton.Fields count={4} announce={false} /></div>
         );
     }
     if (loadError || !draft) {

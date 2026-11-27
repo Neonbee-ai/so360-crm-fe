@@ -30,7 +30,7 @@ export const UpNextPanel: React.FC<UpNextPanelProps> = ({ items, loading, format
     return (
         <Card title="Up next" data-testid="tasks-up-next">
             {loading ? (
-                <Skeleton />
+                <Skeleton.List count={3} />
             ) : groups.length === 0 ? (
                 <EmptyState title="Nothing booked" description={`No calls, meetings or reminders in the next ${UP_NEXT_DAYS} days.`} />
             ) : (

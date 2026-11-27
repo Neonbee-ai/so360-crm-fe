@@ -168,7 +168,7 @@ export default function CompensationPage() {
       meta={<span className="text-xs text-warning">⚠ For manager review only. No payroll or payment action is taken.</span>}
       primaryAction={(
         <Button variant="primary" onClick={() => { setFormError(null); setShowRuleForm(true); }}>
-          <Plus size={16} aria-hidden="true" /> Add rule
+          <Plus size={16} aria-hidden="true" /> New rule
         </Button>
       )}
       filters={(
@@ -387,7 +387,7 @@ export default function CompensationPage() {
             icon={Calculator}
             title="No incentive rules"
             description="Add a rule to start calculating incentives and commissions."
-            action={{ label: 'Add rule', onClick: () => { setFormError(null); setShowRuleForm(true); } }}
+            action={{ label: 'New rule', onClick: () => { setFormError(null); setShowRuleForm(true); } }}
           />
         )
       ) : (
