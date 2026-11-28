@@ -254,8 +254,8 @@ describe('Feature: Sales register export (RE §48)', () => {
             bridge.value = { permissionsLoaded: true, hasPermission: (p: string) => p === 'deals.export', isFeatureEnabled: () => true };
             report.listSales.mockResolvedValue({ rows: [row()], total: 1 });
             renderPage();
-            fireEvent.click(await screen.findByRole('button', { name: 'Export sales' }));
-            fireEvent.click(await screen.findByRole('menuitem', { name: 'Excel' }));
+            fireEvent.click(await screen.findByRole('button', { name: 'More actions' }));
+            fireEvent.click(await screen.findByRole('menuitem', { name: 'Export sales as Excel' }));
             await waitFor(() => expect(exp.sales).toHaveBeenCalledWith({}, 'xlsx'));
         });
     });
@@ -265,7 +265,7 @@ describe('Feature: Sales register export (RE §48)', () => {
             report.listSales.mockResolvedValue({ rows: [row()], total: 1 });
             renderPage();
             await screen.findByText('Omar');
-            expect(screen.queryByRole('group', { name: 'Export sales' })).toBeNull();
+            expect(screen.queryByRole('menuitem', { name: /^Export sales/ })).toBeNull();
         });
     });
 });

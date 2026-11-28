@@ -63,7 +63,7 @@ describe('Given the CRM dashboard', () => {
         it('Then there is no Customize button, no layout is fetched and the default order is kept', async () => {
             render(<DashboardPage />);
             await ready();
-            expect(screen.queryByRole('button', { name: 'Customize dashboard' })).toBeNull();
+            expect(screen.queryByRole('button', { name: 'Customize' })).toBeNull();
             expect(grid.get).not.toHaveBeenCalled();
             expect(before(screen.getByText('Active Reminders'), screen.getByText('Revenue Performance'))).toBe(true);
         });
@@ -75,7 +75,7 @@ describe('Given the CRM dashboard', () => {
             flags.loaded = false;
             render(<DashboardPage />);
             await ready();
-            expect(screen.queryByRole('button', { name: 'Customize dashboard' })).toBeNull();
+            expect(screen.queryByRole('button', { name: 'Customize' })).toBeNull();
             expect(grid.get).not.toHaveBeenCalled();
         });
     });
@@ -97,7 +97,7 @@ describe('Given the CRM dashboard', () => {
             flags.on.add(FLAG);
             render(<DashboardPage />);
             await ready();
-            fireEvent.click(screen.getByRole('button', { name: 'Customize dashboard' }));
+            fireEvent.click(screen.getByRole('button', { name: 'Customize' }));
             const panel = await screen.findByRole('dialog', { name: 'Customize Dashboard' });
             fireEvent.click(within(panel).getByRole('button', { name: 'Hide Active reminders' }));
             expect(screen.queryByText('Active Reminders')).toBeNull();
@@ -122,7 +122,7 @@ describe('Given the CRM dashboard', () => {
             flags.on.add(FLAG);
             render(<DashboardPage />);
             await ready();
-            fireEvent.click(screen.getByRole('button', { name: 'Customize dashboard' }));
+            fireEvent.click(screen.getByRole('button', { name: 'Customize' }));
             fireEvent.click(screen.getByRole('button', { name: 'Move Revenue & leaderboard up' }));
             expect(before(screen.getByText('Revenue Performance'), screen.getByText('Active Reminders'))).toBe(true);
         });
@@ -133,7 +133,7 @@ describe('Given the CRM dashboard', () => {
             render(<DashboardPage />);
             await ready();
             await waitFor(() => expect(screen.queryByText('Active Reminders')).toBeNull());
-            fireEvent.click(screen.getByRole('button', { name: 'Customize dashboard' }));
+            fireEvent.click(screen.getByRole('button', { name: 'Customize' }));
             fireEvent.click(screen.getByRole('button', { name: /Reset to Default/ }));
             expect(await screen.findByText('Active Reminders')).toBeInTheDocument();
             expect(grid.reset).toHaveBeenCalledWith('crm_dashboard_layout');
@@ -143,7 +143,7 @@ describe('Given the CRM dashboard', () => {
             flags.on.add(FLAG);
             render(<DashboardPage />);
             await ready();
-            fireEvent.click(screen.getByRole('button', { name: 'Customize dashboard' }));
+            fireEvent.click(screen.getByRole('button', { name: 'Customize' }));
             fireEvent.click(screen.getByRole('button', { name: 'Close' }));
             expect(screen.queryByRole('dialog', { name: 'Customize Dashboard' })).toBeNull();
         });

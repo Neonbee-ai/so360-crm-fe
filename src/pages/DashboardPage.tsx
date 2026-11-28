@@ -6,7 +6,7 @@ import {
     Calendar, Bell, ShoppingBag, Package, LayoutDashboard
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { CrossLinkChip, DashboardPageTemplate, KpiCard, Card, SegmentedControl, Grid, GridItem, Button, EmptyState, Progress, Skeleton, Badge } from '@so360/design-system';
+import { CrossLinkChip, DashboardPageTemplate, KpiCard, Card, Grid, GridItem, EmptyState, Progress, Skeleton, Badge } from '@so360/design-system';
 import { useBusinessSettings, useShell } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import { DASHBOARD_REMINDER_FILTERS, serializeTaskListFilters, taskReminderAt } from '../utils/taskListFilters';
@@ -606,37 +606,27 @@ const DashboardPage = () => {
                                             return `Week ${week} · ${fmt(wStart)} – ${fmt(wEnd)}`;
                                         })()
                                         : `${new Date(year, month - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`}`}
-            // TODO(comb-title-area): manual - unsupported Button prop aria-label (all items must be plain buttons to become PageActions)
-            secondaryActions={customizeEnabled ? (
-                <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() => setShowCustomize(true)}
-                    aria-label="Customize dashboard"
-                    leadingIcon={<LayoutDashboard size={14} />}
-                    className="whitespace-nowrap max-sm:px-nb-2"
-                >
-                    <span className="max-sm:sr-only">Customize</span>
-                </Button>
-            ) : undefined}
+            secondaryActions={customizeEnabled ? [{
+                id: 'customize-dashboard',
+                label: 'Customize',
+                icon: <LayoutDashboard size={14} />,
+                onSelect: () => setShowCustomize(true),
+            }] : undefined}
             kpis={kpisVisible && showPipeline ? widgetNodes.kpis : undefined}
-            // TODO(comb-title-area): manual - move inline filters into drawer fields (filters={{ fields, values, onChange, onClear }})
-            filters={
-                <div className="max-w-full min-w-0 overflow-x-auto">
-                <SegmentedControl
-                    aria-label="Dashboard period"
-                    size="sm"
-                    value={period}
-                    onChange={(v) => setPeriod(v as typeof period)}
-                    options={[
+            filters={{
+                fields: [{
+                    key: 'period', label: 'Dashboard period', type: 'segment', default: 'yearly',
+                    options: [
                         { value: 'yearly', label: 'Yearly' },
                         { value: 'quarterly', label: 'Quarterly' },
                         { value: 'monthly', label: 'Monthly' },
                         { value: 'weekly', label: 'Weekly' },
-                    ]}
-                />
-                </div>
-            }
+                    ],
+                }],
+                values: { period },
+                onChange: (next) => setPeriod(((next.period as string) || 'yearly') as typeof period),
+                onClear: () => setPeriod('yearly'),
+            }}
             primary={
                 <>
             <Grid gap="md">

@@ -6,12 +6,11 @@ import { usePersistedState } from '../hooks/useListViewState';
 import { Deal, FlowState } from '../types/crm';
 import { Plus } from 'lucide-react';
 import { dealCloseService, LoseDealBody, WinDealBody } from '../services/salesConfigService';
-import { toast, ListPageTemplate, Button, SearchInput, Skeleton } from '@so360/design-system';
+import { toast, ListPageTemplate, Skeleton } from '@so360/design-system';
 // Off the initial federated entry: mounts only after "New deal" is pressed.
 const CreateDealModal = lazy(() => import('../pages/components/CreateDealModal'));
 const StageTransitionModal = lazy(() => import('../components/kanban/StageTransitionModal').then((m) => ({ default: m.StageTransitionModal })));
 const DealCloseModal = lazy(() => import('../components/kanban/DealCloseModal').then((m) => ({ default: m.DealCloseModal })));
-const ExportMenu = lazy(() => import('../components/ExportMenu'));
 
 import { useDealFilterConfig } from '../pages/components/DealFilters';
 import { DealFilters as Filters } from '../types/crm';
@@ -19,6 +18,7 @@ import { useNotify, useActivity, useShellBridge } from '@so360/shell-context';
 import { useFillViewportHeight } from '../hooks/useFillViewportHeight';
 import { RE_FLAGS } from '../hooks/useCrmFeatureFlag';
 import { useCanExport } from '../hooks/useCanExport';
+import { exportPageActions } from '../utils/exportPageActions';
 import { exportService } from '../services/exportService';
 import { planStageMove, isAlreadyClosedError } from '../utils/dealStageSync';
 
@@ -242,33 +242,16 @@ const PipelinePage = () => {
                 icon: <Plus />,
                 onSelect: () => setIsCreateDealOpen(true),
             } : undefined}
-            // TODO(comb-title-area): manual - not a plain Button (all items must be plain buttons to become PageActions)
-            headerSecondaryActions={canExportDeals ? [
-                <Suspense key="export" fallback={<Skeleton variant="rect" />}><ExportMenu label="Export deals" onExport={(format) => exportService.deals(filters, format)} /></Suspense>,
-            ] : undefined}
-            // TODO(comb-title-area): manual - search node is not a plain SearchInput
-            search={
-                <div className="flex items-center gap-2">
-                {scopedLeadId && (
-                    <Button variant="ghost" size="sm" onClick={clearScopedLead} title="Clear the customer scope">
-                        Scoped to this customer ×
-                    </Button>
-                )}
-                <SearchInput
-                    placeholder="Search deals by company..."
-                    value={filters.company_name ?? ''}
-                    onChange={(v: string) => setFilters({ ...filters, company_name: v || undefined })}
-                />
-                </div>
-            }
+            moreActions={canExportDeals ? exportPageActions('Export deals', (format) => exportService.deals(filters, format)) : undefined}
+            search={{
+                placeholder: 'Search deals by company...',
+                value: filters.company_name ?? '',
+                onChange: (v: string) => setFilters({ ...filters, company_name: v || undefined }),
+            }}
+            banner={scopedLeadId ? { variant: 'info', message: 'Scoped to this customer', action: { label: 'Clear scope', onClick: clearScopedLead } } : undefined}
             filters={filterConfig}
-            // TODO(comb-title-area): manual - move into drawer fields / view / R1 actions
-            toolbarEnd={isFiltering ? (
-                <div className="flex items-center gap-2 text-info h-nb-control-md px-3">
-                    <span className="text-xs" role="status">Refining results...</span>
-                </div>
-            ) : undefined}
         >
+            {isFiltering ? <span className="sr-only" role="status">Refining results...</span> : null}
             <div
                 ref={boardWrapperRef}
                 style={{ height: boardHeight }}

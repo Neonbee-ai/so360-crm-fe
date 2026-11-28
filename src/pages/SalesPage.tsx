@@ -14,7 +14,8 @@ import {
 import { maskedMoney } from '../services/commissionsService';
 import { useCRMFormatters } from '../utils/formatters';
 import { describeApiError } from '../utils/apiErrorMessage';
-import ExportMenu, { useCanExport } from '../components/ExportMenu';
+import { useCanExport } from '../components/ExportMenu';
+import { exportPageActions } from '../utils/exportPageActions';
 import { exportService } from '../services/exportService';
 
 export const SALES_PAGE_SIZE = 25;
@@ -130,10 +131,7 @@ const SalesPage: React.FC = () => {
             trail={[]}
             title="Sales"
             description="Every unit sale with its payment progress and commission."
-            // TODO(comb-title-area): manual - not a plain Button (all items must be plain buttons to become PageActions)
-            headerSecondaryActions={canExport ? [
-                <ExportMenu key="export" label="Export sales" onExport={(format) => exportService.sales(filters, format)} />,
-            ] : undefined}
+            moreActions={canExport ? exportPageActions('Export sales', (format) => exportService.sales(filters, format)) : undefined}
             filters={filterConfig}
             pagination={rangeInvalid || loading || error || rows.length === 0 ? undefined : (
                 <>

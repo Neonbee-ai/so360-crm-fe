@@ -67,7 +67,7 @@ beforeEach(() => {
     grid.reset.mockResolvedValue(undefined);
 });
 
-const customizeBtn = () => screen.getByRole('button', { name: 'Customize dashboard' });
+const customizeBtn = () => screen.getByRole('button', { name: 'Customize' });
 
 describe('Feature: Dashboard Customize button (Comb Button)', () => {
     describe('Scenario: render', () => {
@@ -96,20 +96,20 @@ describe('Feature: Dashboard Customize button (Comb Button)', () => {
         it('Given the flag is off Then no Customize button', async () => {
             render(<DashboardPage />);
             await ready();
-            expect(screen.queryByRole('button', { name: 'Customize dashboard' })).toBeNull();
+            expect(screen.queryByRole('button', { name: 'Customize' })).toBeNull();
         });
         it('Given the flag is on but flags not loaded Then no Customize button', async () => {
             flags.on.add(FLAG);
             flags.loaded = false;
             render(<DashboardPage />);
             await ready();
-            expect(screen.queryByRole('button', { name: 'Customize dashboard' })).toBeNull();
+            expect(screen.queryByRole('button', { name: 'Customize' })).toBeNull();
         });
         it('Given a different flag only Then no Customize button', async () => {
             flags.on.add('submodule:crm:other');
             render(<DashboardPage />);
             await ready();
-            expect(screen.queryByRole('button', { name: 'Customize dashboard' })).toBeNull();
+            expect(screen.queryByRole('button', { name: 'Customize' })).toBeNull();
         });
     });
 
