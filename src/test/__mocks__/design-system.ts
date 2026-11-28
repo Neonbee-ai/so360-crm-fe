@@ -163,8 +163,13 @@ const lfControl = (f: any, values: any, onChange: (v: any) => void, setOne: (k: 
   const name = `filter-${f.key}`;
   if (f.type === 'custom') return React.createElement('div', { key: f.key, 'data-testid': name }, f.render?.(v, (n: any) => setOne(f.key, n)));
   if (f.type === 'select')
-    return React.createElement('select', { key: f.key, 'aria-label': f.label, 'data-testid': name, value: typeof v === 'string' ? v : '', onChange: (e: any) => setOne(f.key, e.target.value || null) },
-      React.createElement('option', { value: '' }, f.label), (f.options ?? []).map((o: any) => React.createElement('option', { key: o.value, value: o.value, 'data-count': o.count }, o.label)));
+    return React.createElement('select', { key: f.key, 'aria-label': f.label, 'data-testid': name, value: typeof v === 'string' ? v : (typeof f.default === 'string' ? f.default : ''), onChange: (e: any) => setOne(f.key, e.target.value || null) },
+      f.default === undefined ? React.createElement('option', { value: '' }, f.label) : null, (f.options ?? []).map((o: any) => React.createElement('option', { key: o.value, value: o.value, 'data-count': o.count }, o.label)));
+  if (f.type === 'segment')
+    return React.createElement('div', { key: f.key, role: 'radiogroup', 'aria-label': f.label, 'data-testid': name },
+      (f.options ?? []).map((o: any) => React.createElement('label', { key: o.value }, React.createElement('input', { type: 'radio', name, value: o.value, checked: (v ?? f.default) === o.value, 'aria-checked': (v ?? f.default) === o.value, onChange: () => setOne(f.key, o.value) }), o.label)));
+  if (f.type === 'switch')
+    return React.createElement('input', { key: f.key, type: 'checkbox', role: 'switch', 'aria-label': f.label, 'data-testid': name, checked: !!v, onChange: (e: any) => setOne(f.key, e.target.checked) });
   if (f.type === 'multiselect')
     return React.createElement('select', { key: f.key, multiple: true, 'aria-label': f.label, 'data-testid': name, value: Array.isArray(v) ? v : [], onChange: (e: any) => setOne(f.key, Array.from(e.target.selectedOptions).map((o: any) => o.value)) },
       (f.options ?? []).map((o: any) => React.createElement('option', { key: o.value, value: o.value, 'data-count': o.count }, o.label)));
@@ -180,7 +185,7 @@ export const ListFilters = ({ fields = [], values = {}, onChange, onClear }: any
   const [open, setOpen] = React.useState(false);
   const setOne = (k: string, v: any) => onChange({ ...values, [k]: v });
   const quick = fields.filter((f: any) => f.quick).slice(0, 3);
-  const activeFields = fields.filter((f: any) => lfActive(values[f.key]));
+  const activeFields = fields.filter((f: any) => lfActive(values[f.key]) && values[f.key] !== f.default);
   const drawerCount = activeFields.filter((f: any) => !f.quick).length;
   return React.createElement(React.Fragment, null,
     quick.map((f: any) => lfControl(f, values, onChange, setOne)),
@@ -214,14 +219,62 @@ export const Trail = ({ trail, onBack, backLabel }: any) => {
 };
 // Comb page templates — slots render in template order with data-slot markers so specs can assert layout contract.
 const slot = (name: string, node: any) => (node ? React.createElement('div', { 'data-slot': name }, node) : null);
+// ---- Title area v2 (PageAction objects, filters/search/tabs/export/meta specs) ----
+const isPA = (v: any) => !!v && typeof v === 'object' && !Array.isArray(v) && !React.isValidElement(v) && typeof v.id === 'string' && typeof v.label === 'string';
+const ICON_KINDS = ['export', 'import', 'print', 'share', 'refresh', 'settings'];
+const paButton = (a: any, text: boolean) => {
+  const btn = React.createElement('button', {
+    key: a.id, type: 'button', 'data-comb-action': a.id, 'aria-label': text ? undefined : a.label, title: a.disabledReason,
+    disabled: !!a.disabled || undefined, 'aria-disabled': a.disabled ? 'true' : undefined,
+    onClick: a.disabled ? undefined : a.onSelect,
+  }, text ? [a.icon ?? null, a.label] : (a.icon ?? null));
+  const q = a.gate?.quota;
+  const exceeded = !!q && !q.isUnlimited && q.limit > 0 && q.used >= q.limit && q.disableOnExceeded;
+  return exceeded ? React.cloneElement(btn, { disabled: true, 'aria-disabled': 'true', onClick: undefined }) : btn;
+};
+const renderAct = (a: any, i?: number) => (isPA(a) ? paButton(a, true) : React.isValidElement(a) ? React.cloneElement(a, { key: i }) : a);
+const MoreMenu = ({ items }: any) => {
+  const [open, setOpen] = React.useState(false);
+  if (!items.length) return null;
+  const ordered = [...items.filter((a: any) => a.kind !== 'danger'), ...items.filter((a: any) => a.kind === 'danger')];
+  return React.createElement(React.Fragment, null,
+    React.createElement('button', { type: 'button', 'aria-label': 'More actions', 'aria-haspopup': 'menu', 'aria-expanded': open, onClick: () => setOpen((o) => !o) }, '⋯'),
+    open ? React.createElement('div', { role: 'menu' }, ordered.map((a: any) => React.createElement('button', { key: a.id, role: 'menuitem', disabled: !!a.disabled || undefined, 'data-danger': String(a.kind === 'danger'), onClick: () => { setOpen(false); a.onSelect?.(); } }, a.label))) : null);
+};
+/** R1 right cluster: secondaries (first 2 visible, the rest into the menu), icon actions (export/refresh/...), then the menu, primary last. */
+const titleActions = (p: any) => {
+  const sec = (p.secondaryActions ?? p.headerSecondaryActions ?? []) as any[];
+  const secArr = Array.isArray(sec) ? sec : [sec];
+  const visible = secArr.slice(0, 2);
+  const spill = secArr.slice(2).filter(isPA);
+  const more = [...spill, ...((p.moreActions ?? []) as any[])];
+  const icons = [
+    ...(p.export ? [{ id: 'export', label: 'Export', kind: 'export', onSelect: p.export.onExport, disabled: p.export.disabled }] : []),
+    ...more.filter((a) => ICON_KINDS.includes(a.kind)),
+  ];
+  const menu = more.filter((a) => !ICON_KINDS.includes(a.kind));
+  return React.createElement(React.Fragment, null,
+    p.legacyActions ?? p.actions ?? null,
+    visible.map((a, i) => renderAct(a, i)),
+    icons.map((a) => paButton(a, false)),
+    React.createElement(MoreMenu, { items: menu }),
+    p.primaryAction ? (isPA(p.primaryAction) ? paButton(p.primaryAction, true) : p.primaryAction) : null);
+};
+const isCfg = (f: any) => !!f && typeof f === 'object' && !React.isValidElement(f) && Array.isArray(f.fields);
+const r2Filters = (f: any) => (isCfg(f) ? React.createElement(ListFilters, f) : f);
+const isCfgBanner = (b: any) => !!b && typeof b === 'object' && !React.isValidElement(b);
+const r2Search = (s: any) => (s && typeof s === 'object' && !React.isValidElement(s) ? React.createElement(SearchInput, s) : s);
+const r2Tabs = (t: any) => (t && !Array.isArray(t) && !React.isValidElement(t) && Array.isArray(t.items) ? React.createElement(Tabs, t) : t);
 export const ListPageTemplate = (p: any) =>
   React.createElement('div', { 'data-template': 'list', 'data-comb-path': 'ListPage', 'aria-busy': p.loading || undefined }, mirrorStatus(p.loading),
     mirrorNotice(p.notice),
     React.createElement('header', { 'data-slot': 'header' },
       React.createElement(Trail, p), React.createElement('h1', null, p.title), quotaSlot(p.quota), p.count != null ? React.createElement('span', { 'data-slot': 'count' }, p.count) : null,
-      slot('primary', p.primaryAction), slot('secondary', p.headerSecondaryActions), slot('overflow', Array.isArray(p.overflowActions) ? p.overflowActions.map((a: any) => React.createElement('button', { key: a.label, onClick: a.onSelect }, a.label)) : p.overflowActions)),
+      slot('actions', titleActions(p)), slot('overflow', Array.isArray(p.overflowActions) ? p.overflowActions.map((a: any) => React.createElement('button', { key: a.label, onClick: a.onSelect }, a.label)) : p.overflowActions)),
+    p.banner && !isCfgBanner(p.banner) ? p.banner : (isCfgBanner(p.banner) ? React.createElement('div', { role: 'alert', 'data-variant': p.banner.variant }, p.banner.title ?? null, p.banner.message, p.banner.action ? React.createElement('button', { type: 'button', onClick: p.banner.action.onClick }, p.banner.action.label) : null) : null),
     React.createElement(KpiRegion, { kpis: p.kpis, collapsible: p.kpisCollapsible }),
-    React.createElement('div', { 'data-slot': 'toolbar' }, p.views ? React.createElement('div', { 'data-slot': 'views' }, p.views) : null, p.search, p.filterConfig ? React.createElement(ListFilters, p.filterConfig) : null, p.filters, p.toolbar, p.toolbarEnd),
+    React.createElement('div', { 'data-slot': 'toolbar' }, p.views ? React.createElement('div', { 'data-slot': 'views' }, p.views) : null, r2Tabs(p.tabs), r2Search(p.search), p.filterConfig ? React.createElement(ListFilters, p.filterConfig) : null, r2Filters(p.filters), p.toolbar, p.toolbarEnd,
+      (p.selectedCount ?? 0) > 0 ? React.createElement('div', { 'data-slot': 'bulk' }, React.createElement('span', null, `${p.selectedCount} selected`), p.bulkActions, React.createElement('button', { type: 'button', onClick: p.onClearSelection }, 'Clear selection')) : null),
     p.loading ? Skeleton.Table({ announce: false, 'data-slot': 'loading', count: p.loadingRows, itemTestId: 'list-skeleton-row' }) : null,
     !p.loading && (p.isEmpty ?? p.empty !== undefined) ? React.createElement('div', { 'data-slot': 'empty' }, p.empty) : null,
     !p.loading && p.isFilteredEmpty ? React.createElement('div', { 'data-slot': 'filtered-empty' }, React.createElement('button', { onClick: p.onClearFilters }, 'Clear filters')) : null,
@@ -233,8 +286,7 @@ export const DetailPageTemplate = (p: any) =>
     React.createElement('header', { 'data-slot': 'header' },
       React.createElement(Trail, p),
       React.createElement('h1', null, p.title), quotaSlot(p.quota), slot('status', p.status), slot('meta', p.meta),
-      slot('secondary', p.secondaryActions && React.createElement(React.Fragment, null, ...p.secondaryActions)),
-      slot('primary', p.primaryAction),
+      slot('actions', titleActions(p)),
       slot('overflow', p.overflowActions && p.overflowActions.map((a: any) =>
         React.createElement('button', { key: a.label, onClick: a.onSelect, 'data-danger': String(!!a.danger) }, a.label)))),
     p.tabs ? React.createElement('div', { 'data-slot': 'tabs', role: 'tablist' }, p.tabs.map((t: any) =>
@@ -327,8 +379,8 @@ export const DashboardPageTemplate = (p: any) =>
     mirrorNotice(p.notice),
     React.createElement('header', { 'data-slot': 'header' },
       React.createElement(Trail, p), React.createElement('h1', null, p.title), quotaSlot(p.quota), p.description ? React.createElement('p', null, p.description) : null,
-      slot('meta', p.meta), slot('secondary-actions', p.secondaryActions), slot('primary-action', p.primaryAction)),
-    slot('filters', p.filters), slot('toolbar-end', p.toolbarEnd),
+      slot('meta', p.meta && !isPA(p.meta) && typeof p.meta === 'object' && 'label' in p.meta && !React.isValidElement(p.meta) ? (p.meta.kind === 'quota' ? mirrorQuota(p.meta) : p.meta.label) : p.meta), slot('actions', titleActions(p))),
+    slot('filters', r2Filters(p.filters)), slot('tabs', r2Tabs(p.tabs)), slot('toolbar-end', p.toolbarEnd),
     p.loading ? Skeleton.Dashboard({ announce: false, 'data-slot': 'loading' }) : [slot('kpis', p.kpis), slot('primary', p.primary), slot('secondary', p.secondary), slot('bottom', p.bottom), p.children]);
 export const SettingsPageTemplate = (p: any) =>
   React.createElement('div', { 'data-template': 'settings', 'data-comb-path': 'SettingsPage', 'aria-busy': p.loading || undefined }, mirrorStatus(p.loading),

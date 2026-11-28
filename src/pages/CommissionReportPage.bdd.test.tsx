@@ -35,6 +35,7 @@ vi.mock('../utils/formatters', () => ({
 }));
 
 import CommissionReportPage, { TOTAL_CARDS, isEmptyReport } from './CommissionReportPage';
+import { openFilters } from '../test/openFilters';
 
 const bucket = (over: Partial<CommissionBucket> = {}): CommissionBucket => ({
     key: 'k1', label: 'Marina Heights', gross: 50000, agent: 20000, company: 30000, count: 2, ...over,
@@ -166,6 +167,7 @@ describe('Feature: Commission report', () => {
             report.commissionReport.mockResolvedValue(fullReport());
             render(<CommissionReportPage />);
             await screen.findByRole('option', { name: 'Marina Heights' });
+            openFilters();
             fireEvent.change(screen.getByLabelText('Project'), { target: { value: 'p1' } });
             await waitFor(() => expect(report.commissionReport).toHaveBeenLastCalledWith({ project_id: 'p1' }));
         });
@@ -174,6 +176,7 @@ describe('Feature: Commission report', () => {
             report.commissionReport.mockResolvedValue(fullReport());
             render(<CommissionReportPage />);
             await screen.findByTestId('cr-total-gross');
+            openFilters();
             expect(screen.queryByLabelText('Developer')).not.toBeInTheDocument();
         });
 
@@ -182,6 +185,7 @@ describe('Feature: Commission report', () => {
             render(<CommissionReportPage />);
             await screen.findByTestId('cr-total-gross');
             fireEvent.click(screen.getByTestId('filters-button'));
+            openFilters();
             fireEvent.change(screen.getByLabelText('Date range end'), { target: { value: '2026-06-01' } });
             await waitFor(() => expect(report.commissionReport).toHaveBeenCalledTimes(2));
             fireEvent.change(screen.getByLabelText('Date range start'), { target: { value: '2026-06-10' } });

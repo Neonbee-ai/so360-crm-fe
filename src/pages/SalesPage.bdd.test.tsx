@@ -36,6 +36,7 @@ vi.mock('../utils/formatters', () => ({
 }));
 
 import SalesPage, { SALES_PAGE_SIZE } from './SalesPage';
+import { openFilters } from '../test/openFilters';
 
 const row = (over: Partial<SaleRow> = {}): SaleRow => ({
     deal_id: 'd1',
@@ -189,6 +190,7 @@ describe('Feature: Sales register', () => {
             fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
             await screen.findByText(/Page 2 of 3/);
             await screen.findByRole('option', { name: 'Asha' });
+            openFilters();
             fireEvent.change(screen.getByLabelText('Agent'), { target: { value: 'u1' } });
             await waitFor(() => expect(report.listSales).toHaveBeenLastCalledWith({ agent_id: 'u1' }, 1, SALES_PAGE_SIZE));
         });
@@ -206,12 +208,14 @@ describe('Feature: Sales register', () => {
             report.listSales.mockResolvedValueOnce({ rows: [row({ deal_id: 'd1' })], total: 1 });
             renderPage();
             await screen.findByTestId('sale-d1');
+            openFilters();
             const dev = screen.getByLabelText('Developer');
             expect(within(dev).getAllByRole('option').map((o) => o.textContent)).toEqual(['Developer', 'Emaar', 'dev2']);
 
             fireEvent.change(dev, { target: { value: 'dev1' } });
             await waitFor(() => expect(report.listSales).toHaveBeenLastCalledWith({ developer_id: 'dev1' }, 1, SALES_PAGE_SIZE));
             await waitFor(() => expect(screen.queryByTestId('sale-d2')).not.toBeInTheDocument());
+            openFilters();
             expect(within(screen.getByLabelText('Developer')).getAllByRole('option')).toHaveLength(3);
         });
 
@@ -220,6 +224,7 @@ describe('Feature: Sales register', () => {
             renderPage();
             await screen.findByTestId('sale-d1');
             fireEvent.click(screen.getByTestId('filters-button'));
+            openFilters();
             fireEvent.change(screen.getByLabelText('Date range start'), { target: { value: '2026-06-10' } });
             fireEvent.change(screen.getByLabelText('Date range end'), { target: { value: '2026-06-01' } });
             expect(screen.getByRole('alert')).toHaveTextContent('The start date must be on or before the end date.');

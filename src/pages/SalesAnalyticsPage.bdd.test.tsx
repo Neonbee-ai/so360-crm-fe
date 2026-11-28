@@ -23,6 +23,7 @@ vi.mock('../utils/formatters', () => ({
 
 import SalesAnalyticsPage, { buildSections, isEmptyAnalytics } from './SalesAnalyticsPage';
 import { normalizeSalesAnalytics } from '../services/salesAnalyticsService';
+import { openFilters } from '../test/openFilters';
 
 const data = normalizeSalesAnalytics({
     period: 'month',
@@ -186,9 +187,11 @@ describe('Feature: Sales reports page', () => {
             renderPage();
             await screen.findByTestId('sa-total-bookings');
             fireEvent.click(screen.getByTestId('filters-button'));
+            openFilters();
             fireEvent.change(screen.getByLabelText('Date range end'), { target: { value: '2026-06-01' } });
             await waitFor(() => expect(svc.get).toHaveBeenLastCalledWith({ to: '2026-06-01' }, 'month'));
             const calls = svc.get.mock.calls.length;
+            openFilters();
             fireEvent.change(screen.getByLabelText('Date range start'), { target: { value: '2026-06-10' } });
             expect(await screen.findByRole('alert')).toHaveTextContent('The start date must be on or before the end date.');
             expect(svc.get).toHaveBeenCalledTimes(calls);
