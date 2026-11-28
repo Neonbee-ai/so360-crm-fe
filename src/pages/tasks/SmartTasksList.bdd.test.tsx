@@ -136,14 +136,16 @@ describe('SmartTasksList — counters and filters', () => {
 describe('SmartTasksList — views', () => {
     it('Given the views select / When "Overdue" is picked / Then due=overdue is requested', async () => {
         renderAt();
+        fireEvent.click(await screen.findByRole('button', { name: /^Filters/ }));
         const select = await screen.findByLabelText('Task view');
         fireEvent.change(select, { target: { value: 'system:overdue' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
         await waitFor(() => expect(lastListParams().due).toBe('overdue'));
     });
 
     it('Given filters that match no view / When "Save view" is confirmed / Then the view is created with those filters', async () => {
         renderAt('/tasks?type=CALL');
-        fireEvent.click(await screen.findByTestId('tasks-save-view'));
+        fireEvent.click(await screen.findByRole('button', { name: 'Save view' }));
         fireEvent.change(screen.getByLabelText('View name'), { target: { value: 'My calls' } });
         fireEvent.click(screen.getByTestId('save-task-view-confirm'));
         await waitFor(() => expect(svc.createView).toHaveBeenCalledWith(expect.objectContaining({
@@ -153,22 +155,24 @@ describe('SmartTasksList — views', () => {
 
     it('Given no filters / When it renders / Then "Save view" is disabled', async () => {
         renderAt();
-        expect(await screen.findByTestId('tasks-save-view')).toBeDisabled();
+        expect(await screen.findByRole('button', { name: 'Save view' })).toHaveAttribute('aria-disabled', 'true');
     });
 
     it('Given the active filters match a saved view / When delete is clicked / Then the view is removed', async () => {
         svc.listViews.mockResolvedValue([{ id: 'v1', name: 'Demos', entity_type: 'task', config: { version: 1, query: 'type=DEMO' } }]);
         renderAt('/tasks?type=DEMO');
-        fireEvent.click(await screen.findByTestId('tasks-delete-view'));
+        fireEvent.click(await screen.findByRole('button', { name: 'More actions' }));
+        fireEvent.click(await screen.findByRole('menuitem', { name: 'Delete saved view' }));
         await waitFor(() => expect(svc.removeView).toHaveBeenCalledWith('v1'));
-        await waitFor(() => expect(screen.queryByTestId('tasks-delete-view')).not.toBeInTheDocument());
+        await waitFor(() => expect(screen.queryByRole('menuitem', { name: 'Delete saved view' })).not.toBeInTheDocument());
     });
 
     it('Given a saved view / When picked in the select / Then its filters are requested', async () => {
         svc.listViews.mockResolvedValue([{ id: 'v1', name: 'Demos', entity_type: 'task', config: { version: 1, query: 'type=DEMO' } }]);
         renderAt();
-        await screen.findByText('Demos');
+        fireEvent.click(await screen.findByRole('button', { name: /^Filters/ }));
         fireEvent.change(screen.getByLabelText('Task view'), { target: { value: 'saved:v1' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
         await waitFor(() => expect(lastListParams().type).toBe('DEMO'));
     });
 
@@ -207,7 +211,9 @@ describe('SmartTasksList — actions and scope', () => {
     it('Given team permission / When "Team Tasks" is picked / Then list and Up Next are asked for team scope', async () => {
         bridge.perms = new Set(['crm_tasks.view_team']);
         renderAt();
-        fireEvent.click(await screen.findByText('Team Tasks'));
+        fireEvent.click(await screen.findByRole('button', { name: /^Filters/ }));
+        fireEvent.click(await screen.findByRole('radio', { name: 'Team tasks' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
         await waitFor(() => expect(lastListParams().scope).toBe('team'));
         await waitFor(() => expect(svc.getUpNext).toHaveBeenLastCalledWith(expect.objectContaining({ scope: 'team' })));
     });
@@ -215,7 +221,8 @@ describe('SmartTasksList — actions and scope', () => {
     it('Given only own scope / When it renders / Then no scope switch is shown', async () => {
         renderAt();
         await screen.findByText('Task t1');
-        expect(screen.queryByTestId('tasks-scope-views')).not.toBeInTheDocument();
+        fireEvent.click(await screen.findByRole('button', { name: /^Filters/ }));
+        expect(screen.queryByRole('radio', { name: 'Team tasks' })).not.toBeInTheDocument();
     });
 });
 

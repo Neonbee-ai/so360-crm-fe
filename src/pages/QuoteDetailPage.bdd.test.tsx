@@ -634,14 +634,14 @@ describe('Given a saved quote', () => {
 
   const openDialog = async () => {
     render(<QuoteDetailPage />);
-    await waitFor(() => expect(screen.getByText('Email to Customer')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('Email to Customer'));
+    await waitFor(() => expect(screen.getByText('Email to customer')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('Email to customer'));
     await waitFor(() => expect(screen.getByText('Email quotation to customer')).toBeInTheDocument());
   };
 
   it('When the page loads / Then an Email to Customer action is offered', async () => {
     render(<QuoteDetailPage />);
-    await waitFor(() => expect(screen.getByText('Email to Customer')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Email to customer')).toBeInTheDocument());
   });
 
   it('When the dialog opens / Then the recipient is prefilled from the linked customer', async () => {

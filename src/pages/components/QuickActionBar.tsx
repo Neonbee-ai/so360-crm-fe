@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { FileEdit, Mail, Phone, CalendarPlus, CheckSquare, UploadCloud, ChevronDown } from 'lucide-react';
-import { Button, Menu } from '@so360/design-system';
+import { Button, Menu, type PageAction } from '@so360/design-system';
 
 interface Props {
     onAddNote: () => void;
@@ -77,3 +77,29 @@ const QuickActionBar: React.FC<Props> = ({
 };
 
 export default QuickActionBar;
+
+const lastFiredByLabel: Record<string, number> = {};
+
+/**
+ * Title-area v2: the same six communication actions as header PageActions (⋯ menu), same RBAC gates and
+ * double-click guard as the QuickActionBar menu.
+ */
+export function buildQuickActions(p: Props): PageAction[] {
+    const all = [
+        { id: 'add-note', label: 'Add note', icon: <FileEdit size={13} />, onSelect: p.onAddNote, visible: p.canAddNote ?? true },
+        { id: 'send-email', label: 'Send email', icon: <Mail size={13} />, onSelect: p.onSendEmail, visible: p.canSendEmail ?? true },
+        { id: 'log-call', label: 'Log call', icon: <Phone size={13} />, onSelect: p.onLogCall, visible: p.canLogCall ?? true },
+        { id: 'schedule-meeting', label: 'Schedule meeting', icon: <CalendarPlus size={13} />, onSelect: p.onScheduleMeeting, visible: p.canScheduleMeeting ?? true },
+        { id: 'create-task', label: 'Create task', icon: <CheckSquare size={13} />, onSelect: p.onCreateTask, visible: p.canCreateTask ?? true },
+        { id: 'add-document', label: 'Add document', icon: <UploadCloud size={13} />, onSelect: p.onUploadDocument, visible: p.canUploadDocument ?? true },
+    ];
+    return all.filter((a) => a.visible).map(({ visible: _v, ...a }) => ({
+        ...a,
+        onSelect: () => {
+            const now = Date.now();
+            if (now - (lastFiredByLabel[a.id] ?? 0) < DOUBLE_CLICK_GUARD_MS) return;
+            lastFiredByLabel[a.id] = now;
+            a.onSelect();
+        },
+    }));
+}

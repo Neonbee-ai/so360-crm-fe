@@ -80,8 +80,11 @@ vi.mock('../utils/formatters', () => ({
 // RE G9 — the deal header mounts the Compose Email action. The button itself
 // (flag + permission gating) is covered in EmailComposeButton.bdd.test.tsx.
 const composeProps = vi.hoisted(() => ({ calls: [] as any[] }));
-vi.mock('../components/emailCompose/EmailComposeButton', () => ({
-    EmailComposeButton: (p: any) => { composeProps.calls.push(p); return <button data-testid="email-compose-stub">{p.entityType}:{p.entityId}</button>; },
+vi.mock('../components/emailCompose/useEmailComposeAction', () => ({
+  useEmailComposeAction: (entityType: string, entityId: string) => {
+    composeProps.calls.push({ entityType, entityId });
+    return { action: { id: 'compose-email', label: 'Compose email', onSelect: () => undefined }, modal: null };
+  },
 }));
 
 import DealDetailPage from './DealDetailPage';
@@ -142,7 +145,7 @@ describe('Given DealDetailPage for a loaded deal (RE G9)', () => {
         it('Then the Compose Email action is mounted for entity type deal with the deal id', async () => {
             render(<DealDetailPage />);
             await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
-            expect(screen.getByTestId('email-compose-stub')).toHaveTextContent('deal:deal-1');
+            expect(screen.getByRole('button', { name: 'Compose email' })).toBeInTheDocument();
             expect(composeProps.calls.at(-1)).toMatchObject({ entityType: 'deal', entityId: 'deal-1' });
         });
     });

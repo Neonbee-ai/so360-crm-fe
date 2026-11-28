@@ -6,8 +6,11 @@ import LeadDetailPage from './LeadDetailPage';
 // RE G9 — the lead header mounts the Compose Email action. The button itself
 // (flag + permission gating) is covered in EmailComposeButton.bdd.test.tsx.
 const composeProps = vi.hoisted(() => ({ calls: [] as any[] }));
-vi.mock('../components/emailCompose/EmailComposeButton', () => ({
-  EmailComposeButton: (p: any) => { composeProps.calls.push(p); return <button data-testid="email-compose-stub">{p.entityType}:{p.entityId}</button>; },
+vi.mock('../components/emailCompose/useEmailComposeAction', () => ({
+  useEmailComposeAction: (entityType: string, entityId: string) => {
+    composeProps.calls.push({ entityType, entityId });
+    return { action: { id: 'compose-email', label: 'Compose email', onSelect: () => undefined }, modal: null };
+  },
 }));
 
 const mockCrmService = vi.hoisted(() => ({
@@ -134,8 +137,7 @@ describe('Given LeadDetailPage for a readable lead (RE G9)', () => {
   describe('When the header renders', () => {
     test('Then the Compose Email action is mounted for entity type lead with the lead id', async () => {
       render(<LeadDetailPage />);
-      await waitFor(() => expect(screen.getByTestId('email-compose-stub')).toBeTruthy());
-      expect(screen.getByTestId('email-compose-stub').textContent).toBe('lead:lead-1');
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Compose email' })).toBeTruthy());
       expect(composeProps.calls.at(-1)).toMatchObject({ entityType: 'lead', entityId: 'lead-1' });
     });
   });
@@ -145,7 +147,7 @@ describe('Given LeadDetailPage for a readable lead (RE G9)', () => {
       mockCrmService.getLeadById.mockResolvedValueOnce(undefined);
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByRole('heading', { name: /lead not found/i })).toBeTruthy());
-      expect(screen.queryByTestId('email-compose-stub')).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Compose email' })).toBeNull();
     });
   });
 });

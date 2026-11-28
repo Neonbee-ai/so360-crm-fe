@@ -15,7 +15,7 @@ import {
 import { crmService, activitiesApi, settingsApi } from '../services/crmService';
 import { PromptDialog } from '../components/PromptDialog';
 import { PartnerSearchDropdown } from '../components/common/PartnerSearchDropdown';
-import { EmailComposeButton } from '../components/emailCompose/EmailComposeButton';
+import { useEmailComposeAction } from '../components/emailCompose/useEmailComposeAction';
 import { useCRMFormatters } from '../utils/formatters';
 import { isTaskLocked } from '../utils/taskUtils';
 import { validateEmailRequired } from '../utils/emailValidation';
@@ -45,7 +45,7 @@ import IcpFitCard from '../components/leads/IcpFitCard';
 import CustomerFeedbackTab from './components/CustomerFeedbackTab';
 import CallsTab, { LogCallModal } from './components/CallsTab';
 import AuditHistoryTab from './components/AuditHistoryTab';
-import QuickActionBar from './components/QuickActionBar';
+import { buildQuickActions } from './components/QuickActionBar';
 import LeadLayoutSettingsPanel from './components/LeadLayoutSettingsPanel';
 import { useLeadDetailLayoutPreferences } from '../hooks/useLeadDetailLayoutPreferences';
 import StakeholdersTab from '../components/stakeholders/StakeholdersTab';
@@ -172,6 +172,7 @@ const LeadDetailPage = () => {
     const [confirm, confirmDialog] = useConfirm();
     const formatters = useCRMFormatters();
     const { id = '' } = useParams<{ id: string }>();
+    const emailCompose = useEmailComposeAction('lead', id);
     const navigate = useNavigate();
     const location = useLocation();
     const { recordActivity } = useActivity();
@@ -671,47 +672,40 @@ const LeadDetailPage = () => {
                     icon: <Plus />,
                     onSelect: () => setIsCreatingDeal(true),
                 } : undefined}
-                // TODO(comb-title-area): manual - not a Button (<EmailComposeButton>)
                 secondaryActions={[
-                    <EmailComposeButton key="compose-email" entityType="lead" entityId={lead.id} />,
-                    <QuickActionBar
-                    key="log-activity"
-                onAddNote={() => {
-                    openWorkspaceTab('notes');
-                    // The composer is the point of "Add Note" — put the caret in it.
-                    window.setTimeout(() => {
-                        noteComposerRef.current?.querySelector<HTMLElement>('[contenteditable="true"]')?.focus();
-                    }, 350);
-                }}
-                onSendEmail={() => openWorkspaceTab('emails')}
-                onLogCall={() => setIsLoggingCall(true)}
-                onScheduleMeeting={() => setIsSchedulingMeeting(true)}
-                onCreateTask={() => setIsCreatingTask(true)}
-                onUploadDocument={() => {
-                    openWorkspaceTab('documents');
-                    // Open the OS file dialog directly rather than only revealing
-                    // the tab that contains the (hidden) file input.
-                    window.setTimeout(() => documentInputRef.current?.querySelector<HTMLElement>('[role="button"]')?.click(), 350);
-                }}
-                canAddNote={canAddNote}
-                canSendEmail={canSendEmail}
-                canLogCall={canLogCall}
-                canScheduleMeeting={canScheduleMeeting}
-                canCreateTask={canCreateTask}
-                canUploadDocument={canUploadDocument}
-            />,
-                    ...(canMergeLead && !isCustomerDetailRoute ? [
-                    <Button
-                        key="merge"
-                        variant="secondary"
-                        onClick={() => setIsMergeOpen(true)}
-                        aria-label="Merge"
-                        title="Merge a duplicate lead into this one"
-                    ><GitMerge size={16} />
-                        Merge
-                    </Button>,
-                    ] : []),
+                    ...(emailCompose.action ? [emailCompose.action] : []),
+                    ...(canMergeLead && !isCustomerDetailRoute ? [{
+                        id: 'merge',
+                        label: 'Merge',
+                        icon: <GitMerge size={16} />,
+                        onSelect: () => setIsMergeOpen(true),
+                    }] : []),
                 ]}
+                moreActions={buildQuickActions({
+                    onAddNote: () => {
+                        openWorkspaceTab('notes');
+                        // The composer is the point of "Add Note" — put the caret in it.
+                        window.setTimeout(() => {
+                            noteComposerRef.current?.querySelector<HTMLElement>('[contenteditable="true"]')?.focus();
+                        }, 350);
+                    },
+                    onSendEmail: () => openWorkspaceTab('emails'),
+                    onLogCall: () => setIsLoggingCall(true),
+                    onScheduleMeeting: () => setIsSchedulingMeeting(true),
+                    onCreateTask: () => setIsCreatingTask(true),
+                    onUploadDocument: () => {
+                        openWorkspaceTab('documents');
+                        // Open the OS file dialog directly rather than only revealing
+                        // the tab that contains the (hidden) file input.
+                        window.setTimeout(() => documentInputRef.current?.querySelector<HTMLElement>('[role="button"]')?.click(), 350);
+                    },
+                    canAddNote,
+                    canSendEmail,
+                    canLogCall,
+                    canScheduleMeeting,
+                    canCreateTask,
+                    canUploadDocument,
+                })}
                 overflowActions={[
                     { label: 'Layout settings', onSelect: () => setShowLayoutSettings(true) },
                     ...(canDeleteLead ? [{ label: 'Delete', danger: true, onSelect: () => setShowDeleteConfirm(true) }] : []),
@@ -1104,6 +1098,7 @@ const LeadDetailPage = () => {
                     </div>
                 }
             >
+            {emailCompose.modal}
             {saveDuplicate && (
                 <div className="mb-6">
                     <DuplicateLeadWarning

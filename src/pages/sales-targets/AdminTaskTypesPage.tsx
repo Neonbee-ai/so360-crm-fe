@@ -153,8 +153,7 @@ export default function AdminTaskTypesPage() {
           icon: <Plus />,
           onSelect: () => setShowModal(true),
       }}
-      // TODO(comb-title-area): manual - SearchInput prop data-testid
-      search={<SearchInput placeholder="Search activity types" value={search} onChange={setSearch} data-testid="task-types-search" />}
+      search={{ placeholder: 'Search activity types', value: search, onChange: setSearch }}
       filters={{
         fields: [{
           key: 'industry',

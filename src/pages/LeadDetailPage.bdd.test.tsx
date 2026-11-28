@@ -98,16 +98,15 @@ vi.mock('./components/MeetingsTab', () => ({ default: () => <div data-testid="me
 // Kept as a thin stand-in, but it must still surface the real handlers: the
 // value under test is what LeadDetailPage does when a quick action fires.
 vi.mock('./components/QuickActionBar', () => ({
-  default: (props: any) => (
-    <div data-testid="quick-action-bar">
-      <button onClick={props.onAddNote}>Add Note</button>
-      <button onClick={props.onSendEmail}>Send Email</button>
-      <button onClick={props.onLogCall}>Log Call</button>
-      <button onClick={props.onScheduleMeeting}>Schedule Meeting</button>
-      <button onClick={props.onCreateTask}>Create Task</button>
-      <button onClick={props.onUploadDocument}>Add Document</button>
-    </div>
-  ),
+  default: () => null,
+  buildQuickActions: (props: any) => [
+    { id: 'add-note', label: 'Add Note', onSelect: props.onAddNote },
+    { id: 'send-email', label: 'Send Email', onSelect: props.onSendEmail },
+    { id: 'log-call', label: 'Log Call', onSelect: props.onLogCall },
+    { id: 'schedule-meeting', label: 'Schedule Meeting', onSelect: props.onScheduleMeeting },
+    { id: 'create-task', label: 'Create Task', onSelect: props.onCreateTask },
+    { id: 'add-document', label: 'Add Document', onSelect: props.onUploadDocument },
+  ],
 }));
 vi.mock('./components/LeadLayoutSettingsPanel', () => ({ default: () => null }));
 vi.mock('../components/customFields/DlCustomFieldsPanel', () => ({
@@ -1432,7 +1431,8 @@ describe('LeadDetailPage', () => {
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('Acme Corp')).toBeInTheDocument());
 
-      fireEvent.click(screen.getByRole('button', { name: /Add Note/i }));
+      fireEvent.click(screen.getByRole('button', { name: 'More actions' }));
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Add Note' }));
 
       await waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
       expect(await screen.findByText(/Save Note/i)).toBeInTheDocument();
@@ -1446,7 +1446,8 @@ describe('LeadDetailPage', () => {
         render(<LeadDetailPage />);
         await waitFor(() => expect(screen.getByText('Acme Corp')).toBeInTheDocument());
 
-        fireEvent.click(screen.getByRole('button', { name: /Add Document/i }));
+        fireEvent.click(screen.getByRole('button', { name: 'More actions' }));
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Add Document' }));
         await vi.advanceTimersByTimeAsync(500);
 
         expect(await screen.findByLabelText(/Upload document/i)).toBeInTheDocument();
@@ -1463,7 +1464,8 @@ describe('LeadDetailPage', () => {
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('Acme Corp')).toBeInTheDocument());
 
-      fireEvent.click(screen.getByRole('button', { name: /Log Call/i }));
+      fireEvent.click(screen.getByRole('button', { name: 'More actions' }));
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Log Call' }));
 
       expect(await screen.findByText(/upload call recording/i)).toBeInTheDocument();
       // The quick action no longer switches tabs and scrolls there — that read
@@ -1479,7 +1481,8 @@ describe('LeadDetailPage', () => {
       await waitFor(() => expect(screen.getByText('Acme Corp')).toBeInTheDocument());
       mockNavigate.mockClear();
 
-      fireEvent.click(screen.getByRole('button', { name: /Create Task/i }));
+      fireEvent.click(screen.getByRole('button', { name: 'More actions' }));
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Create Task' }));
 
       // The creation surface itself, on this page — not a route change, not a
       // tab switch, and not a jump down the page.
@@ -1493,13 +1496,15 @@ describe('LeadDetailPage', () => {
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('Acme Corp')).toBeInTheDocument());
 
-      fireEvent.click(screen.getByRole('button', { name: /Create Task/i }));
+      fireEvent.click(screen.getByRole('button', { name: 'More actions' }));
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Create Task' }));
       expect(await screen.findByTestId('task-modal')).toBeInTheDocument();
 
       fireEvent.click(screen.getByTestId('task-modal').querySelector('button')!);
       await waitFor(() => expect(screen.queryByTestId('task-modal')).toBeNull());
 
-      fireEvent.click(screen.getByRole('button', { name: /Create Task/i }));
+      fireEvent.click(screen.getByRole('button', { name: 'More actions' }));
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Create Task' }));
       expect(await screen.findByTestId('task-modal')).toBeInTheDocument();
     });
 
@@ -1507,7 +1512,8 @@ describe('LeadDetailPage', () => {
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('Acme Corp')).toBeInTheDocument());
 
-      fireEvent.click(screen.getByRole('button', { name: /Schedule Meeting/i }));
+      fireEvent.click(screen.getByRole('button', { name: 'More actions' }));
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Schedule Meeting' }));
       expect(within(await screen.findByRole('dialog')).getByRole('heading', { name: /schedule meeting/i })).toBeInTheDocument();
 
       // Close, then ask again. The old flag-based wiring was already `true`,
@@ -1515,7 +1521,8 @@ describe('LeadDetailPage', () => {
       fireEvent.click(screen.getByRole('button', { name: /Cancel/i }));
       await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
 
-      fireEvent.click(screen.getByRole('button', { name: /Schedule Meeting/i }));
+      fireEvent.click(screen.getByRole('button', { name: 'More actions' }));
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Schedule Meeting' }));
       expect(within(await screen.findByRole('dialog')).getByRole('heading', { name: /schedule meeting/i })).toBeInTheDocument();
     });
   });

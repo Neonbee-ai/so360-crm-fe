@@ -100,7 +100,6 @@ const IcpListPage: React.FC = () => {
         },
     ];
 
-    const newBtn = <Button onClick={() => navigate(`${BASE}/new`)}>New ICP</Button>;
 
     const body = error ? (
         <EmptyState title="Could not load profiles" description={error} action={{ label: 'Retry', onClick: () => void load() }} />
@@ -124,8 +123,7 @@ const IcpListPage: React.FC = () => {
                 trail={[{ label: 'Settings', to: '/crm/settings' }]}
                 title="Ideal customer profiles"
                 description={!loading ? `${icps.length} profile${icps.length === 1 ? '' : 's'}` : undefined}
-                // TODO(comb-title-area): manual - primaryAction is not a Button / gated Button
-                primaryAction={canCreate ? newBtn : undefined}
+                primaryAction={canCreate ? { id: 'new-icp', label: 'New ICP', onSelect: () => navigate(`${BASE}/new`) } : undefined}
                 isEmpty={!loading && !error && icps.length === 0}
                 empty={(
                     <EmptyState

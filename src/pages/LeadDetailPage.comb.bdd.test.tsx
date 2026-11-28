@@ -97,16 +97,15 @@ vi.mock('./components/MeetingsTab', () => ({ default: () => <div data-testid="me
 // Kept as a thin stand-in, but it must still surface the real handlers: the
 // value under test is what LeadDetailPage does when a quick action fires.
 vi.mock('./components/QuickActionBar', () => ({
-  default: (props: any) => (
-    <div data-testid="quick-action-bar">
-      <button onClick={props.onAddNote}>Add Note</button>
-      <button onClick={props.onSendEmail}>Send Email</button>
-      <button onClick={props.onLogCall}>Log Call</button>
-      <button onClick={props.onScheduleMeeting}>Schedule Meeting</button>
-      <button onClick={props.onCreateTask}>Create Task</button>
-      <button onClick={props.onUploadDocument}>Add Document</button>
-    </div>
-  ),
+  default: () => null,
+  buildQuickActions: (props: any) => [
+    { id: 'add-note', label: 'Add Note', onSelect: props.onAddNote },
+    { id: 'send-email', label: 'Send Email', onSelect: props.onSendEmail },
+    { id: 'log-call', label: 'Log Call', onSelect: props.onLogCall },
+    { id: 'schedule-meeting', label: 'Schedule Meeting', onSelect: props.onScheduleMeeting },
+    { id: 'create-task', label: 'Create Task', onSelect: props.onCreateTask },
+    { id: 'add-document', label: 'Add Document', onSelect: props.onUploadDocument },
+  ],
 }));
 vi.mock('./components/LeadLayoutSettingsPanel', () => ({ default: () => null }));
 

@@ -358,9 +358,25 @@ const LegacyTasksPage = () => {
     ];
     const statusOptions = ['Open', 'In Progress', 'Done', 'On Hold', 'Cancelled', 'Overdue'].map(v => ({ value: v, label: v }));
     const filterConfig: ListFilterConfig = {
-        fields: [{ key: 'status', label: 'Status', type: 'select', options: statusOptions }],
-        values: (filter !== 'All' ? { status: filter } : {}) as FilterValues,
-        onChange: (next: FilterValues) => setFilter((next.status as string) || 'All'),
+        fields: [
+            ...(canViewTeamTasks || canViewAllTasks ? [{
+                key: 'scope', label: 'Show', type: 'segment' as const, default: 'own',
+                options: [
+                    { value: 'own', label: 'My tasks' },
+                    ...(canViewTeamTasks ? [{ value: 'team', label: 'Team tasks' }] : []),
+                    ...(canViewAllTasks ? [{ value: 'all', label: 'All tasks' }] : []),
+                ],
+            }] : []),
+            { key: 'status', label: 'Status', type: 'select' as const, options: statusOptions },
+        ],
+        values: {
+            ...(filter !== 'All' ? { status: filter } : {}),
+            ...(taskScope !== 'own' ? { scope: taskScope } : {}),
+        } as FilterValues,
+        onChange: (next: FilterValues) => {
+            setFilter((next.status as string) || 'All');
+            if (canViewTeamTasks || canViewAllTasks) setTaskScope(((next.scope as string) || 'own') as typeof taskScope);
+        },
         onClear: () => { setSearchTerm(''); setFilter('All'); },
     };
 
@@ -377,20 +393,6 @@ const LegacyTasksPage = () => {
             } : undefined}
             search={{ placeholder: 'Search tasks', value: searchTerm, onChange: setSearchTerm }}
             filters={filterConfig}
-            // TODO(comb-title-area): manual - use tabs (navigation) or a drawer field
-            views={(canViewTeamTasks || canViewAllTasks) ? (
-                <SegmentedControl
-                    aria-label="Task scope"
-                    data-testid="tasks-scope-views"
-                    value={taskScope}
-                    onChange={(id) => setTaskScope(id as typeof taskScope)}
-                    options={[
-                        { value: 'own', label: 'My Tasks' },
-                        ...(canViewTeamTasks ? [{ value: 'team', label: 'Team Tasks' }] : []),
-                        ...(canViewAllTasks ? [{ value: 'all', label: 'All Tasks' }] : []),
-                    ]}
-                />
-            ) : undefined}
             pagination={sandboxLimitedTasks.length > 0 ? (
                 <Pagination
                     currentPage={currentPage}

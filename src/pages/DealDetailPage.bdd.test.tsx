@@ -594,8 +594,8 @@ describe('DealDetailPage', () => {
     it('When Create Invoice is clicked / Then soft-navigates to Accounting invoices with deal params', async () => {
       const user = userEvent.setup();
       render(<DealDetailPage />);
-      await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
-      await user.click(screen.getByText('Create Invoice'));
+      await waitFor(() => expect(screen.getByText('Create invoice')).toBeInTheDocument());
+      await user.click(screen.getByText('Create invoice'));
       expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('/accounting/invoices'));
       expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('create=true'));
     });
@@ -605,46 +605,46 @@ describe('DealDetailPage', () => {
     describe('When the feature flag is enabled', () => {
       it('Then the Create Invoice button is visible on the page', async () => {
         render(<DealDetailPage />);
-        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
+        await waitFor(() => expect(screen.getByText('Create invoice')).toBeInTheDocument());
       });
 
       it('When Create Invoice is clicked / Then calls navigate() for soft SPA navigation', async () => {
         const user = userEvent.setup();
         render(<DealDetailPage />);
-        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
-        await user.click(screen.getByText('Create Invoice'));
+        await waitFor(() => expect(screen.getByText('Create invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create invoice'));
         expect(mockNavigate).toHaveBeenCalled();
       });
 
       it('When Create Invoice is clicked / Then navigates to /accounting/invoices route', async () => {
         const user = userEvent.setup();
         render(<DealDetailPage />);
-        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
-        await user.click(screen.getByText('Create Invoice'));
+        await waitFor(() => expect(screen.getByText('Create invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create invoice'));
         expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('/accounting/invoices'));
       });
 
       it('When Create Invoice is clicked / Then includes create=true in URL params', async () => {
         const user = userEvent.setup();
         render(<DealDetailPage />);
-        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
-        await user.click(screen.getByText('Create Invoice'));
+        await waitFor(() => expect(screen.getByText('Create invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create invoice'));
         expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('create=true'));
       });
 
       it('When Create Invoice is clicked / Then includes deal_id from route params in URL', async () => {
         const user = userEvent.setup();
         render(<DealDetailPage />);
-        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
-        await user.click(screen.getByText('Create Invoice'));
+        await waitFor(() => expect(screen.getByText('Create invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create invoice'));
         expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('deal_id=deal-1'));
       });
 
       it('When Create Invoice is clicked / Then includes deal_name from the deal in URL', async () => {
         const user = userEvent.setup();
         render(<DealDetailPage />);
-        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
-        await user.click(screen.getByText('Create Invoice'));
+        await waitFor(() => expect(screen.getByText('Create invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create invoice'));
         const url = mockNavigate.mock.calls[0][0] as string;
         expect(url).toContain('deal_name=');
         expect(decodeURIComponent(url.replace(/\+/g, ' '))).toContain('Big Deal');
@@ -653,8 +653,8 @@ describe('DealDetailPage', () => {
       it('When Create Invoice is clicked / Then includes customer_name from deal company_name in URL', async () => {
         const user = userEvent.setup();
         render(<DealDetailPage />);
-        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
-        await user.click(screen.getByText('Create Invoice'));
+        await waitFor(() => expect(screen.getByText('Create invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create invoice'));
         const url = mockNavigate.mock.calls[0][0] as string;
         expect(url).toContain('customer_name=');
         expect(decodeURIComponent(url.replace(/\+/g, ' '))).toContain('Acme Corp');
@@ -663,16 +663,16 @@ describe('DealDetailPage', () => {
       it('When Create Invoice is clicked / Then includes amount from deal value in URL', async () => {
         const user = userEvent.setup();
         render(<DealDetailPage />);
-        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
-        await user.click(screen.getByText('Create Invoice'));
+        await waitFor(() => expect(screen.getByText('Create invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create invoice'));
         expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('amount=50000'));
       });
 
       it('When Create Invoice is clicked / Then navigate is called exactly once', async () => {
         const user = userEvent.setup();
         render(<DealDetailPage />);
-        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
-        await user.click(screen.getByText('Create Invoice'));
+        await waitFor(() => expect(screen.getByText('Create invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create invoice'));
         const invoiceNavigateCalls = mockNavigate.mock.calls.filter(
           (call) => typeof call[0] === 'string' && call[0].includes('/accounting/invoices')
         );
@@ -682,8 +682,8 @@ describe('DealDetailPage', () => {
       it('When Create Invoice is clicked / Then all required params are in the single URL', async () => {
         const user = userEvent.setup();
         render(<DealDetailPage />);
-        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
-        await user.click(screen.getByText('Create Invoice'));
+        await waitFor(() => expect(screen.getByText('Create invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create invoice'));
         const url = mockNavigate.mock.calls[0][0] as string;
         expect(url).toContain('create=true');
         expect(url).toContain('deal_id=deal-1');
@@ -698,8 +698,8 @@ describe('DealDetailPage', () => {
         mockGetDealById.mockResolvedValue(makeDeal({ company_name: null }));
         const user = userEvent.setup();
         render(<DealDetailPage />);
-        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
-        await user.click(screen.getByText('Create Invoice'));
+        await waitFor(() => expect(screen.getByText('Create invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create invoice'));
         const url = mockNavigate.mock.calls[0][0] as string;
         expect(url).not.toContain('customer_name');
       });
@@ -708,8 +708,8 @@ describe('DealDetailPage', () => {
         mockGetDealById.mockResolvedValue(makeDeal({ value: null }));
         const user = userEvent.setup();
         render(<DealDetailPage />);
-        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
-        await user.click(screen.getByText('Create Invoice'));
+        await waitFor(() => expect(screen.getByText('Create invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create invoice'));
         const url = mockNavigate.mock.calls[0][0] as string;
         expect(url).not.toContain('amount');
       });
@@ -718,8 +718,8 @@ describe('DealDetailPage', () => {
         mockGetDealById.mockResolvedValue(makeDeal({ value: 0 }));
         const user = userEvent.setup();
         render(<DealDetailPage />);
-        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
-        await user.click(screen.getByText('Create Invoice'));
+        await waitFor(() => expect(screen.getByText('Create invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create invoice'));
         expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('amount=0'));
       });
 
@@ -727,8 +727,8 @@ describe('DealDetailPage', () => {
         mockGetDealById.mockResolvedValue(makeDeal({ company_name: '' }));
         const user = userEvent.setup();
         render(<DealDetailPage />);
-        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
-        await user.click(screen.getByText('Create Invoice'));
+        await waitFor(() => expect(screen.getByText('Create invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create invoice'));
         const url = mockNavigate.mock.calls[0][0] as string;
         expect(url).not.toContain('customer_name');
       });
@@ -738,7 +738,7 @@ describe('DealDetailPage', () => {
       it('When deal is null / Then clicking Create Invoice does nothing', async () => {
         mockGetDealById.mockResolvedValue(null);
         render(<DealDetailPage />);
-        await waitFor(() => expect(screen.queryByText('Create Invoice')).not.toBeInTheDocument());
+        await waitFor(() => expect(screen.queryByText('Create invoice')).not.toBeInTheDocument());
         expect(mockNavigate).not.toHaveBeenCalledWith(expect.stringContaining('/accounting/invoices'));
       });
     });
@@ -869,38 +869,38 @@ describe('DealDetailPage', () => {
     describe('When DEAL_ESTIMATE_REQUEST feature flag is enabled', () => {
       it('Then Create Estimate button is visible on the page', async () => {
         render(<DealDetailPage />);
-        await waitFor(() => expect(screen.getByText('Create Estimate')).toBeInTheDocument());
+        await waitFor(() => expect(screen.getByText('Create estimate')).toBeInTheDocument());
       });
 
       it('When Create Estimate is clicked / Then calls navigate()', async () => {
         const user = userEvent.setup();
         render(<DealDetailPage />);
-        await waitFor(() => expect(screen.getByText('Create Estimate')).toBeInTheDocument());
-        await user.click(screen.getByText('Create Estimate'));
+        await waitFor(() => expect(screen.getByText('Create estimate')).toBeInTheDocument());
+        await user.click(screen.getByText('Create estimate'));
         expect(mockNavigate).toHaveBeenCalled();
       });
 
       it('When Create Estimate is clicked / Then navigates to /accounting/estimations', async () => {
         const user = userEvent.setup();
         render(<DealDetailPage />);
-        await waitFor(() => expect(screen.getByText('Create Estimate')).toBeInTheDocument());
-        await user.click(screen.getByText('Create Estimate'));
+        await waitFor(() => expect(screen.getByText('Create estimate')).toBeInTheDocument());
+        await user.click(screen.getByText('Create estimate'));
         expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('/accounting/estimations'));
       });
 
       it('When Create Estimate is clicked / Then includes create=true in URL params', async () => {
         const user = userEvent.setup();
         render(<DealDetailPage />);
-        await waitFor(() => expect(screen.getByText('Create Estimate')).toBeInTheDocument());
-        await user.click(screen.getByText('Create Estimate'));
+        await waitFor(() => expect(screen.getByText('Create estimate')).toBeInTheDocument());
+        await user.click(screen.getByText('Create estimate'));
         expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('create=true'));
       });
 
       it('When Create Estimate is clicked / Then includes opportunity_ref from deal name in URL', async () => {
         const user = userEvent.setup();
         render(<DealDetailPage />);
-        await waitFor(() => expect(screen.getByText('Create Estimate')).toBeInTheDocument());
-        await user.click(screen.getByText('Create Estimate'));
+        await waitFor(() => expect(screen.getByText('Create estimate')).toBeInTheDocument());
+        await user.click(screen.getByText('Create estimate'));
         const url = mockNavigate.mock.calls.find(
           (call) => typeof call[0] === 'string' && call[0].includes('/accounting/estimations'),
         )?.[0] as string;
@@ -911,8 +911,8 @@ describe('DealDetailPage', () => {
       it('When Create Estimate is clicked / Then includes customer_name from deal company_name in URL', async () => {
         const user = userEvent.setup();
         render(<DealDetailPage />);
-        await waitFor(() => expect(screen.getByText('Create Estimate')).toBeInTheDocument());
-        await user.click(screen.getByText('Create Estimate'));
+        await waitFor(() => expect(screen.getByText('Create estimate')).toBeInTheDocument());
+        await user.click(screen.getByText('Create estimate'));
         const url = mockNavigate.mock.calls.find(
           (call) => typeof call[0] === 'string' && call[0].includes('/accounting/estimations'),
         )?.[0] as string;
@@ -924,8 +924,8 @@ describe('DealDetailPage', () => {
         mockGetDealById.mockResolvedValue(makeDeal({ company_name: null }));
         const user = userEvent.setup();
         render(<DealDetailPage />);
-        await waitFor(() => expect(screen.getByText('Create Estimate')).toBeInTheDocument());
-        await user.click(screen.getByText('Create Estimate'));
+        await waitFor(() => expect(screen.getByText('Create estimate')).toBeInTheDocument());
+        await user.click(screen.getByText('Create estimate'));
         const url = mockNavigate.mock.calls.find(
           (call) => typeof call[0] === 'string' && call[0].includes('/accounting/estimations'),
         )?.[0] as string;
@@ -935,7 +935,7 @@ describe('DealDetailPage', () => {
       it('When deal is null / Then clicking Create Estimate does nothing', async () => {
         mockGetDealById.mockResolvedValue(null);
         render(<DealDetailPage />);
-        await waitFor(() => expect(screen.queryByText('Create Estimate')).not.toBeInTheDocument());
+        await waitFor(() => expect(screen.queryByText('Create estimate')).not.toBeInTheDocument());
         expect(mockNavigate).not.toHaveBeenCalledWith(expect.stringContaining('/accounting/estimations'));
       });
     });
@@ -965,24 +965,24 @@ describe('DealDetailPage — deal context passed to Accounting document flows', 
     it('When Create Estimate is clicked / Then the deal id is passed so its products can be loaded', async () => {
       const user = userEvent.setup();
       render(<DealDetailPage />);
-      await waitFor(() => expect(screen.getByText('Create Estimate')).toBeInTheDocument());
-      await user.click(screen.getByText('Create Estimate'));
+      await waitFor(() => expect(screen.getByText('Create estimate')).toBeInTheDocument());
+      await user.click(screen.getByText('Create estimate'));
       expect(urlFor('/accounting/estimations')).toContain('deal_id=deal-1');
     });
 
     it('When Create Estimate is clicked / Then the deal customer is passed by id, not just by name', async () => {
       const user = userEvent.setup();
       render(<DealDetailPage />);
-      await waitFor(() => expect(screen.getByText('Create Estimate')).toBeInTheDocument());
-      await user.click(screen.getByText('Create Estimate'));
+      await waitFor(() => expect(screen.getByText('Create estimate')).toBeInTheDocument());
+      await user.click(screen.getByText('Create estimate'));
       expect(urlFor('/accounting/estimations')).toContain('customer_id=partner-99');
     });
 
     it('When Create Invoice is clicked / Then the deal customer is passed by id', async () => {
       const user = userEvent.setup();
       render(<DealDetailPage />);
-      await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
-      await user.click(screen.getByText('Create Invoice'));
+      await waitFor(() => expect(screen.getByText('Create invoice')).toBeInTheDocument());
+      await user.click(screen.getByText('Create invoice'));
       const url = urlFor('/accounting/invoices');
       expect(url).toContain('customer_id=partner-99');
       expect(url).toContain('deal_id=deal-1');
@@ -994,8 +994,8 @@ describe('DealDetailPage — deal context passed to Accounting document flows', 
       mockGetDealById.mockResolvedValue(makeDeal({ partner_id: null }));
       const user = userEvent.setup();
       render(<DealDetailPage />);
-      await waitFor(() => expect(screen.getByText('Create Estimate')).toBeInTheDocument());
-      await user.click(screen.getByText('Create Estimate'));
+      await waitFor(() => expect(screen.getByText('Create estimate')).toBeInTheDocument());
+      await user.click(screen.getByText('Create estimate'));
       const url = urlFor('/accounting/estimations');
       expect(url).not.toContain('customer_id');
       expect(url).toContain('customer_name=');

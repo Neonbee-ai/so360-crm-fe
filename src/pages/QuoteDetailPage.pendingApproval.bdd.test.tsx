@@ -53,7 +53,7 @@ const quote = {
 const openSendAndSubmit = async () => {
   const { container } = render(<QuoteDetailPage />);
   await waitFor(() => screen.getByText('Test Quote'));
-  fireEvent.click(screen.getAllByText('Email to Customer')[0]);
+  fireEvent.click(screen.getAllByText('Email to customer')[0]);
   const input = await waitFor(() => {
     const el = container.ownerDocument.querySelector('[name="quote-send-to"]') as HTMLInputElement;
     expect(el).toBeTruthy();

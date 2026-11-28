@@ -97,20 +97,21 @@ beforeEach(async () => {
 
 describe('TasksPage', () => {
   describe('Given the user may view team and all tasks', () => {
-    it('When rendered / Then scope is a views segmented control with My, Team and All options', async () => {
+    it('When the Filters drawer opens / Then scope is a Show field with My, Team and All options', async () => {
       render(<TasksPage />);
       await waitFor(() => expect(screen.getByTestId('table')).toBeInTheDocument());
-      const group = screen.getByTestId('tasks-scope-views');
-      expect(group).toBeInTheDocument();
-      expect(screen.getByRole('radio', { name: 'My Tasks' })).toBeInTheDocument();
-      expect(screen.getByRole('radio', { name: 'Team Tasks' })).toBeInTheDocument();
-      expect(screen.getByRole('radio', { name: 'All Tasks' })).toBeInTheDocument();
+      fireEvent.click(await screen.findByRole('button', { name: /^Filters/ }));
+      expect(screen.getByRole('radio', { name: 'My tasks' })).toBeInTheDocument();
+      expect(screen.getByRole('radio', { name: 'Team tasks' })).toBeInTheDocument();
+      expect(screen.getByRole('radio', { name: 'All tasks' })).toBeInTheDocument();
     });
 
     it('When Team Tasks is chosen / Then tasks are reloaded with team scope', async () => {
       render(<TasksPage />);
       await waitFor(() => expect(mockGetTasks).toHaveBeenCalled());
-      fireEvent.click(screen.getByRole('radio', { name: 'Team Tasks' }));
+      fireEvent.click(await screen.findByRole('button', { name: /^Filters/ }));
+      fireEvent.click(screen.getByRole('radio', { name: 'Team tasks' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
       await waitFor(() => expect(mockGetTasks).toHaveBeenLastCalledWith('team'));
     });
 

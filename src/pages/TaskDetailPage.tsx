@@ -215,33 +215,27 @@ const TaskDetailPage = () => {
                     )}
                 </span>
             }
-            // TODO(comb-title-area): manual - unsupported Button prop aria-label
-            primaryAction={
-                <Button
-                    onClick={() => canEdit && setIsEditingTask(true)}
-                    disabled={!canEdit}
-                    aria-label="Edit Task"
-                    title={canEdit ? 'Edit Task' : TASK_LOCKED_HINT}
-                ><Edit2 size={14} />
-                    Edit
-                </Button>
-            }
+            primaryAction={{
+                id: 'edit-task',
+                label: 'Edit',
+                icon: <Edit2 size={14} />,
+                onSelect: () => { if (canEdit) setIsEditingTask(true); },
+                disabled: !canEdit,
+                disabledReason: !canEdit ? TASK_LOCKED_HINT : undefined,
+            }}
             secondaryActions={[
                 {
                     id: 'mark-as-complete',
                     label: task.status === 'DONE' ? 'Mark as open' : 'Mark as complete',
                     onSelect: handleTaskToggle,
                 },
-                // TODO(comb-title-area): manual - unsupported Button prop title
-                <Button
-                    key="reschedule"
-                    variant="secondary"
-                    onClick={() => canReschedule && setIsRescheduling(true)}
-                    disabled={!canReschedule}
-                    title={canReschedule ? 'Reschedule this task' : TASK_LOCKED_HINT}
-                >
-                    Reschedule
-                </Button>,
+                {
+                    id: 'reschedule',
+                    label: 'Reschedule',
+                    onSelect: () => { if (canReschedule) setIsRescheduling(true); },
+                    disabled: !canReschedule,
+                    disabledReason: !canReschedule ? TASK_LOCKED_HINT : undefined,
+                },
             ]}
             overflowActions={canCreateTask ? [{ label: 'Delete Task', danger: true, onSelect: () => setShowDeleteConfirm(true) }] : []}
             sidePanel={

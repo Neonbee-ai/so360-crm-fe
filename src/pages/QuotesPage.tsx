@@ -853,79 +853,42 @@ const QuotesPage = () => {
         onChange: (next: FilterValues) => setApprovalsStatusFilter(((next.status as string) || 'all') as 'all' | 'pending' | 'approved' | 'rejected'),
         onClear: () => { setApprovalsStatusFilter('all'); setApprovalsSearchTerm(''); },
     };
-    const bulkNode = selectedQuoteIds.length > 0 ? (
-                            <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 border border-primary/30 rounded-lg text-xs animate-in fade-in">
-                                <span className="font-semibold text-primary">
-                                    {selectedQuoteIds.length} selected
-                                </span>
-                                <span className="text-fg-muted">|</span>
-                                <Button variant="secondary" size="sm" onClick={handleExportSelected}>
-                                    Export CSV
-                                </Button>
-                                <Button variant="secondary" size="sm" onClick={() => setSelectedQuoteIds([])}>
-                                    Deselect
-                                </Button>
-                            </div>
-    ) : null;
-
-    const viewsNode = (
-        <SegmentedControl
-            size="sm"
-            aria-label="Quote views"
-            data-testid="quotes-views"
-            value={activeTab}
-            onChange={(v: string) => setActiveTab(v as 'all' | 'approvals')}
-            options={[
-                { value: 'all', label: 'All Quotes' },
-                { value: 'approvals', label: pendingApprovalsCount > 0 ? `Approvals (${pendingApprovalsCount})` : 'Approvals' },
-            ]}
-        />
-    );
-
     return (
         <ListPageTemplate
             trail={[]}
             title="Quotes"
             description="Manage sales quotes and proposals"
-            // TODO(comb-title-area): manual - not a Button (<ExportMenu>) (all items must be plain buttons to become PageActions)
-            headerSecondaryActions={[
-                <ExportMenu
-                    key="export"
-                    label="Export quotes"
-                    formats={['csv']}
-                    onExport={async () => {
-                        // A ticked selection keeps its one-click export; otherwise
-                        // offer export-all / export-filtered (Pulse 222d6d31).
-                        if (selectedQuoteIds.length > 0 || !canFilteredExport) { handleExportSelected(); return; }
-                        setIsExportDialogOpen(true);
-                    }}
-                />,
-            ]}
-            // TODO(comb-title-area): manual - icon has props other than size
-            primaryAction={canCreateQuote ? (
-                <QuotaGate
-                    quotaKey="max_quotes"
-                    moduleCode="crm"
-                    used={quotaData?.current_usage ?? 0}
-                    limit={quotaData?.limit ?? 0}
-                    isUnlimited={quotaData?.is_unlimited}
-                    disableOnExceeded
-                >
-                    <Button onClick={() => setIsCreateModalOpen(true)}><Plus className="w-4 h-4" />
-                        New Quote
-                    </Button>
-                </QuotaGate>
-            ) : undefined}
-            // TODO(comb-title-area): manual - use tabs (navigation) or a drawer field
-            views={viewsNode}
-            search={activeTab === 'all' ? (
-                <SearchInput placeholder="Search quotes..." value={searchTerm} onChange={setSearchTerm} />
-            ) : (
-                <SearchInput name="approvals-search" placeholder="Search approvals..." value={approvalsSearchTerm} onChange={setApprovalsSearchTerm} />
-            )}
+            export={{
+                onExport: () => {
+                    // A ticked selection keeps its one-click export; otherwise
+                    // offer export-all / export-filtered (Pulse 222d6d31).
+                    if (selectedQuoteIds.length > 0 || !canFilteredExport) { handleExportSelected(); return; }
+                    setIsExportDialogOpen(true);
+                },
+            }}
+            primaryAction={canCreateQuote ? {
+                id: 'new-quote',
+                label: 'New quote',
+                icon: <Plus />,
+                onSelect: () => setIsCreateModalOpen(true),
+                gate: { quota: { quotaKey: 'max_quotes', moduleCode: 'crm', used: quotaData?.current_usage ?? 0, limit: quotaData?.limit ?? 0, isUnlimited: quotaData?.is_unlimited, disableOnExceeded: true } },
+            } : undefined}
+            tabs={{
+                name: 'quote-views',
+                value: activeTab,
+                onChange: (v: string) => setActiveTab(v as 'all' | 'approvals'),
+                items: [
+                    { id: 'all', label: 'All quotes' },
+                    { id: 'approvals', label: 'Approvals', ...(pendingApprovalsCount > 0 ? { count: pendingApprovalsCount } : {}) },
+                ],
+            }}
+            search={activeTab === 'all'
+                ? { placeholder: 'Search quotes...', value: searchTerm, onChange: setSearchTerm }
+                : { placeholder: 'Search approvals...', value: approvalsSearchTerm, onChange: setApprovalsSearchTerm }}
             filters={activeTab === 'all' ? filterConfig : approvalsFilterConfig}
-            // TODO(comb-title-area): manual - move into drawer fields / view / R1 actions
-            toolbarEnd={activeTab === 'all' ? bulkNode : undefined}
+            selectedCount={activeTab === 'all' ? selectedQuoteIds.length : 0}
+            onClearSelection={() => setSelectedQuoteIds([])}
+            bulkActions={<Button variant="secondary" size="sm" onClick={handleExportSelected}>Export CSV</Button>}
             pagination={activeTab === 'all' && paginatedQuotes.length > 0 && effectiveQuotes.length > 0 ? (
                 <Pagination
                     currentPage={currentPage}

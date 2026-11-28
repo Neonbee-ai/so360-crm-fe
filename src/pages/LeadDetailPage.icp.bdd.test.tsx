@@ -84,7 +84,7 @@ vi.mock('./components/AuditHistoryTab', () => ({ default: () => <div data-testid
 vi.mock('../components/stakeholders/StakeholdersTab', () => ({ default: () => <div data-testid="stakeholders-tab" /> }));
 vi.mock('./components/EmailsTab', () => ({ default: () => <div data-testid="emails-tab" /> }));
 vi.mock('./components/MeetingsTab', () => ({ default: () => <div data-testid="meetings-tab" /> }));
-vi.mock('./components/QuickActionBar', () => ({ default: () => <div data-testid="quick-action-bar" /> }));
+vi.mock('./components/QuickActionBar', () => ({ default: () => null, buildQuickActions: () => [] }));
 vi.mock('./components/LeadLayoutSettingsPanel', () => ({ default: () => null }));
 
 let mockPathname = '/crm/leads/lead-1';

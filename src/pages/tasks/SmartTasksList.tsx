@@ -208,8 +208,23 @@ const SmartTasksList: React.FC = () => {
         },
     ];
 
+    const viewOptions = [
+        { value: '', label: 'All tasks' },
+        ...systemViews.map(v => ({ value: v.id, label: v.name })),
+        ...savedViews.map(v => ({ value: `saved:${v.id}`, label: v.name })),
+    ];
+    const showScope = canViewTeam || canViewAll;
     const filterConfig: ListFilterConfig = {
         fields: [
+            ...(showScope ? [{
+                key: 'scope', label: 'Show', type: 'segment' as const, default: 'own',
+                options: [
+                    { value: 'own', label: 'My tasks' },
+                    ...(canViewTeam ? [{ value: 'team', label: 'Team tasks' }] : []),
+                    ...(canViewAll ? [{ value: 'all', label: 'All tasks' }] : []),
+                ],
+            }] : []),
+            { key: 'view', label: 'Task view', type: 'select', options: viewOptions.map(o => ({ value: o.value || 'all', label: o.label })) },
             { key: 'due', label: 'Due', type: 'select', options: TASK_DUE_FILTER_OPTIONS },
             { key: 'type', label: 'Type', type: 'multiselect', options: TASK_TYPE_FILTER_OPTIONS },
             { key: 'priority', label: 'Priority', type: 'multiselect', options: TASK_PRIORITY_FILTER_OPTIONS },
@@ -217,16 +232,20 @@ const SmartTasksList: React.FC = () => {
             { key: 'assignee', label: 'Assignee', type: 'select', options: users.map(u => ({ value: u.id, label: u.full_name })) },
             { key: 'reminder', label: 'Reminder', type: 'select', options: TASK_REMINDER_FILTER_OPTIONS },
         ],
-        values: activeFilterValues(filters) as FilterValues,
-        onChange: (next: FilterValues) => setFilters(filtersFromFilterValues(filters, next)),
+        values: {
+            ...activeFilterValues(filters),
+            ...(showScope && filters.scope !== 'own' ? { scope: filters.scope } : {}),
+            ...(activeView ? { view: activeView } : {}),
+        } as FilterValues,
+        onChange: (next: FilterValues) => {
+            const nextView = next.view === 'all' ? '' : ((next.view as string) || '');
+            if (nextView !== activeView) { applyView(nextView); return; }
+            const scope = showScope ? (((next.scope as string) || 'own') as TaskListFilters['scope']) : filters.scope;
+            setFilters({ ...filtersFromFilterValues(filters, next), scope });
+        },
         onClear: () => setFilters(clearTaskFilters(filters)),
     };
 
-    const viewOptions = [
-        { value: '', label: 'All tasks' },
-        ...systemViews.map(v => ({ value: v.id, label: v.name })),
-        ...savedViews.map(v => ({ value: `saved:${v.id}`, label: v.name })),
-    ];
     const totalPages = Math.max(1, Math.ceil(total / TASK_PAGE_SIZE));
 
     return (
@@ -241,12 +260,19 @@ const SmartTasksList: React.FC = () => {
                 icon: <Plus />,
                 onSelect: () => setShowCreate(true),
             } : undefined}
-            // TODO(comb-title-area): manual - unsupported Button prop data-testid (all items must be plain buttons to become PageActions)
-            headerSecondaryActions={[
-                <Button key="save-view" variant="secondary" data-testid="tasks-save-view" disabled={hasNoFilters(filters) || activeView !== ''} onClick={() => setSaveOpen(true)}>
-                    Save view
-                </Button>,
-            ]}
+            secondaryActions={[{
+                id: 'save-view',
+                label: 'Save view',
+                onSelect: () => setSaveOpen(true),
+                disabled: hasNoFilters(filters) || activeView !== '',
+            }]}
+            moreActions={activeView.startsWith('saved:') ? [{
+                id: 'delete-saved-view',
+                label: 'Delete saved view',
+                icon: <Trash2 size={14} />,
+                kind: 'danger',
+                onSelect: () => handleDeleteView(activeView.slice('saved:'.length)),
+            }] : undefined}
             kpis={
                 <KpiGrid name="task-counters">
                     {TASK_COUNTER_TILES.map(tile => (
@@ -263,29 +289,6 @@ const SmartTasksList: React.FC = () => {
             }
             search={{ placeholder: 'Search tasks', value: filters.search, onChange: (v: string) => setFilters({ ...filters, search: v }) }}
             filters={filterConfig}
-            // TODO(comb-title-area): manual - use tabs (navigation) or a drawer field
-            views={(canViewTeam || canViewAll) ? (
-                <SegmentedControl
-                    aria-label="Task scope"
-                    data-testid="tasks-scope-views"
-                    value={filters.scope}
-                    onChange={(id: string) => setFilters({ ...filters, scope: id as TaskListFilters['scope'] })}
-                    options={[
-                        { value: 'own', label: 'My Tasks' },
-                        ...(canViewTeam ? [{ value: 'team', label: 'Team Tasks' }] : []),
-                        ...(canViewAll ? [{ value: 'all', label: 'All Tasks' }] : []),
-                    ]}
-                />
-            ) : undefined}
-            // TODO(comb-title-area): manual - move into drawer fields / view / R1 actions
-            toolbarEnd={
-                <div className="flex items-center gap-2">
-                    <Select name="task-view" aria-label="Task view" size="sm" value={activeView} onValueChange={applyView} options={viewOptions} data-testid="tasks-view-select" />
-                    {activeView.startsWith('saved:') && (
-                        <IconButton label="Delete saved view" size="sm" icon={<Trash2 size={14} />} data-testid="tasks-delete-view" onClick={() => handleDeleteView(activeView.slice('saved:'.length))} />
-                    )}
-                </div>
-            }
             pagination={total > TASK_PAGE_SIZE ? (
                 <Pagination currentPage={page} totalPages={totalPages} totalItems={total} pageSize={TASK_PAGE_SIZE} onPageChange={setPage} />
             ) : undefined}

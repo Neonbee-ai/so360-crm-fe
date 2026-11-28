@@ -5,7 +5,7 @@ import { canDownloadQuotePdf, downloadQuotePdf } from '../utils/quotePdfDownload
 import { Modal } from '../components/common/Modal';
 import { crmService } from '../services/crmService';
 import { RecordNotFound } from '../components/common/RecordNotFound';
-import { toast, getErrorMessage, useConfirm, DetailPageTemplate, Button, Card, Badge, Alert, TextField, Textarea, Select, DataTable, IconButton, type DataTableColumn, type BadgeTone, Grid, GridItem, EmptyState } from '@so360/design-system';
+import { toast, getErrorMessage, useConfirm, DetailPageTemplate, type PageAction, Button, Card, Badge, Alert, TextField, Textarea, Select, DataTable, IconButton, type DataTableColumn, type BadgeTone, Grid, GridItem, EmptyState } from '@so360/design-system';
 import { Quote, QuoteLine, QuoteStatus, ProductPickerSelection, Lead } from '../types/crm';
 import { INCOTERMS_2020, INCOTERM_LABELS } from '../utils/incoterms';
 import { useBusinessSettings, useActivity, useShellBridge, useOrganization } from '@so360/shell-context';
@@ -504,38 +504,26 @@ const QuoteDetailPage = () => {
 
     // Header actions: one primary (first available by priority), at most 2
     // secondaries, everything else (print, reject) in the overflow menu.
-    const act = {
-        save: isEditing ? (
-            <Button key="save" onClick={handleSave} disabled={isSaving}><Save className="w-4 h-4" />
-                {isSaving ? 'Saving...' : 'Save'}
-            </Button>
-        ) : null,
-        approve: canApproveQuote && canApprove ? (
-            <Button key="approve" onClick={handleApprove}><CheckCircle className="w-4 h-4" />Approve</Button>
-        ) : null,
-        submit: canSubmit && !isEditing ? (
-            <Button key="submit" onClick={handleOpenApprovalModal}><Send className="w-4 h-4" />Submit for Approval</Button>
-        ) : null,
-        convert: canConvertQuote && canConvert ? (
-            <Button key="convert" onClick={() => setShowConvertModal(true)}><FileText className="w-4 h-4" />Convert to Order</Button>
-        ) : null,
-        email: !isEditing ? (
-            <Button key="email" onClick={openSendModal}><Send className="w-4 h-4" />Email to Customer</Button>
-        ) : null,
+    const act: Record<'save' | 'approve' | 'submit' | 'convert' | 'email', PageAction | null> = {
+        save: isEditing ? { id: 'save', label: isSaving ? 'Saving...' : 'Save', icon: <Save className="w-4 h-4" />, onSelect: handleSave, disabled: isSaving } : null,
+        approve: canApproveQuote && canApprove ? { id: 'approve', label: 'Approve', icon: <CheckCircle className="w-4 h-4" />, onSelect: handleApprove } : null,
+        submit: canSubmit && !isEditing ? { id: 'submit', label: 'Submit for approval', icon: <Send className="w-4 h-4" />, onSelect: handleOpenApprovalModal } : null,
+        convert: canConvertQuote && canConvert ? { id: 'convert', label: 'Convert to order', icon: <FileText className="w-4 h-4" />, onSelect: () => setShowConvertModal(true) } : null,
+        email: !isEditing ? { id: 'email', label: 'Email to customer', icon: <Send className="w-4 h-4" />, onSelect: openSendModal } : null,
     };
     const primaryKey = (['save', 'approve', 'submit', 'convert', 'email'] as const).find(k => act[k]);
     const doCancel = () => { setIsEditing(false); setDraftValues({}); fetchQuote(); };
     const secondaryCandidates: Array<{ label: string; onSelect: () => void; icon: React.ReactNode }> = [
         ...(isEditing ? [{ label: 'Cancel', onSelect: doCancel, icon: null }] : []),
         ...(canCreateQuote && canEdit && !isEditing ? [{ label: 'Edit', onSelect: () => setIsEditing(true), icon: <Edit2 className="w-4 h-4" /> }] : []),
-        ...(canWithdraw && !isEditing ? [{ label: 'Withdraw Request', onSelect: () => setShowWithdrawModal(true), icon: <RotateCcw className="w-4 h-4" /> }] : []),
-        ...(!isEditing && primaryKey !== 'email' ? [{ label: 'Email to Customer', onSelect: openSendModal, icon: <Send className="w-4 h-4" /> }] : []),
+        ...(canWithdraw && !isEditing ? [{ label: 'Withdraw request', onSelect: () => setShowWithdrawModal(true), icon: <RotateCcw className="w-4 h-4" /> }] : []),
+        ...(!isEditing && primaryKey !== 'email' ? [{ label: 'Email to customer', onSelect: openSendModal, icon: <Send className="w-4 h-4" /> }] : []),
         // Download PDF is a header action (ServiceTitan/Procore show it visibly); it only drops to overflow when both slots are taken.
         ...(!isEditing && canDownloadQuotePdf(shell) ? [{ label: 'Download PDF', onSelect: handleDownloadPdf, icon: <Download className="w-4 h-4" /> }] : []),
     ];
-    const secondaryActions = secondaryCandidates.slice(0, 2).map(c => (
-        <Button key={c.label} variant="secondary" onClick={c.onSelect}>{c.icon}{c.label}</Button>
-    ));
+    const secondaryActions: PageAction[] = secondaryCandidates.slice(0, 2).map(c => ({
+        id: c.label.toLowerCase().replace(/\s+/g, '-'), label: c.label, icon: c.icon ?? undefined, onSelect: c.onSelect,
+    }));
     const overflowActions = [
         ...secondaryCandidates.slice(2).map(c => ({ label: c.label, onSelect: c.onSelect })),
         ...(canApproveQuote && canApprove ? [{ label: 'Reject', danger: true, onSelect: () => setShowRejectModal(true) }] : []),
@@ -556,8 +544,7 @@ const QuoteDetailPage = () => {
                     {quote.valid_until && ` • Valid until ${formatDate(quote.valid_until)}`}
                 </p>
             }
-            // TODO(comb-title-area): manual - primaryAction is not a Button / gated Button
-            primaryAction={primaryKey ? act[primaryKey] : undefined}
+            primaryAction={primaryKey ? (act[primaryKey] ?? undefined) : undefined}
             sidePanel={
                 <div className="flex flex-col gap-nb-3">
                         <Card title="Summary">
@@ -645,7 +632,6 @@ const QuoteDetailPage = () => {
                         )}
                     </div>
             }
-            // TODO(comb-title-area): manual - secondaryActions is not a literal list (unresolved secondaryActions)
             secondaryActions={secondaryActions}
             overflowActions={overflowActions}
         >

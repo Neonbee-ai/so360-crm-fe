@@ -21,7 +21,7 @@ import DealPaymentPlanPanel from './components/DealPaymentPlanPanel';
 import DealCommissionPanel from './components/DealCommissionPanel';
 import { useCrmFeatureFlag, RE_FLAGS } from '../hooks/useCrmFeatureFlag';
 import { RecordNotFound } from '../components/common/RecordNotFound';
-import { EmailComposeButton } from '../components/emailCompose/EmailComposeButton';
+import { useEmailComposeAction } from '../components/emailCompose/useEmailComposeAction';
 import { CrossLinkChip, toast, useConfirm, DetailPageTemplate, Button, IconButton, Card, EmptyState, Badge, Select, DatePicker, NumberInput, Textarea, Grid, GridItem, FileUpload } from '@so360/design-system';
 import { crmService, dealsApi, tasksApi, activitiesApi, TimelineEvent } from '../services/crmService';
 import { useCRMFormatters } from '../utils/formatters';
@@ -77,6 +77,7 @@ const DealDetailPage = () => {
     const [confirm, confirmDialog] = useConfirm();
     const formatters = useCRMFormatters();
     const { id = '' } = useParams<{ id: string }>();
+    const emailCompose = useEmailComposeAction('deal', id);
     const navigate = useNavigate();
     const { recordActivity } = useActivity();
     // RE Phase C: payment plan + commission tabs, each behind its own flag.
@@ -721,11 +722,10 @@ const DealDetailPage = () => {
                 icon: <Briefcase />,
                 onSelect: handleOpenProjectModal,
             } : undefined}
-            // TODO(comb-title-area): manual - not a Button (<EmailComposeButton>)
             secondaryActions={[
-                <EmailComposeButton key="compose-email" entityType="deal" entityId={deal.id} />,
-                ...(FEATURES.DEAL_ESTIMATE_REQUEST ? [<Button key="estimate" variant="secondary" onClick={handleCreateEstimate}><FileText size={14} />Create Estimate</Button>] : []),
-                ...(FEATURES.DEAL_INVOICE_REQUEST ? [<Button key="invoice" variant="secondary" onClick={handleCreateInvoice}><Receipt size={14} />Create Invoice</Button>] : []),
+                ...(emailCompose.action ? [emailCompose.action] : []),
+                ...(FEATURES.DEAL_ESTIMATE_REQUEST ? [{ id: 'create-estimate', label: 'Create estimate', icon: <FileText size={14} />, onSelect: handleCreateEstimate }] : []),
+                ...(FEATURES.DEAL_INVOICE_REQUEST ? [{ id: 'create-invoice', label: 'Create invoice', icon: <Receipt size={14} />, onSelect: handleCreateInvoice }] : []),
             ]}
             overflowActions={[
                 ...(isSignEnabled ? [{ label: 'Request Signature', onSelect: () => setSignOpen(true) }] : []),
@@ -1023,6 +1023,7 @@ const DealDetailPage = () => {
             )}
         >
             {confirmDialog}
+            {emailCompose.modal}
             <PromptDialog
                 open={!!editPrompt}
                 title={editPrompt?.title ?? ''}
