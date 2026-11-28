@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
-import { DashboardPageTemplate, Card, ListFilters, DataTable, Grid, Button, Skeleton } from '@so360/design-system';
+import { DashboardPageTemplate, Card, DataTable, Grid, Button, Skeleton } from '@so360/design-system';
 import { useSalesFilterConfig } from './components/SalesFiltersBar';
 import {
     salesReportService,
@@ -12,7 +12,8 @@ import {
 } from '../services/salesReportService';
 import { useCRMFormatters } from '../utils/formatters';
 import { describeApiError } from '../utils/apiErrorMessage';
-import ExportMenu, { useCanExport } from '../components/ExportMenu';
+import { useCanExport } from '../components/ExportMenu';
+import { exportPageActions } from '../utils/exportPageActions';
 import { exportService } from '../services/exportService';
 
 export const TOTAL_CARDS: Array<{ key: keyof CommissionTotals; label: string }> = [
@@ -143,12 +144,8 @@ const CommissionReportPage: React.FC = () => {
             title="Commission report"
             description="Commission earned across projects, agents and months."
             /* The report carries no developer list, so the developer filter is not offered here. */
-            // TODO(comb-title-area): manual - move inline filters into drawer fields (filters={{ fields, values, onChange, onClear }})
-            filters={<ListFilters {...filterConfig} />}
-            // TODO(comb-title-area): manual - not a Button (<ExportMenu>) (all items must be plain buttons to become PageActions)
-            secondaryActions={canExport && !forbidden ? (
-                <ExportMenu label="Export commission report" onExport={(format) => exportService.commission(filters, format)} />
-            ) : undefined}
+            filters={filterConfig}
+            moreActions={canExport && !forbidden ? exportPageActions('Export commission report', (format) => exportService.commission(filters, format)) : undefined}
         >
             <div className="flex flex-col gap-nb-4">{body}</div>
         </DashboardPageTemplate>

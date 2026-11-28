@@ -79,8 +79,11 @@ describe('Feature: Sales reports page', () => {
         it('When developers appear in the data / Then they become a Developer filter option', async () => {
             svc.get.mockResolvedValue(data);
             renderPage();
+            await screen.findByTestId('sa-total-bookings');
+            fireEvent.click(await screen.findByRole('button', { name: /^Filters/ }));
             const dev = await screen.findByLabelText('Developer');
             fireEvent.change(dev, { target: { value: 'dev1' } });
+            fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
             await waitFor(() => expect(svc.get).toHaveBeenLastCalledWith({ developer_id: 'dev1' }, 'month'));
         });
 
@@ -88,7 +91,9 @@ describe('Feature: Sales reports page', () => {
             svc.get.mockResolvedValue(data);
             renderPage();
             await screen.findByTestId('sa-total-bookings');
+            fireEvent.click(screen.getByRole('button', { name: /^Filters/ }));
             fireEvent.change(screen.getByLabelText('Report period'), { target: { value: 'quarter' } });
+            fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
             await waitFor(() => expect(svc.get).toHaveBeenLastCalledWith({}, 'quarter'));
         });
     });

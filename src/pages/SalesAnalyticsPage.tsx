@@ -240,19 +240,20 @@ const SalesAnalyticsPage: React.FC = () => {
             trail={[{ label: 'Sales', to: '/crm/sales' }]}
             title="Sales reports"
             description="Bookings, lead sources, lost reasons, reservations and agent performance."
-            // TODO(comb-title-area): manual - move inline filters into drawer fields (filters={{ fields, values, onChange, onClear }})
-            filters={(
-                <div className="space-y-4">
-            <Select
-                name="sales-report-period"
-                aria-label="Report period"
-                value={period}
-                onValueChange={(v) => setPeriod(v as ReportPeriod)}
-                options={REPORT_PERIODS.map((p) => ({ value: p, label: PERIOD_LABELS[p] }))}
-            />
-                    <ListFilters {...filterConfig} />
-                </div>
-            )}
+            filters={{
+                ...filterConfig,
+                fields: [
+                    { key: 'report_period', label: 'Report period', type: 'select', default: 'month', options: REPORT_PERIODS.map((p) => ({ value: p, label: PERIOD_LABELS[p] })) },
+                    ...filterConfig.fields,
+                ],
+                values: { ...filterConfig.values, report_period: period },
+                onChange: (next) => {
+                    const { report_period: nextPeriod, ...rest } = next;
+                    setPeriod(((nextPeriod as string) || 'month') as ReportPeriod);
+                    filterConfig.onChange(rest);
+                },
+                onClear: () => { setPeriod('month'); filterConfig.onClear(); },
+            }}
         >
             <div className="space-y-6">{body}</div>
         </DashboardPageTemplate>

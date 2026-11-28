@@ -227,8 +227,8 @@ describe('Feature: Commission report export (RE §48)', () => {
             bridge.value = { permissionsLoaded: true, hasPermission: (p: string) => p === 'deals.export', isFeatureEnabled: () => true };
             report.commissionReport.mockResolvedValue(fullReport());
             render(<CommissionReportPage />);
-            fireEvent.click(await screen.findByRole('button', { name: 'Export commission report' }));
-            fireEvent.click(await screen.findByRole('menuitem', { name: 'CSV' }));
+            fireEvent.click(await screen.findByRole('button', { name: 'More actions' }));
+            fireEvent.click(await screen.findByRole('menuitem', { name: 'Export commission report as CSV' }));
             await waitFor(() => expect(exp.commission).toHaveBeenCalledWith({}, 'csv'));
         });
 
@@ -237,7 +237,7 @@ describe('Feature: Commission report export (RE §48)', () => {
             report.commissionReport.mockRejectedValue(Object.assign(new Error('Forbidden'), { status: 403 }));
             render(<CommissionReportPage />);
             await screen.findByTestId('commission-report-forbidden');
-            expect(screen.queryByRole('group', { name: 'Export commission report' })).toBeNull();
+            expect(screen.queryByRole('menuitem', { name: /^Export commission report/ })).toBeNull();
         });
     });
 
@@ -246,7 +246,7 @@ describe('Feature: Commission report export (RE §48)', () => {
             report.commissionReport.mockResolvedValue(fullReport());
             render(<CommissionReportPage />);
             await screen.findByTestId('commission-table-by-agent');
-            expect(screen.queryByRole('group', { name: 'Export commission report' })).toBeNull();
+            expect(screen.queryByRole('menuitem', { name: /^Export commission report/ })).toBeNull();
         });
     });
 });

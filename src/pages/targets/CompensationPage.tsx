@@ -165,34 +165,40 @@ export default function CompensationPage() {
     <DashboardPageTemplate
       trail={[{ label: 'Targets', to: '/crm/targets' }]}
       title="Compensation"
-      meta={<span className="text-xs text-warning">⚠ For manager review only. No payroll or payment action is taken.</span>}
+      meta={{ kind: 'status', tone: 'warning', label: 'For manager review only. No payroll or payment action is taken.' }}
       primaryAction={{
           id: 'new-rule',
           label: 'New rule',
           icon: <Plus />,
           onSelect: () => { setFormError(null); setShowRuleForm(true); },
       }}
-      // TODO(comb-title-area): manual - move inline filters into drawer fields (filters={{ fields, values, onChange, onClear }})
-      filters={(
-        <Grid columns={12}>
-          <GridItem span={6}>
-            <FormField label="Person" name="comp_person">
-              <PeopleSelector clearable loadOptions={loadDirectoryPeople} value={personId} onChange={(id) => setPersonId(personIdOf(id))} />
-            </FormField>
-          </GridItem>
-          <GridItem span={3}>
-            <DateInput name="comp_from" label="From" value={periodStart} onChange={(iso: string) => setPeriodStart(iso)} />
-          </GridItem>
-          <GridItem span={3}>
-            <DateInput name="comp_to" label="To" value={periodEnd} onChange={(iso: string) => setPeriodEnd(iso)} />
-          </GridItem>
-          <GridItem span={12}>
-            <Button variant="primary" onClick={calculate} disabled={busy || !personId}>
-              {busy ? 'Calculating…' : 'Calculate'}
-            </Button>
-          </GridItem>
-        </Grid>
-      )}
+      secondaryActions={[{
+          id: 'calculate',
+          label: busy ? 'Calculating…' : 'Calculate',
+          onSelect: () => { void calculate(); },
+          disabled: busy || !personId,
+          disabledReason: !personId ? 'Choose a person in Filters first' : undefined,
+      }]}
+      filters={{
+        fields: [
+          {
+            key: 'person', label: 'Person', type: 'custom',
+            render: (_v, setValue) => (
+              <PeopleSelector clearable loadOptions={loadDirectoryPeople} value={personId} onChange={(id) => { const pid = personIdOf(id); setPersonId(pid); setValue(pid || null); }} />
+            ),
+            formatValue: () => 'Person selected',
+          },
+          { key: 'from', label: 'From', type: 'date' },
+          { key: 'to', label: 'To', type: 'date' },
+        ],
+        values: { ...(personId ? { person: personId } : {}), ...(periodStart ? { from: periodStart } : {}), ...(periodEnd ? { to: periodEnd } : {}) },
+        onChange: (next) => {
+          setPersonId((next.person as string) || '');
+          setPeriodStart((next.from as string) || '');
+          setPeriodEnd((next.to as string) || '');
+        },
+        onClear: () => { setPersonId(''); setPeriodStart(''); setPeriodEnd(''); },
+      }}
     >
     <div className="space-y-5">
 
