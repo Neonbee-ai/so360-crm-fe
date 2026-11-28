@@ -124,6 +124,7 @@ const IcpListPage: React.FC = () => {
                 trail={[{ label: 'Settings', to: '/crm/settings' }]}
                 title="Ideal customer profiles"
                 description={!loading ? `${icps.length} profile${icps.length === 1 ? '' : 's'}` : undefined}
+                // TODO(comb-title-area): manual - primaryAction is not a Button / gated Button
                 primaryAction={canCreate ? newBtn : undefined}
                 isEmpty={!loading && !error && icps.length === 0}
                 empty={(

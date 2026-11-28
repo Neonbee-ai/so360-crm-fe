@@ -218,13 +218,14 @@ export default function SalesReviewsPage() {
       trail={[{ label: 'Targets', to: '/crm/targets' }]}
       title="Reviews"
       count={reviews.length}
-      primaryAction={(
-        <Button variant="primary" onClick={openStart}>
-          <Plus size={16} aria-hidden="true" /> New review
-        </Button>
-      )}
-      search={<SearchInput value={search} onChange={setSearch} placeholder="Search by period…" />}
-      filterConfig={{
+      primaryAction={{
+          id: 'new-review',
+          label: 'New review',
+          icon: <Plus />,
+          onSelect: openStart,
+      }}
+      search={{ value: search, onChange: setSearch, placeholder: 'Search by period' }}
+      filters={{
         fields: [
           { key: 'status', label: 'Status', type: 'select', options: [
             { value: 'draft', label: 'Draft' },

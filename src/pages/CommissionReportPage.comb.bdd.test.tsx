@@ -75,7 +75,7 @@ describe('Feature: Commission report Retry (Comb Button)', () => {
             fireEvent.click(screen.getByRole('button', { name: /Retry/ }));
             await vi.waitFor(() => expect(report.commissionReport).toHaveBeenCalledTimes(2));
             expect(await screen.findByRole('alert')).toBeInTheDocument();
-            expect(screen.getByRole('button', { name: /Retry/ })).toBeEnabled();
+            expect(screen.getByRole('button', { name: /Retry/ })).not.toHaveAttribute('aria-disabled', 'true');
         });
         it('Given the error is shown / When Retry is focused and Enter pressed / Then the report reloads', async () => {
             report.commissionReport.mockRejectedValueOnce(fail());

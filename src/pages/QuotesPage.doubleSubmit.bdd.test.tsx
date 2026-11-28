@@ -110,7 +110,7 @@ describe('QuotesPage — Create Quote submits once per in-flight request', () =>
     await user.click(screen.getByRole('button', { name: 'Create Quote' }));
 
     const busy = await screen.findByRole('button', { name: 'Creating…' });
-    expect(busy).toBeDisabled();
+    expect(busy).toHaveAttribute('aria-disabled', 'true');
     expect(busy).toHaveAttribute('aria-busy', 'true');
     await act(async () => { pending.resolve({ id: 'q-new' }); });
   });
@@ -122,7 +122,7 @@ describe('QuotesPage — Create Quote submits once per in-flight request', () =>
     await user.click(screen.getByRole('button', { name: 'Create Quote' }));
     await waitFor(() => expect(mockToastError).toHaveBeenCalledWith('Network down'));
     const retry = await screen.findByRole('button', { name: 'Create Quote' });
-    expect(retry).not.toBeDisabled();
+    expect(retry).not.toHaveAttribute('aria-disabled', 'true');
     await user.click(retry);
 
     await waitFor(() => expect(mockCreateQuote).toHaveBeenCalledTimes(2));

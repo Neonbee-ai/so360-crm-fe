@@ -461,7 +461,7 @@ const PartnersPage = () => {
 
     const filterConfig: ListFilterConfig = {
         fields: [
-            { key: 'type', label: 'Type', type: 'select', quick: true, options: partnerTypes.map((pt: any) => ({ value: pt.value, label: pt.label, count: partners.filter((p: any) => p.partner_type === pt.value).length })) },
+            { key: 'type', label: 'Type', type: 'select', options: partnerTypes.map((pt: any) => ({ value: pt.value, label: pt.label, count: partners.filter((p: any) => p.partner_type === pt.value).length })) },
         ],
         values: (typeFilter !== 'All' ? { type: typeFilter } : {}) as FilterValues,
         onChange: (next: FilterValues) => setTypeFilter((next.type as string) || 'All'),
@@ -473,20 +473,14 @@ const PartnersPage = () => {
             trail={[]}
             title="Partners"
             description="Referral agents, resellers, and dealers who bring in deals"
-            primaryAction={
-                <Button onClick={() => setShowCreateModal(true)}>
-                    <Plus size={16} />
-                    New Partner
-                </Button>
-            }
-            search={
-                <SearchInput
-                    placeholder="Search partners by name, email..."
-                    value={searchTerm}
-                    onChange={setSearchTerm}
-                />
-            }
-            filterConfig={filterConfig}
+            primaryAction={{
+                id: 'new-partner',
+                label: 'New partner',
+                icon: <Plus />,
+                onSelect: () => setShowCreateModal(true),
+            }}
+            search={{ placeholder: 'Search partners by name, email', value: searchTerm, onChange: setSearchTerm }}
+            filters={filterConfig}
             pagination={filteredPartners.length > 0 ? (
                 <Pagination
                     currentPage={currentPage}

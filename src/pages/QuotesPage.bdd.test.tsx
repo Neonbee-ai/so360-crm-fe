@@ -206,11 +206,11 @@ describe('QuotesPage', () => {
       await user.click(screen.getByText('New Quote'));
       await waitFor(() => expect(screen.getByText('Create New Quote')).toBeInTheDocument());
       const createBtn = screen.getByRole('button', { name: 'Create Quote' });
-      expect(createBtn).toBeDisabled();
+      expect(createBtn).toHaveAttribute('aria-disabled', 'true');
       await user.click(screen.getByText('Select a deal...'));
       await waitFor(() => expect(screen.getByText('Acme Deal')).toBeInTheDocument());
       await user.click(screen.getByText('Acme Deal'));
-      await waitFor(() => expect(createBtn).not.toBeDisabled());
+      await waitFor(() => expect(createBtn).not.toHaveAttribute('aria-disabled', 'true'));
     });
 
     it('When searching by company name / Then filters deals matching the company', async () => {
@@ -502,7 +502,7 @@ describe('QuoteStatusCell', () => {
   describe('Given isActionLoading is true', () => {
     it('When rendered / Then status badge is disabled', () => {
       render(<QuoteStatusCell quote={makeQuote('draft')} isActionLoading={true} onAction={vi.fn()} />);
-      expect(screen.getByRole('button')).toBeDisabled();
+      expect(screen.getByRole('button')).toHaveAttribute('aria-disabled', 'true');
     });
   });
 

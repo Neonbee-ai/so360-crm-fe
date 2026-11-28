@@ -143,7 +143,9 @@ const CommissionReportPage: React.FC = () => {
             title="Commission report"
             description="Commission earned across projects, agents and months."
             /* The report carries no developer list, so the developer filter is not offered here. */
+            // TODO(comb-title-area): manual - move inline filters into drawer fields (filters={{ fields, values, onChange, onClear }})
             filters={<ListFilters {...filterConfig} />}
+            // TODO(comb-title-area): manual - not a Button (<ExportMenu>) (all items must be plain buttons to become PageActions)
             secondaryActions={canExport && !forbidden ? (
                 <ExportMenu label="Export commission report" onExport={(format) => exportService.commission(filters, format)} />
             ) : undefined}

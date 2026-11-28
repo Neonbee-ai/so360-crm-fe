@@ -166,11 +166,13 @@ export default function CompensationPage() {
       trail={[{ label: 'Targets', to: '/crm/targets' }]}
       title="Compensation"
       meta={<span className="text-xs text-warning">⚠ For manager review only. No payroll or payment action is taken.</span>}
-      primaryAction={(
-        <Button variant="primary" onClick={() => { setFormError(null); setShowRuleForm(true); }}>
-          <Plus size={16} aria-hidden="true" /> New rule
-        </Button>
-      )}
+      primaryAction={{
+          id: 'new-rule',
+          label: 'New rule',
+          icon: <Plus />,
+          onSelect: () => { setFormError(null); setShowRuleForm(true); },
+      }}
+      // TODO(comb-title-area): manual - move inline filters into drawer fields (filters={{ fields, values, onChange, onClear }})
       filters={(
         <Grid columns={12}>
           <GridItem span={6}>

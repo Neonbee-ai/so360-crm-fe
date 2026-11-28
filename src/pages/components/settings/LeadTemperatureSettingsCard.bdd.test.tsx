@@ -159,10 +159,10 @@ describe('Given the lead temperature settings card', () => {
             const btn = screen.getByRole('button', { name: /save temperature/i });
             expect(btn.querySelector('[data-testid="icon-Save"]')).not.toBeNull();
             fireEvent.click(btn);
-            await waitFor(() => expect(btn).toBeDisabled());
+            await waitFor(() => expect(btn).toHaveAttribute('aria-disabled', 'true'));
             expect(btn.querySelector('[data-testid="icon-Loader2"]')).not.toBeNull();
             resolve(settings({ hot_min: 70, is_default: false }));
-            await waitFor(() => expect(btn).not.toBeDisabled());
+            await waitFor(() => expect(btn).not.toHaveAttribute('aria-disabled', 'true'));
         });
     });
 

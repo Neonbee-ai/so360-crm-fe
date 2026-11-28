@@ -24,8 +24,8 @@ describe('Given the layout settings panel', () => {
             render(<LeadLayoutSettingsPanel {...p} title="Customize Dashboard" labels={{ a: 'Alpha', b: 'Beta' }} />);
             expect(screen.getByRole('dialog')).toBeInTheDocument();
             expect(screen.getByText('Customize Dashboard')).toBeInTheDocument();
-            expect(screen.getByRole('button', { name: 'Move Alpha up' })).toBeDisabled();
-            expect(screen.getByRole('button', { name: 'Move Beta down' })).toBeDisabled();
+            expect(screen.getByRole('button', { name: 'Move Alpha up' })).toHaveAttribute('aria-disabled', 'true');
+            expect(screen.getByRole('button', { name: 'Move Beta down' })).toHaveAttribute('aria-disabled', 'true');
             fireEvent.click(screen.getByRole('button', { name: 'Move Alpha down' }));
             expect(p.onMove).toHaveBeenCalledWith('a', 'down');
             expect(screen.getByRole('button', { name: 'Hide Alpha' })).toHaveAttribute('aria-pressed', 'true');

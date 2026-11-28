@@ -236,15 +236,17 @@ const PipelinePage = () => {
             trail={[]}
             title="Deals Pipeline"
             description="Visualize deal movement and sales progress"
-            primaryAction={canCreateDeal ? (
-                <Button onClick={() => setIsCreateDealOpen(true)}>
-                    <Plus size={16} aria-hidden="true" />
-                    New Deal
-                </Button>
-            ) : undefined}
+            primaryAction={canCreateDeal ? {
+                id: 'new-deal',
+                label: 'New deal',
+                icon: <Plus />,
+                onSelect: () => setIsCreateDealOpen(true),
+            } : undefined}
+            // TODO(comb-title-area): manual - not a plain Button (all items must be plain buttons to become PageActions)
             headerSecondaryActions={canExportDeals ? [
                 <Suspense key="export" fallback={<Skeleton variant="rect" />}><ExportMenu label="Export deals" onExport={(format) => exportService.deals(filters, format)} /></Suspense>,
             ] : undefined}
+            // TODO(comb-title-area): manual - search node is not a plain SearchInput
             search={
                 <div className="flex items-center gap-2">
                 {scopedLeadId && (
@@ -259,7 +261,8 @@ const PipelinePage = () => {
                 />
                 </div>
             }
-            filterConfig={filterConfig}
+            filters={filterConfig}
+            // TODO(comb-title-area): manual - move into drawer fields / view / R1 actions
             toolbarEnd={isFiltering ? (
                 <div className="flex items-center gap-2 text-info h-nb-control-md px-3">
                     <span className="text-xs" role="status">Refining results...</span>

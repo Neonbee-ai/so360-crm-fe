@@ -665,11 +665,13 @@ const LeadDetailPage = () => {
                     </span>
                 }
                 status={statusNode}
-                primaryAction={canCreateDeal ? (
-                    <Button onClick={() => setIsCreatingDeal(true)}><Plus size={16} />
-                        Create Deal
-                    </Button>
-                ) : undefined}
+                primaryAction={canCreateDeal ? {
+                    id: 'create-deal',
+                    label: 'Create deal',
+                    icon: <Plus />,
+                    onSelect: () => setIsCreatingDeal(true),
+                } : undefined}
+                // TODO(comb-title-area): manual - not a Button (<EmailComposeButton>)
                 secondaryActions={[
                     <EmailComposeButton key="compose-email" entityType="lead" entityId={lead.id} />,
                     <QuickActionBar

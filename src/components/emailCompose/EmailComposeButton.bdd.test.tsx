@@ -120,7 +120,7 @@ describe('Given the Compose Email button (RE G9)', () => {
             expect(h.listTemplates).toHaveBeenCalledTimes(1);
             expect(screen.getByRole('dialog', { name: 'Compose email' })).toBeInTheDocument();
             expect(screen.getByTestId('merge-field-hint').textContent).toContain('{{brochure_link}}');
-            expect(screen.getByRole('button', { name: /Send/ })).toBeDisabled();
+            expect(screen.getByRole('button', { name: /Send/ })).toHaveAttribute('aria-disabled', 'true');
         });
 
         it('Then a template load failure still lets the user write their own email', async () => {
@@ -130,7 +130,7 @@ describe('Given the Compose Email button (RE G9)', () => {
             await waitFor(() => expect(screen.getByRole('option', { name: 'No template (write your own)' })).toBeInTheDocument());
             fireEvent.change(screen.getByLabelText('Subject'), { target: { value: 'Hello' } });
             fireEvent.change(screen.getByLabelText('Body'), { target: { value: '<p>Hi</p>' } });
-            expect(screen.getByRole('button', { name: /Send/ })).toBeEnabled();
+            expect(screen.getByRole('button', { name: /Send/ })).not.toHaveAttribute('aria-disabled', 'true');
         });
     });
 

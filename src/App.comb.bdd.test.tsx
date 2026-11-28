@@ -78,7 +78,7 @@ describe('Feature: App upgrade prompt Button (Comb)', () => {
       const btn = await screen.findByRole('button', { name: 'Upgrade plan' });
       expect(btn).toHaveAttribute('data-comb', 'button');
       expect(btn).toHaveAttribute('type', 'button');
-      expect(btn).toBeEnabled();
+      expect(btn).not.toHaveAttribute('aria-disabled', 'true');
       expect(screen.getByText('This feature is part of a higher plan')).toBeInTheDocument();
     });
   });

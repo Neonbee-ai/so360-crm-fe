@@ -80,8 +80,8 @@ describe('Given the matching units panel on a lead', () => {
     describe('When a unit is already on the record', () => {
         it('Then its button reads Added and is disabled', async () => {
             render(<MatchingUnitsPanel entity="lead" id="lead-1" existingItemIds={new Set(['item-1'])} onAttach={vi.fn()} />);
-            expect(await screen.findByRole('button', { name: 'A-101 added' })).toBeDisabled();
-            expect(screen.getByRole('button', { name: 'Attach B-202' })).toBeEnabled();
+            expect(await screen.findByRole('button', { name: 'A-101 added' })).toHaveAttribute('aria-disabled', 'true');
+            expect(screen.getByRole('button', { name: 'Attach B-202' })).not.toHaveAttribute('aria-disabled', 'true');
         });
     });
 
@@ -153,11 +153,11 @@ describe('Given an attach that is still in flight', () => {
         render(<MatchingUnitsPanel entity="lead" id="lead-1" existingItemIds={new Set()} onAttach={onAttach} />);
         const btn = await screen.findByRole('button', { name: 'Attach A-101' });
         fireEvent.click(btn);
-        await waitFor(() => expect(btn).toBeDisabled());
+        await waitFor(() => expect(btn).toHaveAttribute('aria-disabled', 'true'));
         expect(screen.getByTestId('icon-Loader2')).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: 'Attach B-202' })).toBeEnabled();
+        expect(screen.getByRole('button', { name: 'Attach B-202' })).not.toHaveAttribute('aria-disabled', 'true');
         finish();
-        await waitFor(() => expect(btn).toBeEnabled());
+        await waitFor(() => expect(btn).not.toHaveAttribute('aria-disabled', 'true'));
         expect(screen.queryByTestId('icon-Loader2')).not.toBeInTheDocument();
     });
 
@@ -167,7 +167,7 @@ describe('Given an attach that is still in flight', () => {
         const btn = await screen.findByRole('button', { name: 'Attach A-101' });
         fireEvent.click(btn);
         await waitFor(() => expect(onAttach).toHaveBeenCalledTimes(1));
-        await waitFor(() => expect(btn).toBeEnabled());
+        await waitFor(() => expect(btn).not.toHaveAttribute('aria-disabled', 'true'));
     });
 });
 

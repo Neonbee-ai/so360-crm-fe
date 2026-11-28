@@ -661,10 +661,10 @@ const LeadsPage = () => {
 
   const leadFilterConfig: ListFilterConfig = {
     fields: [
-      { key: 'status', label: 'Status', type: 'select', quick: true, options: leadStages.map((st) => ({ value: st.name, label: st.name, ...(st.name in statusCounts ? { count: statusCounts[st.name] } : {}) })) },
-      { key: 'owner', label: 'Owner', type: 'select', quick: true, options: [{ value: UNASSIGNED_OWNER, label: 'Unassigned' }, ...users.map((u) => ({ value: u.id, label: u.full_name }))] },
+      { key: 'status', label: 'Status', type: 'select', options: leadStages.map((st) => ({ value: st.name, label: st.name, ...(st.name in statusCounts ? { count: statusCounts[st.name] } : {}) })) },
+      { key: 'owner', label: 'Owner', type: 'select', options: [{ value: UNASSIGNED_OWNER, label: 'Unassigned' }, ...users.map((u) => ({ value: u.id, label: u.full_name }))] },
       {
-        key: 'dateRange', label: 'Date range', type: 'select', quick: true,
+        key: 'dateRange', label: 'Date range', type: 'select',
         options: ['Today', 'Yesterday', 'This Week', 'Last Week', 'This Month', 'Last Month', 'Custom'].map((v) => ({ value: v, label: v === 'Custom' ? 'Custom Range' : v })),
       },
       { key: 'customDates', label: 'Custom dates', type: 'daterange' },
@@ -719,23 +719,14 @@ const LeadsPage = () => {
         trail={[]}
         title="Leads & Accounts"
         count={total}
-        primaryAction={
-          canCreateLead ? (
-            <QuotaGate
-              quotaKey="max_contacts"
-              moduleCode="crm"
-              used={contactsTotal ?? total}
-              limit={quotaData?.limit ?? 0}
-              isUnlimited={quotaData?.is_unlimited}
-              disableOnExceeded
-            >
-              <Button onClick={() => setIsModalOpen(true)}>
-                <Plus size={16} aria-hidden="true" />
-                New Lead
-              </Button>
-            </QuotaGate>
-          ) : undefined
-        }
+        primaryAction={canCreateLead ? {
+            id: 'new-lead',
+            label: 'New lead',
+            icon: <Plus />,
+            onSelect: () => setIsModalOpen(true),
+            gate: { quota: { quotaKey: "max_contacts", moduleCode: "crm", used: contactsTotal ?? total, limit: quotaData?.limit ?? 0, isUnlimited: quotaData?.is_unlimited, disableOnExceeded: true } },
+        } : undefined}
+        // TODO(comb-title-area): manual - not a plain Button (all items must be plain buttons to become PageActions)
         headerSecondaryActions={[
           ...(canExportLeads ? [<Suspense key="export" fallback={<Skeleton variant="rect" />}><ExportMenu label="Export leads" onExport={(format) => exportService.leads({ status: filters.status }, format)} /></Suspense>] : []),
         ]}
@@ -743,6 +734,7 @@ const LeadsPage = () => {
           { label: activeViewId ? `Saved views (${savedViews.find((v) => v.id === activeViewId)?.name ?? 'Views'})` : 'Saved views', icon: <Bookmark size={16} aria-hidden="true" />, onSelect: () => setOpenDropdown('views') },
           ...(canImportLeads ? [{ label: 'Import', icon: <UploadCloud size={16} aria-hidden="true" />, onSelect: () => setIsImportOpen(true) }] : []),
         ]}
+        // TODO(comb-title-area): manual - use tabs (navigation) or a drawer field
         views={
           <SegmentedControl
             aria-label="Lead scope"
@@ -756,18 +748,14 @@ const LeadsPage = () => {
             ]}
           />
         }
-        search={
-          <SearchInput
-            placeholder="Search leads…"
-            value={filters.search}
-            onChange={(v: string) => setFilter('search', v)}
-          />
-        }
-        filterConfig={leadFilterConfig}
+        search={{ placeholder: 'Search leads', value: filters.search, onChange: (v: string) => setFilter('search', v) }}
+        filters={leadFilterConfig}
+        // TODO(comb-title-area): manual - move into drawer fields / view / R1 actions
         toolbarEnd={
           <div ref={setGridControlsSlot} className="flex shrink-0 items-center" data-slot="grid-controls" />
         }
         loading={false}
+        // TODO(comb-title-area): manual - notice is an array; banner takes one banner
         notice={[
           error && !isLoading && <Banner key="error" variant="danger">{error}</Banner>,
           isSandboxMode && isLimited(total) && (

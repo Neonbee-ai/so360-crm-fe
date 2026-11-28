@@ -363,7 +363,7 @@ describe('Given saving a rule', () => {
         fireEvent.click(screen.getByRole('button', { name: 'pick one' }));
         const save = screen.getByRole('button', { name: /save rule/i });
         fireEvent.click(save);
-        await waitFor(() => expect(save).toBeDisabled());
+        await waitFor(() => expect(save).toHaveAttribute('aria-disabled', 'true'));
         expect(within(save).getByTestId('icon-Loader2')).toBeInTheDocument();
         d.resolve({ id: 'r9' });
         await waitFor(() => expect(screen.queryByTestId('assignment-rule-editor')).not.toBeInTheDocument());
@@ -376,7 +376,7 @@ describe('Given saving a rule', () => {
         fireEvent.click(screen.getByRole('button', { name: /save rule/i }));
         await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Could not save the rule.'));
         expect(screen.getByTestId('assignment-rule-editor')).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /save rule/i })).toBeEnabled();
+        expect(screen.getByRole('button', { name: /save rule/i })).not.toHaveAttribute('aria-disabled', 'true');
         expect(toast.success).not.toHaveBeenCalled();
     });
 
@@ -398,7 +398,7 @@ describe('Given toggling a rule fails', () => {
         await renderTab();
         fireEvent.click(screen.getByRole('button', { name: 'Turn off Facebook leads' }));
         await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Could not update the rule.'));
-        expect(screen.getByRole('button', { name: 'Turn off Facebook leads' })).toBeEnabled();
+        expect(screen.getByRole('button', { name: 'Turn off Facebook leads' })).not.toHaveAttribute('aria-disabled', 'true');
     });
 
     it('When an inactive rule is turned on / Then is_active true is patched', async () => {
@@ -452,10 +452,10 @@ describe('Given deleting a rule', () => {
 describe('Given reordering', () => {
     it('When the list renders / Then the first rule cannot move up and the last cannot move down', async () => {
         await renderTab();
-        expect(screen.getByRole('button', { name: 'Move Facebook leads up' })).toBeDisabled();
-        expect(screen.getByRole('button', { name: 'Move Facebook leads down' })).toBeEnabled();
-        expect(screen.getByRole('button', { name: 'Move Catch all up' })).toBeEnabled();
-        expect(screen.getByRole('button', { name: 'Move Catch all down' })).toBeDisabled();
+        expect(screen.getByRole('button', { name: 'Move Facebook leads up' })).toHaveAttribute('aria-disabled', 'true');
+        expect(screen.getByRole('button', { name: 'Move Facebook leads down' })).not.toHaveAttribute('aria-disabled', 'true');
+        expect(screen.getByRole('button', { name: 'Move Catch all up' })).not.toHaveAttribute('aria-disabled', 'true');
+        expect(screen.getByRole('button', { name: 'Move Catch all down' })).toHaveAttribute('aria-disabled', 'true');
     });
 
     it('When a rule moves down and the server returns its order / Then the saved rows replace the list', async () => {
@@ -476,11 +476,11 @@ describe('Given reordering', () => {
         svc.reorder.mockReturnValueOnce(d.promise);
         await renderTab();
         fireEvent.click(screen.getByRole('button', { name: 'Move Catch all up' }));
-        await waitFor(() => expect(screen.getByRole('button', { name: 'Edit Facebook leads' })).toBeDisabled());
-        expect(screen.getByRole('button', { name: 'Delete Catch all' })).toBeDisabled();
-        expect(screen.getByRole('button', { name: 'Turn off Catch all' })).toBeDisabled();
+        await waitFor(() => expect(screen.getByRole('button', { name: 'Edit Facebook leads' })).toHaveAttribute('aria-disabled', 'true'));
+        expect(screen.getByRole('button', { name: 'Delete Catch all' })).toHaveAttribute('aria-disabled', 'true');
+        expect(screen.getByRole('button', { name: 'Turn off Catch all' })).toHaveAttribute('aria-disabled', 'true');
         d.resolve([]);
-        await waitFor(() => expect(screen.getByRole('button', { name: 'Edit Facebook leads' })).toBeEnabled());
+        await waitFor(() => expect(screen.getByRole('button', { name: 'Edit Facebook leads' })).not.toHaveAttribute('aria-disabled', 'true'));
     });
 });
 
@@ -491,12 +491,12 @@ describe('Given the test-a-lead panel', () => {
         await renderTab();
         const run = screen.getByRole('button', { name: /run test/i });
         fireEvent.click(run);
-        await waitFor(() => expect(run).toBeDisabled());
+        await waitFor(() => expect(run).toHaveAttribute('aria-disabled', 'true'));
         expect(within(run).getByTestId('icon-Loader2')).toBeInTheDocument();
         expect(svc.test).toHaveBeenCalledWith({});
         d.resolve({ assigned: false });
         expect(await screen.findByTestId('assignment-test-result')).toHaveTextContent('No rule would assign this lead.');
-        expect(run).toBeEnabled();
+        expect(run).not.toHaveAttribute('aria-disabled', 'true');
         expect(mockGetUsers).not.toHaveBeenCalled();
     });
 
@@ -541,7 +541,7 @@ describe('Given the test-a-lead panel', () => {
         fireEvent.click(screen.getByRole('button', { name: /run test/i }));
         await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Could not run the test.'));
         expect(screen.queryByTestId('assignment-test-result')).not.toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /run test/i })).toBeEnabled();
+        expect(screen.getByRole('button', { name: /run test/i })).not.toHaveAttribute('aria-disabled', 'true');
     });
 
     it('When a second test runs / Then the previous result and name are cleared first', async () => {

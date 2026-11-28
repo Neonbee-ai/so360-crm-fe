@@ -147,14 +147,19 @@ export default function AdminTaskTypesPage() {
       title="Sales Activity Types"
       description="Define what activities reps track — auto-counted or manual"
       count={taskTypes.length}
-      primaryAction={<Button onClick={() => setShowModal(true)}><Plus size={16} aria-hidden="true" /> New type</Button>}
+      primaryAction={{
+          id: 'new-type',
+          label: 'New type',
+          icon: <Plus />,
+          onSelect: () => setShowModal(true),
+      }}
+      // TODO(comb-title-area): manual - SearchInput prop data-testid
       search={<SearchInput placeholder="Search activity types" value={search} onChange={setSearch} data-testid="task-types-search" />}
-      filterConfig={{
+      filters={{
         fields: [{
           key: 'industry',
           label: 'Industry',
           type: 'select',
-          quick: true,
           options: INDUSTRY_OPTIONS.filter(i => i !== 'all').map(i => ({ value: i, label: i.replace(/_/g, ' ') })),
         }],
         values: { industry: filterIndustry === 'all' ? '' : filterIndustry } as FilterValues,

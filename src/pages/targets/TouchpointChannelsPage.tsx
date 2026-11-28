@@ -197,18 +197,22 @@ export default function TouchpointChannelsPage() {
       trail={[{ label: 'Targets', to: '/crm/targets' }]}
       title="Touchpoint Channels"
       count={channels.length}
-      headerSecondaryActions={[
-        <Button key="import" variant="secondary" onClick={importSources} disabled={busy}>
-          Import from Lead Sources
-        </Button>,
+      secondaryActions={[
+          {
+              id: 'import-from-lead-sources',
+              label: 'Import from lead sources',
+              onSelect: importSources,
+              disabled: busy,
+          },
       ]}
-      primaryAction={(
-        <Button variant="primary" onClick={openAdd}>
-          <Plus size={16} aria-hidden="true" /> New channel
-        </Button>
-      )}
-      search={<SearchInput value={search} onChange={setSearch} placeholder="Search channels…" />}
-      filterConfig={{
+      primaryAction={{
+          id: 'new-channel',
+          label: 'New channel',
+          icon: <Plus />,
+          onSelect: openAdd,
+      }}
+      search={{ value: search, onChange: setSearch, placeholder: 'Search channels' }}
+      filters={{
         fields: [
           { key: 'source', label: 'Source', type: 'select', options: [
             { value: 'auto', label: 'Auto' },

@@ -36,7 +36,7 @@ describe('Given the merge panel for a kept lead', () => {
     describe('When nothing is picked yet', () => {
         it('Then Merge is disabled and fewer than 2 characters do not search', () => {
             render(<MergeLeadPanel keepLead={keep} onClose={vi.fn()} onMerged={vi.fn()} />);
-            expect(screen.getByRole('button', { name: 'Merge' })).toBeDisabled();
+            expect(screen.getByRole('button', { name: 'Merge' })).toHaveAttribute('aria-disabled', 'true');
             fireEvent.change(screen.getByLabelText('Find the duplicate lead'), { target: { value: 'a' } });
             expect(mocks.getLeads).not.toHaveBeenCalled();
         });
@@ -230,7 +230,7 @@ describe('Given a picked lead in the field chooser', () => {
             expect(screen.getByTestId('radio-merge-contact_email-other')).toBeChecked();
             fireEvent.click(screen.getByRole('button', { name: 'Change' }));
             expect(screen.queryByTestId('merge-field-chooser')).not.toBeInTheDocument();
-            expect(screen.getByRole('button', { name: 'Merge' })).toBeDisabled();
+            expect(screen.getByRole('button', { name: 'Merge' })).toHaveAttribute('aria-disabled', 'true');
             fireEvent.click(await screen.findByRole('option', { name: /Acme Inc/ }));
             expect(screen.getByTestId('radio-merge-contact_email-this')).toBeChecked();
             expect(screen.getByTestId('radio-merge-contact_email-other')).not.toBeChecked();
@@ -266,10 +266,10 @@ describe('Given a picked lead in the field chooser', () => {
             await pickOther();
             const mergeBtn = screen.getByRole('button', { name: 'Merge' });
             fireEvent.click(mergeBtn);
-            await waitFor(() => expect(mergeBtn).toBeDisabled());
+            await waitFor(() => expect(mergeBtn).toHaveAttribute('aria-disabled', 'true'));
             expect(mergeBtn.querySelector('[data-testid="icon-Loader2"]')).not.toBeNull();
             rejectMerge(new Error(''));
-            await waitFor(() => expect(mergeBtn).not.toBeDisabled());
+            await waitFor(() => expect(mergeBtn).not.toHaveAttribute('aria-disabled', 'true'));
             expect(mergeBtn.querySelector('[data-testid="icon-Loader2"]')).toBeNull();
             expect(error).toHaveBeenCalledWith("We couldn't merge these leads. Please try again.");
         });

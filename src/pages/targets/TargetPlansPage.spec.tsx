@@ -68,7 +68,7 @@ async function fillRequiredPlanFields() {
   fireEvent.change(endInput, { target: { value: '2026-09-30' } });
 
   const addLineButton = await screen.findByRole('button', { name: /Add Metric Row/i });
-  await waitFor(() => expect(addLineButton).not.toBeDisabled());
+  await waitFor(() => expect(addLineButton).not.toHaveAttribute('aria-disabled', 'true'));
   fireEvent.click(addLineButton);
 }
 
@@ -89,7 +89,7 @@ describe('TargetPlansPage — create form owner requirement', () => {
     await fillRequiredPlanFields();
 
     const save = screen.getByRole('button', { name: /Save plan/i });
-    expect(save).toBeDisabled();
+    expect(save).toHaveAttribute('aria-disabled', 'true');
     expect(mockTargetPlanService.createPlan).not.toHaveBeenCalled();
   });
 
@@ -102,7 +102,7 @@ describe('TargetPlansPage — create form owner requirement', () => {
     fireEvent.click(await screen.findByText('Ada Lovelace'));
 
     const save = screen.getByRole('button', { name: /Save plan/i });
-    expect(save).toBeEnabled();
+    expect(save).not.toHaveAttribute('aria-disabled', 'true');
     fireEvent.click(save);
 
     await waitFor(() =>
@@ -121,7 +121,7 @@ describe('TargetPlansPage — create form owner requirement', () => {
     });
     await fillRequiredPlanFields();
 
-    expect(screen.getByRole('button', { name: /Save plan/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /Save plan/i })).not.toHaveAttribute('aria-disabled', 'true');
   });
 });
 

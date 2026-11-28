@@ -715,11 +715,13 @@ const DealDetailPage = () => {
                     )}
                 </>
             )}
-            primaryAction={FEATURES.DEAL_PROJECT_CREATION ? (
-                <Button onClick={handleOpenProjectModal}><Briefcase size={14} />
-                    {deal.project_id ? 'Manage Project' : 'Create Project'}
-                </Button>
-            ) : undefined}
+            primaryAction={FEATURES.DEAL_PROJECT_CREATION ? {
+                id: 'create-project',
+                label: deal.project_id ? 'Manage project' : 'Create project',
+                icon: <Briefcase />,
+                onSelect: handleOpenProjectModal,
+            } : undefined}
+            // TODO(comb-title-area): manual - not a Button (<EmailComposeButton>)
             secondaryActions={[
                 <EmailComposeButton key="compose-email" entityType="deal" entityId={deal.id} />,
                 ...(FEATURES.DEAL_ESTIMATE_REQUEST ? [<Button key="estimate" variant="secondary" onClick={handleCreateEstimate}><FileText size={14} />Create Estimate</Button>] : []),

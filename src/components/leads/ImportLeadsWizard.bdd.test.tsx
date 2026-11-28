@@ -155,7 +155,7 @@ describe('Given the lead import wizard', () => {
             fireEvent.click(screen.getByRole('button', { name: 'Next' }));
             fireEvent.click(screen.getByRole('button', { name: /import 42 leads/i }));
             expect(await screen.findByRole('alert')).toHaveTextContent('The import failed.');
-            expect(screen.getByRole('button', { name: /import 42 leads/i })).toBeEnabled();
+            expect(screen.getByRole('button', { name: /import 42 leads/i })).not.toHaveAttribute('aria-disabled', 'true');
         });
     });
 
@@ -350,8 +350,8 @@ describe('Given the review step', () => {
             fireEvent.click(screen.getByRole('button', { name: 'Next' }));
             const importBtn = screen.getByRole('button', { name: /import 42 leads/i });
             fireEvent.click(importBtn);
-            await waitFor(() => expect(importBtn).toBeDisabled());
-            expect(screen.getByRole('button', { name: 'Back' })).toBeDisabled();
+            await waitFor(() => expect(importBtn).toHaveAttribute('aria-disabled', 'true'));
+            expect(screen.getByRole('button', { name: 'Back' })).toHaveAttribute('aria-disabled', 'true');
             expect(importBtn.querySelector('[data-testid="icon-Loader2"]')).not.toBeNull();
             closeX();
             expect(onClose).not.toHaveBeenCalled();

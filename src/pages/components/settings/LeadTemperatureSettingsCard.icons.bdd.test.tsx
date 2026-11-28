@@ -69,10 +69,10 @@ describe('Given the settings card with Thermometer available and Loader2/Save mi
             const btn = await screen.findByRole('button', { name: /save temperature/i });
             expect(btn.querySelector('svg')).toBeNull();
             fireEvent.click(btn);
-            await waitFor(() => expect(btn).toBeDisabled());
+            await waitFor(() => expect(btn).toHaveAttribute('aria-disabled', 'true'));
             expect(btn.querySelector('svg')).toBeNull();
             resolve(settings);
-            await waitFor(() => expect(btn).not.toBeDisabled());
+            await waitFor(() => expect(btn).not.toHaveAttribute('aria-disabled', 'true'));
         });
     });
 });

@@ -175,7 +175,7 @@ describe('Given the send flow', () => {
         await waitFor(() => screen.getByRole('option', { name: 'NDA Standard' }));
 
         const sendBtn = screen.getByRole('button', { name: /send for signature/i });
-        expect(sendBtn).toBeDisabled();
+        expect(sendBtn).toHaveAttribute('aria-disabled', 'true');
     });
 
     it('When signer email is invalid, Then Send button is disabled', async () => {
@@ -186,7 +186,7 @@ describe('Given the send flow', () => {
         await waitFor(() => screen.getByRole('option', { name: 'NDA Standard' }));
 
         const sendBtn = screen.getByRole('button', { name: /send for signature/i });
-        expect(sendBtn).toBeDisabled();
+        expect(sendBtn).toHaveAttribute('aria-disabled', 'true');
     });
 
     it('When all fields are valid, Then Send button is enabled', async () => {
@@ -197,7 +197,7 @@ describe('Given the send flow', () => {
         await waitFor(() => screen.getByRole('option', { name: 'NDA Standard' }));
 
         const sendBtn = screen.getByRole('button', { name: /send for signature/i });
-        expect(sendBtn).not.toBeDisabled();
+        expect(sendBtn).not.toHaveAttribute('aria-disabled', 'true');
     });
 
     it('When Send is clicked, Then fetch POSTs to /v1/sign/requests with correct body', async () => {

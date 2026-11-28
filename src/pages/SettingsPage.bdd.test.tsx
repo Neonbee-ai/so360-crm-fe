@@ -307,13 +307,13 @@ describe('SettingsPage BDD', () => {
     it('When ADD STAGE is clicked / Then the new stage stays local (no save call) but Save Configuration becomes enabled', async () => {
       const user = userEvent.setup();
       render(<SettingsPage />);
-      await waitFor(() => expect(screen.getByRole('button', { name: /save configuration/i })).toBeDisabled());
+      await waitFor(() => expect(screen.getByRole('button', { name: /save configuration/i })).toHaveAttribute('aria-disabled', 'true'));
 
       await user.click(screen.getByRole('button', { name: /add stage/i }));
 
       expect(mockUpdateSettings).not.toHaveBeenCalled();
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /save configuration/i })).toBeEnabled();
+        expect(screen.getByRole('button', { name: /save configuration/i })).not.toHaveAttribute('aria-disabled', 'true');
         expect(screen.getByText(/unsaved changes/i)).toBeInTheDocument();
         expect(screen.getByDisplayValue('New Stage')).toBeInTheDocument();
       });
@@ -331,7 +331,7 @@ describe('SettingsPage BDD', () => {
 
       expect(mockUpdateSettings).not.toHaveBeenCalled();
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /save configuration/i })).toBeEnabled();
+        expect(screen.getByRole('button', { name: /save configuration/i })).not.toHaveAttribute('aria-disabled', 'true');
         expect(screen.getByText(/unsaved changes/i)).toBeInTheDocument();
       });
     });
@@ -350,7 +350,7 @@ describe('SettingsPage BDD', () => {
     it('When nothing has changed since load / Then Save Configuration is disabled', async () => {
       render(<SettingsPage />);
       await waitFor(() => expect(screen.getByRole('button', { name: /save configuration/i })).toBeInTheDocument());
-      expect(screen.getByRole('button', { name: /save configuration/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /save configuration/i })).toHaveAttribute('aria-disabled', 'true');
     });
 
     it('When a stage name is edited / Then Save Configuration becomes enabled and an unsaved-changes indicator appears', async () => {
@@ -361,7 +361,7 @@ describe('SettingsPage BDD', () => {
       await dirtyStageName(user);
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /save configuration/i })).toBeEnabled();
+        expect(screen.getByRole('button', { name: /save configuration/i })).not.toHaveAttribute('aria-disabled', 'true');
         expect(screen.getByText(/unsaved changes/i)).toBeInTheDocument();
       });
     });
@@ -398,7 +398,7 @@ describe('SettingsPage BDD', () => {
       });
       await waitFor(() => {
         expect(screen.queryByText(/unsaved changes/i)).not.toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /save configuration/i })).toBeDisabled();
+        expect(screen.getByRole('button', { name: /save configuration/i })).toHaveAttribute('aria-disabled', 'true');
       });
     });
 
@@ -457,7 +457,7 @@ describe('SettingsPage BDD', () => {
       // mount-time onChange call alone doesn't dirty anything.
       await waitFor(() => expect(screen.getByDisplayValue('{lead_name} - {YYYYMMDD}')).toBeInTheDocument());
       fireEvent.change(screen.getByDisplayValue('{lead_name} - {YYYYMMDD}'), { target: { value: 'DL-{seq}' } });
-      await waitFor(() => expect(screen.getByRole('button', { name: /save configuration/i })).toBeEnabled());
+      await waitFor(() => expect(screen.getByRole('button', { name: /save configuration/i })).not.toHaveAttribute('aria-disabled', 'true'));
 
       await user.click(screen.getByRole('button', { name: /save configuration/i }));
 
@@ -477,7 +477,7 @@ describe('SettingsPage BDD', () => {
       const input = screen.getByDisplayValue('New');
       await user.clear(input);
       await user.type(input, 'Prospect');
-      await waitFor(() => expect(screen.getByRole('button', { name: /save configuration/i })).toBeEnabled());
+      await waitFor(() => expect(screen.getByRole('button', { name: /save configuration/i })).not.toHaveAttribute('aria-disabled', 'true'));
 
       await user.click(screen.getByRole('button', { name: /save configuration/i }));
       await waitFor(() => expect(mockUpdateSettings).toHaveBeenCalled());
@@ -494,7 +494,7 @@ describe('SettingsPage BDD', () => {
       await user.click(screen.getByRole('tab', { name: /deal naming/i }));
       await waitFor(() => expect(screen.getByDisplayValue('{lead_name} - {YYYYMMDD}')).toBeInTheDocument());
       fireEvent.change(screen.getByDisplayValue('{lead_name} - {YYYYMMDD}'), { target: { value: 'DL-{seq}' } });
-      await waitFor(() => expect(screen.getByRole('button', { name: /save configuration/i })).toBeEnabled());
+      await waitFor(() => expect(screen.getByRole('button', { name: /save configuration/i })).not.toHaveAttribute('aria-disabled', 'true'));
 
       await user.click(screen.getByRole('button', { name: /save configuration/i }));
 
@@ -725,7 +725,7 @@ describe('Given a pipeline stage is being renamed inline', () => {
   it('When Enter is pressed / Then the Save Configuration button becomes enabled and shows the unsaved-changes indicator', async () => {
     render(<SettingsPage />);
     await waitFor(() => expect(stageInput('Qualified')).toBeTruthy());
-    expect(screen.getByRole('button', { name: /save configuration/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /save configuration/i })).toHaveAttribute('aria-disabled', 'true');
 
     const input = stageInput('Qualified');
     fireEvent.focus(input);
@@ -733,7 +733,7 @@ describe('Given a pipeline stage is being renamed inline', () => {
     fireEvent.keyDown(input, { key: 'Enter' });
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /save configuration/i })).toBeEnabled();
+      expect(screen.getByRole('button', { name: /save configuration/i })).not.toHaveAttribute('aria-disabled', 'true');
       expect(screen.getByText(/unsaved changes/i)).toBeInTheDocument();
     });
   });
@@ -777,7 +777,7 @@ describe('Given a pipeline stage is being renamed inline', () => {
 
     await new Promise((r) => setTimeout(r, 0));
     expect(mockUpdateSettings).not.toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: /save configuration/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /save configuration/i })).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('When the name is cleared and Enter is pressed / Then it reverts to the pre-edit value and shows an error toast', async () => {

@@ -208,7 +208,7 @@ describe('Feature QuoteApprovalModal Comb controls', () => {
       fireEvent.click(sendBtn());
       await waitFor(() => expect(sendBtn()).toHaveTextContent('Sending...'));
       expect(sendBtn()).toBeDisabled();
-      expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Cancel' })).toHaveAttribute('aria-disabled', 'true');
       resolve();
       await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
     });
@@ -221,7 +221,7 @@ describe('Feature QuoteApprovalModal Comb controls', () => {
       expect(await screen.findByText('Quote locked')).toBeInTheDocument();
       expect(onClose).not.toHaveBeenCalled();
       expect(sendBtn()).toBeEnabled();
-      expect(screen.getByRole('button', { name: 'Cancel' })).toBeEnabled();
+      expect(screen.getByRole('button', { name: 'Cancel' })).not.toHaveAttribute('aria-disabled', 'true');
     });
 
     it('Given onSubmit rejects without a message When Send is clicked Then the generic error shows', async () => {
@@ -241,7 +241,7 @@ describe('Feature QuoteApprovalModal Comb controls', () => {
       await pick(/Jane Manager/);
       rerender(<QuoteApprovalModal quote={quote} isOpen={false} currentUserId="me" onClose={onClose} onSubmit={onSubmit} />);
       rerender(<QuoteApprovalModal quote={quote} isOpen currentUserId="me" onClose={onClose} onSubmit={onSubmit} />);
-      await waitFor(() => expect(screen.getByRole('button', { name: /Send for Approval/ })).toBeDisabled());
+      await waitFor(() => expect(screen.getByRole('button', { name: /Send for Approval/ })).toHaveAttribute('aria-disabled', 'true'));
       expect(screen.queryByRole('button', { name: 'Remove Jane Manager' })).toBeNull();
     });
   });

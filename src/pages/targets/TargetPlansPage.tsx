@@ -458,11 +458,13 @@ export default function TargetPlansPage() {
       trail={[{ label: 'Targets', to: '/crm/targets' }]}
       title="Target Plans"
       count={plans.length}
-      search={<SearchInput value={search} onChange={setSearch} placeholder="Search plans…" />}
+      search={{ value: search, onChange: setSearch, placeholder: 'Search plans' }}
       loading={loading}
-      primaryAction={canCreatePlan(shell) ? (
-        <Button onClick={() => setShowForm(true)}>New plan</Button>
-      ) : undefined}
+      primaryAction={canCreatePlan(shell) ? {
+          id: 'new-plan',
+          label: 'New plan',
+          onSelect: () => setShowForm(true),
+      } : undefined}
     >
     <div className="space-y-5">
 

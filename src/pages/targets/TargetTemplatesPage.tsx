@@ -159,8 +159,8 @@ export default function TargetTemplatesPage() {
         trail={[{ label: 'Targets', to: '/crm/targets' }]}
         title="Target Templates"
         count={templates.length}
-        search={<SearchInput value={search} onChange={setSearch} placeholder="Search templates…" />}
-        filterConfig={{
+        search={{ value: search, onChange: setSearch, placeholder: 'Search templates' }}
+        filters={{
           fields: [{ key: 'period', label: 'Period', type: 'select', options: periodOptions }],
           values: filters,
           onChange: setFilters,

@@ -107,7 +107,7 @@ describe('QuotesPage — quote number follows Settings → Documents → Numberi
 
       await user.type(input, '   ');
 
-      expect(screen.getByRole('button', { name: 'Create Quote' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Create Quote' })).toHaveAttribute('aria-disabled', 'true');
       expect(mockCreateQuote).not.toHaveBeenCalled();
     });
 
@@ -147,7 +147,7 @@ describe('QuotesPage — quote number follows Settings → Documents → Numberi
       await user.click(screen.getByRole('button', { name: 'Create Quote' }));
 
       expect(await screen.findByLabelText(/Quote Number \(manual\)/)).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Create Quote' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Create Quote' })).toHaveAttribute('aria-disabled', 'true');
     });
   });
 });

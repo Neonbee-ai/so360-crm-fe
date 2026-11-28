@@ -688,7 +688,7 @@ describe('Given a saved quote', () => {
     mockGetLeadById.mockResolvedValue({ id: 'c1', company_name: 'Acme' });
     await openDialog();
     const button = screen.getByText('Send quotation').closest('button')!;
-    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute('aria-disabled', 'true');
     expect(screen.getByText(/no linked customer email/i)).toBeInTheDocument();
   });
 

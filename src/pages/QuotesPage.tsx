@@ -823,9 +823,9 @@ const QuotesPage = () => {
 
     const filterConfig: ListFilterConfig = {
         fields: [
-            { key: 'status', label: 'Status', type: 'select', quick: true, options: (Object.entries(statusColors) as [QuoteStatus, typeof statusColors[QuoteStatus]][]).map(([value, cfg]) => ({ value, label: cfg.label, count: quotes.filter((q) => q.status === value).length })) },
+            { key: 'status', label: 'Status', type: 'select', options: (Object.entries(statusColors) as [QuoteStatus, typeof statusColors[QuoteStatus]][]).map(([value, cfg]) => ({ value, label: cfg.label, count: quotes.filter((q) => q.status === value).length })) },
             ...(deals.length > 0 ? [{ key: 'deal', label: 'Deal', type: 'select' as const, options: deals.map(d => ({ value: d.id, label: d.name })) }] : []),
-            { key: 'validity', label: 'Validity', type: 'select', quick: true, options: [{ value: 'valid', label: 'Valid Proposals' }, { value: 'expired', label: 'Expired Proposals' }] },
+            { key: 'validity', label: 'Validity', type: 'select', options: [{ value: 'valid', label: 'Valid Proposals' }, { value: 'expired', label: 'Expired Proposals' }] },
         ],
         values: {
             ...(statusFilter !== 'All' ? { status: statusFilter } : {}),
@@ -842,7 +842,7 @@ const QuotesPage = () => {
     const approvalsFilterConfig: ListFilterConfig = {
         fields: [
             {
-                key: 'status', label: 'Status', type: 'select', quick: true,
+                key: 'status', label: 'Status', type: 'select',
                 options: (['pending', 'approved', 'rejected'] as const).map((id) => ({
                     value: id,
                     label: `${id.charAt(0).toUpperCase()}${id.slice(1)} (${approvals.filter((a) => a.approver_status === id).length})`,
@@ -887,6 +887,7 @@ const QuotesPage = () => {
             trail={[]}
             title="Quotes"
             description="Manage sales quotes and proposals"
+            // TODO(comb-title-area): manual - not a Button (<ExportMenu>) (all items must be plain buttons to become PageActions)
             headerSecondaryActions={[
                 <ExportMenu
                     key="export"
@@ -900,6 +901,7 @@ const QuotesPage = () => {
                     }}
                 />,
             ]}
+            // TODO(comb-title-area): manual - icon has props other than size
             primaryAction={canCreateQuote ? (
                 <QuotaGate
                     quotaKey="max_quotes"
@@ -914,13 +916,15 @@ const QuotesPage = () => {
                     </Button>
                 </QuotaGate>
             ) : undefined}
+            // TODO(comb-title-area): manual - use tabs (navigation) or a drawer field
             views={viewsNode}
             search={activeTab === 'all' ? (
                 <SearchInput placeholder="Search quotes..." value={searchTerm} onChange={setSearchTerm} />
             ) : (
                 <SearchInput name="approvals-search" placeholder="Search approvals..." value={approvalsSearchTerm} onChange={setApprovalsSearchTerm} />
             )}
-            filterConfig={activeTab === 'all' ? filterConfig : approvalsFilterConfig}
+            filters={activeTab === 'all' ? filterConfig : approvalsFilterConfig}
+            // TODO(comb-title-area): manual - move into drawer fields / view / R1 actions
             toolbarEnd={activeTab === 'all' ? bulkNode : undefined}
             pagination={activeTab === 'all' && paginatedQuotes.length > 0 && effectiveQuotes.length > 0 ? (
                 <Pagination

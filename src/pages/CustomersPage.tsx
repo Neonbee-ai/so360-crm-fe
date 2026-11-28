@@ -328,13 +328,13 @@ const CustomersPage = () => {
 
     const filterConfig: ListFilterConfig = {
         fields: [
-            { key: 'channel', label: 'Channel', type: 'select', quick: true, options: [
+            { key: 'channel', label: 'Channel', type: 'select', options: [
                 { value: 'storefront_web', label: 'Ecommerce', count: stats.storefront_web || 0 },
                 { value: 'storefront_mobile', label: 'Ecommerce (Mobile)', count: stats.storefront_mobile || 0 },
                 { value: 'pos', label: 'POS', count: stats.pos || 0 },
                 { value: 'manual', label: 'Manual', count: stats.manual || 0 },
             ] },
-            { key: 'category', label: 'Category', type: 'select', quick: true, options: [
+            { key: 'category', label: 'Category', type: 'select', options: [
                 { value: 'b2b', label: 'B2B', count: stats.b2b_count || 0 },
                 { value: 'b2c', label: 'B2C', count: stats.b2c_count || 0 },
             ] },
@@ -360,14 +360,8 @@ const CustomersPage = () => {
             trail={[]}
             title="Customers"
             description="Customers from Storefront, POS, guest checkout, and promoted leads"
-            search={
-                <SearchInput
-                    placeholder="Search customers by name, email, phone..."
-                    value={searchTerm}
-                    onChange={setSearchTerm}
-                />
-            }
-            filterConfig={filterConfig}
+            search={{ placeholder: 'Search customers by name, email, phone', value: searchTerm, onChange: setSearchTerm }}
+            filters={filterConfig}
             pagination={(sandboxLimitedCustomers.length > 0 || currentPage > 1) ? (
                 <Pagination
                     className="w-full"

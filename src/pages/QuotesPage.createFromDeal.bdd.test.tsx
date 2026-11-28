@@ -134,7 +134,7 @@ describe('QuotesPage — New Quote from a deal', () => {
       await user.click(screen.getByRole('button', { name: /New Quote/i }));
       await waitFor(() => expect(screen.getByText('Create New Quote')).toBeInTheDocument());
 
-      expect(screen.getByRole('button', { name: 'Create Quote' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Create Quote' })).toHaveAttribute('aria-disabled', 'true');
       expect(mockCreateQuote).not.toHaveBeenCalled();
     });
   });

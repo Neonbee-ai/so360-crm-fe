@@ -358,7 +358,7 @@ const LegacyTasksPage = () => {
     ];
     const statusOptions = ['Open', 'In Progress', 'Done', 'On Hold', 'Cancelled', 'Overdue'].map(v => ({ value: v, label: v }));
     const filterConfig: ListFilterConfig = {
-        fields: [{ key: 'status', label: 'Status', type: 'select', quick: true, options: statusOptions }],
+        fields: [{ key: 'status', label: 'Status', type: 'select', options: statusOptions }],
         values: (filter !== 'All' ? { status: filter } : {}) as FilterValues,
         onChange: (next: FilterValues) => setFilter((next.status as string) || 'All'),
         onClear: () => { setSearchTerm(''); setFilter('All'); },
@@ -369,19 +369,15 @@ const LegacyTasksPage = () => {
             trail={[]}
             title="Tasks & Follow-ups"
             description="Personal execution discipline and daily tasks"
-            primaryAction={canCreateTask ? (
-                <Button onClick={() => setShowCreateModal(true)}><Plus size={16} />
-                    New Task
-                </Button>
-            ) : undefined}
-            search={
-                <SearchInput
-                    placeholder="Search tasks..."
-                    value={searchTerm}
-                    onChange={setSearchTerm}
-                />
-            }
-            filterConfig={filterConfig}
+            primaryAction={canCreateTask ? {
+                id: 'new-task',
+                label: 'New task',
+                icon: <Plus />,
+                onSelect: () => setShowCreateModal(true),
+            } : undefined}
+            search={{ placeholder: 'Search tasks', value: searchTerm, onChange: setSearchTerm }}
+            filters={filterConfig}
+            // TODO(comb-title-area): manual - use tabs (navigation) or a drawer field
             views={(canViewTeamTasks || canViewAllTasks) ? (
                 <SegmentedControl
                     aria-label="Task scope"

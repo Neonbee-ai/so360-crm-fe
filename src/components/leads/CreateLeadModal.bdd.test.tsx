@@ -319,7 +319,7 @@ describe('CreateLeadModal', () => {
       render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
       await waitFor(() => screen.getByTestId('create-lead-form-page'));
       expect(createButton()).toBeDisabled();
-      expect(screen.getByRole('button', { name: /cancel/i })).toBeEnabled();
+      expect(screen.getByRole('button', { name: /cancel/i })).not.toHaveAttribute('aria-disabled', 'true');
     });
 
     it('When every mandatory field holds a valid value / Then Create Lead becomes enabled', async () => {

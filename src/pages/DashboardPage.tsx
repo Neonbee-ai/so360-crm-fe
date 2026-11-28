@@ -606,6 +606,7 @@ const DashboardPage = () => {
                                             return `Week ${week} · ${fmt(wStart)} – ${fmt(wEnd)}`;
                                         })()
                                         : `${new Date(year, month - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`}`}
+            // TODO(comb-title-area): manual - unsupported Button prop aria-label (all items must be plain buttons to become PageActions)
             secondaryActions={customizeEnabled ? (
                 <Button
                     type="button"
@@ -619,6 +620,7 @@ const DashboardPage = () => {
                 </Button>
             ) : undefined}
             kpis={kpisVisible && showPipeline ? widgetNodes.kpis : undefined}
+            // TODO(comb-title-area): manual - move inline filters into drawer fields (filters={{ fields, values, onChange, onClear }})
             filters={
                 <div className="max-w-full min-w-0 overflow-x-auto">
                 <SegmentedControl

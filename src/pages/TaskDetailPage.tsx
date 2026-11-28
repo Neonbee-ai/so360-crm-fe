@@ -215,6 +215,7 @@ const TaskDetailPage = () => {
                     )}
                 </span>
             }
+            // TODO(comb-title-area): manual - unsupported Button prop aria-label
             primaryAction={
                 <Button
                     onClick={() => canEdit && setIsEditingTask(true)}
@@ -226,9 +227,12 @@ const TaskDetailPage = () => {
                 </Button>
             }
             secondaryActions={[
-                <Button key="toggle" variant="secondary" onClick={handleTaskToggle}>
-                    {task.status === 'DONE' ? 'Mark as Open' : 'Mark as Complete'}
-                </Button>,
+                {
+                    id: 'mark-as-complete',
+                    label: task.status === 'DONE' ? 'Mark as open' : 'Mark as complete',
+                    onSelect: handleTaskToggle,
+                },
+                // TODO(comb-title-area): manual - unsupported Button prop title
                 <Button
                     key="reschedule"
                     variant="secondary"

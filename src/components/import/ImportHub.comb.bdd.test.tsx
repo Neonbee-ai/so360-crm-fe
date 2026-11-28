@@ -165,7 +165,7 @@ describe('Feature ImportHub uses Comb Buttons', () => {
         const back = screen.getByRole('button', { name: /All import types/ });
         expect(back).toHaveAttribute('data-comb', 'button');
         expect(back).toHaveAttribute('data-variant', 'secondary');
-        expect(back).toBeEnabled();
+        expect(back).not.toHaveAttribute('aria-disabled', 'true');
     });
 
     it('Given the Map step When shown Then Choose another file is secondary and Next is a default Comb Button', async () => {
@@ -175,7 +175,7 @@ describe('Feature ImportHub uses Comb Buttons', () => {
         const next = screen.getByRole('button', { name: 'Next' });
         expect(next).toHaveAttribute('data-comb', 'button');
         expect(next).not.toHaveAttribute('data-variant', 'secondary');
-        expect(next).toBeEnabled();
+        expect(next).not.toHaveAttribute('aria-disabled', 'true');
     });
 
     it('Given the Review step When shown Then Back is secondary and Import n clients is enabled', async () => {
@@ -184,7 +184,7 @@ describe('Feature ImportHub uses Comb Buttons', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Next' }));
         await screen.findByTestId('import-ready');
         expect(screen.getByRole('button', { name: 'Back' })).toHaveAttribute('data-variant', 'secondary');
-        expect(screen.getByRole('button', { name: 'Import 2 clients' })).toBeEnabled();
+        expect(screen.getByRole('button', { name: 'Import 2 clients' })).not.toHaveAttribute('aria-disabled', 'true');
     });
 
     it('Given the Done step When shown Then Import another file is secondary and Done closes the hub', async () => {
@@ -242,7 +242,7 @@ describe('Feature ImportHub uses Comb Buttons', () => {
         await screen.findAllByTestId('import-mapping-row');
         fireEvent.click(screen.getByRole('button', { name: 'Next' }));
         const btn = await screen.findByRole('button', { name: 'Import 0 units' });
-        expect(btn).toBeDisabled();
+        expect(btn).toHaveAttribute('aria-disabled', 'true');
         fireEvent.click(btn);
         expect(h.importUnits).not.toHaveBeenCalled();
     });
@@ -254,11 +254,11 @@ describe('Feature ImportHub uses Comb Buttons', () => {
         await toMap();
         fireEvent.click(screen.getByRole('button', { name: 'Next' }));
         fireEvent.click(await screen.findByRole('button', { name: 'Import 2 clients' }));
-        await waitFor(() => expect(screen.getByRole('button', { name: 'Back' })).toBeDisabled());
-        expect(screen.getByRole('button', { name: /Import 2 clients/ })).toBeDisabled();
+        await waitFor(() => expect(screen.getByRole('button', { name: 'Back' })).toHaveAttribute('aria-disabled', 'true'));
+        expect(screen.getByRole('button', { name: /Import 2 clients/ })).toHaveAttribute('aria-disabled', 'true');
         await act(async () => { finish({ created: 2, updated: 0, skipped: 0, problems: [] }); });
         await screen.findByTestId('import-result');
-        expect(screen.getByRole('button', { name: 'Done' })).toBeEnabled();
+        expect(screen.getByRole('button', { name: 'Done' })).not.toHaveAttribute('aria-disabled', 'true');
     });
   });
 
@@ -270,8 +270,8 @@ describe('Feature ImportHub uses Comb Buttons', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Next' }));
         fireEvent.click(await screen.findByRole('button', { name: 'Import 2 clients' }));
         expect(await screen.findByRole('alert')).toHaveTextContent('server said no');
-        expect(screen.getByRole('button', { name: 'Back' })).toBeEnabled();
-        expect(screen.getByRole('button', { name: 'Import 2 clients' })).toBeEnabled();
+        expect(screen.getByRole('button', { name: 'Back' })).not.toHaveAttribute('aria-disabled', 'true');
+        expect(screen.getByRole('button', { name: 'Import 2 clients' })).not.toHaveAttribute('aria-disabled', 'true');
     });
 
     it('Given unmapped required field When Next is clicked Then the Map step stays and Next remains enabled', async () => {
@@ -280,7 +280,7 @@ describe('Feature ImportHub uses Comb Buttons', () => {
         fireEvent.change(screen.getByLabelText('Field for Name'), { target: { value: '' } });
         fireEvent.click(screen.getByRole('button', { name: 'Next' }));
         expect(screen.getByRole('alert')).toHaveTextContent('Map a column to Name.');
-        expect(screen.getByRole('button', { name: 'Next' })).toBeEnabled();
+        expect(screen.getByRole('button', { name: 'Next' })).not.toHaveAttribute('aria-disabled', 'true');
     });
   });
 });

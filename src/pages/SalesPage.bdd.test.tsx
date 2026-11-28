@@ -166,7 +166,7 @@ describe('Feature: Sales register', () => {
             renderPage();
             await screen.findByTestId('sale-d1');
             expect(screen.getByTestId('sales-paging')).toHaveTextContent('Page 1 of 3 · 60 sales');
-            expect(screen.getByRole('button', { name: 'Previous page' })).toBeDisabled();
+            expect(screen.getByRole('button', { name: 'Previous page' })).toHaveAttribute('aria-disabled', 'true');
 
             fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
             await waitFor(() => expect(report.listSales).toHaveBeenLastCalledWith({}, 2, SALES_PAGE_SIZE));
@@ -174,7 +174,7 @@ describe('Feature: Sales register', () => {
 
             fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
             await screen.findByText(/Page 3 of 3/);
-            expect(screen.getByRole('button', { name: 'Next page' })).toBeDisabled();
+            expect(screen.getByRole('button', { name: 'Next page' })).toHaveAttribute('aria-disabled', 'true');
 
             fireEvent.click(screen.getByRole('button', { name: 'Previous page' }));
             await waitFor(() => expect(report.listSales).toHaveBeenLastCalledWith({}, 2, SALES_PAGE_SIZE));

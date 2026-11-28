@@ -556,6 +556,7 @@ const QuoteDetailPage = () => {
                     {quote.valid_until && ` • Valid until ${formatDate(quote.valid_until)}`}
                 </p>
             }
+            // TODO(comb-title-area): manual - primaryAction is not a Button / gated Button
             primaryAction={primaryKey ? act[primaryKey] : undefined}
             sidePanel={
                 <div className="flex flex-col gap-nb-3">
@@ -644,6 +645,7 @@ const QuoteDetailPage = () => {
                         )}
                     </div>
             }
+            // TODO(comb-title-area): manual - secondaryActions is not a literal list (unresolved secondaryActions)
             secondaryActions={secondaryActions}
             overflowActions={overflowActions}
         >

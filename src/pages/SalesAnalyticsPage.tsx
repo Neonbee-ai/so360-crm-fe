@@ -240,6 +240,7 @@ const SalesAnalyticsPage: React.FC = () => {
             trail={[{ label: 'Sales', to: '/crm/sales' }]}
             title="Sales reports"
             description="Bookings, lead sources, lost reasons, reservations and agent performance."
+            // TODO(comb-title-area): manual - move inline filters into drawer fields (filters={{ fields, values, onChange, onClear }})
             filters={(
                 <div className="space-y-4">
             <Select

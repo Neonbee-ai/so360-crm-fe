@@ -210,9 +210,9 @@ const SmartTasksList: React.FC = () => {
 
     const filterConfig: ListFilterConfig = {
         fields: [
-            { key: 'due', label: 'Due', type: 'select', quick: true, options: TASK_DUE_FILTER_OPTIONS },
-            { key: 'type', label: 'Type', type: 'multiselect', quick: true, options: TASK_TYPE_FILTER_OPTIONS },
-            { key: 'priority', label: 'Priority', type: 'multiselect', quick: true, options: TASK_PRIORITY_FILTER_OPTIONS },
+            { key: 'due', label: 'Due', type: 'select', options: TASK_DUE_FILTER_OPTIONS },
+            { key: 'type', label: 'Type', type: 'multiselect', options: TASK_TYPE_FILTER_OPTIONS },
+            { key: 'priority', label: 'Priority', type: 'multiselect', options: TASK_PRIORITY_FILTER_OPTIONS },
             { key: 'status', label: 'Status', type: 'multiselect', options: TASK_STATUS_FILTER_OPTIONS },
             { key: 'assignee', label: 'Assignee', type: 'select', options: users.map(u => ({ value: u.id, label: u.full_name })) },
             { key: 'reminder', label: 'Reminder', type: 'select', options: TASK_REMINDER_FILTER_OPTIONS },
@@ -220,7 +220,6 @@ const SmartTasksList: React.FC = () => {
         values: activeFilterValues(filters) as FilterValues,
         onChange: (next: FilterValues) => setFilters(filtersFromFilterValues(filters, next)),
         onClear: () => setFilters(clearTaskFilters(filters)),
-        quickFilters: true,
     };
 
     const viewOptions = [
@@ -236,13 +235,18 @@ const SmartTasksList: React.FC = () => {
             title="Tasks & Follow-ups"
             description="Overdue first, then today, then what is coming up"
             count={counts.total}
-            primaryAction={canCreateTask ? <Button onClick={() => setShowCreate(true)}><Plus size={16} />New Task</Button> : undefined}
+            primaryAction={canCreateTask ? {
+                id: 'new-task',
+                label: 'New task',
+                icon: <Plus />,
+                onSelect: () => setShowCreate(true),
+            } : undefined}
+            // TODO(comb-title-area): manual - unsupported Button prop data-testid (all items must be plain buttons to become PageActions)
             headerSecondaryActions={[
                 <Button key="save-view" variant="secondary" data-testid="tasks-save-view" disabled={hasNoFilters(filters) || activeView !== ''} onClick={() => setSaveOpen(true)}>
                     Save view
                 </Button>,
             ]}
-            kpisCollapsible
             kpis={
                 <KpiGrid name="task-counters">
                     {TASK_COUNTER_TILES.map(tile => (
@@ -257,8 +261,9 @@ const SmartTasksList: React.FC = () => {
                     ))}
                 </KpiGrid>
             }
-            search={<SearchInput placeholder="Search tasks..." value={filters.search} onChange={(v: string) => setFilters({ ...filters, search: v })} />}
-            filterConfig={filterConfig}
+            search={{ placeholder: 'Search tasks', value: filters.search, onChange: (v: string) => setFilters({ ...filters, search: v }) }}
+            filters={filterConfig}
+            // TODO(comb-title-area): manual - use tabs (navigation) or a drawer field
             views={(canViewTeam || canViewAll) ? (
                 <SegmentedControl
                     aria-label="Task scope"
@@ -272,6 +277,7 @@ const SmartTasksList: React.FC = () => {
                     ]}
                 />
             ) : undefined}
+            // TODO(comb-title-area): manual - move into drawer fields / view / R1 actions
             toolbarEnd={
                 <div className="flex items-center gap-2">
                     <Select name="task-view" aria-label="Task view" size="sm" value={activeView} onValueChange={applyView} options={viewOptions} data-testid="tasks-view-select" />

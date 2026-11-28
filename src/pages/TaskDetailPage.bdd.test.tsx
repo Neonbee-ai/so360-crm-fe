@@ -445,7 +445,7 @@ describe('TaskDetailPage', () => {
     it('When the detail page renders / Then Reschedule is disabled', async () => {
       render(<TaskDetailPage />);
       await waitFor(() => expect(screen.getByText('Reschedule')).toBeInTheDocument());
-      expect(screen.getByText('Reschedule').closest('button')).toBeDisabled();
+      expect(screen.getByText('Reschedule').closest('button')).toHaveAttribute('aria-disabled', 'true');
     });
 
     it('When the detail page renders / Then a hint explains why actions are unavailable', async () => {
@@ -480,7 +480,7 @@ describe('TaskDetailPage', () => {
     it('When the detail page renders / Then Reschedule and Edit are enabled', async () => {
       render(<TaskDetailPage />);
       await waitFor(() => expect(screen.getByText('Reschedule')).toBeInTheDocument());
-      expect(screen.getByText('Reschedule').closest('button')).not.toBeDisabled();
+      expect(screen.getByText('Reschedule').closest('button')).not.toHaveAttribute('aria-disabled', 'true');
       expect(screen.getByLabelText('Edit Task')).not.toBeDisabled();
       expect(screen.queryByTestId('task-locked-hint')).not.toBeInTheDocument();
     });
@@ -490,7 +490,7 @@ describe('TaskDetailPage', () => {
       await waitFor(() => expect(screen.getByText('Mark as Complete')).toBeInTheDocument());
       fireEvent.click(screen.getByText('Mark as Complete'));
       await waitFor(() =>
-        expect(screen.getByText('Reschedule').closest('button')).toBeDisabled(),
+        expect(screen.getByText('Reschedule').closest('button')).toHaveAttribute('aria-disabled', 'true'),
       );
     });
   });

@@ -130,10 +130,11 @@ const SalesPage: React.FC = () => {
             trail={[]}
             title="Sales"
             description="Every unit sale with its payment progress and commission."
+            // TODO(comb-title-area): manual - not a plain Button (all items must be plain buttons to become PageActions)
             headerSecondaryActions={canExport ? [
                 <ExportMenu key="export" label="Export sales" onExport={(format) => exportService.sales(filters, format)} />,
             ] : undefined}
-            filterConfig={filterConfig}
+            filters={filterConfig}
             pagination={rangeInvalid || loading || error || rows.length === 0 ? undefined : (
                 <>
                     <span className="text-xs text-fg-muted" data-testid="sales-paging">

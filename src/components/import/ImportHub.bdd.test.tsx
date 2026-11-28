@@ -279,7 +279,7 @@ describe('Given the CRM import hub', () => {
             await toMap('Units', UNITS_CSV);
             fireEvent.click(screen.getByRole('button', { name: 'Next' }));
             expect(await screen.findByTestId('import-ready')).toHaveTextContent('0 units ready to import.');
-            expect(screen.getByRole('button', { name: 'Import 0 units' })).toBeDisabled();
+            expect(screen.getByRole('button', { name: 'Import 0 units' })).toHaveAttribute('aria-disabled', 'true');
         });
 
         it('Then a failure loading projects stays on Map with a message', async () => {
@@ -308,7 +308,7 @@ describe('Given the CRM import hub', () => {
             await toMap('Existing clients', CLIENTS_CSV);
             fireEvent.click(screen.getByRole('button', { name: 'Next' }));
             fireEvent.click(await screen.findByRole('button', { name: 'Import 2 clients' }));
-            await waitFor(() => expect(screen.getByRole('button', { name: 'Back' })).toBeDisabled());
+            await waitFor(() => expect(screen.getByRole('button', { name: 'Back' })).toHaveAttribute('aria-disabled', 'true'));
             closeModal();
             expect(onClose).not.toHaveBeenCalled();
             finish({ created: 0, updated: 0, skipped: 0, problems: [] });

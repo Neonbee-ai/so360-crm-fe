@@ -777,7 +777,7 @@ describe('DealDetailPage', () => {
       await waitFor(() => expect(screen.getByText('Create Project')).toBeInTheDocument());
       await user.click(screen.getByText('Create Project'));
       const confirm = await screen.findByRole('button', { name: /confirm link/i });
-      expect(confirm).toBeDisabled();
+      expect(confirm).toHaveAttribute('aria-disabled', 'true');
       await user.click(confirm);
       expect(mockLinkProject).not.toHaveBeenCalled();
     });

@@ -100,15 +100,15 @@ describe('Given the Compose email modal (RE G9)', () => {
     describe('When nothing has been chosen or typed', () => {
         it('Then Preview and Send are disabled and the body label has no template hint', async () => {
             await renderModal();
-            expect(screen.getByRole('button', { name: /Preview/ })).toBeDisabled();
-            expect(screen.getByRole('button', { name: /Send/ })).toBeDisabled();
+            expect(screen.getByRole('button', { name: /Preview/ })).toHaveAttribute('aria-disabled', 'true');
+            expect(screen.getByRole('button', { name: /Send/ })).toHaveAttribute('aria-disabled', 'true');
             expect(screen.queryByText(/leave empty to use the template body/)).toBeNull();
         });
 
         it('Then a whitespace-only subject and body still keep submit disabled', async () => {
             await renderModal();
             typeOwn('   ', '  ');
-            expect(screen.getByRole('button', { name: /Send/ })).toBeDisabled();
+            expect(screen.getByRole('button', { name: /Send/ })).toHaveAttribute('aria-disabled', 'true');
         });
     });
 
@@ -119,7 +119,7 @@ describe('Given the Compose email modal (RE G9)', () => {
             fireEvent.change(screen.getByLabelText('Template'), { target: { value: 't2' } });
             expect(screen.getByLabelText('Subject')).toHaveValue('My own subject');
             expect(screen.getByText(/leave empty to use the template body/)).toBeInTheDocument();
-            expect(screen.getByRole('button', { name: /Send/ })).toBeEnabled();
+            expect(screen.getByRole('button', { name: /Send/ })).not.toHaveAttribute('aria-disabled', 'true');
         });
     });
 
@@ -131,7 +131,7 @@ describe('Given the Compose email modal (RE G9)', () => {
             fireEvent.change(screen.getByLabelText('Template'), { target: { value: '' } });
             expect(screen.getByLabelText('Subject')).toHaveValue('{{project}} brochure');
             expect(screen.queryByText(/leave empty to use the template body/)).toBeNull();
-            expect(screen.getByRole('button', { name: /Send/ })).toBeDisabled();
+            expect(screen.getByRole('button', { name: /Send/ })).toHaveAttribute('aria-disabled', 'true');
         });
     });
 
@@ -142,14 +142,14 @@ describe('Given the Compose email modal (RE G9)', () => {
             await renderModal();
             typeOwn();
             fireEvent.click(screen.getByRole('button', { name: /Preview/ }));
-            await waitFor(() => expect(screen.getByRole('button', { name: /Preview/ })).toBeDisabled());
-            expect(screen.getByRole('button', { name: /Send/ })).toBeDisabled();
+            await waitFor(() => expect(screen.getByRole('button', { name: /Preview/ })).toHaveAttribute('aria-disabled', 'true'));
+            expect(screen.getByRole('button', { name: /Send/ })).toHaveAttribute('aria-disabled', 'true');
             await act(async () => {
                 d.resolve({ to_email: null, to_name: null, subject: 'Hello', body_html: '<p>Hi</p>', missing_fields: [] });
             });
             expect(screen.getByTestId('email-preview')).toHaveTextContent('To: —');
             expect(screen.queryByRole('alert')).toBeNull();
-            expect(screen.getByRole('button', { name: /Send/ })).toBeEnabled();
+            expect(screen.getByRole('button', { name: /Send/ })).not.toHaveAttribute('aria-disabled', 'true');
         });
     });
 
@@ -187,7 +187,7 @@ describe('Given the Compose email modal (RE G9)', () => {
                 typeOwn();
                 fireEvent.click(screen.getByRole('button', { name: /Preview/ }));
                 await waitFor(() => expect(errorSpy).toHaveBeenCalledWith('Could not render the preview'));
-                expect(screen.getByRole('button', { name: /Preview/ })).toBeEnabled();
+                expect(screen.getByRole('button', { name: /Preview/ })).not.toHaveAttribute('aria-disabled', 'true');
             },
         );
     });
@@ -199,8 +199,8 @@ describe('Given the Compose email modal (RE G9)', () => {
             const { onClose } = await renderModal();
             typeOwn();
             fireEvent.click(screen.getByRole('button', { name: /Send/ }));
-            await waitFor(() => expect(screen.getByRole('button', { name: /Send/ })).toBeDisabled());
-            expect(screen.getByRole('button', { name: /Preview/ })).toBeDisabled();
+            await waitFor(() => expect(screen.getByRole('button', { name: /Send/ })).toHaveAttribute('aria-disabled', 'true'));
+            expect(screen.getByRole('button', { name: /Preview/ })).toHaveAttribute('aria-disabled', 'true');
             await act(async () => { d.resolve({ success: true }); });
             expect(onClose).toHaveBeenCalledTimes(1);
         });
@@ -239,7 +239,7 @@ describe('Given the Compose email modal (RE G9)', () => {
             await waitFor(() => expect(errorSpy).toHaveBeenCalledWith('Email was not sent'));
             expect(onSent).not.toHaveBeenCalled();
             expect(onClose).not.toHaveBeenCalled();
-            expect(screen.getByRole('button', { name: /Send/ })).toBeEnabled();
+            expect(screen.getByRole('button', { name: /Send/ })).not.toHaveAttribute('aria-disabled', 'true');
         });
     });
 

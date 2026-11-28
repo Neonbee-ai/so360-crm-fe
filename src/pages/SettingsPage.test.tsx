@@ -103,14 +103,14 @@ describe('Given SettingsPage', () => {
   it('When Save Configuration is not yet dirty / Then the button is disabled', async () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
-    expect(screen.getByText(/save configuration/i).closest('button')).toBeDisabled();
+    expect(screen.getByText(/save configuration/i).closest('button')).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('When action / Then saves settings when Save button is clicked', async () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.change(screen.getByDisplayValue('Lead'), { target: { value: 'Prospect' } });
-    await waitFor(() => expect(screen.getByText(/save configuration/i).closest('button')).not.toBeDisabled());
+    await waitFor(() => expect(screen.getByText(/save configuration/i).closest('button')).not.toHaveAttribute('aria-disabled', 'true'));
     fireEvent.click(screen.getByText(/save configuration/i));
     await waitFor(() => {
       expect(mockUpdateSettings).toHaveBeenCalled();
@@ -123,7 +123,7 @@ describe('Given SettingsPage', () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.change(screen.getByDisplayValue('Lead'), { target: { value: 'Prospect' } });
-    await waitFor(() => expect(screen.getByText(/save configuration/i).closest('button')).not.toBeDisabled());
+    await waitFor(() => expect(screen.getByText(/save configuration/i).closest('button')).not.toHaveAttribute('aria-disabled', 'true'));
     fireEvent.click(screen.getByText(/save configuration/i));
     await waitFor(() => {
       expect(mockShowError).toHaveBeenCalledWith('Failed to save: Deal Fields');
@@ -135,7 +135,7 @@ describe('Given SettingsPage', () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.change(screen.getByDisplayValue('Lead'), { target: { value: 'Prospect' } });
-    await waitFor(() => expect(screen.getByText(/save configuration/i).closest('button')).not.toBeDisabled());
+    await waitFor(() => expect(screen.getByText(/save configuration/i).closest('button')).not.toHaveAttribute('aria-disabled', 'true'));
     fireEvent.click(screen.getByText(/save configuration/i));
     await waitFor(() => {
       expect(mockShowError).toHaveBeenCalledWith('Error saving settings.');

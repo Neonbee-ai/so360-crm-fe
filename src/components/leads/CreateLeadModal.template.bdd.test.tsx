@@ -71,7 +71,7 @@ describe('CreateLeadModal — FormPageTemplate slots', () => {
     it('When required fields are empty / Then the primary is disabled, not hidden', async () => {
       render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
       await waitFor(() => screen.getByTestId('create-lead-form-page'));
-      expect(screen.getByRole('button', { name: 'Create Lead' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Create Lead' })).toHaveAttribute('aria-disabled', 'true');
     });
   });
 });
