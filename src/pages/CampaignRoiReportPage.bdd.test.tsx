@@ -75,7 +75,9 @@ describe('Feature: Campaign ROI report', () => {
             svc.roiReport.mockResolvedValue([row()]);
             render(<CampaignRoiReportPage />);
             await screen.findByTestId('roi-total-leads');
+            fireEvent.click(screen.getByRole('button', { name: /^Filters/ }));
             fireEvent.change(screen.getByLabelText('Campaign status'), { target: { value: 'active' } });
+            fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
             await screen.findByTestId('roi-total-leads');
             expect(svc.roiReport).toHaveBeenLastCalledWith('active');
         });

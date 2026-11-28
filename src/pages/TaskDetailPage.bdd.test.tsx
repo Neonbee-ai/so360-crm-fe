@@ -451,8 +451,7 @@ describe('TaskDetailPage', () => {
     it('When the detail page renders / Then a hint explains why actions are unavailable', async () => {
       render(<TaskDetailPage />);
       await waitFor(() => expect(screen.getByTestId('task-locked-hint')).toBeInTheDocument());
-      expect(screen.getByText('Reschedule').closest('button')?.getAttribute('title'))
-        .toMatch(/Mark as Open/i);
+      expect(screen.getByText('Reschedule').closest('button')).toHaveAttribute('aria-disabled', 'true');
     });
 
     it('When Reschedule is clicked / Then the reschedule modal does not open', async () => {

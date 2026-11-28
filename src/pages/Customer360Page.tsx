@@ -1,5 +1,6 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
+import { DetailPageTemplate } from '@so360/design-system';
 import { Customer360Panels } from '../components/customer/Customer360Panels';
 import { PanelBoundary } from '../components/common/PanelBoundary';
 
@@ -12,10 +13,10 @@ export default function Customer360Page() {
   const { id } = useParams<{ id: string }>();
   if (!id) return null;
   return (
-    <div className="mx-auto max-w-6xl p-6">
+    <DetailPageTemplate trail={[{ label: 'Customers', to: '/crm/customers' }]} title="Customer 360">
       <PanelBoundary name="customer-360">
         <Customer360Panels customerId={id} />
       </PanelBoundary>
-    </div>
+    </DetailPageTemplate>
   );
 }

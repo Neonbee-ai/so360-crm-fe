@@ -10,7 +10,7 @@ import {
 } from '../services/crmCampaignService';
 import { useCRMFormatters } from '../utils/formatters';
 import { describeApiError } from '../utils/apiErrorMessage';
-import { Button, DataTable, Select, Skeleton } from '@so360/design-system';
+import { Button, DashboardPageTemplate, DataTable, KpiCard, KpiGrid, Skeleton } from '@so360/design-system';
 import type { DataTableColumn } from '@so360/design-system';
 
 /** Ratio → "12.5%"; null (nothing spent / no leads) → "—". */
@@ -109,14 +109,11 @@ const CampaignRoiReportPage: React.FC = () => {
         ];
         body = (
             <>
-                <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-nb-3">
+                <KpiGrid name="campaign-roi-totals">
                     {cards.map((c) => (
-                        <div key={c.key} className="bg-surface border border-line rounded-nb-lg p-nb-4">
-                            <p className="text-xs font-semibold uppercase text-fg-muted">{c.label}</p>
-                            <p className="mt-1 text-lg font-semibold text-fg" data-testid={`roi-total-${c.key}`}>{c.value}</p>
-                        </div>
+                        <KpiCard key={c.key} label={c.label} value={<span data-testid={`roi-total-${c.key}`}>{c.value}</span>} />
                     ))}
-                </div>
+                </KpiGrid>
                 <DataTable
                     columns={columns}
                     rows={rows}
@@ -128,26 +125,22 @@ const CampaignRoiReportPage: React.FC = () => {
     }
 
     return (
-        <div className="p-nb-6 space-y-nb-6">
-            <div className="flex flex-wrap items-end justify-between gap-nb-3">
-                <div>
-                    <h1 className="text-2xl font-semibold text-fg">Campaign ROI</h1>
-                    <p className="text-sm text-fg-subtle">Leads, won deals and return on spend for each campaign.</p>
-                </div>
-                <Select
-                    name="campaign_status"
-                    label="Status"
-                    aria-label="Campaign status"
-                    value={status}
-                    onChange={(e: any) => setStatus(e.target.value as CampaignStatus | '')}
-                    options={[
-                        { value: '', label: 'All statuses' },
-                        ...CAMPAIGN_STATUSES.map((st) => ({ value: st, label: CAMPAIGN_STATUS_LABELS[st] })),
-                    ]}
-                />
-            </div>
-            {body}
-        </div>
+        <DashboardPageTemplate
+            trail={[]}
+            title="Campaign ROI"
+            description="Leads, won deals and return on spend for each campaign."
+            filters={{
+                fields: [{
+                    key: 'status', label: 'Campaign status', type: 'select',
+                    options: CAMPAIGN_STATUSES.map((st) => ({ value: st, label: CAMPAIGN_STATUS_LABELS[st] })),
+                }],
+                values: status ? { status } : {},
+                onChange: (next) => setStatus(((next.status as string) || '') as CampaignStatus | ''),
+                onClear: () => setStatus(''),
+            }}
+        >
+            <div className="flex flex-col gap-nb-4">{body}</div>
+        </DashboardPageTemplate>
     );
 };
 
