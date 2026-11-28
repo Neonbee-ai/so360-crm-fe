@@ -968,8 +968,8 @@ describe('LeadsPage — export (RE §48)', () => {
     it('When CSV is clicked / Then leads are exported for the current status filter', async () => {
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      fireEvent.click(screen.getByRole('button', { name: 'Export leads' }));
-      fireEvent.click(screen.getByRole('menuitem', { name: 'CSV' }));
+      fireEvent.click(screen.getByRole('button', { name: 'More actions' }));
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Export leads as CSV' }));
       await waitFor(() => expect(mockExportLeads).toHaveBeenCalledWith({ status: 'All' }, 'csv'));
     });
   });
@@ -1002,11 +1002,15 @@ describe('LeadsPage — Comb list standard (views, counts, grid controls)', () =
     expect(screen.getByLabelText('Status')).toBeInTheDocument();
   });
 
-  it('Given the views control / When rendered / Then it offers All, My and Unassigned (no Team) with My disabled without a user', async () => {
+  const openFilters = () => fireEvent.click(screen.getByRole('button', { name: /^Filters/ }));
+  const applyFilters = () => fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+  it('Given the Filters drawer / When opened / Then the Show field offers All and Unassigned (no Team) and no My without a user', async () => {
     render(<LeadsPage />);
-    await waitFor(() => expect(screen.getByTestId('leads-scope-views')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+    openFilters();
     expect(screen.getByRole('radio', { name: 'All' })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: 'My' })).toBeDisabled();
+    expect(screen.queryByRole('radio', { name: 'My' })).not.toBeInTheDocument();
     expect(screen.getByRole('radio', { name: 'Unassigned' })).toBeInTheDocument();
     expect(screen.queryByRole('radio', { name: 'Team' })).not.toBeInTheDocument();
   });
@@ -1015,7 +1019,9 @@ describe('LeadsPage — Comb list standard (views, counts, grid controls)', () =
     mockGetLeads.mockResolvedValue([...leads, { ...leads[0], id: 'l4', company_name: 'Orphan Ltd', owner: undefined }]);
     render(<LeadsPage />);
     await waitFor(() => expect(screen.getByTestId('lead-row-l4')).toBeInTheDocument());
+    openFilters();
     fireEvent.click(screen.getByRole('radio', { name: 'Unassigned' }));
+    applyFilters();
     await waitFor(() => {
       expect(screen.getByTestId('lead-row-l4')).toBeInTheDocument();
       expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument();
@@ -1031,16 +1037,18 @@ describe('LeadsPage — Comb list standard (views, counts, grid controls)', () =
     } as any));
     render(<LeadsPage />);
     await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+    openFilters();
     fireEvent.click(screen.getByRole('radio', { name: 'My' }));
+    applyFilters();
     await waitFor(() => {
       expect(screen.getByTestId('lead-row-l2')).toBeInTheDocument();
       expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument();
     });
   });
 
-  it('Given the toolbar / When rendered / Then a grid-controls slot is provided to the grid', async () => {
+  it('Given the title area / When rendered / Then grid controls render with the grid, not in the header', async () => {
     render(<LeadsPage />);
     await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-    expect(document.querySelector('[data-slot="grid-controls"]')).not.toBeNull();
+    expect(document.querySelector('[data-slot="header"] [data-slot="grid-controls"]')).toBeNull();
   });
 });

@@ -178,8 +178,13 @@ describe('Given the Leads page header', () => {
 });
 
 describe('Given the Leads page export / import RBAC (a25bf315)', () => {
-  // ExportMenu is a Comb Menu whose trigger Button carries the "Export leads" name.
-  const exportGroup = () => screen.queryByRole('button', { name: 'Export leads' });
+  // Export is a ⋯ menu action ("Export leads as CSV") under the "More actions" button.
+  const exportGroup = () => {
+    const more = screen.queryByRole('button', { name: 'More actions' });
+    if (!more) return null;
+    fireEvent.click(more);
+    return screen.queryByRole('menuitem', { name: /^Export leads/ });
+  };
   // Bulk actions only render with the grid, which the template hides while the list is empty.
   const withOneLead = () => mockGetLeads.mockResolvedValue([{ id: 'l1', company_name: 'Acme', contact_name: 'Ann', status: 'New' }]);
   const importBtn = () => screen.queryByRole('button', { name: /^import$/i });

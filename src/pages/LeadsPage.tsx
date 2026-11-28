@@ -35,7 +35,8 @@ import { publishLeadsChanged } from '../utils/leadEvents';
 import { useCanExport } from '../hooks/useCanExport';
 import { exportService } from '../services/exportService';
 import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
-import { QuotaGate, Skeleton, toast, ListPageTemplate, Button, SearchInput, EmptyState, Pagination, ConfirmDialog, TextField, SegmentedControl, Modal, IconButton, Banner } from '@so360/design-system';
+import { exportPageActions } from '../utils/exportPageActions';
+import { QuotaGate, Skeleton, toast, ListPageTemplate, Button, SearchInput, EmptyState, Pagination, ConfirmDialog, TextField, Modal, IconButton } from '@so360/design-system';
 import type { FilterValues, ListFilterConfig } from '@so360/design-system';
 
 // Heavy, on-demand UI: each chunk is fetched only when the user opens it.
@@ -43,7 +44,6 @@ const CreateLeadModal = lazy(() => import('../components/leads/CreateLeadModal')
 const ImportHub = lazy(() => import('../components/import/ImportHub').then((m) => ({ default: m.ImportHub })));
 const LeadDetailPanel = lazy(() => import('../components/leads/LeadDetailPanel').then((m) => ({ default: m.LeadDetailPanel })));
 const LeadFilterBuilder = lazy(() => import('../components/leads/LeadFilterBuilder'));
-const ExportMenu = lazy(() => import('../components/ExportMenu'));
 
 // ─── Saved views (lightweight local version) ──────────────────────────────────
 
@@ -145,7 +145,6 @@ const LeadsPage = () => {
     ratingService.list().then((rows) => setRatings(rows.filter((r) => r.is_active !== false))).catch(() => setRatings([]));
   }, [ratingEnabled]);
   const [customFields, setCustomFields] = useState<{ id: string; label: string }[]>([]);
-  const [gridControlsSlot, setGridControlsSlot] = useState<HTMLElement | null>(null);
 
   // UI
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -630,7 +629,7 @@ const LeadsPage = () => {
       onSelect: (ids: string[], source: string) => handleBulkSourceChange(ids, source),
     },
     // Client-side CSV export of the selected rows — same leads.export gate as
-    // the header ExportMenu, so a user without it can't pull data out here.
+    // the header Export actions, so a user without it can't pull data out here.
     ...(canExportLeads ? [{
       label: 'Export',
       icon: <Download size={14} />,
@@ -650,17 +649,17 @@ const LeadsPage = () => {
 
   const ownerScope: 'all' | 'mine' | 'unassigned' =
     filters.owner === UNASSIGNED_OWNER ? 'unassigned' : shell?.user?.id && filters.owner === shell.user.id ? 'mine' : 'all';
-  const handleOwnerScope = useCallback((scope: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      owner: scope === 'unassigned' ? UNASSIGNED_OWNER : scope === 'mine' && shell?.user?.id ? shell.user.id : 'All',
-    }));
-    setCurrentPage(1);
-    setActiveViewId(null);
-  }, [shell?.user?.id]);
 
   const leadFilterConfig: ListFilterConfig = {
     fields: [
+      {
+        key: 'scope', label: 'Show', type: 'segment', default: 'all',
+        options: [
+          { value: 'all', label: 'All' },
+          ...(shell?.user?.id ? [{ value: 'mine', label: 'My' }] : []),
+          { value: 'unassigned', label: 'Unassigned' },
+        ],
+      },
       { key: 'status', label: 'Status', type: 'select', options: leadStages.map((st) => ({ value: st.name, label: st.name, ...(st.name in statusCounts ? { count: statusCounts[st.name] } : {}) })) },
       { key: 'owner', label: 'Owner', type: 'select', options: [{ value: UNASSIGNED_OWNER, label: 'Unassigned' }, ...users.map((u) => ({ value: u.id, label: u.full_name }))] },
       {
@@ -681,6 +680,7 @@ const LeadsPage = () => {
       },
     ],
     values: {
+      ...(ownerScope !== 'all' ? { scope: ownerScope } : {}),
       ...(filters.status !== 'All' ? { status: filters.status } : {}),
       ...(filters.owner !== 'All' ? { owner: filters.owner } : {}),
       ...(filters.dateRange !== 'All' ? { dateRange: filters.dateRange } : {}),
@@ -692,10 +692,14 @@ const LeadsPage = () => {
     onChange: (next: FilterValues) => {
       if (advancedFilter && !next.advanced) setAdvancedFilter(null);
       const cd = next.customDates as { start?: string; end?: string } | null | undefined;
+      const nextScope = ((next.scope as string) || 'all') as 'all' | 'mine' | 'unassigned';
+      const scopeChanged = nextScope !== ownerScope;
       setFilters((prev) => ({
         ...prev,
         status: (next.status as string) || 'All',
-        owner: (next.owner as string) || 'All',
+        owner: scopeChanged
+          ? (nextScope === 'unassigned' ? UNASSIGNED_OWNER : nextScope === 'mine' && shell?.user?.id ? shell.user.id : 'All')
+          : ((next.owner as string) || 'All'),
         creator: (next.creator as string) || 'All',
         rating: (next.rating as string) || 'All',
         customDateStart: cd?.start ?? '',
@@ -726,45 +730,19 @@ const LeadsPage = () => {
             onSelect: () => setIsModalOpen(true),
             gate: { quota: { quotaKey: "max_contacts", moduleCode: "crm", used: contactsTotal ?? total, limit: quotaData?.limit ?? 0, isUnlimited: quotaData?.is_unlimited, disableOnExceeded: true } },
         } : undefined}
-        // TODO(comb-title-area): manual - not a plain Button (all items must be plain buttons to become PageActions)
-        headerSecondaryActions={[
-          ...(canExportLeads ? [<Suspense key="export" fallback={<Skeleton variant="rect" />}><ExportMenu label="Export leads" onExport={(format) => exportService.leads({ status: filters.status }, format)} /></Suspense>] : []),
-        ]}
+        moreActions={canExportLeads ? exportPageActions('Export leads', (format) => exportService.leads({ status: filters.status }, format)) : undefined}
         overflowActions={[
           { label: activeViewId ? `Saved views (${savedViews.find((v) => v.id === activeViewId)?.name ?? 'Views'})` : 'Saved views', icon: <Bookmark size={16} aria-hidden="true" />, onSelect: () => setOpenDropdown('views') },
           ...(canImportLeads ? [{ label: 'Import', icon: <UploadCloud size={16} aria-hidden="true" />, onSelect: () => setIsImportOpen(true) }] : []),
         ]}
-        // TODO(comb-title-area): manual - use tabs (navigation) or a drawer field
-        views={
-          <SegmentedControl
-            aria-label="Lead scope"
-            data-testid="leads-scope-views"
-            value={ownerScope}
-            onChange={handleOwnerScope}
-            options={[
-              { value: 'all', label: 'All' },
-              { value: 'mine', label: 'My', disabled: !shell?.user?.id },
-              { value: 'unassigned', label: 'Unassigned' },
-            ]}
-          />
-        }
         search={{ placeholder: 'Search leads', value: filters.search, onChange: (v: string) => setFilter('search', v) }}
         filters={leadFilterConfig}
-        // TODO(comb-title-area): manual - move into drawer fields / view / R1 actions
-        toolbarEnd={
-          <div ref={setGridControlsSlot} className="flex shrink-0 items-center" data-slot="grid-controls" />
-        }
         loading={false}
-        // TODO(comb-title-area): manual - notice is an array; banner takes one banner
-        notice={[
-          error && !isLoading && <Banner key="error" variant="danger">{error}</Banner>,
-          isSandboxMode && isLimited(total) && (
-            <Banner key="sandbox" variant="warning">
-              <span className="font-semibold">Sandbox:</span>{' '}
-              <span>Showing {sandboxEntryLimit} of {total} leads. Switch to Production to view all records.</span>
-            </Banner>
-          ),
-        ]}
+        banner={error && !isLoading
+          ? { variant: 'danger', message: error }
+          : isSandboxMode && isLimited(total)
+            ? { variant: 'warning', title: 'Sandbox', message: `Showing ${sandboxEntryLimit} of ${total} leads. Switch to Production to view all records.` }
+            : undefined}
         isEmpty={isTrulyEmpty}
         empty={
           canCreateLead ? (
@@ -801,7 +779,6 @@ const LeadsPage = () => {
           onRowClick={(lead) => setDetailLead((prev) => (prev?.id === lead.id ? null : lead))}
           bulkActions={bulkActions}
           customFields={customFields}
-          controlsSlot={gridControlsSlot}
         />
       </ListPageTemplate>
 
